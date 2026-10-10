@@ -63,11 +63,22 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
 
     @Override
     public boolean addClient(Client client) {
+        // 账号即手机号
+        client.setClientUsername(client.getClientTel());
         if (StrUtil.isWhite(client.getClientPhoto())) client.setClientPhoto(PhotoEnum.CLIENT.getPhotoName());
         if (StrUtil.isWhite(client.getClientInfo())) client.setClientInfo("该用户暂无简介");
         if (StrUtil.isWhite(client.getClientPassword())) client.setClientPassword("123456");
         client.setClientPassword(StrUtil.tranPwd(client.getClientPassword()));
+        if (client.getClientPwdChanged() == null) client.setClientPwdChanged(false);
         return save(client);
+    }
+
+    @Override
+    public boolean existsByTel(String tel, Integer excludeId) {
+        return this.lambdaQuery()
+                .eq(Client::getClientTel, tel)
+                .ne(excludeId != null, Client::getClientId, excludeId)
+                .exists();
     }
 
     @Override

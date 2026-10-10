@@ -4,7 +4,7 @@
     <!--分页查询-->
     <select id="selectPetPage" resultType="com.ship.model.dto.PetDto">
         SELECT
-        pet_id,pet_name,pet_variety,pet_sex,pet_age,pet_status,pet_info,a.client_id,pet_photo,b.client_name
+        pet_id,pet_name,pet_variety,pet_sex,pet_birthday,pet_birthday_estimated,pet_status,pet_info,pet_color,pet_weight,pet_sterilization,pet_chip,pet_allergy,pet_history,pet_alive,pet_note,a.client_id,pet_photo,b.client_name
         FROM pet AS a
         LEFT JOIN client AS b
         ON a.client_id=b.client_id
@@ -25,7 +25,9 @@
                pet_variety,
                pet_status,
                pet_sex,
-               pet_age,
+               pet_birthday,
+               pet_birthday_estimated,
+               pet_sterilization,
                pet_info,
                pet_photo
         FROM pet
@@ -51,9 +53,18 @@
         SET pet_name=#{petName},
         pet_variety=#{petVariety},
         pet_sex=#{petSex},
-        pet_age=#{petAge},
+        pet_birthday=#{petBirthday},
+        pet_birthday_estimated=#{petBirthdayEstimated},
         pet_status=#{petStatus},
         pet_info=#{petInfo},
+        pet_color=#{petColor},
+        pet_weight=#{petWeight},
+        pet_sterilization=#{petSterilization},
+        pet_chip=#{petChip},
+        pet_allergy=#{petAllergy},
+        pet_history=#{petHistory},
+        pet_alive=#{petAlive},
+        pet_note=#{petNote},
         <choose>
             <when test="clientId!='' and clientId!=0">
                 client_id=#{clientId},

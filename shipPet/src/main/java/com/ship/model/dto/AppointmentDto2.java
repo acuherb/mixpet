@@ -35,11 +35,11 @@ public class AppointmentDto2 extends AppointmentDto {
         this.petSex = petSex;
     }
 
-    public LocalDate getPetAge() {
+    public LocalDate getPetBirthday() {
         return petAge;
     }
 
-    public void setPetAge(LocalDate petAge) {
+    public void setPetBirthday(LocalDate petAge) {
         this.petAge = petAge;
     }
 

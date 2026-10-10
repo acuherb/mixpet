@@ -6,9 +6,18 @@ export interface Pet {
     petName: string;
     petVariety: string;
     petSex: boolean;
-    petAge: string;
+    petBirthday: string | null;
+    petBirthdayEstimated: boolean;
     petStatus: string;
     petInfo: string;
+    petColor: string | null;
+    petWeight: number | null;
+    petSterilization: boolean;
+    petChip: string | null;
+    petAllergy: string | null;
+    petHistory: string | null;
+    petAlive: boolean;
+    petNote: string | null;
     clientId: number | null;
     petPhoto: string;
 }
@@ -18,14 +27,23 @@ export interface Pet {
  */
 export const examplePet = (): Pet => {
     return {
-        "petId": 0,
-        "petName": "",
-        "petVariety": "",
-        "petSex": false,
-        "petAge": "",
-        "petStatus": "",
-        "petInfo": "",
-        "clientId": null,
-        "petPhoto": "",
+        petId: 0,
+        petName: "",
+        petVariety: "",
+        petSex: false,
+        petBirthday: null,
+        petBirthdayEstimated: false,
+        petStatus: "",
+        petInfo: "",
+        petColor: null,
+        petWeight: null,
+        petSterilization: false,
+        petChip: null,
+        petAllergy: null,
+        petHistory: null,
+        petAlive: true,
+        petNote: null,
+        clientId: null,
+        petPhoto: "",
     }
 }

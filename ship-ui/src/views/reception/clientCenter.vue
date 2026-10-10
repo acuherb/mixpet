@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="client-center">
     <!--导航-->
     <div class="radio-group">
       <label>
@@ -19,17 +19,16 @@
         <span>挂号查看</span>
       </label>
     </div>
-    <!--盒子-->
-    <LightBox>
+    <!--内容区-->
+    <div class="content-box">
       <router-view></router-view>
-    </LightBox>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {ref, watch} from 'vue'
 import router from "@/router";
-import LightBox from "@/components/card/LightBox.vue";
 
 const checkValue = ref<string>(router.currentRoute.value.fullPath)
 watch(checkValue, () => {
@@ -41,21 +40,38 @@ watch(checkValue, () => {
 $txt-color: #337ecc;
 $round-color: #DBA21C;
 $bord-color: #887456;
+.client-center {
+  width: 100%;
+  max-width: 100vw;
+  min-height: calc(100vh - 80px);
+  box-sizing: border-box;
+  padding: 0 40px 40px;
+}
+
+/* 内容区：全屏自适应，白底，轻阴影 */
+.content-box {
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  padding: 28px 36px;
+  min-height: 500px;
+  box-sizing: border-box;
+}
+
 .radio-group {
-  margin-left: 40px;
-  margin-top: 10px;
-  @media (max-width: 800px) {
-    display: flex;
-  }
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 0;
 
   label {
-    max-width: 200px;
+    max-width: 240px;
     display: flex;
     cursor: pointer;
     font-weight: 500;
     position: relative;
     overflow: hidden;
-    margin-bottom: 0.375em;
+    margin-bottom: 0;
 
     input {
       display: none;
@@ -73,10 +89,12 @@ $bord-color: #887456;
     span {
       display: flex;
       align-items: center;
-      padding: 0.375em 0.75em 0.375em 0.375em;
+      font-size: 15px;
+      padding: 10px 20px 10px 12px;
       border-radius: 99em;
       transition: 0.25s ease;
       color: $txt-color;
+      border: 1px solid transparent;
 
       &:hover {
         background-color: #b3e19d;
@@ -95,6 +113,15 @@ $bord-color: #887456;
         box-shadow: inset 0 0 0 0.125em $bord-color;
       }
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .client-center {
+    padding: 0 12px 24px;
+  }
+  .content-box {
+    padding: 16px;
   }
 }
 </style>

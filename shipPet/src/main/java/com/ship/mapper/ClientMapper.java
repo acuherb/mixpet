@@ -41,7 +41,7 @@ public interface ClientMapper extends BaseMapper<Client> {
      * @param mail     邮箱
      * @return 数据条数
      */
-    @Select("select count(*) from client where is_del=0 and client_username=#{username} and client_tel=#{mail}")
+    @Select("select count(*) from client where is_del=0 and client_username=#{username} and client_email=#{mail}")
     int sureMail(@Param("username") String username, @Param("mail") String mail);
 
     /**

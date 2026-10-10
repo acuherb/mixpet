@@ -157,3 +157,20 @@ npm run dev
 - 原始项目许可证见 [LICENSE](./LICENSE)
 - 二次开发部分版权归本仓库作者所有
 
+
+---
+
+### 启动前端
+
+```bash
+cd ~/公共/pet-hms/ship-ui
+npm run dev
+```
+
+### 启动后端
+
+```bash
+cd ~/公共/pet-hms/shipPet
+mvn spring-boot:run
+```
+

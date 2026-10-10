@@ -114,8 +114,9 @@ public class LoginController {
             client.setClientPassword(registerVo.getReallyPwd());
             client.setClientName(registerVo.name());
             client.setClientGender(registerVo.sex());
-            client.setClientTel(registerVo.mail());
-            client.setClientAge(LocalDate.now());
+            client.setClientEmail(registerVo.mail());
+            client.setClientBirthday(null);
+            client.setClientPwdChanged(false);
             return Result.choice("注册", clientMapper.insert(client) > 0);
         } else return Result.error("验证码不正确");
     }

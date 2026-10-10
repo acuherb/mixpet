@@ -4,7 +4,7 @@
     <!--分页查询-->
     <select id="selectClientPage" resultType="com.ship.model.entity.Client">
         SELECT
-        client_id, client_username, client_name, client_gender, client_tel, client_age, client_info, client_photo
+        client_id, client_username, client_name, client_gender, client_tel, client_tel2, client_email, client_pwd_changed, client_birthday, client_birthday_estimated, client_address, client_id_card, client_level, client_points, client_balance, client_source, client_blacklist, client_info, client_photo
         FROM client
         WHERE is_del = 0
         <if test="clientName!=null and clientName!=''">
@@ -32,7 +32,12 @@
         SET client_name=#{clientName},
             client_username=#{clientUsername},
             client_gender=#{clientGender},
-            client_age=#{clientAge},
+            client_birthday=#{clientBirthday},
+            client_birthday_estimated=#{clientBirthdayEstimated},
+            client_tel=#{clientTel},
+            client_tel2=#{clientTel2},
+            client_email=#{clientEmail},
+            client_address=#{clientAddress},
             client_info=#{clientInfo},
             client_photo=#{clientPhoto},
             update_time=now()

@@ -76,28 +76,40 @@ const toLogin = () => {
 <style lang="scss" scoped>
 /*登录的小卡片*/
 .login-card {
-  width: 320px;
+  width: 100%;
   text-align: center;
+  h3 {
+    font-size: 22px;
+    color: #333;
+    margin: 0 0 20px 0;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
 }
 
 /* 自己写的浮动输入框 */
 .my-input {
   position: relative;
   text-align: left;
-  margin-top: 5px;
-  left: 40px;
+  margin: 14px 0;
+  left: 50%;
+  margin-left: -140px;
+  width: 280px;
   /* 输入框 */
   input {
     transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-    width: 200px;
-    height: 36px;
-    padding: 10px 0 0 36px;
-    border: #cfcfcf 2px solid;
-    border-radius: 5px;
+    width: 100%;
+    height: 46px;
+    padding: 12px 12px 0 46px;
+    box-sizing: border-box;
+    font-size: 15px;
+    border: 2px solid #e0e0e0;
+    background-color: #fafafa;
+    border-radius: 10px;
     background: {
-      size: 24px 24px;
+      size: 22px 22px;
       repeat: no-repeat;
-      position-y: center;
+      position: 14px center;
     };
     /*将占位符设为透明*/
     &::placeholder {
@@ -126,7 +138,7 @@ const toLogin = () => {
       font-size: medium;
       color: #6c757d;
       top: 0;
-      left: 28px;
+      left: 36px;
       height: 46px;
       line-height: 46px;
       overflow: hidden;
@@ -142,9 +154,9 @@ const toLogin = () => {
 /* 记住我的单选框 */
 .remember {
   position: relative;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  left: 32px;
+  margin: 12px 0;
+  left: 50%;
+  margin-left: -110px;
   width: 80px;
 
   .check-label {

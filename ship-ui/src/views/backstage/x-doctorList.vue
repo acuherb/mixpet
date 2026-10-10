@@ -24,7 +24,7 @@
       </template>
     </el-table-column>
     <el-table-column label="年龄" prop="doctorAge" sortable>
-      <template #default="scope">{{ getAge(scope.row.doctorAge) }}岁</template>
+      <template #default="scope">{{ getAge(scope.row.doctorAge)}}</template>
     </el-table-column>
     <el-table-column label="联系方式" prop="doctorTel"/>
     <el-table-column label="简介" prop="doctorInfo"/>

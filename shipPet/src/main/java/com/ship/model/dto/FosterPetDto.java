@@ -51,11 +51,11 @@ public class FosterPetDto extends FosterDto {
         this.petSex = petSex;
     }
 
-    public LocalDate getPetAge() {
+    public LocalDate getPetBirthday() {
         return petAge;
     }
 
-    public void setPetAge(LocalDate petAge) {
+    public void setPetBirthday(LocalDate petAge) {
         this.petAge = petAge;
     }
 

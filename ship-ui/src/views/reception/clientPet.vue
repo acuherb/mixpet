@@ -5,7 +5,7 @@
         <img :src="'/api/common/download?name='+pet.petPhoto" alt="宠物" class="my-avatar"/>
       </div>
       <div class="right">
-        <el-descriptions :column="3" :title="pet.petName" border>
+        <el-descriptions :column="descColumn" :title="pet.petName" border>
           <el-descriptions-item
               align="center"
               label="品种"
@@ -16,7 +16,7 @@
             <el-tag>{{ pet.petStatus }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item align="center" label="年龄" label-align="right">
-            {{ getAge(pet.petAge) }}岁
+            {{ getAge(pet.petBirthday)}}
           </el-descriptions-item>
           <el-descriptions-item align="center" label="性别" label-align="right">
             <TagSex :sex="pet.petSex"/>
@@ -40,7 +40,19 @@ import {onMounted, ref} from "vue";
 import {reqClientPet} from "@/request/PetApi";
 
 const petList = ref<Pet[]>([]);
+
+// 响应式列数：手机 1 列，平板 2 列，桌面 3 列
+const descColumn = ref(3)
+const updateColumn = () => {
+  const w = window.innerWidth
+  if (w < 576) descColumn.value = 1
+  else if (w < 992) descColumn.value = 2
+  else descColumn.value = 3
+}
+
 onMounted(() => {
+  updateColumn()
+  window.addEventListener('resize', updateColumn)
   reqClientPet().then(res => {
     petList.value = res
   })
@@ -62,6 +74,7 @@ onMounted(() => {
 
   .left {
     grid-area: left;
+    text-align: center;
 
     img.my-avatar {
       border-radius: 50%;
@@ -72,6 +85,15 @@ onMounted(() => {
 
   .right {
     grid-area: right;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  @media (max-width: 576px) {
+    .left img.my-avatar {
+      width: 96px;
+      height: 96px;
+    }
   }
 }
 </style>

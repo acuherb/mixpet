@@ -22,15 +22,26 @@
         <TagSex :sex="scope.row.clientGender"/>
       </template>
     </el-table-column>
-    <el-table-column label="年龄" prop="clientAge" sortable>
-      <template #default="scope">{{ getAge(scope.row.clientAge) }}岁</template>
+    <el-table-column label="生日" prop="clientBirthday" sortable width="120"/>
+    <el-table-column label="年龄" width="120">
+      <template #default="scope">{{ getAge(scope.row.clientBirthday, scope.row.clientBirthdayEstimated) }}</template>
     </el-table-column>
     <el-table-column label="联系方式" prop="clientTel"/>
+    <el-table-column label="会员等级" width="100">
+      <template #default="scope">
+        <el-tag :type="levelTag(scope.row.clientLevel)">{{ levelText(scope.row.clientLevel) }}</el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="积分" prop="clientPoints" width="80"/>
+    <el-table-column label="余额" width="100">
+      <template #default="scope">{{ scope.row.clientBalance ?? 0 }} 元</template>
+    </el-table-column>
     <el-table-column label="简介" prop="clientInfo"/>
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
         <el-button-group>
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
+          <el-button :icon="Key" circle type="info" @click="resetPwd(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
         </el-button-group>
       </template>
@@ -39,7 +50,9 @@
   <!--分页条-->
   <BackPage :total="clientList.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%"
+               :close-on-click-modal="false" :close-on-press-escape="false"
+               @open="onDialogOpen">
     <!--头像上传框-->
     <UpImg :photoNm="form.clientPhoto" @upPhoto="changePhoto"/>
     <!--表单-->
@@ -47,32 +60,86 @@
       <el-form-item label="姓名" prop="clientName">
         <el-input v-model="form.clientName" clearable placeholder="用户姓名"/>
       </el-form-item>
-      <el-form-item label="帐号" prop="clientUsername">
-        <el-input v-model="form.clientUsername" clearable placeholder="用户帐号"/>
-      </el-form-item>
       <el-form-item label="性别">
         <el-radio-group v-model="form.clientGender">
           <el-radio :label="true" border>男</el-radio>
           <el-radio :label="false" border>女</el-radio>
         </el-radio-group>
       </el-form-item>
+      <el-form-item v-if="modalTit==='新增用户'" label="密码">
+        <el-input v-model="form.clientPassword" clearable placeholder="123456"/>
+      </el-form-item>
+
+      <el-divider content-position="left">生日与年龄</el-divider>
       <el-form-item label="生日">
         <el-date-picker
-            v-model="form.clientAge"
+            v-model="form.clientBirthday"
             format="YYYY-MM-DD"
             placeholder="选择出生日期"
             type="date"
             value-format="YYYY-MM-DD"
+            @change="onBirthdayChange"
         />
       </el-form-item>
-      <el-form-item label="邮箱">
-        <el-input v-model="form.clientTel" clearable placeholder="联系方式"/>
+      <el-form-item label="年龄">
+        <el-input
+            v-model="ageInput"
+            clearable
+            placeholder="例如：35岁 / 约35岁"
+            @change="onAgeInput"
+        />
       </el-form-item>
+
+      <el-divider content-position="left">联系方式</el-divider>
+      <el-form-item label="手机号" prop="clientTel">
+        <el-input v-model="form.clientTel" clearable placeholder="11位手机号"/>
+        <div style="font-size: 12px; color: #999; margin-top: 4px;">
+          手机号即登录账号（初始密码 123456），顾客用它登录即可查看宠物和就诊记录
+        </div>
+      </el-form-item>
+      <el-form-item label="备用电话">
+        <el-input v-model="form.clientTel2" clearable placeholder="选填"/>
+      </el-form-item>
+      <el-form-item label="地址">
+        <el-input v-model="form.clientAddress" clearable placeholder="选填"/>
+      </el-form-item>
+      <el-form-item label="身份证">
+        <el-input v-model="form.clientIdCard" clearable placeholder="选填"/>
+      </el-form-item>
+
+      <el-divider content-position="left">会员信息</el-divider>
+      <el-form-item label="会员等级">
+        <el-select v-model="form.clientLevel" style="width: 200px;">
+          <el-option :value="0" label="普通"/>
+          <el-option :value="1" label="银卡"/>
+          <el-option :value="2" label="金卡"/>
+          <el-option :value="3" label="钻石"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="积分">
+        <el-input-number v-model="form.clientPoints" :min="0" controls-position="right"/>
+      </el-form-item>
+      <el-form-item label="余额">
+        <el-input-number v-model="form.clientBalance" :min="0" :precision="2" :step="10" controls-position="right"/>
+      </el-form-item>
+      <el-form-item label="客户来源">
+        <el-select v-model="form.clientSource" clearable placeholder="选填" style="width: 200px;">
+          <el-option value="自然到店" label="自然到店"/>
+          <el-option value="线上" label="线上"/>
+          <el-option value="转介绍" label="转介绍"/>
+          <el-option value="其他" label="其他"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="黑名单">
+        <el-radio-group v-model="form.clientBlacklist">
+          <el-radio :label="false" border>正常</el-radio>
+          <el-radio :label="true" border>拉黑</el-radio>
+        </el-radio-group>
+      </el-form-item>
+
+      <el-divider content-position="left">其他</el-divider>
       <el-form-item label="简介">
-        <el-input v-model="form.clientInfo" clearable placeholder="用户近况"/>
-      </el-form-item>
-      <el-form-item v-if="modalTit==='新增用户'" label="密码">
-        <el-input v-model="form.clientPassword" clearable placeholder="123456"/>
+        <el-input v-model="form.clientInfo" type="textarea" :rows="2" placeholder="用户近况"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -88,14 +155,31 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {Delete, Edit} from '@element-plus/icons-vue'
+
+const ageInput = ref<string>('')
+const onDialogOpen = () => {
+  ageInput.value = form.value.clientBirthday ? getAge(form.value.clientBirthday) : ''
+}
+const onBirthdayChange = () => {
+  ageInput.value = form.value.clientBirthday ? getAge(form.value.clientBirthday) : ''
+  form.value.clientBirthdayEstimated = false
+}
+const onAgeInput = () => {
+  if (!ageInput.value) return
+  const r = parseAgeToBirthday(ageInput.value)
+  if (r) {
+    form.value.clientBirthday = r.birthday
+    form.value.clientBirthdayEstimated = r.estimated
+  }
+}
+import {Delete, Edit, Key} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YClientList} from "@/model/VO/BackQuery";
-import {getAge} from "@/utils/TimeUtil";
+import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {Client, exampleClient} from "@/model/entiy/Client";
 import TagSex from "@/components/show/TagSex.vue";
-import {reqAddClient, reqClientList, reqDelClient, reqDelClientBatch, reqUpdateClient} from "@/request/ClientApi";
+import {reqAddClient, reqClientList, reqDelClient, reqDelClientBatch, reqUpdateClient, reqResetPwd} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
@@ -185,6 +269,24 @@ const sureFlush = (res: Res): void => {
   if (res.code === 1) sendQuery()
 }
 
+// 重置密码为 123456
+const resetPwd = (row: Client): void => {
+  ElMessageBox.confirm(
+      `确认将【${row.clientName}】的密码重置为 123456 吗？`,
+      '重置密码确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    reqResetPwd(row.clientId).then((res: Res) => {
+      if (res.code === 1) ElMessage.success('密码已重置为 123456')
+      else ElMessage.error(res.msg || '重置失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
 /**
  ┌───────────────────────────────────┐
  │=============新增修改按钮============│
@@ -208,8 +310,17 @@ const showDialog = (row: Client) => {
   form.value.clientName = row.clientName
   form.value.clientUsername = row.clientUsername
   form.value.clientGender = row.clientGender
-  form.value.clientAge = row.clientAge
+  form.value.clientBirthday = row.clientBirthday
   form.value.clientTel = row.clientTel
+  form.value.clientBirthdayEstimated = row.clientBirthdayEstimated
+  form.value.clientTel2 = row.clientTel2
+  form.value.clientAddress = row.clientAddress
+  form.value.clientIdCard = row.clientIdCard
+  form.value.clientLevel = row.clientLevel
+  form.value.clientPoints = row.clientPoints
+  form.value.clientBalance = row.clientBalance
+  form.value.clientSource = row.clientSource
+  form.value.clientBlacklist = row.clientBlacklist
   form.value.clientInfo = row.clientInfo
   form.value.clientPhoto = row.clientPhoto
   // 显示
@@ -223,17 +334,26 @@ const showDialog = (row: Client) => {
  └───────────────────────────────────┘
  */
 // 表单的数据
+const levelText = (lv: number) => ['普通', '银卡', '金卡', '钻石'][lv] || '普通'
+const levelTag = (lv: number) => ['info', '', 'warning', 'danger'][lv] || 'info'
+
 const form = ref<Client>(exampleClient()) // 空的默认值
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
 const formSubmit = async (): Promise<void> => {
-  await myFormRef.value?.validate((valid: boolean): void => {
-    if (valid) {
-      // 校验通过，提交
+  try {
+    await myFormRef.value?.validate()
+  } catch {
+    return
+  }
+  const api = modalTit.value === "新增用户" ? reqAddClient : reqUpdateClient
+  api(form.value).then((res: Res) => {
+    if (res.code === 1) {
       modalView.value = false
-      if (modalTit.value == "新增用户") reqAddClient(form.value).then(res => sureFlush(res))
-      else if (modalTit.value === "修改用户") reqUpdateClient(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      sendQuery()
+      ElMessage.success(modalTit.value === "新增用户" ? '添加成功' : '修改成功')
+    } else {
+      ElMessage.error(res.msg || '操作失败')
     }
   })
 }
@@ -242,8 +362,9 @@ const rules = reactive<FormRules>({
   "clientName": [
     {required: true, message: '请输入姓名', trigger: 'blur'},
   ],
-  "clientUsername": [
-    {required: true, message: '请填写用户名', trigger: 'blur'},
+  "clientTel": [
+    {required: true, message: '请输入手机号', trigger: 'blur'},
+    {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur'},
   ],
 })
 // 头像参数的改变:子传父

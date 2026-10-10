@@ -9,7 +9,7 @@
           <p class="card__title">{{ pet.petName }}</p>
           <div class="card__description">
             <div>
-              {{ getAge(pet.petAge) }}岁&nbsp;&nbsp;
+              {{ getAge(pet.petBirthday)}}&nbsp;&nbsp;
               {{ pet.petSex ? "公" : "母" }}&nbsp;&nbsp;
               {{ pet.petVariety }}
             </div>

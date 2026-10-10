@@ -12,18 +12,17 @@
 <style scoped>
 /* 个人中心的展示页面 */
 .one-basePage {
-  position: absolute;
-  width: 680px;
-  max-width: 90vw;
-  height: 500px;
-  left: 50vw;
-  top: 10vh;
-  transform: translateX(-50%);
+  position: relative;
+  width: 90vw;
+  max-width: 1200px;
+  min-height: 60vh;
+  max-height: 82vh;
+  margin: 30px auto;
   background-color: whitesmoke;
-  box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.5);
+  box-shadow: 5px 5px 20px 0 rgba(0, 0, 0, 0.25);
   border-radius: 20px;
   z-index: 0;
-  overflow: hidden; /* 隐藏被遮挡的元素 */
+  overflow: hidden;
 }
 
 /* 流光盒子 */
@@ -60,7 +59,7 @@
 
 /* 流光盒子2 */
 .one-basePage .really {
-  padding: 10px;
+  padding: 24px 32px;
   box-sizing: border-box; /* 让padding向內扩张 */
   position: absolute;
   inset: 8px; /* inset:1px等价与left:1px;top:1px;right:1px;bottom:1px; */

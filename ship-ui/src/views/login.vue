@@ -80,41 +80,55 @@ const adminToClient = () => {
 <style lang="scss" scoped>
 /*整个登录组件*/
 .login-page {
-  width: 98vw;
-  height: 90vh;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
   /* 背景的svg */
   svg {
     position: fixed;
-    height: 50vh;
-    width: 98vw;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 100vw;
+    z-index: 0;
   }
 
   /* 欢迎文字 */
   .my-h2 {
     position: fixed;
+    top: 12vh;
     color: #FAFAFA;
+    font-size: 28px;
+    letter-spacing: 4px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
     left: 50%;
     transform: translateX(-50%);
+    z-index: 1;
   }
 }
 
 /* 翻转的卡片 */
 .mixJade {
   position: absolute;
-  width: 320px;
-  margin-top: 8%;
+  top: 50%;
+  width: 380px;
   left: 50%;
-  margin-left: -160px;
+  margin-left: -190px;
+  margin-top: -180px;
+  min-height: 360px;
   text-align: center;
   justify-content: center;
   align-items: center;
-  box-shadow: 7px 7px 17px rgba(52, 56, 66, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.15);
   background-color: #FAFAFA;
-  border-radius: 5px;
+  border-radius: 16px;
   backface-visibility: hidden;
-  transition: all 1s;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-user-select: none;
   user-select: none;
-  padding: 10px;
+  padding: 32px 20px 24px;
+  z-index: 1;
 }
 </style>

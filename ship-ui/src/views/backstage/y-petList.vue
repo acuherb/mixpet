@@ -28,8 +28,22 @@
           <TagSex :sex="scope.row.petSex"/>
         </template>
       </el-table-column>
-      <el-table-column label="年龄" prop="petAge" sortable>
-        <template #default="scope">{{ getAge(scope.row.petAge) }}岁</template>
+      <el-table-column label="绝育" width="90">
+        <template #default="scope">
+          <el-tag :type="scope.row.petSterilization ? 'success' : 'info'">
+            {{ scope.row.petSterilization ? '已绝育' : '未绝育' }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="生日" prop="petBirthday" sortable width="120"/>
+      <el-table-column label="年龄" width="120">
+        <template #default="scope">{{ getAge(scope.row.petBirthday, scope.row.petBirthdayEstimated) }}</template>
+      </el-table-column>
+      <el-table-column label="体重(kg)" width="100">
+        <template #default="scope">{{ scope.row.petWeight ?? '--' }}</template>
+      </el-table-column>
+      <el-table-column label="毛色" width="100">
+        <template #default="scope">{{ scope.row.petColor || '--' }}</template>
       </el-table-column>
       <el-table-column label="健康状态">
         <template #default="scope">
@@ -50,11 +64,12 @@
     <!--分页条-->
     <BackPage :total="petList.total" @changePu="changePuB"/>
     <!--修改、新增时的模态框-->
-    <el-dialog v-model="modalView" :title="modalTit" draggable width="60%">
+    <el-dialog v-model="modalView" :title="modalTit" draggable width="60%" @open="onDialogOpen">
       <!--头像上传框-->
       <UpImg :photoNm="form.petPhoto" @upPhoto="changePhoto"/>
       <!--表单-->
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
+        <el-divider content-position="left">基本信息</el-divider>
         <el-form-item label="宠物姓名" prop="petName">
           <el-input v-model="form.petName" clearable placeholder="宠物姓名"/>
         </el-form-item>
@@ -69,16 +84,59 @@
         </el-form-item>
         <el-form-item label="出生日期">
           <el-date-picker
-              v-model="form.petAge"
+              v-model="form.petBirthday"
               format="YYYY-MM-DD"
               placeholder="选择出生日期"
               type="date"
               value-format="YYYY-MM-DD"
+              @change="onBirthdayChange"
           />
         </el-form-item>
-        <el-form-item label="健康状况">
-          <el-input v-model="form.petStatus" clearable placeholder="健康状况"/>
+        <el-form-item label="年龄">
+          <el-input
+              v-model="ageInput"
+              clearable
+              placeholder="例如：2岁3个月 / 3个月 / 45天 / 约2岁"
+              @change="onAgeInput"
+          />
+          <div style="font-size: 12px; color: #999; margin-top: 4px;">
+            输入年龄将自动推算生日，前置"约"表示估算
+          </div>
         </el-form-item>
+        <el-form-item label="毛色">
+          <el-input v-model="form.petColor" clearable placeholder="例如：橘白、纯黑"/>
+        </el-form-item>
+        <el-form-item label="体重(kg)">
+          <el-input-number v-model="form.petWeight" :min="0" :max="200" :precision="2" :step="0.1" controls-position="right"/>
+        </el-form-item>
+
+        <el-divider content-position="left">健康信息</el-divider>
+        <el-form-item label="绝育情况">
+          <el-radio-group v-model="form.petSterilization">
+            <el-radio :label="true" border>已绝育</el-radio>
+            <el-radio :label="false" border>未绝育</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="健康状况">
+          <el-input v-model="form.petStatus" clearable placeholder="例如：健康、感冒中"/>
+        </el-form-item>
+        <el-form-item label="芯片号">
+          <el-input v-model="form.petChip" clearable placeholder="例如：900123456789012"/>
+        </el-form-item>
+        <el-form-item label="过敏史">
+          <el-input v-model="form.petAllergy" type="textarea" :rows="2" placeholder="例如：青霉素过敏"/>
+        </el-form-item>
+        <el-form-item label="既往病史">
+          <el-input v-model="form.petHistory" type="textarea" :rows="2" placeholder="例如：2023年做过膀胱结石手术"/>
+        </el-form-item>
+        <el-form-item label="是否在世">
+          <el-radio-group v-model="form.petAlive">
+            <el-radio :label="true" border>在世</el-radio>
+            <el-radio :label="false" border>离世</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-divider content-position="left">归属与备注</el-divider>
         <el-form-item label="宠物主人">
           <el-select v-model="form.clientId" filterable placeholder="选择用户">
             <el-option label="无" value=""/>
@@ -87,6 +145,9 @@
         </el-form-item>
         <el-form-item label="宠物近况">
           <el-input v-model="form.petInfo" clearable placeholder="宠物近况"/>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="form.petNote" type="textarea" :rows="2" placeholder="前台随手记"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -104,10 +165,27 @@
 <script lang="ts" setup>
 import {Delete, Edit} from "@element-plus/icons-vue"
 import {onMounted, reactive, ref} from 'vue'
+
+const ageInput = ref<string>('')
+const onDialogOpen = () => {
+  ageInput.value = form.value.petBirthday ? getAge(form.value.petBirthday) : ''
+}
+const onBirthdayChange = () => {
+  ageInput.value = form.value.petBirthday ? getAge(form.value.petBirthday) : ''
+  form.value.petBirthdayEstimated = false
+}
+const onAgeInput = () => {
+  if (!ageInput.value) return
+  const r = parseAgeToBirthday(ageInput.value)
+  if (r) {
+    form.value.petBirthday = r.birthday
+    form.value.petBirthdayEstimated = r.estimated
+  }
+}
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {PageQuery, YPetList} from "@/model/VO/BackQuery";
 import {PetDto} from "@/model/DO/PetDto";
-import {getAge} from "@/utils/TimeUtil";
+import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {examplePet, Pet} from "@/model/entiy/Pet";
 import TagSex from "@/components/show/TagSex.vue";
 import BackPage from "@/components/row/BackPage.vue";
@@ -231,11 +309,20 @@ const showDialog = (row: Pet): void => {
   form.value.petName = row.petName
   form.value.petVariety = row.petVariety
   form.value.petSex = row.petSex
-  form.value.petAge = row.petAge
+  form.value.petBirthday = row.petBirthday
   form.value.petStatus = row.petStatus
   form.value.clientId = row.clientId
   form.value.petInfo = row.petInfo
   form.value.petPhoto = row.petPhoto
+  form.value.petBirthdayEstimated = row.petBirthdayEstimated
+  form.value.petColor = row.petColor
+  form.value.petWeight = row.petWeight
+  form.value.petSterilization = row.petSterilization
+  form.value.petChip = row.petChip
+  form.value.petAllergy = row.petAllergy
+  form.value.petHistory = row.petHistory
+  form.value.petAlive = row.petAlive
+  form.value.petNote = row.petNote
   // 显示
   modalView.value = true
 }

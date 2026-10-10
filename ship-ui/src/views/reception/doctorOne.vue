@@ -9,7 +9,7 @@
         <li>{{ doctorDetail.username }}</li>
       </ul>
       <ul class="hide-narrow">
-        <li>{{ getAge(doctorDetail.doctorAge) }}岁&nbsp;&nbsp;&nbsp;{{ doctorDetail.doctorGender ? "男" : "女" }}</li>
+        <li>{{ getAge(doctorDetail.doctorAge)}}&nbsp;&nbsp;&nbsp;{{ doctorDetail.doctorGender ? "男" : "女" }}</li>
         <li>{{ getJob(doctorDetail.authLv) }}&nbsp;&nbsp;&nbsp;{{ doctorDetail.departmentName }}</li>
         <li>{{ doctorDetail.doctorTel }}</li>
         <li>{{ doctorDetail.doctorInfo }}</li>

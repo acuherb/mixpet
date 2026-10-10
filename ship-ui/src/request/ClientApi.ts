@@ -31,3 +31,13 @@ export const reqClientNameHavePet = (clientId: number | null): Promise<NameDo[]>
 // 用户修改自己的资料
 export const reqUpdateClientSelf = (data: Client): Promise<Res> =>
     reqApi.put<string, Res>("client/self", data)
+
+// 用户修改自己的登录密码
+export const reqUpdatePwd = (data: { oldPwd: string; newPwd: string }): Promise<Res> =>
+    reqApi.put<string, Res>("client/password", data)
+// 管理员重置某用户密码为 123456
+export const reqResetPwd = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("client/reset/" + id)
+// 用户绑定/修改邮箱
+export const reqUpdateEmail = (data: { email: string; code: string }): Promise<Res> =>
+    reqApi.put<string, Res>("client/email", data)

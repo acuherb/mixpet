@@ -66,6 +66,15 @@ public interface IClientService extends IService<Client> {
     boolean addClient(Client client);
 
     /**
+     * 判断手机号是否已被使用（用于唯一性校验）
+     *
+     * @param tel       手机号
+     * @param excludeId 排除的用户ID（修改时排除自己），新增时传 null
+     * @return 存在返回 true
+     */
+    boolean existsByTel(String tel, Integer excludeId);
+
+    /**
      * 用户修改自己的资料
      *
      * @param client 用户信息

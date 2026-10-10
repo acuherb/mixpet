@@ -5,7 +5,7 @@
             :data='{
         photo: pet.petPhoto,
         tit: pet.petName,
-        age: getAge(pet.petAge)+"岁",
+        age: getAge(pet.petBirthday),
         sex: pet.petSex ? "公" : "母",
         job: pet.petVariety,
         info1: pet.petInfo,

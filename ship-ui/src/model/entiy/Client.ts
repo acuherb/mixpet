@@ -8,7 +8,18 @@ export interface Client {
     clientName: string;
     clientGender: boolean;
     clientTel: string;
-    clientAge: string;
+    clientTel2: string | null;
+    clientEmail: string | null;
+    clientPwdChanged: boolean;
+    clientBirthday: string | null;
+    clientBirthdayEstimated: boolean;
+    clientAddress: string | null;
+    clientIdCard: string | null;
+    clientLevel: number;
+    clientPoints: number;
+    clientBalance: number;
+    clientSource: string | null;
+    clientBlacklist: boolean;
     clientInfo: string;
     clientPhoto: string;
 }
@@ -18,13 +29,24 @@ export interface Client {
  */
 export const exampleClient = (): Client => {
     return {
-        "clientId": 0,
-        "clientUsername": "",
-        "clientName": "",
-        "clientGender": false,
-        "clientTel": "",
-        "clientAge": "",
-        "clientInfo": "",
-        "clientPhoto": "",
+        clientId: 0,
+        clientUsername: "",
+        clientName: "",
+        clientGender: false,
+        clientTel: "",
+        clientTel2: null,
+        clientEmail: null,
+        clientPwdChanged: false,
+        clientBirthday: null,
+        clientBirthdayEstimated: false,
+        clientAddress: null,
+        clientIdCard: null,
+        clientLevel: 0,
+        clientPoints: 0,
+        clientBalance: 0,
+        clientSource: null,
+        clientBlacklist: false,
+        clientInfo: "",
+        clientPhoto: "",
     }
 }

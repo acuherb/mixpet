@@ -23,6 +23,14 @@ public final class StrUtil {
      * @param pwd 明文密码
      * @return 加盐加密之后的密码
      */
+    /**
+     * 校验明文密码是否匹配加密密码
+     */
+    public static boolean matches(String rawPwd, String encodedPwd) {
+        if (rawPwd == null || encodedPwd == null) return false;
+        return new BCryptPasswordEncoder().matches(rawPwd, encodedPwd);
+    }
+
     public static String tranPwd(String pwd) {
         return new BCryptPasswordEncoder().encode(pwd);
     }

@@ -27,7 +27,7 @@
           <li>性别：
             <TagSex :sex="a.petSex"/>
           </li>
-          <li>年龄：{{ getAge(a.petAge) }}岁</li>
+          <li>年龄：{{ getAge(a.petBirthday)}}</li>
           <li>健康状况：
             <el-tag>{{ a.petStatus }}</el-tag>
           </li>

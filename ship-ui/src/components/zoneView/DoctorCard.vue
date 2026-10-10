@@ -6,7 +6,7 @@
         :data='{
         photo: doctor.doctorPhoto,
         tit: doctor.doctorName,
-        age: getAge(doctor.doctorAge)+"岁",
+        age: getAge(doctor.doctorAge),
         sex: doctor.doctorGender ? "男" : "女",
         job: getJob(doctor.authLv),
         info1: doctor.doctorInfo,

@@ -8,5 +8,5 @@ export interface AppointDto2 extends AppointDto {
     petVariety: string;
     petStatus: string;
     petSex: boolean;
-    petAge: string;
+    petBirthday: string;
 }
