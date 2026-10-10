@@ -1,168 +1,159 @@
-# 宠物医院管理系统
+# pet-hms
 
-> 毕设设计项目，所有代码均靠自己编写。
-> * 开始选题时间：2022-12-9(确定毕设题目)
-> * 初次完成时间：2023-1-24(完成用户及管理员的网页端及java后端)
-> * 二次完成时间：2023-3-09(完成医生的网页端，实现医生与客户在线聊天)
-> * 最终完成时间：2023-3-28(完成用户端从网页到小程序的移植)
-> * 重置完成时间：2023-9-8(优化前端界面与后端代码结构，启动教程见“重置版启动说明.md”)
-
-* 注册或者找回密码时的邮箱应该填写真实的邮箱，因为要发送验证码
-* 本项目基于java17所运行，里面大量使用了java17的新特性 ~~(相对于jdk1.8)~~
-
-| 开发工具       | 版本         | 简介                 |
-| :------------- | :----------- | :------------------- |
-| java           | 17.0.2       | 许多方便的新特性     |
-| git            | 2.38.0       | 监控、回滚代码       |
-| maven          | 3.8.6        | 管理java的第三方库   |
-| IDEA           | 2022.2.1     | 编写、运行本项目     |
-| mysql          | 5.5.40       | 数据库，存储数据     |
-| navicat        | V8.2.1       | 可视化工具，mysql    |
-| 微信开发者工具 | 调试库2.19.4 | 开发、运行微信小程序 |
-| Node.js        | v18.16.1     | 用于下载vant-weapp   |
+> 宠物医院管理系统，基于 [MixPet](https://github.com/MixJade/MixPet) 重置版二次开发。
+> 用于本地自建、局域网部署。
 
 ---
 
-## 部署教程
+## 项目说明
 
-> 如果想在其他的电脑运行，有三点要注意，分别是：数据库、资源文件夹、邮箱
-
-### 可能需要修改的参数
-
-> 打开项目中`forgePet/src/main/resources`文件夹的`application.yml`文件，以下使用"配置文件"来指代该文件
-
-*配置文件中可能需要修改的参数*
-
-```yml
-spring:
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/pet_forge?useSSL=true
-    username: root # mysql用户名
-    password: your_mysql_password # mysql密码
-  mail:
-    host: smtp.qq.com
-    port: 587
-    username: 2231973602@qq.com # 发送者的邮箱，必须是QQ邮箱
-    password: your_qq_mail_auth_code # 发送者邮箱的授权码
-    default-encoding: UTF-8
-```
-
-*以及资源文件夹的路径：*
-
-* 注意：这里的路径以斜杠结尾
-
-```yml
-pet-forge:
-  images-path: C:\MixJade\MixPet\images\ # 照片存储路径
-  notice-path: C:\MixJade\MixPet\notice\ # 公告存储路径
-  chatImg-path: C:\MixJade\MixPet\chatImg\ # 聊天图片存储路径
-```
-
-*以下为修改教程：*
-
-1. 数据源的设置
-    * 配置文件中：`spring.datasource`下的`username`以及`password`分别为mysql的账号和密码，必须改成自己的
-    * 然后去mysql中新建数据库，数据库建议命名为`pet_forge`，数据库属性如下：
-        * 字符集为`utf8 -- UTF-8 Unicode`(为了节省空间，我不打算为了emoji而使用utf8mb4)
-        * 排序规则为`utf8_general_ci`(意为：不区分大小写，这样比较快)
-    * 接着在`pet_forge`数据库下，运行本项目中`数据库备份`文件夹下的`pet_forge.sql`文件，以导入项目数据
-    * 注意：配置文件中`spring.datasource.url`为数据源，其中`pet_forge`为数据库名,
-    * 如果你不将数据库命名为`pet_forge`，这里记得修改
-2. 资源文件夹的路径(绝对路径):
-    * 如果不想改配置文件，只需在C盘下新建名为`MixJade`的文件夹，
-    * 再在`MixJade`中新建名为`MixPet`的文件夹，然后将本项目放入`MixPet`即可
-    * 如果需要自己配置资源文件夹：
-        * 将本项目中的`chatImg`、`notice`、`images`文件夹放在自己配置的资源文件夹中
-        * 然后修改配置文件中`pet-forge`属性之下的三个文件夹路径为自己的资源路径即可(一定要用绝对路径)
-3. 验证码的发送邮箱(mail.username)与对应授权码(mail.password)
-    * 登录QQ邮箱网页版，点击`设置`-`账户`-`开启服务： POP3/SMTP服务`
-    * 按照提示操作，开启服务并得到授权码
-    * 之后将配置文件下的`spring.mail`中的`username`和`password`改成自己的邮箱与授权码即可
-
-(2024-1-23日更新)如果没收到邮件，可以看看是不是被当成骚扰邮件拦截了
+- **来源**：本项目最初由 [MixJade](https://github.com/MixJade) 开发，名为 MixPet，是一个宠物医院管理系统的毕设作品。
+- **本仓库**：在 MixPet 重置版（`shipPet` + `ship-ui`）基础上继续迭代。
+- **用途**：自建使用，非公开产品。
+- **当前状态**：预约、用户/医生/管理员管理、在线咨询、寄养、领养等基础模块可用；电子病历、处方、收费、库存、住院等功能尚未实现。
 
 ---
 
-### 运行微信小程序
+## 技术栈
 
-> * 在启动微信小程序之前，记得先启动本项目的java后端
-> * AppID自行去微信公众平台注册获取
-
-* 打开微信开发者工具，选择`导入项目`，选择本项目之下的`forgePetWX`文件夹
-
-* 输入自己的AppId，勾选`不使用云服务`。(建议百度：`微信小程序appid如何申请`)
-
-* 在本地java项目的运行状态下，在微信开发者工具中编译运行小程序即可
-
-* 注：如果一直无法登录，在微信开发者工具中，打开`详情`--`本地设置`，勾选`不校验合法域名`
-
-* 注：引入vant-weapp只需要在终端输入： `npm install`，然后打开微信开发者工具，点击 **工具 -> 构建 npm**，并勾选 **使用 npm
-  模块** 选项，构建完成后，即可引入组件
+| 层 | 技术 |
+| :--- | :--- |
+| 后端 | Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 |
+| 数据库 | MySQL 8 / MariaDB 11 |
+| 前端 | Vue 3 + Vite 4 + TypeScript + Element Plus |
+| 实时通信 | WebSocket |
+| 邮件 | Spring Boot Mail（QQ 邮箱 SMTP） |
 
 ---
 
-## 运行教程
-
-> 请确保你已安装了IDEA与maven，并且成功部署本项目
-
-### 启动Java后端
-
-1. 在IDEA中打开本项目中的forgePet文件夹
-2. 点开`forgePet`文件夹下的`pom.xml`文件，确保里面的依赖都已安装，如果存在标红字体，请点击maven刷新
-3. 部署完成之后，进入本项目下的`forgePet/src/main`文件夹，运行`ForgePetApplication.java`文件即可。
-4. 当控制台打印出`宠物医院管理系统启动`的字样时，即是启动成功
-
-### 启动网页前端
-
-1. 在Java后端已启动的情况下，打开浏览器
-2. 在浏览器地址栏输入`http://localhost:8083/login.html`
-3. 如果一起正常，此时会看到用户登录的页面。
-
-#### 用户登录
-
-1. 在用户登录界面，输入账号`ying`，密码为`123456`，即可体验用户端功能
-2. 也可以不输入账号密码，点击左下角的游客登录，直接进入主页浏览，但许多敏感信息无权观看。
-3. 用户登录之后会进入主页，将鼠标悬停在网页上方的正中间，可以看到**退出登录**按钮。（如果此时是**游客登录**或已点击**
-   退出登录**按钮，该按钮会换成**点击登录**)。
-
-#### 管理员登录
-
-1. 在用户登录界面，点击输入框上面的猫猫图标，即可翻转到管理员登录界面。
-2. 输入账号`ra9`，密码`123456`，以体验**普通员工**功能，该角色仅具有部分表的新增权限。
-3. 输入账号`yun`，密码`yun`，以体验**普通管理员**功能，该角色具有大部分（除部门表与员工表）修改与删除权限。
-4. 输入账号`admin`，密码`123456`，以体验**超级管理员**功能，该角色具有所有权限。
-5. 点击网页上方中间写有当前**操作者名字**的**绿色按钮**，或者左上角的**宠物医院**Logo，即可唤出功能菜单。
-
-#### 医生登录
-
-1. 在管理员登录界面，点击左下角的**医生登录**，即可翻转到医生登录界面。
-2. 输入工号`32312221`，密码`123456`，即可访问到**童德统**医生的账号。
-3. 输入工号`32301063`，密码`123456`，即可访问到**汤姆**医生的账号。
-4. 目前所有医生的密码都是`123456`，欲访问不同医生的账号请自行登录。
-
-## 文件夹结构
-
-> 更新与2023年5月25日18:27:14
->
-> 这里只展示文件夹
+## 目录结构
 
 ```text
-├─chatImg 【聊天图片】
-├─forgePet【Java后端与网页前端】
-├─forgePetWX 【微信小程序】
-├─images 【头像图片】
-├─notice 【网站公告文本】
-├─ship-ui 【宠物医院-重置版前端】
-├─shipPet 【宠物医院-重置版后端】
-├─我的笔记
-└─数据库备份
+pet-hms/
+├── shipPet/            # 后端（Spring Boot）
+│   └── src/main/
+│       ├── java/com/ship/    # 代码
+│       └── resources/        # 配置、Mapper XML
+├── ship-ui/            # 前端（Vue 3 + Vite）
+│   └── src/
+│       ├── components/       # 组件
+│       ├── views/            # 页面
+│       ├── request/          # API 封装
+│       ├── router/           # 路由
+│       └── model/            # 数据模型
+├── images/             # 宠物/医生头像等上传图片
+├── notice/             # 网站公告文本
+├── chatImg/            # 聊天上传图片
+├── 数据库备份/
+│   └── pet_ship.sql    # 数据库初始化脚本
+└──  DEPLOY.md           # 完整本地部署教程
 ```
 
-## 额外补充
+---
 
-* 想参与可以fork一个自己改，如果有什么问题，在issue中新建话题报告
-* 本项目于2024年3月29日清理了已删除文件、以及部分重复信息的历史记录。因此这之前fork仓库的历史提交记录可能会多点，但已存在文件是一样的。
-* 本项目是完全公开免费的，有所谓的“毕设代做”会把本项目代码拿去卖钱，请不要相信
-* 【宠物医院管理系统(带微信小程序)演示】 https://www.bilibili.com/video/BV1pv4y1s7Gz
-* 【重置版的视频演示】 https://www.bilibili.com/video/BV1BN411p72g
+## 快速开始
+
+完整部署步骤见 [DEPLOY.md](./DEPLOY.md)。下面是概要：
+
+### 环境要求
+
+- JDK 17（推荐 Temurin）
+- Maven 3.8+
+- Node.js 18+
+- MySQL 8 或 MariaDB 11
+
+### 1. 数据库
+
+```bash
+sudo mysql <<'EOF'
+CREATE DATABASE pet_ship CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER 'mixpet'@'localhost' IDENTIFIED BY '你的密码';
+GRANT ALL PRIVILEGES ON pet_ship.* TO 'mixpet'@'localhost';
+FLUSH PRIVILEGES;
+EOF
+
+mysql -u mixpet -p pet_ship < 数据库备份/pet_ship.sql
+```
+
+### 2. 后端
+
+```bash
+cd shipPet
+mvn spring-boot:run
+```
+
+启动成功后监听 `http://localhost:8085`。
+
+### 3. 前端
+
+```bash
+cd ship-ui
+npm install
+npm run dev
+```
+
+启动成功后访问 `http://localhost:5932`。
+
+---
+
+## 配置说明
+
+后端配置已改为**环境变量写法**，本地开发不用改代码即可运行：
+
+| 环境变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `DB_USER` | `mixpet` | 数据库账号 |
+| `DB_PASSWORD` | `MixPet2024` | 数据库密码 |
+| `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱 |
+| `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码 |
+| `PET_IMAGES` | `~/公共/pet-hms/images/` | 照片存储路径 |
+| `PET_NOTICE` | `~/公共/pet-hms/notice/` | 公告存储路径 |
+| `PET_CHATIMG` | `~/公共/pet-hms/chatImg/` | 聊天图片存储路径 |
+
+换机器部署时只需设这些环境变量，不用改代码。详见 DEPLOY.md。
+
+---
+
+## 默认账号
+
+| 角色 | 账号 | 密码 | 入口 |
+| :--- | :--- | :--- | :--- |
+| 顾客 | `ying` | `123456` | 直接登录 |
+| 医生 | `yun` | `123456` | 点登录卡片上的**猫猫头**切换 |
+| 管理员 | `admin` | `123456` | 点登录卡片上的**猫猫头**切换 |
+
+其他账号可从后台「用户管理」「医生管理」中查看。
+
+> ⚠️ 正式使用前请务必修改所有默认密码。
+
+---
+
+## 已实现功能
+
+- 用户注册/登录、找回密码（邮件验证码）
+- 宠物档案管理
+- 医生管理、科室管理
+- 预约挂号
+- 在线咨询（WebSocket 聊天）
+- 领养信息
+- 寄养信息
+- 网站公告
+
+## 待开发功能
+
+- 电子病历、处方、医嘱
+- 收费/订单/支付
+- 药品/耗材库存
+- 住院管理
+- 疫苗/驱虫记录
+- 检验/影像上传
+- 报表统计
+
+---
+
+## 致谢与许可
+
+- 原始项目：[MixJade/MixPet](https://github.com/MixJade/MixPet)
+- 原始项目许可证见 [LICENSE](./LICENSE)
+- 二次开发部分版权归本仓库作者所有
+
