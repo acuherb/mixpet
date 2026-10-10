@@ -1,0 +1,12 @@
+/* 设置背景色 */
+body {
+    background-color: #e9e9f5;
+}
+
+/* 设置链接样式 */
+a {
+    /* 去掉下划线 */
+    text-decoration: none;
+    /* 颜色与父元素相同 */
+    color: inherit;
+}

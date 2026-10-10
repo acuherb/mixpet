@@ -1,0 +1,16 @@
+### bak
+application-dev.yml.bak
+
+HELP.md
+application-local.yml
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### VS Code ###
+.vscode/

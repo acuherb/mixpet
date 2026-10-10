@@ -1,0 +1,39 @@
+spring:
+  profiles:
+    active: dev # 默认使用dev配置文件
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/pet_ship?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USER:mixpet} # mysql用户名
+    password: ${DB_PASSWORD:MixPet2024} # mysql密码
+  mail:
+    host: smtp.qq.com # 邮箱配置，账号与授权码在dev中
+    port: 587
+    default-encoding: UTF-8
+  servlet:
+    multipart:
+      max-file-size: 3MB # 让上传的文件可以为3MB
+---
+# 改变服务端口
+server:
+  port: 8085
+  # 设置报错时的路径
+  error:
+    path: /power/error
+  # 设置session过期时间为20分钟
+  servlet:
+    session:
+      timeout: 20m
+---
+# 设置日志输出
+logging:
+  pattern:
+    dateformat: MM-dd HH:mm
+---
+mybatis-plus:
+  global-config:
+    banner: false
+    db-config:
+      logic-delete-field: isDel
+      logic-not-delete-value: 0
+  mapper-locations: classpath:com/ship/mapper/*.xml

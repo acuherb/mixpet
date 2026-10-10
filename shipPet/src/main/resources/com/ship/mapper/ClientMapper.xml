@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ship.mapper.ClientMapper">
+    <!--分页查询-->
+    <select id="selectClientPage" resultType="com.ship.model.entity.Client">
+        SELECT
+        client_id, client_username, client_name, client_gender, client_tel, client_age, client_info, client_photo
+        FROM client
+        WHERE is_del = 0
+        <if test="clientName!=null and clientName!=''">
+            <bind name="clientName" value="'%'+clientName+'%'"/>
+            and client_name like #{clientName}
+        </if>
+    </select>
+    <!-- 【子查询】名下有宠物的用户，带上当前用户-->
+    <select id="selectNameHavePet" resultType="com.ship.model.dto.NameDo">
+        SELECT client_id AS roleId,
+        client_name AS roleName
+        FROM client
+        WHERE client_id IN (SELECT DISTINCT client_id FROM pet WHERE is_del = 0)
+        <if test="clientId!=null and clientId!=''">
+            UNION
+            SELECT client_id AS roleId,
+            client_name AS roleName
+            FROM client
+            WHERE client_id = #{clientId}
+        </if>
+    </select>
+    <!-- 用户修改自己的资料-->
+    <update id="updateSelfById">
+        UPDATE client
+        SET client_name=#{clientName},
+            client_username=#{clientUsername},
+            client_gender=#{clientGender},
+            client_age=#{clientAge},
+            client_info=#{clientInfo},
+            client_photo=#{clientPhoto},
+            update_time=now()
+        WHERE client_id = #{clientId}
+    </update>
+</mapper>

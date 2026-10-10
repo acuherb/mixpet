@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ship.mapper.DoctorMapper">
+    <!--分页查询-->
+    <select id="selectDoctorPage" resultType="com.ship.model.dto.DoctorDto">
+        SELECT
+        doctor_id,d.department_id,username,
+        d.create_time,doctor_name,doctor_gender,
+        doctor_age,doctor_photo,doctor_tel,
+        auth_lv,doctor_info,b.department_name
+        FROM doctor AS d
+        LEFT JOIN department AS b
+        ON d.department_id=b.department_id
+        WHERE d.is_del = 0
+        <if test="doctorName!=null and doctorName!=''">
+            <bind name="doctorName" value="'%'+doctorName+'%'"/>
+            and doctor_name like #{doctorName}
+        </if>
+        <if test="departmentName!=null and departmentName!=''">
+            <bind name="departmentName" value="'%'+departmentName+'%'"/>
+            and b.department_name like #{departmentName}
+        </if>
+    </select>
+    <!--根据id查询单个-->
+    <select id="selectOneById" resultType="com.ship.model.dto.DoctorDto">
+        SELECT doctor_id,
+               username,
+               doctor_name,
+               doctor_gender,
+               doctor_age,
+               doctor_photo,
+               doctor_tel,
+               auth_lv,
+               doctor_info,
+               b.department_name
+        FROM doctor AS a
+                 LEFT JOIN department AS b
+                           ON a.department_id = b.department_id
+        WHERE a.is_del = 0
+          AND doctor_id = #{doctorId}
+    </select>
+    <!--科室管理：查询科室下的所有医生-->
+    <select id="selectByDepartmentId" resultType="com.ship.model.entity.Doctor">
+        SELECT doctor_id,
+               username,
+               doctor_name,
+               doctor_gender,
+               doctor_age,
+               doctor_tel,
+               auth_lv
+        FROM doctor
+        WHERE is_del = 0
+          AND department_id = #{departmentId}
+    </select>
+    <!--医生更新自己的个人资料-->
+    <update id="updateSelf">
+        UPDATE doctor
+        SET doctor_age=#{doctorAge},
+            doctor_info=#{doctorInfo},
+            doctor_name=#{doctorName},
+            doctor_gender=#{doctorGender},
+            doctor_photo=#{doctorPhoto},
+            update_time=now()
+        WHERE doctor_id = #{doctorId}
+    </update>
+</mapper>
