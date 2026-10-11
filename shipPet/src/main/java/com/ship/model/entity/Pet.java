@@ -74,6 +74,12 @@ public class Pet implements Serializable {
     /** 宠物主人id */
     private Integer clientId;
 
+    /** 宠物来源，0后台录入 1顾客自建 */
+    private Integer petSource;
+
+    public Integer getPetSource() { return petSource; }
+    public void setPetSource(Integer petSource) { this.petSource = petSource; }
+
     /** 宠物照片名称 */
     private String petPhoto;
 

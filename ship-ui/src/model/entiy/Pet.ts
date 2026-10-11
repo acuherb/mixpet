@@ -20,6 +20,7 @@ export interface Pet {
     petNote: string | null;
     active: boolean;
     clientId: number | null;
+    petSource: number | null;
     petPhoto: string;
 }
 
@@ -46,6 +47,7 @@ export const examplePet = (): Pet => {
         petNote: null,
         active: true,
         clientId: null,
+        petSource: null,
         petPhoto: "",
     }
 }

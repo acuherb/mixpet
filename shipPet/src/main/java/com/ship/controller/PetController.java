@@ -105,6 +105,21 @@ public class PetController {
         return Result.choice("添加", petService.addPet(pet));
     }
 
+    /**
+     * 顾客自己添加宠物：主人强制为登录人，来源标记为顾客自建，默认待审核（active=0），管理员审核通过后才可挂号
+     */
+    @PostMapping("/self")
+    public Result saveSelf(@RequestBody Pet pet) {
+        if (StrUtil.isWhite(pet.getPetName())) return Result.error("姓名不能为空");
+        if (StrUtil.isWhite(pet.getPetVariety())) return Result.error("品种不能为空");
+        if (UserUtil.getUser() instanceof Client client) {
+            pet.setClientId(client.getClientId());
+            pet.setPetSource(1);
+            pet.setActive(false);
+            return Result.choice("添加（待审核）", petService.addPet(pet));
+        } else return Result.error("请先登录顾客账号");
+    }
+
     @DeleteMapping("/{id}")
     @Secured(RoleConst.MANAGER)
     public Result delete(@PathVariable Integer id) {

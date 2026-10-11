@@ -24,6 +24,9 @@ export const reqPetList = (page: YPetList): Promise<Page<PetDto>> =>
 // 管理员新增宠物
 export const reqAddPet = (data: Pet): Promise<Res> =>
     reqApi.post<string, Res>("pet", data)
+// 顾客自己添加宠物
+export const reqAddSelfPet = (data: Pet): Promise<Res> =>
+    reqApi.post<string, Res>("pet/self", data)
 // 管理员修改宠物
 export const reqUpdatePet = (data: Pet): Promise<Res> =>
     reqApi.put<string, Res>("pet", data)
