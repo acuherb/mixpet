@@ -13,6 +13,14 @@
 6. **拿不准的决策**：一次问完，不要来回。
 7. **用户是新手**，命令要完整可粘贴，不要写"把 XXX 换成你的值"却不给例子。
 
+## 脚本避坑清单（踩过的坑，别再踩）
+
+1. **不要用 `rpartition("}")` 给 Java 类追加方法**——类末尾的 `}` 会被切走，导致"到达文件结尾"编译错误。改法：直接在文件末尾 `printf '}\n' >> 文件`。
+2. **不要用 `rfind("</template>")` 定位 .vue 根标签**——弹窗里有多个嵌套 `<template>`，会插错。改法：只做纯文本替换（如属性值、`</BackOpCol>` 唯一位置），不动模板结构。
+3. **不要把 `const xxx = useXxx()` 插到 import 之前**——Vue SFC 里 import 不提升，会 ReferenceError。改法：插到所有 import 之后。
+4. **不要给 el-table 用动态 `:max-height`**——路由切换会触发 `parentNode is null`。改法：用固定 `max-height="calc(100vh - Npx)"`。
+5. **`petMapper.updateById(pet)` 默认跳过 null 字段**——清 `client_id` 要用 `LambdaUpdateWrapper.set(xxx, null)`。
+
 ## 用户的开场白模板
 
 项目在 ~/公共/pet-hms，先读 CONTEXT.md，然后我说今天做什么。
@@ -43,11 +51,13 @@
 - DEPLOY.md — 部署教程
 - CONTEXT.md — 本文件
 
-## 已完成（截至 2026-10-10）
+## 已完成（截至 2026-10-11）
 
 ### 数据库
-- pet 表：+pet_birthday_estimated、pet_color、pet_weight、pet_sterilization、pet_chip、pet_allergy、pet_history、pet_alive、pet_note
+- pet 表：+pet_birthday_estimated、pet_color、pet_weight、pet_sterilization、pet_chip、pet_allergy、pet_history、pet_alive、pet_note、active
 - client 表：+client_email、client_pwd_changed、client_tel2、client_birthday_estimated、client_address、client_id_card、client_level、client_points、client_balance、client_source、client_blacklist
+- adopt 表：+refuse_reason
+- pet_transfer 表：to_client_id 改为可空
 
 ### 后端
 - 手机号即登录账号，唯一性校验
@@ -55,6 +65,14 @@
 - 修改密码接口 PUT /client/password
 - 管理员重置密码接口 PUT /client/reset/{id}
 - updateSelfById 只更新用户可改字段
+- 领养审核通过 → 写 pet_transfer 记录（reason 带申请理由）
+- 领养撤回（PUT /adopt/undo/{id}）→ 宠物变无主、单子回待审核、写 transfer
+- 领养拒绝带理由（PUT /adopt/adopt，AdoptVo.refuseReason）
+- 拒绝后可重启（PUT /adopt/restart/{id}）→ 状态回待审核、理由清空
+- 领养编辑精确更新（只改 money/info，不动 in_adopt）
+- 宠物智能删除：无引用 → 逻辑删；有引用 → active=0 停用
+- 宠物启用/停用接口（PUT /pet/activate|deactivate/{id}）
+- 修 pet_age 残留列：FosterMapper.xml / AppointmentMapper.xml 改 pet_birthday，DTO 字段名统一
 
 ### 前端
 - 后台侧边栏可折叠
@@ -62,6 +80,11 @@
 - 生日与年龄双向联动，估算加「约」
 - DetailTable 窄屏适配
 - 绑定邮箱弹窗宽度自适应
+- 后台所有列表每页 30 条（可切 10/20/30/50/100）
+- 表格高度自适应（max-height="calc(100vh - 130px)"）
+- 全选提示「已选 N 项」在操作栏左上方
+- 分页条「共 N 条」蓝色加粗
+- 宠物/用户列表列宽收紧 + 操作按钮 title 提示
 
 ## 待办
 
@@ -71,11 +94,13 @@
 - [ ] 后台用户管理手机号唯一性校验
 - [ ] 顾客改邮箱 / 改密码
 
-### 待开发
-- [ ] 首次登录强制改密（client_pwd_changed 字段已埋，逻辑未写）
-- [ ] 忘记密码改成邮箱找回（现 findMail 逻辑需重构）
-- [ ] 顾客自己添加宠物
+### 待开发（建议顺序）
+- [ ] **宠物入栏**：有主宠物 → 无主（主人遗弃/托管），补状态机另一边，写 transfer 记录
+- [ ] **顾客退养**：领养人在个人中心点「退养」，不用管理员帮忙撤回
+- [ ] 顾客自己添加宠物（需先加 pet_source 字段）
 - [ ] 顾客自己预约挂号
+- [ ] 首次登录强制改密（client_pwd_changed 字段已埋）
+- [ ] 忘记密码改成邮箱找回（现 findMail 逻辑需重构）
 - [ ] 主页视觉优化（去"幼稚感"，参见 MyCard.vue / Index.vue）
 
 ### 上线前
@@ -89,6 +114,12 @@
 2. 密码统一 123456，顾客可自己改；忘记密码三种方式（后台重置 / 手机号 / 邮箱），手机号找回因短信服务成本暂缓
 3. 只存生日（真相源），年龄前端实时计算；反推的生日标记为估算
 4. pet_source 字段暂未加，做「顾客添加宠物」时再加
+5. **`pet_alive`（是否活着，兽医判断）和 `active`（系统启用/停用）严格分开**。删除宠物时：无任何引用记录才真删，有记录改 `active=0` 停用（保留病历/领养/过户历史）
+6. **宠物归属状态机**：
+   - 有主 ──(遗弃/托管)──→ 无主 ──(申请领养)──→ 待审核 ──(通过)──→ 新主人
+   - 新主人 ──(撤回/退养)──→ 无主
+   - 已实现：审核通过、撤回、拒绝、重启
+   - 待实现：入栏（有主→无主）、顾客退养
 
 ## 数据库
 
@@ -115,6 +146,7 @@
 
 先读 CONTEXT.md，然后看我这次想做什么。
 改动前先确认代码现状，给 git patch 比逐条命令更高效。
+特别看「脚本避坑清单」，那些是真实踩过的坑。
 
 ---
 
@@ -141,3 +173,5 @@
 - 脚本末尾必须带 `npm run build` 或 `mvn compile` 验证
 - 脚本末尾带 `git --no-pager diff --stat` 让用户看改动范围
 - 简单改动一条命令，复杂改动分步但一次给全
+- **改 `.vue` 模板结构风险高，优先做纯文本替换**
+- **改 Java 类追加方法，直接 printf '}\n' >> 文件**
