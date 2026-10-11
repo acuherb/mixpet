@@ -8,8 +8,16 @@ import com.ship.mapper.AdoptMapper;
 import com.ship.model.dto.AdoptDto;
 import com.ship.model.entity.Adopt;
 import com.ship.model.vo.AdoptVo;
+import com.ship.model.entity.Pet;
+import com.ship.model.entity.PetTransfer;
+import com.ship.mapper.PetMapper;
+import com.ship.mapper.PetTransferMapper;
 import com.ship.service.IAdoptService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -23,6 +31,15 @@ import java.util.List;
  */
 @Service
 public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements IAdoptService {
+
+    private final PetMapper petMapper;
+    private final PetTransferMapper petTransferMapper;
+
+    @Autowired
+    public AdoptServiceImpl(PetMapper petMapper, PetTransferMapper petTransferMapper) {
+        this.petMapper = petMapper;
+        this.petTransferMapper = petTransferMapper;
+    }
 
     @Override
     public boolean deleteById(Integer adoptId) {
@@ -46,6 +63,7 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result adoptAdopt(AdoptVo adoptVo) {
         // 查看是否有主
         if (baseMapper.petMaster(adoptVo.adoptId()) > 0) return Result.error("此物有主");
@@ -54,7 +72,24 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
         // 正常操作则进行同意or拒绝
         if (adoptVo.isAdopt()) {
             String petInfo = "它有了温暖的家，感恩";
-            return Result.choice("领养", baseMapper.adoptAdopt(adoptVo.adoptId(), petInfo));
+            // 1. 先查出领养单，拿到 petId 和 新主人 clientId
+            Adopt adopt = this.getById(adoptVo.adoptId());
+            if (adopt == null) return Result.error("领养单不存在");
+            // 2. 原主人（应为 null）
+            Pet pet = petMapper.selectById(adopt.getPetId());
+            Integer fromClientId = pet == null ? null : pet.getClientId();
+            // 3. 执行原 SQL（改 pet.client_id + 标记领养单）
+            boolean ok = baseMapper.adoptAdopt(adoptVo.adoptId(), petInfo);
+            if (!ok) return Result.choice("领养", false);
+            // 4. 补写一条过户记录（从"无主"到新主人）
+            PetTransfer transfer = new PetTransfer();
+            transfer.setPetId(adopt.getPetId());
+            transfer.setFromClientId(fromClientId);
+            transfer.setToClientId(adopt.getClientId());
+            transfer.setTransferDate(LocalDateTime.now());
+            transfer.setReason("领养");
+            petTransferMapper.insert(transfer);
+            return Result.choice("领养", true);
         } else {
             return Result.choice("拒绝", baseMapper.refuse(adoptVo.adoptId()));
         }
@@ -64,4 +99,37 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     public int sureInAdopt(Integer petId, Integer clientId) {
         return baseMapper.sureInAdopt(petId, clientId);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result undoAdopt(Integer adoptId) {
+        Adopt adopt = this.getById(adoptId);
+        if (adopt == null) return Result.error("领养单不存在");
+        if (adopt.getInAdopt() != 1) return Result.error("只有已通过的单子可以撤回");
+
+        Pet pet = petMapper.selectById(adopt.getPetId());
+        if (pet == null) return Result.error("宠物不存在");
+
+        // 1. 宠物变回无主
+        pet.setClientId(null);
+        petMapper.updateById(pet);
+
+        // 2. 领养单变回待审核
+        this.lambdaUpdate()
+                .eq(Adopt::getAdoptId, adoptId)
+                .set(Adopt::getInAdopt, (byte) 2)
+                .update();
+
+        // 3. 写一条撤回记录
+        PetTransfer t = new PetTransfer();
+        t.setPetId(adopt.getPetId());
+        t.setFromClientId(adopt.getClientId());
+        t.setToClientId(null);
+        t.setTransferDate(LocalDateTime.now());
+        t.setReason("撤回领养");
+        petTransferMapper.insert(t);
+
+        return Result.choice("撤回", true);
+    }
+
 }

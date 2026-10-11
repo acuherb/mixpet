@@ -30,7 +30,10 @@
                      @click="adoptAdopt(scope.row.adoptId,true)"/>
           <el-button v-if="scope.row.inAdopt===2" :icon="Close" circle type="info"
                      @click="adoptAdopt(scope.row.adoptId,false)"/>
-          <el-button v-if="scope.row.inAdopt===1" :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
+          <el-button v-if="scope.row.inAdopt===1" circle type="warning"
+                     @click="undoAdopt(scope.row.adoptId)">撤</el-button>
+          <el-button v-if="scope.row.inAdopt===1" :icon="Edit" circle type="warning"
+                     @click="showDialog(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row.adoptId)"/>
         </el-button-group>
       </template>
@@ -90,6 +93,7 @@ import {
   reqAdoptList,
   reqDelAdopt,
   reqDelAdoptBatch,
+  reqUndoAdopt,
   reqUpdateAdopt
 } from "@/request/AdoptApi";
 import {Page} from "@/model/DO/Page";
@@ -224,6 +228,28 @@ const showDialog = (row: Adopt) => {
 const adoptAdopt = (adoptId: number, isAdopt: boolean) => {
   reqAdoptAdopt({adoptId, isAdopt})
       .then(res => sureFlush(res))
+}
+
+// 撤回已通过的领养
+const undoAdopt = (adoptId: number): void => {
+  ElMessageBox.confirm(
+      '撤回后宠物将重新变为无主状态，出现在待领养列表。确定撤回吗？',
+      '撤回领养',
+      {
+        confirmButtonText: '撤回',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+  ).then(() => {
+    reqUndoAdopt(adoptId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success('已撤回')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '撤回失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 
 /**

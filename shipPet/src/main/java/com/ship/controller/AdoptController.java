@@ -114,7 +114,21 @@ public class AdoptController {
     @Secured(RoleConst.MANAGER)
     public Result update(@RequestBody Adopt adopt) {
         if (adopt.getAdoptMoney() <= 0) return Result.error("金额必须大于零");
-        return Result.choice("修改", adoptService.updateById(adopt));
+        // 精确更新，只改金额和简介，不动 in_adopt，避免审核状态被覆盖
+        return Result.choice("修改", adoptService.lambdaUpdate()
+                .eq(Adopt::getAdoptId, adopt.getAdoptId())
+                .set(Adopt::getAdoptMoney, adopt.getAdoptMoney())
+                .set(Adopt::getAdoptInfo, adopt.getAdoptInfo())
+                .update());
+    }
+
+    /**
+     * 撤回已通过的领养：宠物变无主，单子变待审核
+     */
+    @PutMapping("/undo/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result undo(@PathVariable Integer id) {
+        return adoptService.undoAdopt(id);
     }
 
     /**

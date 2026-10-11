@@ -31,3 +31,7 @@ export const reqDelAdoptBatch = (ids: number[]): Promise<Res> =>
 // 管理员审核领养订单
 export const reqAdoptAdopt = (adoptVo: AdoptVo): Promise<Res> =>
     reqApi.put<string, Res>("adopt/adopt", adoptVo)
+
+// 撤回已通过的领养
+export const reqUndoAdopt = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("adopt/undo/" + id)

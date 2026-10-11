@@ -61,4 +61,12 @@ public interface IAdoptService extends IService<Adopt> {
      * @return 订单数量
      */
     int sureInAdopt(Integer petId, Integer clientId);
+
+    /**
+     * 撤回已通过的领养
+     *
+     * @param adoptId 领养单id
+     * @return 撤回结果
+     */
+    Result undoAdopt(Integer adoptId);
 }
