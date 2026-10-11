@@ -38,7 +38,7 @@
 <script lang="ts" setup>
 import LoginForm from "@/components/zoneView/LoginForm.vue";
 import {onMounted, reactive, ref} from "vue";
-import {reqGetLogin} from "@/request/PowerApi";
+import {reqGetLogin, reqLoginUser} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
 import {RoleEnum} from "@/model/VO/LoginVo";
 
@@ -50,8 +50,14 @@ onMounted(() => {
 const router = useRouter()
 const getLoginRole = () => {
   reqGetLogin().then(resp => {
-    if (resp === RoleEnum.CLIENT) router.push("/reception")
-    else if (resp === RoleEnum.DOCTOR) router.push("/backstage")
+    if (resp === RoleEnum.CLIENT) {
+      reqLoginUser().then(user => {
+        if (user && user.clientPwdChanged === false) router.push("/changePwd")
+        else router.push("/reception")
+      })
+    } else if (resp === RoleEnum.DOCTOR) {
+      router.push("/backstage")
+    }
   })
 }
 

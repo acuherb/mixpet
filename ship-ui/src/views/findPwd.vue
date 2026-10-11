@@ -1,7 +1,6 @@
 <template>
   <div class="find-pwd">
     <PageHead>找回密码</PageHead>
-    <img alt="云朵" class="cloud" src="/picture/cloud.png">
     <div class="send-mail">
       <img alt="信封表面" src="/picture/envelope_1.svg">
       <div>
@@ -29,7 +28,6 @@
       </div>
       <img alt="信封背景" src="/picture/envelope_2.svg">
     </div>
-    <img alt="云朵" class="cloud" src="/picture/cloud.png">
     <p style="position: absolute;right: 30%;bottom:10%;z-index: -1">输入时鼠标别放在输入法上</p>
   </div>
 </template>
@@ -84,21 +82,6 @@ const toFind = () => {
   height: 98vh;
   background-image: linear-gradient(#F0E68C, transparent);
 
-  & > img.cloud {
-    position: absolute;
-
-    &:first-of-type {
-      mix-blend-mode: screen; /* 设置背景融合 */
-      left: 10%;
-      top: 10%;
-    }
-
-    &:last-of-type {
-      z-index: -1;
-      left: 55%;
-      top: 50%;
-    }
-  }
 }
 
 .send-mail {
@@ -200,8 +183,5 @@ const toFind = () => {
 }
 
 @media screen and (max-width: 520px) {
-  img.cloud {
-    display: none;
-  }
 }
 </style>

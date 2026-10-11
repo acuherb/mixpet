@@ -27,6 +27,12 @@
       <template #default="scope">{{ getAge(scope.row.clientBirthday, scope.row.clientBirthdayEstimated) }}</template>
     </el-table-column>
     <el-table-column label="联系方式" prop="clientTel"/>
+    <el-table-column label="密码状态" width="110">
+      <template #default="scope">
+        <el-tag v-if="scope.row.clientPwdChanged" type="success" size="small">已修改</el-tag>
+        <el-tag v-else type="warning" size="small">未修改</el-tag>
+      </template>
+    </el-table-column>
     <el-table-column label="会员等级" width="100">
       <template #default="scope">
         <el-tag :type="levelTag(scope.row.clientLevel)">{{ levelText(scope.row.clientLevel) }}</el-tag>

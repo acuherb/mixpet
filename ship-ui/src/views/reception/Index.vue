@@ -162,6 +162,9 @@ onBeforeMount(() => {
   })
   reqLoginUser().then(res => {
     isLogin.value = (res.clientId != null)
+    if (res.clientId != null && res.clientPwdChanged === false) {
+      router.push("/changePwd")
+    }
   })
 })
 
