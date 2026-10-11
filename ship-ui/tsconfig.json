@@ -14,7 +14,7 @@
     ],
     "skipLibCheck": true,
     /* Bundler mode */
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -30,8 +30,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    /*设置编译时转化src别名*/
-    "baseUrl": ".",
+    /*设置编译时转化src别名（paths 相对 tsconfig 所在目录，无需 baseUrl）*/
     "paths": {
       "@/*": [
         "./src/*"
