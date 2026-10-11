@@ -92,7 +92,7 @@
 
       <el-divider content-position="left">联系方式</el-divider>
       <el-form-item label="手机号" prop="clientTel">
-        <el-input v-model="form.clientTel" clearable placeholder="11位手机号"/>
+        <el-input v-model="form.clientTel" maxlength="11" show-word-limit inputmode="numeric" @input="sanitizeTel" clearable placeholder="11位手机号"/>
         <div style="font-size: 12px; color: #999; margin-top: 4px;">
           手机号即登录账号（初始密码 123456），顾客用它登录即可查看宠物和就诊记录
         </div>
@@ -336,6 +336,12 @@ const showDialog = (row: Client) => {
 // 表单的数据
 const levelText = (lv: number) => ['普通', '银卡', '金卡', '钻石'][lv] || '普通'
 const levelTag = (lv: number) => ['info', '', 'warning', 'danger'][lv] || 'info'
+
+const sanitizeTel = () => {
+  if (form.value.clientTel) {
+    form.value.clientTel = form.value.clientTel.replace(/\D/g, '').slice(0, 11)
+  }
+}
 
 const form = ref<Client>(exampleClient()) // 空的默认值
 const myFormRef = ref<FormInstance>()

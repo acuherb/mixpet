@@ -18,7 +18,8 @@
           router
           text-color="#fff"
       >
-        <el-sub-menu index="" :title="isCollapse ? '个人中心' : ''">
+        <!-- 管理员：二级菜单 -->
+        <el-sub-menu v-if="isAdmin" index="" :title="isCollapse ? '个人中心' : ''">
           <template #title>
             <el-tooltip content="个人中心" placement="right" :disabled="!isCollapse">
               <el-icon>
@@ -33,6 +34,16 @@
             <el-menu-item index="/backstage/x-doctorList">医生列表</el-menu-item>
           </el-menu-item-group>
         </el-sub-menu>
+
+        <!-- 医生：一级菜单 -->
+        <el-menu-item v-else index="/backstage" :title="isCollapse ? '个人中心' : ''">
+          <el-tooltip content="个人中心" placement="right" :disabled="!isCollapse">
+            <el-icon>
+              <icon-menu/>
+            </el-icon>
+          </el-tooltip>
+          <span>个人中心</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
           <el-icon>
               <User/>
@@ -79,13 +90,17 @@
 
 <script lang="ts" setup>
 import {DataBoard, Expand, Fold, Football, Menu as IconMenu, OfficeBuilding, School, Tickets, User,} from '@element-plus/icons-vue'
-import {onMounted, onUnmounted, reactive, ref} from "vue";
+import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
 const doctorNow = reactive({
   name: "",
-  photo: "zs.jpg"
+  photo: "zs.jpg",
+  authLv: 0
 })
+
+// 是否管理员（院长 authLv=8）
+const isAdmin = computed(() => doctorNow.authLv === 8)
 
 // 侧边栏折叠
 const isCollapse = ref(localStorage.getItem('asideCollapse') === '1')
@@ -109,6 +124,7 @@ onUnmounted(() => {
 reqGetLoginD().then(res => {
   doctorNow.photo = res.doctorPhoto
   doctorNow.name = res.doctorName
+  doctorNow.authLv = res.authLv
 })
 </script>
 

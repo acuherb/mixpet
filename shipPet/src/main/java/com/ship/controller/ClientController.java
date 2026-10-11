@@ -73,6 +73,7 @@ public class ClientController {
     public Result save(@RequestBody Client client) {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");
+        if (!client.getClientTel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
         if (clientService.existsByTel(client.getClientTel(), null))
             return Result.error("手机号已被使用");
         client.setClientUsername(client.getClientTel());
@@ -96,6 +97,7 @@ public class ClientController {
     public Result update(@RequestBody Client client) {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");
+        if (!client.getClientTel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
         if (clientService.existsByTel(client.getClientTel(), client.getClientId()))
             return Result.error("手机号已被其他用户使用");
         client.setClientUsername(client.getClientTel());
@@ -113,6 +115,7 @@ public class ClientController {
     public Result updateSelf(@RequestBody Client client) {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");
+        if (!client.getClientTel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
         if (UserUtil.getUser() instanceof Client client1) {
             if (clientService.existsByTel(client.getClientTel(), client1.getClientId()))
                 return Result.error("手机号已被其他用户使用");

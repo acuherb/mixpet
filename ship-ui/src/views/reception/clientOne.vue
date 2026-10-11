@@ -51,7 +51,7 @@
         />
       </el-form-item>
       <el-form-item label="手机号" prop="clientTel">
-        <el-input v-model="form.clientTel" clearable placeholder="11位手机号"/>
+        <el-input v-model="form.clientTel" maxlength="11" show-word-limit inputmode="numeric" @input="sanitizeTel" clearable placeholder="11位手机号"/>
         <div style="font-size: 12px; color: #999; margin-top: 4px;">
           手机号即登录账号，修改后请用新手机号登录
         </div>
@@ -162,6 +162,13 @@ const updateRole = () => {
   // 显示
   modalView.value = true
 }
+// 手机号只保留数字，且最多 11 位
+const sanitizeTel = () => {
+  if (form.clientTel) {
+    form.clientTel = form.clientTel.replace(/\D/g, '').slice(0, 11)
+  }
+}
+
 // 表单的数据
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
