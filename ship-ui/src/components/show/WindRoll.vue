@@ -13,14 +13,10 @@
       <p class="hero-subtitle">
         预约挂号 · 在线咨询 · 宠物档案 · 全程陪伴
       </p>
-      <div class="hero-actions">
-        <router-link class="btn btn-primary" to="/reception/doctorSee">
-          查看医生
-        </router-link>
-        <router-link class="btn btn-ghost" to="/reception/chat">
-          在线咨询
-        </router-link>
-      </div>
+    </div>
+    <!-- 向下滚动提示 -->
+    <div class="scroll-cue" @click="scrollDown">
+      <span class="cue-line"/>
     </div>
   </section>
 </template>
@@ -57,6 +53,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', scrollBlobs)
 })
+
+// 点击滚动提示，平滑滚到公告区
+const scrollDown = () => {
+  window.scrollTo({top: window.innerHeight - 60, behavior: 'smooth'})
+}
 </script>
 
 <style lang="scss" scoped>
@@ -160,51 +161,40 @@ section {
 }
 
 .hero-subtitle {
-  margin: 0 0 32px;
+  margin: 0;
   font-size: 16px;
   color: #606266;
   letter-spacing: 0.5px;
 }
 
-.hero-actions {
-  display: inline-flex;
-  gap: 14px;
-  flex-wrap: wrap;
+/* 向下滚动提示：一条细线缓慢下探 */
+.scroll-cue {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26px;
+  height: 44px;
+  display: flex;
   justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+
+  .cue-line {
+    width: 1.5px;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, #1E6FA8 40%, transparent);
+    animation: cue-drop 2s ease-in-out infinite;
+  }
+
+  &:hover .cue-line {
+    background: linear-gradient(180deg, transparent, #2A82C2 40%, transparent);
+  }
 }
 
-.btn {
-  display: inline-block;
-  padding: 12px 28px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  transition: all 0.2s;
-  cursor: pointer;
-
-  &.btn-primary {
-    background: #1E6FA8;
-    color: #fff;
-    box-shadow: 0 6px 18px rgba(30, 111, 168, 0.28);
-
-    &:hover {
-      background: #2A82C2;
-      box-shadow: 0 8px 22px rgba(30, 111, 168, 0.36);
-      transform: translateY(-1px);
-    }
-  }
-
-  &.btn-ghost {
-    background: #fff;
-    color: #1E6FA8;
-    border: 1px solid #D8E3EE;
-
-    &:hover {
-      border-color: #1E6FA8;
-      background: #F0F7FD;
-    }
-  }
+@keyframes cue-drop {
+  0%, 100% { transform: translateY(-6px); opacity: 0.4 }
+  50% { transform: translateY(6px); opacity: 1 }
 }
 
 /* 窄屏适配 */

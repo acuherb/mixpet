@@ -9,9 +9,9 @@
                 d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
         </defs>
         <g class="parallax">
-          <use fill="rgba(135,206,235,0.6)" x="48" xlink:href="#gentle-wave" y="0"/>
-          <use fill="rgba(152,251,152,0.5)" x="48" xlink:href="#gentle-wave" y="3"/>
-          <use fill="rgba(174,214,241,0.5)" x="48" xlink:href="#gentle-wave" y="5"/>
+          <use fill="rgba(30,111,168,0.16)" x="48" xlink:href="#gentle-wave" y="0"/>
+          <use fill="rgba(30,111,168,0.10)" x="48" xlink:href="#gentle-wave" y="3"/>
+          <use fill="rgba(15,138,126,0.08)" x="48" xlink:href="#gentle-wave" y="5"/>
           <use fill="rgba(248,248,255)" x="48" xlink:href="#gentle-wave" y="7"/>
         </g>
       </svg>

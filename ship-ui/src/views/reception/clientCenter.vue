@@ -18,6 +18,10 @@
         <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientAppoint">
         <span>挂号查看</span>
       </label>
+      <label>
+        <input v-model="checkValue" name="radio" type="radio" value="/reception/chat">
+        <span>在线咨询</span>
+      </label>
     </div>
     <!--内容区-->
     <div class="content-box">

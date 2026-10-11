@@ -49,7 +49,7 @@
               @click="openDialog(notice)"
           >
             <div class="notice-icon-wrap">
-              <span class="notice-icon">📢</span>
+              <el-icon class="notice-icon" color="#1E6FA8"><Bell/></el-icon>
             </div>
             <div class="notice-card-body">
               <div class="notice-title">{{ notice.noticeTitle }}</div>
@@ -144,6 +144,7 @@ import WindRoll from "@/components/show/WindRoll.vue";
 import MyRow from "@/components/row/MyRow.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
+import {Bell} from "@element-plus/icons-vue";
 
 /* 生命周期 */
 const isLogin = ref<boolean>(false)
