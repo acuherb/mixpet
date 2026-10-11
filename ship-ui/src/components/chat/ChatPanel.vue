@@ -1,19 +1,33 @@
 <template>
   <div class="chat-panel">
-    <PageHead>与{{ roleName }}{{ opType }}的聊天</PageHead>
+    <!--顶部：返回栏 + 手机端联系人开关-->
+    <div class="chat-top">
+      <PageHead>与{{ roleName }}{{ opType }}的聊天</PageHead>
+      <el-button v-if="groupList.length>1" :icon="User" class="contact-toggle" round size="small"
+                 type="success" plain @click="showContacts=!showContacts">联系人
+      </el-button>
+    </div>
     <section>
-      <aside>
+      <!--联系人侧栏：只有一个联系人时自动隐藏；手机端折叠为抽屉，选完自动收起-->
+      <aside v-if="groupList.length>1" :class="{open: showContacts}">
         <h4>当前聊天</h4>
         <ul>
-          <li>{{ roleName }}</li>
+          <li class="active">
+            <MyAvatar :name="groupList[0]?.rolePhoto"/>
+            <span>{{ roleName }}</span>
+          </li>
         </ul>
-        <h4 v-if="groupList.length>1">其它{{ opType }}</h4>
-        <ul v-if="groupList.length>1">
+        <h4>其它{{ opType }}</h4>
+        <ul>
           <li v-for="gItem in groupList.slice(1)" :key="gItem.roleId"
-              @click="cutOtherB(gItem.roleId)">{{ gItem.roleName }}
+              @click="cutOtherB(gItem.roleId)">
+            <MyAvatar :name="gItem.rolePhoto"/>
+            <span>{{ gItem.roleName }}</span>
           </li>
         </ul>
       </aside>
+      <!--手机端抽屉打开时的遮罩，点击收起-->
+      <div v-if="groupList.length>1 && showContacts" class="contact-mask" @click="showContacts=false"/>
       <div class="chat-right">
         <main>
           <ChatMain :msg-list="msgList"/>
@@ -26,15 +40,16 @@
               action="/api/common/upChat"
               name="myFile"
           >
-            <el-icon size="36">
+            <el-icon size="26">
               <PictureRounded/>
             </el-icon>
           </el-upload>
           <el-input
               v-model="textarea1"
               autosize
-              placeholder="请输入消息"
+              placeholder="请输入消息，Enter 发送"
               type="textarea"
+              @keydown.enter="onEnterKey"
           />
           <el-button :icon="Position" type="success" @click="sendMsgB">发送</el-button>
         </footer>
@@ -45,12 +60,13 @@
 
 <script lang="ts" setup>
 /*=====封装的聊天页面，医生与用户只是传递的参数不同=====*/
-import {PictureRounded, Position} from "@element-plus/icons-vue"
+import {PictureRounded, Position, User} from "@element-plus/icons-vue"
 import PageHead from "@/components/row/PageHead.vue";
 import {ref} from "vue";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {MsgDo} from "@/model/DO/MsgDo";
 import ChatMain from "@/components/chat/ChatMain.vue";
+import MyAvatar from "@/components/show/MyAvatar.vue";
 import {ElMessage, UploadRawFile} from "element-plus";
 
 defineProps<{
@@ -62,6 +78,8 @@ defineProps<{
 
 // 待发送的消息
 const textarea1 = ref("")
+// 手机端联系人抽屉的展开状态
+const showContacts = ref(false)
 const emit = defineEmits<{
   (e: "sendTxtMsg", value: string): void,
   (e: "sendImgMsg", value: string): void,
@@ -71,8 +89,15 @@ const sendMsgB = (): void => {
   emit("sendTxtMsg", textarea1.value)
   textarea1.value = ""
 }
-const cutOtherB = (roleId: number) => {
+const cutOtherB = (roleId: number): void => {
+  showContacts.value = false// 选完联系人自动收起抽屉
   emit("cutOther", roleId)
+}
+// Enter 直接发送（中文输入法选词、Shift+Enter 换行时不发送）
+const onEnterKey = (e: KeyboardEvent): void => {
+  if (e.isComposing || e.shiftKey) return
+  e.preventDefault()
+  sendMsgB()
 }
 
 /**
@@ -99,50 +124,164 @@ const beforeImgUpload = (rawFile: UploadRawFile) => {
 </script>
 
 <style lang="scss" scoped>
-/*聊天主体页面*/
+/*聊天主体页面：占满整个视口，方向为上导航下内容*/
 .chat-panel {
-  width: 98vw;
-  height: 88vh;
-  /*页头下面*/
-  section {
-    display: flex;
-    height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  /*手机端浏览器地址栏收起/展开时依然占满*/
+  height: 100dvh;
 
+  .chat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 10px;
+
+    /*桌面端不需要联系人开关，手机端才显示*/
+    .contact-toggle {
+      display: none;
+    }
+  }
+
+  section {
+    position: relative;
+    display: flex;
+    flex: 1;
+    /*否则 main 的滚动条不会生效*/
+    min-height: 0;
+
+    /*联系人侧栏*/
     aside {
-      background-color: lightgray;
-      width: 15vw;
-      @media (max-width: 576px) {
-        width: 0;
+      box-sizing: border-box;
+      width: 220px;
+      flex-shrink: 0;
+      overflow-y: auto;
+      padding: 10px;
+      background-color: #fff;
+      border-right: 1px solid #e4e7ed;
+
+      h4 {
+        margin: 8px 0 6px;
+        padding-left: 8px;
+        color: #909399;
+        font-size: 12px;
+        font-weight: normal;
       }
-      /*人员列表*/
+
       ul {
         list-style: none;
+        margin: 0;
+        padding: 0;
         cursor: pointer;
-        /*设置间距*/
+
         li {
-          padding-bottom: 5px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 4px;
+          padding: 6px 8px;
+          border-radius: 8px;
+          color: #303133;
+
+          :deep(.my-avatar) {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+          }
+
+          &:hover {
+            background-color: #f5f7fa;
+          }
+
+          /*当前聊天的联系人*/
+          &.active {
+            background-color: #e1f3d8;
+            color: #67c23a;
+            font-weight: bold;
+          }
         }
       }
     }
 
+    /*手机端抽屉打开时的遮罩*/
+    .contact-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      background-color: rgba(0, 0, 0, 0.35);
+    }
+
     /*侧边栏右边*/
     .chat-right {
-      width: 100%;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+
       /*信息展示区域*/
       main {
         box-sizing: border-box;
+        flex: 1;
+        min-height: 0;
         padding: 8px;
-        height: calc(100% - 50px);
-        background-color: whitesmoke;
+        background-color: #f5f7fa;
       }
 
-      /*输入区域*/
+      /*输入区域：随内容自动增高*/
       footer {
         box-sizing: border-box;
-        padding: 8px;
         display: flex;
-        height: 50px;
-        background-color: #909399;
+        gap: 8px;
+        align-items: flex-end;
+        padding: 8px 10px;
+        background-color: #fff;
+        border-top: 1px solid #e4e7ed;
+
+        .el-upload {
+          flex-shrink: 0;
+          padding: 6px;
+          line-height: 1;
+          cursor: pointer;
+          color: #67c23a;
+        }
+
+        .el-textarea {
+          flex: 1;
+        }
+
+        .el-button {
+          flex-shrink: 0;
+        }
+      }
+    }
+  }
+}
+
+/*手机端：联系人自动折叠为左侧抽屉*/
+@media (max-width: 768px) {
+  .chat-panel {
+    .contact-toggle {
+      display: inline-flex;
+    }
+
+    section {
+      aside {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 6;
+        width: 72vw;
+        max-width: 280px;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+
+        /*展开时*/
+        &.open {
+          transform: translateX(0);
+          box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+        }
       }
     }
   }
