@@ -74,6 +74,8 @@
 - 宠物启用/停用接口（PUT /pet/activate|deactivate/{id}）
 - 宠物入栏（PUT /pet/intake/{id}?reason=）：有主→无主（遗弃/托管），清 client_id 用 LambdaUpdateWrapper.set，写 transfer 记录（reason=`入栏：xxx`）
 - 顾客退养（PUT /adopt/returnPet/{petId}）：领养人退回名下宠物→无主，领养单标记 in_adopt=3（已退养），写 transfer 记录「顾客退养」；个人中心宠物列表有退养按钮
+- 顾客自己添加宠物（POST /pet/self）：主人强制为登录人、pet_source=1；pet 表已加 pet_source 字段（0后台录入 1顾客自建）；个人中心宠物列表有添加弹窗（姓名/品种/性别/生日或年龄/毛色/照片）
+- 顾客自己预约挂号（POST /appointment/self）：挂号人强制为登录人，只能挂自己名下宠物；个人中心挂号页有预约弹窗（宠物/科室/医生联动/时间/描述）
 - 修 pet_age 残留列：FosterMapper.xml / AppointmentMapper.xml 改 pet_birthday，DTO 字段名统一
 
 ### 前端
@@ -97,11 +99,8 @@
 - [ ] 顾客改邮箱 / 改密码
 
 ### 待开发（建议顺序）
-- [ ] 顾客自己添加宠物（需先加 pet_source 字段）
-- [ ] 顾客自己预约挂号
 - [ ] 首次登录强制改密（client_pwd_changed 字段已埋）
 - [ ] 忘记密码改成邮箱找回（现 findMail 逻辑需重构）
-- [ ] 主页视觉优化（去"幼稚感"，参见 MyCard.vue / Index.vue）
 
 ### 上线前
 - [ ] 删除测试数据
@@ -113,7 +112,7 @@
 1. 账号 = 手机号，不开放自主注册，前台录入客户时自动生成
 2. 密码统一 123456，顾客可自己改；忘记密码三种方式（后台重置 / 手机号 / 邮箱），手机号找回因短信服务成本暂缓
 3. 只存生日（真相源），年龄前端实时计算；反推的生日标记为估算
-4. pet_source 字段暂未加，做「顾客添加宠物」时再加
+4. pet_source 字段已加（0后台录入 1顾客自建），顾客自建宠物走 POST /pet/self
 5. **`pet_alive`（是否活着，兽医判断）和 `active`（系统启用/停用）严格分开**。删除宠物时：无任何引用记录才真删，有记录改 `active=0` 停用（保留病历/领养/过户历史）
 6. **宠物归属状态机**：
    - 有主 ──(遗弃/托管)──→ 无主 ──(申请领养)──→ 待审核 ──(通过)──→ 新主人
