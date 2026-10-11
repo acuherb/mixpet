@@ -193,7 +193,7 @@ npm run dev
 成功标志：
 ```
 VITE v4.3.9  ready in xxx ms
-➜  Local:   http://localhost:5932/
+➜  Local:   http://localhost:3120/
 ```
 
 ### 5.4 局域网访问
@@ -203,7 +203,7 @@ VITE v4.3.9  ready in xxx ms
 ```ts
 server: {
     host: '0.0.0.0',
-    port: 5932,
+    port: 3120,
     proxy: {
         '/api': {
             target: "http://localhost:8085",
@@ -214,7 +214,7 @@ server: {
 }
 ```
 
-重启前端后用 `http://本机IP:5932` 访问。查 IP：
+重启前端后用 `http://本机IP:3120` 访问。查 IP：
 
 ```bash
 ip addr | grep "inet "
@@ -282,7 +282,7 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
 局域网内电脑浏览器
         │
         ▼
-   http://192.168.1.13:5932   (前端 Vite Dev Server)
+   http://192.168.1.13:3120   (前端 Vite Dev Server)
         │
         │ /api 请求代理
         ▼

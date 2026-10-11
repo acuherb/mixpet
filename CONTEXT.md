@@ -32,7 +32,7 @@
 - 后端：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5
 - 前端：Vue 3 + Vite 4 + TypeScript + Element Plus
 - 数据库：MariaDB 11（兼容 MySQL 8）
-- 后端端口 8085，前端端口 5932
+- 后端端口 8085，前端端口 3120
 
 ## 目录结构
 

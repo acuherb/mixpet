@@ -1,65 +1,57 @@
 <template>
-  <div class="my-index">
-    <!-- 导航 -->
-    <header>
-      <ul>
-        <li>
-          <router-link to="/backstage">个人中心</router-link>
-        </li>
-        <li>
-          <router-link to="/doctorPage/d-appoint">处理挂号</router-link>
-        </li>
-        <li>
-          <router-link to="/doctorPage/d-chat">在线咨询</router-link>
-        </li>
-      </ul>
-    </header>
-    <main>
-      <!-- 时钟 -->
-      <div class="clock">
-        <p>{{ timeNum.hh1 }}</p>
-        <p>{{ timeNum.hh2 }}</p>
-        <p>:</p>
-        <p>{{ timeNum.mm1 }}</p>
-        <p>{{ timeNum.mm2 }}</p>
-        <p>:</p>
-        <p>{{ timeNum.ss1 }}</p>
-        <p>{{ timeNum.ss2 }}</p>
+  <div class="doctor-home">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark">DR</span>
+          <span class="brand-name">pet-hms 医生工作台</span>
+        </div>
+        <ul class="nav">
+          <li><router-link to="/backstage">个人中心</router-link></li>
+          <li><router-link to="/doctorPage/d-appoint">处理挂号</router-link></li>
+          <li><router-link to="/doctorPage/d-chat">在线咨询</router-link></li>
+        </ul>
       </div>
-      <!-- 卡片 -->
+    </header>
+
+    <main class="page">
+      <div class="page-head">
+        <h1 class="page-title">工作台</h1>
+        <p class="page-desc">
+          <span class="clock-dot"></span>
+          当前时间 <span class="clock-num">{{ timeText }}</span>
+        </p>
+      </div>
+
       <MyRow>
-        <div class="box">
-          <span></span>
-          <div class="content">
-            <h2>个人中心</h2>
-            <p>或涵盖个人信息</p>
-            <p>或守护数据隐私</p>
-            <router-link to="/backstage">
-              <el-button plain size="large" type="success">个人中心</el-button>
-            </router-link>
+        <div class="entry-card">
+          <div class="entry-head">
+            <h3>个人中心</h3>
+            <p>查看与维护个人信息</p>
           </div>
+          <router-link to="/backstage">
+            <el-button plain size="large">进入</el-button>
+          </router-link>
         </div>
-        <div class="box">
-          <span></span>
-          <div class="content">
-            <h2>处理挂号</h2>
-            <p>或安排专业治疗</p>
-            <p>或护佑生命安宁</p>
-            <router-link to="/doctorPage/d-appoint">
-              <el-button plain size="large" type="danger">处理挂号</el-button>
-            </router-link>
+
+        <div class="entry-card">
+          <div class="entry-head">
+            <h3>处理挂号</h3>
+            <p>查看待处理挂号并进行安排</p>
           </div>
+          <router-link to="/doctorPage/d-appoint">
+            <el-button size="large" type="primary">处理挂号</el-button>
+          </router-link>
         </div>
-        <div class="box">
-          <span></span>
-          <div class="content">
-            <h2>在线咨询</h2>
-            <p>或提供专业解答</p>
-            <p>或构建知识桥梁</p>
-            <router-link to="/doctorPage/d-chat">
-              <el-button plain size="large" type="primary">在线咨询</el-button>
-            </router-link>
+
+        <div class="entry-card">
+          <div class="entry-head">
+            <h3>在线咨询</h3>
+            <p>回复顾客的在线咨询</p>
           </div>
+          <router-link to="/doctorPage/d-chat">
+            <el-button plain size="large">进入咨询</el-button>
+          </router-link>
         </div>
       </MyRow>
     </main>
@@ -67,199 +59,180 @@
 </template>
 
 <script lang="ts" setup>
-
-import {onBeforeUnmount, onMounted, reactive} from "vue";
+import {onBeforeUnmount, onMounted, ref} from "vue";
 import MyRow from "@/components/row/MyRow.vue";
-// 一秒执行一次
-let timeTimer: NodeJS.Timer;
+
+const timeText = ref<string>('--:--:--')
+let timeTimer: ReturnType<typeof setInterval> | undefined
+
+const pad = (n: number) => n.toString().padStart(2, '0')
+const tick = () => {
+  const t = new Date()
+  timeText.value = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`
+}
 
 onMounted(() => {
-  timeTimer = setInterval(myTime, 1000);
+  tick()
+  timeTimer = setInterval(tick, 1000)
 })
 
 onBeforeUnmount(() => {
-  clearInterval(timeTimer)
+  if (timeTimer) clearInterval(timeTimer)
 })
-
-const timeNum = reactive({
-  hh1: 0,
-  hh2: 0,
-  mm1: 0,
-  mm2: 0,
-  ss1: 0,
-  ss2: 0
-})
-
-const myTime = () => {
-  const time = new Date();
-  const hh = time.getHours();  //时
-  const mm = time.getMinutes();  //分
-  const ss = time.getSeconds();  //秒
-  // Math.floor() 向下取整
-  timeNum.hh1 = Math.floor(hh / 10)
-  timeNum.hh2 = hh % 10
-  timeNum.mm1 = Math.floor(mm / 10)
-  timeNum.mm2 = mm % 10
-  timeNum.ss1 = Math.floor(ss / 10)
-  timeNum.ss2 = ss % 10
-}
 </script>
 
 <style lang="scss" scoped>
-.my-index {
-  -webkit-user-select: none;
+.doctor-home {
+  min-height: 100vh;
+  background: #F5F7FA;
   user-select: none;
-  min-height: 98vh;
-  background-image: linear-gradient(#228B22, #007565);
 }
 
-/* 导航 */
-header {
-  width: 100%;
-  height: 50px;
-  position: relative;
-  top: 0;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
-  background-color: #303133;
+/* 顶部导航 */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #E4E7ED;
+}
+
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 60px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
 
-  ul {
-    width: 36%;
-    min-width: 240px;
-    height: 100%;
-    display: flex;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #1E6FA8;
+  font-size: 16px;
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
     justify-content: center;
-    line-height: 50px;
-
-    li {
-      width: 100%;
-      display: inline-block;
-      text-align: center;
-      list-style: none;
-      color: #FAFAFA;
-
-      a {
-        font-size: 16px;
-        font-weight: bold;
-        display: block;
-      }
-
-      &:nth-child(1):hover {
-        color: #67C23A;
-        border-bottom: #67C23A solid 5px;
-      }
-
-      &:nth-child(2):hover {
-        color: red;
-        border-bottom: red solid 5px;
-      }
-
-      &:nth-child(3):hover {
-        color: mediumpurple;
-        border-bottom: mediumpurple solid 5px;
-      }
-    }
-  }
-}
-
-/* 时钟 */
-.clock {
-  display: flex;
-  width: 100%;
-  justify-content: center;
-
-  p {
-    width: 56px;
-    font-size: 64px;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: #1E6FA8;
     color: #fff;
-    text-align: center;
+    font-size: 11px;
     font-weight: 700;
-    /* 文字阴影 实现3D效果 */
-    text-shadow: 0 1px 0 #deafaf,
-    0 2px 0 #bda8a8,
-    0 3px 0 #d8a1a1,
-    0 4px 0 #d59999,
-    0 5px 0 #d29292;
+    letter-spacing: 1px;
   }
 }
 
-/* 卡片入口 */
-.box {
-  position: relative;
-  margin-top: 8px;
-  width: 360px;
-  height: 280px;
+.nav {
   display: flex;
-  justify-content: center;
   align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 
-  &:before {
-    content: ' ';
-    position: absolute;
-    top: 0;
-    left: 90px;
-    width: 50%;
-    height: 100%;
-    text-decoration: none;
-    background: linear-gradient(315deg, #ffbc00, #ff0058);
-    border-radius: 8px;
-    transform: skewX(15deg);
-    transition: 0.5s;
-  }
+  li {
+    list-style: none;
 
-  &:hover:before {
-    transform: skewX(0deg) scaleX(1.3);
-  }
+    a {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #1F2D3D;
+      transition: background .15s, color .15s;
 
-  span {
-    /* 上下的小方块 */
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-
-    &:before, &:after {
-      content: '';
-      position: absolute;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-      width: 50px;
-      height: 50px;
-    }
-
-    &:before {
-      top: -40px;
-      left: 40px;
-    }
-
-    &:after {
-      bottom: -40px;
-      right: 40px;
+      &:hover {
+        background: #EAF3FA;
+        color: #1E6FA8;
+      }
     }
   }
+}
 
-  .content {
-    position: relative;
-    width: 190px;
-    height: 254px;
-    padding: 20px 40px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
-    color: #fff;
-    text-align: center;
+/* 主体 */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  box-sizing: border-box;
+}
 
-    h2 {
-      font-size: 20px;
-      color: #fff;
-      margin-bottom: 10px;
+.page-head {
+  margin-bottom: 24px;
+
+  .page-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1F2D3D;
+    letter-spacing: .3px;
+  }
+
+  .page-desc {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #909399;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .clock-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #0F8A7E;
+    }
+
+    .clock-num {
+      color: #606266;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+  }
+}
+
+/* 入口卡片 */
+.entry-card {
+  width: 320px;
+  max-width: 92vw;
+  background: #fff;
+  border: 1px solid #E4E7ED;
+  border-radius: 8px;
+  padding: 20px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 20px;
+  box-shadow: 0 1px 2px rgba(31, 45, 61, 0.04);
+  transition: box-shadow .2s, border-color .2s, transform .2s;
+
+  &:hover {
+    border-color: #1E6FA8;
+    box-shadow: 0 6px 16px rgba(31, 45, 61, 0.10);
+    transform: translateY(-1px);
+  }
+
+  .entry-head {
+    h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #1F2D3D;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #909399;
+      line-height: 1.5;
     }
   }
 }

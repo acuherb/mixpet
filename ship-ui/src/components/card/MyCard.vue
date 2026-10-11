@@ -1,43 +1,29 @@
 <template>
-  <div class="img-card">
-    <img :src="'/api/common/download?name='+data.photo" alt="头像">
+  <div class="img-card" :class="type === 'success' ? 'is-success' : 'is-primary'">
+    <div class="card-avatar">
+      <img :src="'/api/common/download?name='+data.photo" alt="头像">
+    </div>
     <div class="card-main">
-      <div>{{ data.tit }}</div>
-      <div class="card-three">
-        <div>{{ data.age }}</div>
-        <div>{{ data.sex }}</div>
-        <div>{{ data.job }}</div>
+      <div class="card-title">{{ data.tit }}</div>
+      <div class="card-meta">
+        <span>{{ data.age }}</span>
+        <span class="dot">·</span>
+        <span>{{ data.sex }}</span>
+        <span class="dot">·</span>
+        <span>{{ data.job }}</span>
       </div>
-      <div class="item-1">{{ data.info1 }}</div>
-      <div class="item-2">{{ data.info2 }}</div>
-      <div>
-        <button type="button" @click="$router.push(data.link)">详情</button>
-      </div>
+      <div class="card-line">{{ data.info1 }}</div>
+      <div class="card-line card-line--mute">{{ data.info2 }}</div>
+      <button type="button" class="card-action" @click="$router.push(data.link)">查看详情</button>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {ref} from "vue";
-
-const props = defineProps<{
+defineProps<{
   type: "primary" | "success"
   data: CardData
 }>()
-
-
-const myColorTxt = ref<string>("#337ecc")
-const myColorBor = ref<string>("#409EFF")
-const myColorAct = ref<string>("#79bbff")
-const myColorTit = ref<string>("#a0cfff")
-
-
-if (props.type === "success") {
-  myColorTxt.value = "#529b2e"
-  myColorBor.value = "#67C23A"
-  myColorAct.value = "#95d475"
-  myColorTit.value = "#b3e19d"
-}
 
 export interface CardData {
   photo: string;
@@ -53,119 +39,106 @@ export interface CardData {
 
 <style lang="scss" scoped>
 .img-card {
-  $txt-color: v-bind(myColorTxt);
-  $bor-color: v-bind(myColorBor);
-  $act-color: v-bind(myColorAct);
-  $tit-color: v-bind(myColorTit);
-  $my-white: #FAFAFA;
-  width: 370px;
-  max-width: 90vw;
-  height: 180px;
-  background-color: $my-white;
-  display: flex;
-  align-items: center;
+  --accent: #1E6FA8;
+
+  width: 340px;
+  max-width: 92vw;
+  background: #fff;
+  border: 1px solid #E4E7ED;
+  border-radius: 8px;
   padding: 16px;
   box-sizing: border-box;
-  border-radius: 16px;
-  box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.3);
-  position: relative;
-  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 1px 2px rgba(31, 45, 61, 0.04);
+  transition: box-shadow .2s, border-color .2s, transform .2s;
   user-select: none;
 
-  &:hover {
-    /* 悬浮加阴影 */
-    z-index: 1000;
-    box-shadow: 5px 5px 15px $act-color;
+  &.is-success {
+    --accent: #0F8A7E;
   }
 
-  img {
-    /* 头像 */
-    width: 128px;
-    height: 128px;
-    border-radius: 50%;
-    border: 3px solid;
-    border-color: #f89898 #eebe77 #79bbff #95d475;
+  &:hover {
+    border-color: var(--accent);
+    box-shadow: 0 6px 16px rgba(31, 45, 61, 0.10);
+    transform: translateY(-1px);
+  }
+
+  .card-avatar {
+    flex-shrink: 0;
+    width: 88px;
+    height: 88px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #F5F7FA;
+    border: 1px solid #E4E7ED;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
   }
 
   .card-main {
-    /* 卡片内容 */
-    width: 230px;
-    height: 140px;
-    margin-left: 5px;
-    box-sizing: border-box;
-    border-radius: 12px;
-    text-align: center;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
 
-    > div {
-      /* 卡片中的五行 */
-      height: 28px;
-      width: 100%;
-      overflow-x: hidden;
-      white-space: nowrap;
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1F2D3D;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
-      &:first-child {
-        /* 标题 */
-        border-radius: 16px 16px 0 0;
-        font-weight: bold;
-        transition: background-color 0.5s;
+  .card-meta {
+    font-size: 13px;
+    color: #909399;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 
-        &:hover {
-          background-color: $tit-color;
-        }
-      }
-
-      &:last-child {
-        /* 脚注 */
-        button {
-          background-color: $my-white;
-          color: $bor-color;
-          height: 100%;
-          border: 2px solid $bor-color;
-          width: 50%;
-          border-radius: 16px;
-          transition: width 0.5s;
-
-          &:hover {
-            width: 100%;
-            border-radius: 0 0 16px 16px;
-            background-color: $bor-color;
-            color: $my-white;
-          }
-        }
-      }
-
-      &.item-1 {
-        /* 特殊文字1 */
-        color: $bor-color;
-        font-size: small;
-
-        &:hover {
-          color: $txt-color;
-        }
-      }
-
-      &.item-2 {
-        /* 特殊文字2 */
-        font-size: small;
-      }
+    .dot {
+      color: #C0C4CC;
     }
+  }
 
-    .card-three {
-      /* 一行一分为三 */
-      display: flex;
-      font-size: small;
+  .card-line {
+    font-size: 13px;
+    color: #606266;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
-      div {
-        width: 33%;
+    &--mute {
+      color: #909399;
+    }
+  }
 
-        &:first-child {
-          text-align: right;
-        }
+  .card-action {
+    margin-top: 4px;
+    align-self: flex-start;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    background: #fff;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .2s, color .2s;
 
-        &:last-child {
-          text-align: left;
-        }
-      }
+    &:hover {
+      background: var(--accent);
+      color: #fff;
     }
   }
 }

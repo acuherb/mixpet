@@ -1,78 +1,116 @@
 <template>
-  <div>
-    <header>
-      <router-link to="/reception/clientCenter">
-        MixJade
-      </router-link>
-      <ul>
-        <li><a @click="openDialog(notices[0])">网站公告</a></li>
-        <li>
-          <router-link to="/reception/chat">咨询医生</router-link>
-        </li>
-        <li v-if="isLogin" class="drop">个人中心<span>&#9660</span>
-          <ul class="drop-list">
-            <li>
-              <router-link to="/reception/clientCenter">个人资料</router-link>
-            </li>
-            <li>
-              <router-link to="/reception/clientCenter/clientPet">宠物信息</router-link>
-            </li>
-            <li>
-              <router-link to="/reception/clientCenter/clientAppoint">挂号查看</router-link>
-            </li>
-            <li><a style="color: red" @click="myLogout">退出登陆</a></li>
-          </ul>
-        </li>
-        <li v-else>
-          <router-link style="color: #ffc107" to="/">前往登录</router-link>
-        </li>
-      </ul>
+  <div class="reception-home">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <router-link to="/reception/clientCenter" class="brand">
+          <span class="brand-mark">PET</span>
+          <span class="brand-name">pet-hms</span>
+        </router-link>
+        <ul class="nav">
+          <li><a @click="openDialog(notices[0])">网站公告</a></li>
+          <li>
+            <router-link to="/reception/chat">咨询医生</router-link>
+          </li>
+          <li v-if="isLogin" class="drop">
+            <span>个人中心</span>
+            <span class="caret">▾</span>
+            <ul class="drop-list">
+              <li>
+                <router-link to="/reception/clientCenter">个人资料</router-link>
+              </li>
+              <li>
+                <router-link to="/reception/clientCenter/clientPet">宠物信息</router-link>
+              </li>
+              <li>
+                <router-link to="/reception/clientCenter/clientAppoint">挂号查看</router-link>
+              </li>
+              <li><a class="danger" @click="myLogout">退出登录</a></li>
+            </ul>
+          </li>
+          <li v-else>
+            <router-link class="nav-cta" to="/">前往登录</router-link>
+          </li>
+        </ul>
+      </div>
     </header>
+
     <WindRoll :is-login="isLogin"/>
-    <main>
-      <!-- 公告栏-->
-      <h2>网站公告</h2>
-      <p>网站的最新公告</p>
-      <MyRow>
-        <NoticeBtn v-for="notice in notices" :key="notice.noticeId" @click="openDialog(notice)">
-          {{ notice.noticeTitle }}
-        </NoticeBtn>
-      </MyRow>
-      <!--公告的对话框-->
+
+    <main class="page">
+      <!-- 公告 -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">网站公告</h2>
+            <p class="section-desc">最新通知与动态</p>
+          </div>
+        </div>
+        <MyRow>
+          <NoticeBtn v-for="notice in notices" :key="notice.noticeId" @click="openDialog(notice)">
+            {{ notice.noticeTitle }}
+          </NoticeBtn>
+        </MyRow>
+      </section>
+
       <MyDialog :tit="noticeDialog.tit" :content="noticeDialog.content" ref="myShow"/>
-      <!-- 用户卡片-->
-      <h2>用户入口</h2>
-      <p>一些与用户相关的功能入口，也可以前往中心查看。
-        <router-link style="color: #E6A23C;" to="reception/clientCenter">点击跳转</router-link>
-      </p>
-      <MyRow>
-        <LinkCard v-for="card in userCard"
-                  :body="card.body"
-                  :router-path="card.routerPath"
-                  :tit="card.tit"
-                  :type="card.type"
-        />
-      </MyRow>
-      <!-- 待领养宠物-->
-      <h2>待领养宠物</h2>
-      <p>它们等待一个温暖的家。
-        <router-link style="color: #67C23A;" to="/reception/petSee">查看全部</router-link>
-      </p>
-      <PetCard :card-list="petCardTxt.records"/>
-      <!-- 医生卡片-->
-      <h2>医生展示</h2>
-      <p>我们拥有虚拟的医生。
-        <router-link style="color: #409EFF;" to="/reception/doctorSee">查看全部</router-link>
-      </p>
-      <DoctorCard :card-list="doctorCardTxt.records"/>
-      <!-- 寄养卡片-->
-      <h2>寄养宠物展示</h2>
-      <p>我们提供寄养服务。
-        <router-link style="color: #E6A23C;" to="/reception/fosterSee">查看全部</router-link>
-      </p>
-      <FosterCard :card-list="fosterCardTxt.records"/>
+
+      <!-- 用户入口 -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">用户入口</h2>
+            <p class="section-desc">常用功能快捷入口</p>
+          </div>
+          <router-link class="section-action" to="/reception/clientCenter">个人中心 →</router-link>
+        </div>
+        <MyRow>
+          <LinkCard v-for="card in userCard"
+                    :key="card.tit"
+                    :body="card.body"
+                    :router-path="card.routerPath"
+                    :tit="card.tit"
+                    :type="card.type"
+          />
+        </MyRow>
+      </section>
+
+      <!-- 待领养 -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">待领养宠物</h2>
+            <p class="section-desc">它们等待一个温暖的家</p>
+          </div>
+          <router-link class="section-action" to="/reception/petSee">查看全部 →</router-link>
+        </div>
+        <PetCard :card-list="petCardTxt.records"/>
+      </section>
+
+      <!-- 医生 -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">医生展示</h2>
+            <p class="section-desc">执业医生团队</p>
+          </div>
+          <router-link class="section-action" to="/reception/doctorSee">查看全部 →</router-link>
+        </div>
+        <DoctorCard :card-list="doctorCardTxt.records"/>
+      </section>
+
+      <!-- 寄养 -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">寄养宠物展示</h2>
+            <p class="section-desc">在院寄养中的宠物</p>
+          </div>
+          <router-link class="section-action" to="/reception/fosterSee">查看全部 →</router-link>
+        </div>
+        <FosterCard :card-list="fosterCardTxt.records"/>
+      </section>
     </main>
-    <!--页脚-->
+
     <VueFoot/>
   </div>
 </template>
@@ -100,12 +138,7 @@ import NoticeBtn from "@/components/button/NoticeBtn.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
 
-/**
- ┌───────────────────────────────────┐
- │=============生命周期相关============│
- └───────────────────────────────────┘
- */
-// 判断是否登录
+/* 生命周期 */
 const isLogin = ref<boolean>(false)
 onBeforeMount(() => {
   reqFourDoctor().then(res => {
@@ -125,34 +158,25 @@ onBeforeMount(() => {
   })
 })
 
-/**
- ┌───────────────────────────────────┐
- │=============公告栏之相关============│
- └───────────────────────────────────┘
- */
-// 公告栏
+/* 公告栏 */
 const notices = ref<NoticeDto[]>([])
-// 公告弹出框
 const myShow = ref<InstanceType<typeof MyDialog> | null>(null)
 const noticeDialog = reactive({tit: "标题", content: "文本内容"})
 const openDialog = (notice: NoticeDto) => {
+  if (!notice) return
   noticeDialog.tit = notice.noticeTitle
   noticeDialog.content = notice.textNotice
   myShow.value?.showMe()
 }
 
-/**
- ┌───────────────────────────────────┐
- │=============个人中心相关============│
- └───────────────────────────────────┘
- */
-// 常量：用户卡片
+/* 用户卡片 */
 interface UserCard {
   tit: string;
   body: string;
   type: "primary" | "success" | "warning";
   routerPath: string;
-}// 用户卡片的配置信息
+}
+
 const userCard: UserCard[] = [
   {
     "tit": "挂号信息",
@@ -172,24 +196,12 @@ const userCard: UserCard[] = [
   },
 ]
 
-/**
- ┌───────────────────────────────────┐
- │=============卡片展示相关============│
- └───────────────────────────────────┘
- */
-// 宠物的卡片信息
+/* 卡片数据 */
 const petCardTxt: Page<Pet> = reactive({records: [], total: 4})
-// 医生的卡片信息
 const doctorCardTxt: Page<DoctorDto> = reactive({records: [], total: 4})
-// 寄养宠物的卡片信息
 const fosterCardTxt: Page<FosterCardDto> = reactive({records: [], total: 3})
 
-/**
- ┌───────────────────────────────────┐
- │=============权限控制相关============│
- └───────────────────────────────────┘
- */
-// 退出登录
+/* 退出登录 */
 const router = useRouter()
 const myLogout = () => {
   reqLogout().then(res => {
@@ -197,118 +209,221 @@ const myLogout = () => {
   })
 }
 </script>
+
 <style lang="scss" scoped>
-/* 导航栏 */
-header {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0 8px;
-  background-color: #228B22;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.reception-home {
+  min-height: 100vh;
+  background: #F5F7FA;
+}
+
+/* 顶部导航 */
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #E4E7ED;
+  position: sticky;
+  top: 0;
   z-index: 100;
-  -webkit-user-select: none;
   user-select: none;
+}
 
-  & > a:first-child {
-    color: #fff;
-    text-decoration: none;
-    font-size: 1.5em;
-    font-weight: 700;
-  }
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 60px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
 
-  > ul {
-    display: flex;
-    justify-content: center;
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #1E6FA8;
+  font-size: 18px;
+  letter-spacing: .3px;
+
+  .brand-mark {
+    display: inline-flex;
     align-items: center;
-    @media (max-width: 768px) {
-      a {
-        padding: 4px 4px;
-      }
-      .drop {
-        padding: 4px 4px;
-      }
-    }
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: #1E6FA8;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+}
 
-    > li {
-      list-style: none;
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 
-      a {
-        text-decoration: none;
-        color: #fff;
-        padding: 4px 24px;
-        border-radius: 20px;
-
-        &:hover, &:active {
-          background-color: #fff;
-          color: #000;
-        }
-      }
-    }
+  > li {
+    position: relative;
+    list-style: none;
   }
 
-  /* 导航下拉框 */
-  .drop {
+  > li > a {
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #1F2D3D;
     cursor: pointer;
-    color: #fff;
-    padding: 4px 24px;
-
-    span {
-      display: inline-block;
-      transform: rotate(0deg);
-      transition: transform 200ms;
-    }
+    transition: background .15s, color .15s;
 
     &:hover {
-      color: #FFD700;
-
-      span {
-        transform: rotate(180deg);
-      }
-
-      .drop-list {
-        visibility: visible;
-        height: 128px;
-      }
+      background: #EAF3FA;
+      color: #1E6FA8;
     }
+  }
 
-    .drop-list {
-      position: absolute;
-      width: 128px;
-      margin-left: -36px;
-      background: #3CB371;
-      box-shadow: 0 1px 2px #333333;
-      border: dashed seashell;
-      border-radius: 20px;
-      list-style: none;
-      text-align: center;
-      padding: 5px 5px;
-      z-index: 70;
-      transition: height 500ms;
-      height: 0;
-      overflow-y: hidden;
-      visibility: hidden;
+  .nav-cta {
+    background: #1E6FA8;
+    color: #fff;
 
-      li {
-        padding-top: 4px;
-        padding-bottom: 4px;
-      }
+    &:hover {
+      background: #2A82C2;
+      color: #fff;
     }
   }
 }
 
-/*主要内容*/
-main {
-  /*小标题与介绍文字*/
-  h2, p {
-    text-align: center;
+/* 下拉菜单 */
+.drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #1F2D3D;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+
+  &:hover {
+    background: #EAF3FA;
+    color: #1E6FA8;
   }
 
-  /*公告换行*/
-  .textNotice {
-    white-space: pre-wrap;
-    word-break: break-all;
+  .caret {
+    font-size: 10px;
+    color: #909399;
+    transition: transform .2s;
   }
+
+  &:hover .caret {
+    transform: rotate(180deg);
+  }
+
+  .drop-list {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 150px;
+    background: #fff;
+    border: 1px solid #E4E7ED;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(31, 45, 61, 0.10);
+    padding: 6px;
+    margin: 0;
+    list-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition: opacity .15s, transform .15s, visibility .15s;
+
+    li a {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #1F2D3D;
+      cursor: pointer;
+
+      &:hover {
+        background: #F5F7FA;
+        color: #1E6FA8;
+      }
+    }
+
+    .danger {
+      color: #F56C6C;
+
+      &:hover {
+        background: #FEF0F0;
+        color: #F56C6C;
+      }
+    }
+  }
+
+  &:hover .drop-list {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+}
+
+/* 主体 */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  box-sizing: border-box;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #E4E7ED;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F2D3D;
+  letter-spacing: .2px;
+}
+
+.section-desc {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #909399;
+}
+
+.section-action {
+  font-size: 13px;
+  color: #1E6FA8;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* 公告弹窗里的换行文本 */
+.textNotice {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 </style>

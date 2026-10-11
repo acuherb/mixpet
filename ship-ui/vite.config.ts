@@ -19,7 +19,7 @@ export default defineConfig({
     },
     server: {
         host: '0.0.0.0',
-        port: 5932, // 端口号
+        port: 3120, // 端口号
         proxy: {  // 跨域代理
             '/api': {
                 target: "http://localhost:8085",
