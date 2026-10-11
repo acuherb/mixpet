@@ -4,7 +4,7 @@ export interface Appoint {
     appointmentId: number;
     clientId: number | null;
     petId: number | null;
-    appointmentDate: string;
+    appointmentDate: string | null;
     departmentId: number | null;
     doctorId: number | null;
     appointmentInfo: string;

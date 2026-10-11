@@ -83,7 +83,7 @@ import {AppointDto} from "@/model/DO/AppointDto";
 import {moveT} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
 import {reqAddSelfAppoint, reqClientAppoint} from "@/request/AppointApi";
-import {Appoint} from "@/model/entiy/Appoint";
+import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {Pet} from "@/model/entiy/Pet";
 import {NameDo} from "@/model/DO/NameDo";
 import {reqClientPet} from "@/request/PetApi";
@@ -102,16 +102,7 @@ const petList = ref<Pet[]>([])
 const appointablePets = computed(() => petList.value.filter(p => p.active !== false))
 const departList = ref<NameDo[]>([])
 const doctorList = ref<NameDo[]>([])
-const addForm = ref<Appoint>({
-  appointmentId: 0,
-  clientId: 0,
-  petId: null,
-  appointmentDate: null,
-  departmentId: null,
-  doctorId: null,
-  appointmentInfo: "",
-  isSuc: false,
-})
+const addForm = ref<Appoint>(exampleAppoint())
 const addRules = reactive<FormRules>({
   petId: [{required: true, message: '请选择宠物', trigger: 'change'}],
   departmentId: [{required: true, message: '请选择科室', trigger: 'change'}],
@@ -120,11 +111,8 @@ const addRules = reactive<FormRules>({
   appointmentInfo: [{required: true, message: '请简单描述症状', trigger: 'blur'}],
 })
 const openAddDialog = (): void => {
-  addForm.value.petId = null
-  addForm.value.departmentId = null
-  addForm.value.doctorId = null
+  addForm.value = exampleAppoint()
   addForm.value.appointmentDate = null
-  addForm.value.appointmentInfo = ""
   addFormRef.value?.clearValidate()
   addVisible.value = true
 }

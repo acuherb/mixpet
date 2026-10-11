@@ -20,8 +20,9 @@ export const getAge = (birthday: string | null | undefined, estimated = false): 
 }
 
 // 去除时间中的T
-export const moveT = (str: string): string => {
+export const moveT = (str: string | null | undefined): string => {
     try {
+        if (str == null) return "未知"
         let formatTimeArray = str.split("T")
         formatTimeArray[1] = formatTimeArray[1].split(":")[0] + ":" + formatTimeArray[1].split(":")[1];
         return formatTimeArray.join("_");

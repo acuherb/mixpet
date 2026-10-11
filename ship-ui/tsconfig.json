@@ -13,7 +13,7 @@
       "DOM.Iterable"
     ],
     "skipLibCheck": true,
-    /* Bundler mode */
+    /* Bundler mode（注：用 node 而非 bundler——TS5.1+bundler 解析 element-plus 2.3 会报 TS2614） */
     "moduleResolution": "node",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
