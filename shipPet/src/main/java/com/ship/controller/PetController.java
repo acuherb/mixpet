@@ -193,4 +193,14 @@ public class PetController {
     public List<PetTransfer> transferHistory(@PathVariable Integer petId) {
         return petTransferService.history(petId);
     }
+
+    /**
+     * 宠物入栏：有主变无主（主人遗弃/托管）
+     */
+    @PutMapping("/intake/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result intake(@PathVariable Integer id,
+                         @RequestParam(required = false) String reason) {
+        return petService.intake(id, reason);
+    }
 }

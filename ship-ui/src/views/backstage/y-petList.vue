@@ -58,11 +58,12 @@
       </el-table-column>
       <el-table-column label="近况" prop="petInfo" min-width="100" show-overflow-tooltip/>
       <el-table-column label="主人" prop="clientName" width="80" show-overflow-tooltip/>
-      <el-table-column fixed="right" label="操作" width="200">
+      <el-table-column fixed="right" label="操作" width="240">
         <template #default="scope">
           <el-button-group>
             <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
             <el-button v-if="scope.row.clientId" circle type="primary" title="过户给新主人" @click="openTransfer(scope.row)">过</el-button>
+            <el-button v-if="scope.row.clientId" circle type="warning" title="入栏（有主变无主，可被领养）" @click="intakePet(scope.row)">栏</el-button>
             <el-button circle type="info" title="查看过户历史" @click="openHistory(scope.row)">档</el-button>
             <el-button v-if="scope.row.active !== false"
                        :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
@@ -365,7 +366,7 @@ import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {examplePet, Pet} from "@/model/entiy/Pet";
 import TagSex from "@/components/show/TagSex.vue";
 import BackPage from "@/components/row/BackPage.vue";
-import {reqAddPet, reqDelPet, reqActivatePet, reqDelPetBatch, reqPetList, reqUpdatePet, reqTransferPet, reqTransferHistory} from "@/request/PetApi";
+import {reqAddPet, reqDelPet, reqActivatePet, reqDelPetBatch, reqIntakePet, reqPetList, reqUpdatePet, reqTransferPet, reqTransferHistory} from "@/request/PetApi";
 import {reqAddClient} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {NameDo} from "@/model/DO/NameDo";
@@ -474,6 +475,27 @@ const restorePet = (row: Pet): void => {
         sendQuery()
       } else {
         ElMessage.error(res.msg || '恢复失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+// 宠物入栏（有主变无主：主人遗弃/托管）
+const intakePet = (row: Pet): void => {
+  ElMessageBox.prompt(
+      `确定把【${row.petName}】入栏吗？入栏后宠物变为无主，可被领养。`,
+      '宠物入栏',
+      {
+        confirmButtonText: '入栏', cancelButtonText: '取消', type: 'warning',
+        inputValue: '主人托管', inputPlaceholder: '入栏原因（如：主人遗弃 / 主人托管）'
+      }
+  ).then(({value}) => {
+    reqIntakePet(row.petId, value || '主人托管').then(res => {
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '已入栏')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '操作失败')
       }
     })
   }).catch(() => ElMessage.info('已取消'))

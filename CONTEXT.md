@@ -72,6 +72,7 @@
 - 领养编辑精确更新（只改 money/info，不动 in_adopt）
 - 宠物智能删除：无引用 → 逻辑删；有引用 → active=0 停用
 - 宠物启用/停用接口（PUT /pet/activate|deactivate/{id}）
+- 宠物入栏（PUT /pet/intake/{id}?reason=）：有主→无主（遗弃/托管），清 client_id 用 LambdaUpdateWrapper.set，写 transfer 记录（reason=`入栏：xxx`）
 - 修 pet_age 残留列：FosterMapper.xml / AppointmentMapper.xml 改 pet_birthday，DTO 字段名统一
 
 ### 前端
@@ -95,7 +96,6 @@
 - [ ] 顾客改邮箱 / 改密码
 
 ### 待开发（建议顺序）
-- [ ] **宠物入栏**：有主宠物 → 无主（主人遗弃/托管），补状态机另一边，写 transfer 记录
 - [ ] **顾客退养**：领养人在个人中心点「退养」，不用管理员帮忙撤回
 - [ ] 顾客自己添加宠物（需先加 pet_source 字段）
 - [ ] 顾客自己预约挂号
@@ -118,8 +118,8 @@
 6. **宠物归属状态机**：
    - 有主 ──(遗弃/托管)──→ 无主 ──(申请领养)──→ 待审核 ──(通过)──→ 新主人
    - 新主人 ──(撤回/退养)──→ 无主
-   - 已实现：审核通过、撤回、拒绝、重启
-   - 待实现：入栏（有主→无主）、顾客退养
+   - 已实现：审核通过、撤回、拒绝、重启、入栏（PUT /pet/intake，有主→无主）
+   - 待实现：顾客退养
 
 ## 数据库
 

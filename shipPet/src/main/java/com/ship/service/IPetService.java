@@ -99,4 +99,13 @@ public interface IPetService extends IService<Pet> {
      * @return 结果提示
      */
     com.ship.common.Result deleteBatchSmart(java.util.List<Integer> ids);
+
+    /**
+     * 宠物入栏：有主变无主（主人遗弃/托管），并写过户记录
+     *
+     * @param petId  宠物id
+     * @param reason 入栏原因
+     * @return 结果提示
+     */
+    com.ship.common.Result intake(Integer petId, String reason);
 }

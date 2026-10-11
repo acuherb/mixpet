@@ -6,14 +6,18 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.PhotoEnum;
 import com.ship.common.Result;
 import com.ship.mapper.PetMapper;
+import com.ship.mapper.PetTransferMapper;
 import com.ship.model.dto.PetDto;
 import com.ship.model.entity.Pet;
+import com.ship.model.entity.PetTransfer;
 import com.ship.model.dto.NameDo;
 import com.ship.service.IPetService;
 import com.ship.util.StrUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +31,13 @@ import java.util.Map;
  */
 @Service
 public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetService {
+
+    private final PetTransferMapper petTransferMapper;
+
+    @Autowired
+    public PetServiceImpl(PetTransferMapper petTransferMapper) {
+        this.petTransferMapper = petTransferMapper;
+    }
 
     @Override
     public boolean deleteById(Integer petId) {
@@ -133,6 +144,30 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
             }
         }
         return Result.success("彻底删除 " + deleted + " 只，停用 " + deactivated + " 只");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result intake(Integer petId, String reason) {
+        Pet pet = getById(petId);
+        if (pet == null) return Result.error("宠物不存在");
+        if (pet.getClientId() == null) return Result.error("该宠物已是无主状态，无需入栏");
+        Integer fromClientId = pet.getClientId();
+        // MP 的 updateById 默认跳过 null 字段，清空主人必须显式 set null
+        this.lambdaUpdate()
+                .eq(Pet::getPetId, petId)
+                .set(Pet::getClientId, null)
+                .update();
+        // 写一条入栏记录（有主 → 无主）
+        PetTransfer t = new PetTransfer();
+        t.setPetId(petId);
+        t.setFromClientId(fromClientId);
+        t.setToClientId(null);
+        t.setTransferDate(LocalDateTime.now());
+        String r = (reason == null || reason.isBlank()) ? "主人托管" : reason;
+        t.setReason("入栏：" + r);
+        petTransferMapper.insert(t);
+        return Result.success("已入栏，宠物变为无主");
     }
 
 }

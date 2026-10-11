@@ -58,3 +58,6 @@ export const reqActivatePet = (id: number): Promise<Res> =>
 // 停用宠物（手动）
 export const reqDeactivatePet = (id: number): Promise<Res> =>
     reqApi.put<string, Res>("pet/deactivate/" + id)
+// 宠物入栏（有主变无主，遗弃/托管）
+export const reqIntakePet = (id: number, reason: string): Promise<Res> =>
+    reqApi.put<string, Res>("pet/intake/" + id + "?reason=" + encodeURIComponent(reason))
