@@ -35,6 +35,9 @@ export const reqAdoptAdopt = (adoptVo: AdoptVo): Promise<Res> =>
 // 撤回已通过的领养
 export const reqUndoAdopt = (id: number): Promise<Res> =>
     reqApi.put<string, Res>("adopt/undo/" + id)
+// 顾客退养（领养人退回自己名下的宠物）
+export const reqReturnPet = (petId: number): Promise<Res> =>
+    reqApi.put<string, Res>("adopt/returnPet/" + petId)
 
 // 重启被拒绝的领养单
 export const reqRestartAdopt = (id: number): Promise<Res> =>

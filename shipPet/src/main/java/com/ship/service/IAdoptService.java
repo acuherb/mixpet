@@ -71,6 +71,15 @@ public interface IAdoptService extends IService<Adopt> {
     Result undoAdopt(Integer adoptId);
 
     /**
+     * 顾客退养：领养人把自己名下的宠物退回，宠物变无主
+     *
+     * @param petId    宠物id
+     * @param clientId 当前登录顾客id
+     * @return 退养结果
+     */
+    Result returnPet(Integer petId, Integer clientId);
+
+    /**
      * 重启被拒绝的领养单
      *
      * @param adoptId 领养单id

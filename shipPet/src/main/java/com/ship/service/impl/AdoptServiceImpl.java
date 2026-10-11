@@ -142,6 +142,38 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
         return Result.choice("撤回", true);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result returnPet(Integer petId, Integer clientId) {
+        Pet pet = petMapper.selectById(petId);
+        if (pet == null) return Result.error("宠物不存在");
+        if (!clientId.equals(pet.getClientId())) return Result.error("该宠物不在您名下");
+
+        // 1. 宠物变回无主（MP 的 updateById 默认跳过 null，必须显式 set null）
+        petMapper.update(null, new LambdaUpdateWrapper<Pet>()
+                .eq(Pet::getPetId, petId)
+                .set(Pet::getClientId, null));
+
+        // 2. 该顾客此宠物已通过的领养单标记为已退养（3）
+        this.lambdaUpdate()
+                .eq(Adopt::getPetId, petId)
+                .eq(Adopt::getClientId, clientId)
+                .eq(Adopt::getInAdopt, (byte) 1)
+                .eq(Adopt::getIsDel, 0L)
+                .set(Adopt::getInAdopt, (byte) 3)
+                .update();
+
+        // 3. 写一条退养记录
+        PetTransfer t = new PetTransfer();
+        t.setPetId(petId);
+        t.setFromClientId(clientId);
+        t.setToClientId(null);
+        t.setTransferDate(LocalDateTime.now());
+        t.setReason("顾客退养");
+        petTransferMapper.insert(t);
+
+        return Result.success("退养成功，宠物已回到待领养");
+    }
 
     @Override
     public Result restartAdopt(Integer adoptId) {

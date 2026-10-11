@@ -47,7 +47,7 @@ public class Adopt implements Serializable {
     private String adoptInfo;
 
     /**
-     * 是否通过，2为待审核，1为通过，0为未通过
+     * 是否通过，2为待审核，1为通过，0为未通过，3为已退养
      */
     private Byte inAdopt;
 

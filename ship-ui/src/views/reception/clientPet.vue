@@ -24,6 +24,7 @@
           <el-descriptions-item align="center" label="操作" label-align="right">
             <el-button type="success" @click="$router.push('/reception/petOne/'+pet.petId)">详情
             </el-button>
+            <el-button type="danger" @click="returnPet(pet)">退养</el-button>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -38,8 +39,30 @@ import {getAge} from "@/utils/TimeUtil";
 import TagSex from "@/components/show/TagSex.vue";
 import {onMounted, ref} from "vue";
 import {reqClientPet} from "@/request/PetApi";
+import {reqReturnPet} from "@/request/AdoptApi";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 const petList = ref<Pet[]>([]);
+
+// 退养：把自己名下的宠物退回，宠物变回无主待领养
+const returnPet = (pet: Pet): void => {
+  ElMessageBox.confirm(
+      `确定退养【${pet.petName}】吗？退养后它将回到待领养列表，可以被其他人领养。`,
+      '退养确认',
+      {confirmButtonText: '确定退养', cancelButtonText: '再想想', type: 'warning'}
+  ).then(() => {
+    reqReturnPet(pet.petId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '退养成功')
+        reqClientPet().then(r => {
+          petList.value = r
+        })
+      } else {
+        ElMessage.error(res.msg || '退养失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
 
 // 响应式列数：手机 1 列，平板 2 列，桌面 3 列
 const descColumn = ref(3)

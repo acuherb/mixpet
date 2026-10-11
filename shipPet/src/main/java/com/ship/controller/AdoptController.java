@@ -132,6 +132,16 @@ public class AdoptController {
     }
 
     /**
+     * 顾客退养：领养人把自己名下的宠物退回，宠物变无主，单子标记为已退养
+     */
+    @PutMapping("/returnPet/{petId}")
+    public Result returnPet(@PathVariable Integer petId) {
+        if (UserUtil.getUser() instanceof Client client) {
+            return adoptService.returnPet(petId, client.getClientId());
+        } else return Result.error("请先登录顾客账号");
+    }
+
+    /**
      * 重启被拒绝的领养单：状态改回待审核
      */
     @PutMapping("/restart/{id}")
