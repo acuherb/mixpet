@@ -19,7 +19,7 @@ public class FosterPetDto extends FosterDto {
     /**
      * 宠物生日
      */
-    private LocalDate petAge;
+    private LocalDate petBirthday;
 
     /**
      * 宠物状态
@@ -52,11 +52,11 @@ public class FosterPetDto extends FosterDto {
     }
 
     public LocalDate getPetBirthday() {
-        return petAge;
+        return petBirthday;
     }
 
-    public void setPetBirthday(LocalDate petAge) {
-        this.petAge = petAge;
+    public void setPetBirthday(LocalDate petBirthday) {
+        this.petBirthday = petBirthday;
     }
 
     public String getPetStatus() {

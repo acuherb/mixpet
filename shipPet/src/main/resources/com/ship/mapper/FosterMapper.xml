@@ -30,7 +30,7 @@
                p.pet_name,
                p.pet_variety,
                p.pet_sex,
-               p.pet_age,
+               p.pet_birthday,
                p.pet_status,
                p.pet_info,
                p.pet_photo,

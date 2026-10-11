@@ -132,6 +132,15 @@ public class AdoptController {
     }
 
     /**
+     * 重启被拒绝的领养单：状态改回待审核
+     */
+    @PutMapping("/restart/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result restart(@PathVariable Integer id) {
+        return adoptService.restartAdopt(id);
+    }
+
+    /**
      * 管理员审核订单
      */
     @PutMapping("/adopt")

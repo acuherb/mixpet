@@ -69,4 +69,12 @@ public interface IAdoptService extends IService<Adopt> {
      * @return 撤回结果
      */
     Result undoAdopt(Integer adoptId);
+
+    /**
+     * 重启被拒绝的领养单
+     *
+     * @param adoptId 领养单id
+     * @return 重启结果
+     */
+    Result restartAdopt(Integer adoptId);
 }

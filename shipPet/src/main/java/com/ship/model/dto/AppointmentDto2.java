@@ -25,7 +25,7 @@ public class AppointmentDto2 extends AppointmentDto {
     /**
      * 宠物生日
      */
-    private LocalDate petAge;
+    private LocalDate petBirthday;
 
     public Boolean getPetSex() {
         return petSex;
@@ -36,11 +36,11 @@ public class AppointmentDto2 extends AppointmentDto {
     }
 
     public LocalDate getPetBirthday() {
-        return petAge;
+        return petBirthday;
     }
 
-    public void setPetBirthday(LocalDate petAge) {
-        this.petAge = petAge;
+    public void setPetBirthday(LocalDate petBirthday) {
+        this.petBirthday = petBirthday;
     }
 
     public String getPetVariety() {

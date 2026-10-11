@@ -97,7 +97,7 @@
         c.pet_variety,
         c.pet_status,
         c.pet_sex,
-        c.pet_age,
+        c.pet_birthday,
         d.department_name,
         a.is_suc
         FROM appointment a,

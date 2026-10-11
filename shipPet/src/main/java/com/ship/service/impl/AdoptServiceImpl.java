@@ -1,5 +1,6 @@
 package com.ship.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -87,11 +88,18 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
             transfer.setFromClientId(fromClientId);
             transfer.setToClientId(adopt.getClientId());
             transfer.setTransferDate(LocalDateTime.now());
-            transfer.setReason("领养");
+            // 带上申请理由，方便过户记录里看到上下文
+            String applyInfo = adopt.getAdoptInfo();
+            transfer.setReason(
+                    (applyInfo == null || applyInfo.isBlank())
+                            ? "领养"
+                            : "领养：" + applyInfo);
             petTransferMapper.insert(transfer);
             return Result.choice("领养", true);
         } else {
-            return Result.choice("拒绝", baseMapper.refuse(adoptVo.adoptId()));
+            String reason = adoptVo.refuseReason();
+            if (reason == null || reason.isBlank()) reason = "未填写理由";
+            return Result.choice("拒绝", baseMapper.refuse(adoptVo.adoptId(), reason));
         }
     }
 
@@ -111,8 +119,10 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
         if (pet == null) return Result.error("宠物不存在");
 
         // 1. 宠物变回无主
-        pet.setClientId(null);
-        petMapper.updateById(pet);
+        // 注意：MP 的 updateById 默认跳过 null 字段，必须用 UpdateWrapper 显式 set null
+        petMapper.update(null, new LambdaUpdateWrapper<Pet>()
+                .eq(Pet::getPetId, pet.getPetId())
+                .set(Pet::getClientId, null));
 
         // 2. 领养单变回待审核
         this.lambdaUpdate()
@@ -130,6 +140,15 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
         petTransferMapper.insert(t);
 
         return Result.choice("撤回", true);
+    }
+
+
+    @Override
+    public Result restartAdopt(Integer adoptId) {
+        Adopt adopt = this.getById(adoptId);
+        if (adopt == null) return Result.error("领养单不存在");
+        if (adopt.getInAdopt() != 0) return Result.error("只有已拒绝的单子可以重启");
+        return Result.choice("重启", baseMapper.restart(adoptId));
     }
 
 }

@@ -52,6 +52,11 @@ public class Adopt implements Serializable {
     private Byte inAdopt;
 
     /**
+     * 拒绝理由（in_adopt=0 时填写）
+     */
+    private String refuseReason;
+
+    /**
      * 创建时间，也是领养时间
      */
     @TableField(fill = FieldFill.INSERT)
@@ -114,6 +119,14 @@ public class Adopt implements Serializable {
 
     public void setInAdopt(Byte inAdopt) {
         this.inAdopt = inAdopt;
+    }
+
+    public String getRefuseReason() {
+        return refuseReason;
+    }
+
+    public void setRefuseReason(String refuseReason) {
+        this.refuseReason = refuseReason;
     }
 
     public LocalDateTime getCreateTime() {

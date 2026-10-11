@@ -35,3 +35,7 @@ export const reqAdoptAdopt = (adoptVo: AdoptVo): Promise<Res> =>
 // 撤回已通过的领养
 export const reqUndoAdopt = (id: number): Promise<Res> =>
     reqApi.put<string, Res>("adopt/undo/" + id)
+
+// 重启被拒绝的领养单
+export const reqRestartAdopt = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("adopt/restart/" + id)

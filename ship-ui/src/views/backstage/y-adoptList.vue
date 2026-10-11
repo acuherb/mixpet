@@ -23,6 +23,15 @@
         <el-tag v-else type="danger">已拒绝</el-tag>
       </template>
     </el-table-column>
+    <el-table-column label="拒绝理由" width="180">
+      <template #default="scope">
+        <el-tooltip v-if="scope.row.inAdopt===0 && scope.row.refuseReason"
+                    :content="scope.row.refuseReason" placement="top">
+          <span style="color:#f56c6c">{{ scope.row.refuseReason }}</span>
+        </el-tooltip>
+        <span v-else>—</span>
+      </template>
+    </el-table-column>
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
         <el-button-group>
@@ -34,7 +43,9 @@
                      @click="undoAdopt(scope.row.adoptId)">撤</el-button>
           <el-button v-if="scope.row.inAdopt===1" :icon="Edit" circle type="warning"
                      @click="showDialog(scope.row)"/>
-          <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row.adoptId)"/>
+          <el-button v-if="scope.row.inAdopt===0" :icon="Refresh" circle type="success"
+                     @click="restartAdopt(scope.row.adoptId)"/>
+          <el-button v-if="scope.row.inAdopt!==1" :icon="Delete" circle type="danger" @click="delOne(scope.row.adoptId)"/>
         </el-button-group>
       </template>
     </el-table-column>
@@ -80,7 +91,7 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {Check, Close, Delete, Edit} from '@element-plus/icons-vue'
+import {Check, Close, Delete, Edit, Refresh} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YAdoptList} from "@/model/VO/BackQuery";
@@ -94,6 +105,7 @@ import {
   reqDelAdopt,
   reqDelAdoptBatch,
   reqUndoAdopt,
+  reqRestartAdopt,
   reqUpdateAdopt
 } from "@/request/AdoptApi";
 import {Page} from "@/model/DO/Page";
@@ -178,8 +190,8 @@ const delBatchB = (): void => {
 // 删除单个
 const delOne = (id: number): void => {
   ElMessageBox.confirm(
-      `解脱一纸束缚的契约，赐予其尘归尘的命运。`,
-      '删除单个确认',
+      '确定删除这条领养单吗？删除后不可恢复（不影响宠物档案）。',
+      '删除确认',
       {
         confirmButtonText: '确认',
         cancelButtonText: '取消',
@@ -220,14 +232,46 @@ const showDialog = (row: Adopt) => {
   form.value.adoptMoney = row.adoptMoney
   form.value.petId = row.petId
   form.value.clientId = row.clientId
+  // 关键：把审核状态也带上，避免提交时被 exampleAdopt() 的默认值 2 覆盖
+  form.value.inAdopt = row.inAdopt
   // ===赋值完成===
   modalView.value = true
   modalTit.value = "修改领养"
 }
 // 审核通过
 const adoptAdopt = (adoptId: number, isAdopt: boolean) => {
-  reqAdoptAdopt({adoptId, isAdopt})
-      .then(res => sureFlush(res))
+  if (isAdopt) {
+    reqAdoptAdopt({adoptId, isAdopt: true}).then(res => sureFlush(res))
+  } else {
+    ElMessageBox.prompt('请填写拒绝理由', '拒绝领养', {
+      confirmButtonText: '确定拒绝',
+      cancelButtonText: '取消',
+      inputPlaceholder: '例如：家庭环境不适合',
+      inputValidator: (v: string) => (v && v.trim().length > 0) ? true : '理由不能为空',
+      type: 'warning',
+    }).then(({value}) => {
+      reqAdoptAdopt({adoptId, isAdopt: false, refuseReason: value.trim()})
+          .then(res => sureFlush(res))
+    }).catch(() => ElMessage.info('已取消'))
+  }
+}
+
+// 重启被拒绝的领养单
+const restartAdopt = (adoptId: number): void => {
+  ElMessageBox.confirm(
+      '重启后该单子回到待审核状态，拒绝理由清空。确定重启吗？',
+      '重启领养单',
+      {confirmButtonText: '重启', cancelButtonText: '取消', type: 'warning'}
+  ).then(() => {
+    reqRestartAdopt(adoptId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success('已重启')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '重启失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 
 // 撤回已通过的领养

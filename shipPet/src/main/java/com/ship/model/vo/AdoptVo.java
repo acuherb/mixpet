@@ -6,5 +6,5 @@ package com.ship.model.vo;
  * @param adoptId 领养的单号
  * @param isAdopt 是否通过
  */
-public record AdoptVo(Integer adoptId, Boolean isAdopt) {
+public record AdoptVo(Integer adoptId, Boolean isAdopt, String refuseReason) {
 }

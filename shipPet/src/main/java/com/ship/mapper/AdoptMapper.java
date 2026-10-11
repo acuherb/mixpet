@@ -60,6 +60,12 @@ public interface AdoptMapper extends BaseMapper<Adopt> {
      * @param adoptId 领养单id
      * @return 拒绝成功
      */
-    @Update("UPDATE adopt SET in_adopt = 0 WHERE adopt_id = #{adoptId}")
-    boolean refuse(Integer adoptId);
+    @Update("UPDATE adopt SET in_adopt = 0, refuse_reason = #{refuseReason} WHERE adopt_id = #{adoptId}")
+    boolean refuse(@Param("adoptId") Integer adoptId, @Param("refuseReason") String refuseReason);
+
+    /**
+     * 重启被拒绝的领养单：状态改回待审核，理由清空
+     */
+    @Update("UPDATE adopt SET in_adopt = 2, refuse_reason = NULL WHERE adopt_id = #{adoptId}")
+    boolean restart(Integer adoptId);
 }

@@ -4,4 +4,5 @@
 export interface AdoptVo {
     adoptId: number;
     isAdopt: boolean;
+    refuseReason?: string;
 }

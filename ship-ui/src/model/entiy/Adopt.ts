@@ -5,6 +5,7 @@ export interface Adopt {
     adoptMoney: number;
     adoptInfo: string;
     inAdopt: number;
+    refuseReason?: string | null;
     createTime: string;
     updateTime?: string | null;
 }
