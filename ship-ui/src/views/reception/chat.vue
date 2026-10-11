@@ -64,11 +64,18 @@ if (props.doctorId == null || props.doctorId == '') {
   cutDoctor(doctor.doctorId)
 }
 
-// WebSocket开始连接
-const ws = new WebSocket("ws://localhost:8085/chat");  // 建立WebSocket对象
+// WebSocket开始连接（用当前访问的主机名连接，手机局域网访问也能连上）
+const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.hostname + ":8085/chat"
+const ws = new WebSocket(wsUrl);  // 建立WebSocket对象
+// 是否成功连接过（区分「离开页面」和「连接失败」）
+let wsOpened = false
+ws.onopen = () => {
+  wsOpened = true
+}
 // WebSocket生命周期【关闭时的操作】
 ws.onclose = () => {
-  ElMessage.warning("你已离开聊天页面")
+  if (wsOpened) ElMessage.warning("你已离开聊天页面")
+  else ElMessage.warning("聊天连接失败，消息无法实时送达，请刷新重试")
 }
 // WebSocket生命周期【接收消息时的操作】
 ws.onmessage = (ev) => {
@@ -106,7 +113,7 @@ const sendTextMsg = (val: string): void => {
       })
     }
   })
-  ws.send(JSON.stringify(msg))
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
 }
 // 发送图片消息
 const sendImgMsg = (imgName: string): void => {
@@ -122,7 +129,7 @@ const sendImgMsg = (imgName: string): void => {
       })
     }
   })
-  ws.send(JSON.stringify(msg))
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
 }
 /**
  ┌───────────────────────────────────┐

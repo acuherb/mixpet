@@ -7,17 +7,17 @@
       <ul>
         <li><span style="font-weight: bolder">{{ doctorDetail.doctorName }}</span></li>
         <li>{{ doctorDetail.username }}</li>
+        <li>
+          <router-link :to="'/reception/chat/'+doctorDetail.doctorId">
+            <el-button type="primary">咨询</el-button>
+          </router-link>
+        </li>
       </ul>
       <ul class="hide-narrow">
         <li>{{ getAge(doctorDetail.doctorAge)}}&nbsp;&nbsp;&nbsp;{{ doctorDetail.doctorGender ? "男" : "女" }}</li>
         <li>{{ getJob(doctorDetail.authLv) }}&nbsp;&nbsp;&nbsp;{{ doctorDetail.departmentName }}</li>
         <li>{{ doctorDetail.doctorTel }}</li>
         <li>{{ doctorDetail.doctorInfo }}</li>
-        <li>
-          <router-link :to="'/reception/chat/'+doctorDetail.doctorId">
-            <el-button type="primary">咨询</el-button>
-          </router-link>
-        </li>
       </ul>
       <template #right>
         <table class="appoint">
