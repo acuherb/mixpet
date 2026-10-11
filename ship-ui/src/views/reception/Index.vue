@@ -154,7 +154,7 @@ onBeforeMount(() => {
   reqFourPet().then(res => {
     petCardTxt.records = res.records
   })
-  reqFosterPet(4).then(res => {
+  reqFosterPet(6).then(res => {
     fosterCardTxt.records = res.records
   })
   reqFourNotice().then(res => {

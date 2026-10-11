@@ -11,7 +11,7 @@ import {Appoint} from "@/model/entiy/Appoint";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
 // 主页查询医生
 export const reqFourDoctor = (): Promise<Page<DoctorDto>> =>
-    reqApi<string, Page<DoctorDto>>("doctor/page?numPage=1&pageSize=4")
+    reqApi<string, Page<DoctorDto>>("doctor/page?numPage=1&pageSize=6")
 // 用户查看许多医生
 export const reqDoctorSee = (page: PageQuery): Promise<Page<DoctorDto>> =>
     reqApi<string, Page<DoctorDto>>("doctor/page", {params: page})

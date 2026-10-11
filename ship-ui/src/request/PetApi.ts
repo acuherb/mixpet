@@ -8,7 +8,7 @@ import {NameDo} from "@/model/DO/NameDo";
 
 // 主页查询宠物
 export const reqFourPet = (): Promise<Page<Pet>> =>
-    reqApi<string, Page<Pet>>("pet/four?numPage=1&pageSize=4")
+    reqApi<string, Page<Pet>>("pet/four?numPage=1&pageSize=6")
 // 查看领养宠物
 export const reqPetSee = (page: PageQuery): Promise<Page<Pet>> =>
     reqApi<string, Page<Pet>>("pet/four", {params: page})
