@@ -105,6 +105,12 @@ public class DoctorController {
     public Result update(@RequestBody Doctor doctor) {
         if (StrUtil.isWhite(doctor.getDoctorName())) return Result.error("姓名不能为空");
         if (doctor.getAuthLv() == null) doctor.setAuthLv(0);
+        // 手机号非空时必须为 11 位
+        if (!StrUtil.isWhite(doctor.getDoctorTel()) && !doctor.getDoctorTel().matches("^1[3-9]\\d{9}$"))
+            return Result.error("手机号格式不正确（11位，1 开头）");
+        // 邮箱非空时校验
+        if (!StrUtil.isWhite(doctor.getDoctorEmail()) && !doctor.getDoctorEmail().matches("^[A-Za-z0-9][A-Za-z0-9._]*@[A-Za-z0-9]+\\.[A-Za-z0-9.-]+[A-Za-z]$"))
+            return Result.error("邮箱格式不正确");
         return Result.choice("修改", doctorService.updateById(doctor));
     }
 }

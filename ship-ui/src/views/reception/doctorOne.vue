@@ -65,6 +65,7 @@ const doctorDetail = ref<DoctorDto>({
   "doctorAge": "",
   "doctorPhoto": "",
   "doctorTel": "",
+  "doctorEmail": null,
   "authLv": 0,
   "doctorInfo": "",
   "departmentName": ""

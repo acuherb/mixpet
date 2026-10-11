@@ -54,7 +54,7 @@ public class DoctorLogController {
     @GetMapping("/resetPwd")
     public Result sendMail(HttpSession session) {
         if (UserUtil.getUser() instanceof Doctor doctor) {
-            String mail = doctor.getDoctorTel();
+            String mail = doctor.getDoctorEmail();
             if (session.getAttribute(mail) != null) {
                 if (System.currentTimeMillis() - session.getCreationTime() < 30 * 1000)
                     return Result.error("发送邮件需要间隔30s");
@@ -73,7 +73,7 @@ public class DoctorLogController {
         String password = pwdVo.password();
         String checkCode = pwdVo.checkCode();
         if (UserUtil.getUser() instanceof Doctor doctor) {
-            String mail = doctor.getDoctorTel();
+            String mail = doctor.getDoctorEmail();
             String sessionCode = (String) session.getAttribute(mail);
             if (StrUtil.isWhite(checkCode)) return Result.error("验证码不能为空");
             if (StrUtil.isWhite(password)) return Result.error("密码不能为空");
@@ -93,6 +93,10 @@ public class DoctorLogController {
     @PutMapping
     public Result update(@RequestBody Doctor doctor) {
         if (StrUtil.isWhite(doctor.getDoctorName())) return Result.error("姓名不能为空");
+        if (!StrUtil.isWhite(doctor.getDoctorTel()) && !doctor.getDoctorTel().matches("^1[3-9]\\d{9}$"))
+            return Result.error("手机号格式不正确（11位，1 开头）");
+        if (!StrUtil.isWhite(doctor.getDoctorEmail()) && !doctor.getDoctorEmail().matches("^[A-Za-z0-9][A-Za-z0-9._]*@[A-Za-z0-9]+\\.[A-Za-z0-9.-]+[A-Za-z]$"))
+            return Result.error("邮箱格式不正确");
         if (UserUtil.getUser() instanceof Doctor doctorLog) {
             doctor.setDoctorId(doctorLog.getDoctorId());
             return Result.choice("修改", doctorService.updateSelf(doctor));

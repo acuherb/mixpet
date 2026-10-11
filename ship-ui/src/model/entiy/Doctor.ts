@@ -7,6 +7,7 @@ export interface Doctor {
     doctorAge: string;
     doctorPhoto: string;
     doctorTel: string;
+    doctorEmail: string | null;
     authLv: number;
     doctorInfo: string;
     doctorPassword?: string | null;
@@ -27,6 +28,7 @@ export const exampleDoctor = (): Doctor => {
         doctorAge: "",
         doctorPhoto: "",
         doctorTel: "",
+        doctorEmail: null,
         authLv: 0,
         doctorInfo: ""
     }

@@ -6,7 +6,7 @@
         SELECT
         doctor_id,d.department_id,username,
         d.create_time,doctor_name,doctor_gender,
-        doctor_age,doctor_photo,doctor_tel,
+        doctor_age,doctor_photo,doctor_tel,doctor_email,
         auth_lv,doctor_info,b.department_name
         FROM doctor AS d
         LEFT JOIN department AS b
@@ -30,6 +30,7 @@
                doctor_age,
                doctor_photo,
                doctor_tel,
+               doctor_email,
                auth_lv,
                doctor_info,
                b.department_name
@@ -60,6 +61,8 @@
             doctor_name=#{doctorName},
             doctor_gender=#{doctorGender},
             doctor_photo=#{doctorPhoto},
+            doctor_tel=#{doctorTel},
+            doctor_email=#{doctorEmail},
             update_time=now()
         WHERE doctor_id = #{doctorId}
     </update>

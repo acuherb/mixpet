@@ -20,6 +20,7 @@ export const exampleDoctorOne = (): DoctorDto => {
         "doctorAge": "",
         "doctorPhoto": "",
         "doctorTel": "",
+        "doctorEmail": null,
         "authLv": 0,
         "doctorInfo": "",
         "doctorPassword": null,

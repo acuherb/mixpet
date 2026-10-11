@@ -63,6 +63,11 @@ public class Doctor implements Serializable {
     private String doctorTel;
 
     /**
+     * 医生邮箱
+     */
+    private String doctorEmail;
+
+    /**
      * 权限等级
      */
     private Integer authLv;
@@ -158,6 +163,14 @@ public class Doctor implements Serializable {
         this.doctorTel = doctorTel;
     }
 
+    public String getDoctorEmail() {
+        return doctorEmail;
+    }
+
+    public void setDoctorEmail(String doctorEmail) {
+        this.doctorEmail = doctorEmail;
+    }
+
     public Integer getAuthLv() {
         return authLv;
     }
@@ -217,6 +230,7 @@ public class Doctor implements Serializable {
                 ", doctorAge = " + doctorAge +
                 ", doctorPhoto = " + doctorPhoto +
                 ", doctorTel = " + doctorTel +
+                ", doctorEmail = " + doctorEmail +
                 ", authLv = " + authLv +
                 ", doctorInfo = " + doctorInfo +
                 ", doctorPassword = " + doctorPassword +

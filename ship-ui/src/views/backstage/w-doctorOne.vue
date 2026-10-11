@@ -14,7 +14,8 @@
           {tit: "性别", con: doctor.doctorGender ? "男" : "女"},
           {tit: "职位", con: getJob(doctor.authLv)},
           {tit: "科室", con: doctor.departmentName},
-          {tit: "联系方式", con: doctor.doctorTel},
+          {tit: "电话", con: doctor.doctorTel || "--"},
+          {tit: "邮箱", con: doctor.doctorEmail || "--"},
           {tit: "年龄", con: getAge(doctor.doctorAge)}]'
         @upPwd="updatePwd"
         @upRole="updateRole"
@@ -44,8 +45,28 @@
             value-format="YYYY-MM-DD"
         />
       </el-form-item>
+      <el-form-item label="电话">
+        <el-input v-model="form.doctorTel" maxlength="11" show-word-limit inputmode="numeric" @input="sanitizeTel" clearable placeholder="11位手机号"/>
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="form.doctorEmail" clearable placeholder="用于接收验证码"/>
+      </el-form-item>
+      <el-form-item v-if="isAdmin" label="职位">
+        <el-select v-model="form.authLv" placeholder="请选择职位">
+          <el-option :value="8" label="院长"/>
+          <el-option :value="6" label="主任"/>
+          <el-option :value="4" label="医生"/>
+          <el-option :value="2" label="护士"/>
+          <el-option :value="0" label="临时工"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item v-if="isAdmin" label="科室">
+        <el-select v-model="form.departmentId" filterable placeholder="请选择科室">
+          <el-option v-for="c in departNameL" :key="c.roleId" :label="c.roleName" :value="c.roleId"/>
+        </el-select>
+      </el-form-item>
       <el-form-item label="简介">
-        <el-input v-model="form.doctorInfo" clearable placeholder="医生简介"/>
+        <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="医生简介"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -84,17 +105,38 @@
 import DetailTable from "@/components/card/DetailTable.vue";
 import {getJob} from "@/utils/JobUtil";
 import {getAge} from "@/utils/TimeUtil";
-import {onMounted, reactive, ref} from "vue";
+import {computed, onMounted, reactive, ref} from "vue";
 import {DoctorDto, exampleDoctorOne} from "@/model/DO/DoctorDto";
-import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD} from "@/request/DoctorApi";
+import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD, reqUpdateDoctor} from "@/request/DoctorApi";
+import {reqDepartName} from "@/request/DepartApi";
+import {NameDo} from "@/model/DO/NameDo";
 import LightBox from "@/components/card/LightBox.vue";
 import {Doctor, exampleDoctor} from "@/model/entiy/Doctor";
-import {FormInstance, FormRules} from "element-plus";
+import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {Res} from "@/request/Res";
 import UpImg from "@/components/UpImg.vue";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
+// 手机号只保留数字，最多 11 位
+const sanitizeTel = () => {
+  if (form.value.doctorTel) {
+    form.value.doctorTel = form.value.doctorTel.replace(/\D/g, '').slice(0, 11)
+  }
+}
+
 // 设置展示信息
 const doctor = ref<DoctorDto>(exampleDoctorOne())
 const isShow = ref<boolean>(true)
+
+// 是否院长（authLv=8）
+const isAdmin = computed(() => doctor.value.authLv === 8)
+
+// 科室下拉列表
+const departNameL = ref<NameDo[]>([])
+onMounted(() => {
+  reqDepartName().then(res => {
+    departNameL.value = res
+  })
+})
 // 发起请求
 onMounted(() => {
   reqGetLoginD().then(res => {
@@ -117,6 +159,11 @@ const updateRole = () => {
   form.value.doctorPhoto = doctor.value.doctorPhoto
   form.value.doctorName = doctor.value.doctorName
   form.value.doctorGender = doctor.value.doctorGender
+  form.value.doctorTel = doctor.value.doctorTel
+  form.value.doctorEmail = doctor.value.doctorEmail
+  form.value.authLv = doctor.value.authLv
+  form.value.departmentId = doctor.value.departmentId
+  form.value.username = doctor.value.username
   // 显示
   modalView.value = true
 }
@@ -125,13 +172,20 @@ const updateRole = () => {
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
 const formSubmit = async (): Promise<void> => {
-  await myFormRef.value?.validate((valid: boolean): void => {
-    if (valid) {
-      // 校验通过，提交
+  try {
+    await myFormRef.value?.validate()
+  } catch {
+    return
+  }
+  // admin 走管理员接口（可改职位、科室），普通医生走个人接口
+  const api = isAdmin.value ? reqUpdateDoctor : reqUpdateLoginD
+  api(form.value).then((res: Res) => {
+    if (res.code === 1) {
       modalView.value = false
-      reqUpdateLoginD(form.value).then(res => {
-        if (res.code === 1) location.reload();
-      })
+      ElMessage.success('修改成功')
+      setTimeout(() => location.reload(), 500)
+    } else {
+      ElMessage.error(res.msg || '修改失败')
     }
   })
 }
@@ -142,6 +196,9 @@ const rules = ref<FormRules>({
   ],
   "doctorAge": [
     {required: true, message: '请选择出生日期', trigger: 'blur'},
+  ],
+  "doctorTel": [
+    {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur'},
   ],
 })
 // 头像参数的改变:子传父

@@ -26,7 +26,8 @@
     <el-table-column label="年龄" prop="doctorAge" sortable>
       <template #default="scope">{{ getAge(scope.row.doctorAge)}}</template>
     </el-table-column>
-    <el-table-column label="联系方式" prop="doctorTel"/>
+    <el-table-column label="电话" prop="doctorTel"/>
+    <el-table-column label="邮箱" prop="doctorEmail"/>
     <el-table-column label="简介" prop="doctorInfo"/>
     <el-table-column label="科室">
       <template #default="scope">
@@ -93,11 +94,14 @@
             value-format="YYYY-MM-DD"
         />
       </el-form-item>
+      <el-form-item label="电话">
+        <el-input v-model="form.doctorTel" maxlength="11" show-word-limit inputmode="numeric" @input="sanitizeTel" clearable placeholder="11位手机号"/>
+      </el-form-item>
       <el-form-item label="邮箱">
-        <el-input v-model="form.doctorTel" clearable placeholder="联系方式"/>
+        <el-input v-model="form.doctorEmail" clearable placeholder="用于接收验证码"/>
       </el-form-item>
       <el-form-item label="简介">
-        <el-input v-model="form.doctorInfo" clearable placeholder="医生简介"/>
+        <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="医生简介"/>
       </el-form-item>
       <el-form-item v-if="modalTit==='新增医生'" label="密码">
         <el-input v-model="form.doctorPassword" clearable placeholder="123456"/>
@@ -246,6 +250,7 @@ const showDialog = (row: Doctor) => {
   form.value.doctorAge = row.doctorAge
   form.value.doctorInfo = row.doctorInfo
   form.value.doctorTel = row.doctorTel
+  form.value.doctorEmail = row.doctorEmail
   form.value.doctorPhoto = row.doctorPhoto
   form.value.doctorName = row.doctorName
   form.value.doctorGender = row.doctorGender
@@ -262,6 +267,13 @@ const showDialog = (row: Doctor) => {
  */
 // 表单的数据
 const departNameL = ref<NameDo[]>([]) // 下拉框部门名称
+// 手机号只保留数字，最多 11 位
+const sanitizeTel = () => {
+  if (form.value.doctorTel) {
+    form.value.doctorTel = form.value.doctorTel.replace(/\D/g, '').slice(0, 11)
+  }
+}
+
 const form = ref<Doctor>(exampleDoctor()) // 空的默认值
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
@@ -278,6 +290,9 @@ const formSubmit = async (): Promise<void> => {
 }
 // 表单校验规则
 const rules = reactive<FormRules>({
+  "doctorTel": [
+    {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur'},
+  ],
   "username": [
     {required: true, message: '帐号不能为空', trigger: 'blur'},
   ],
