@@ -11,6 +11,7 @@ export interface Client {
     clientTel2: string | null;
     clientEmail: string | null;
     clientPwdChanged: boolean;
+    active: boolean;
     clientBirthday: string | null;
     clientBirthdayEstimated: boolean;
     clientAddress: string | null;
@@ -37,6 +38,7 @@ export const exampleClient = (): Client => {
         clientTel2: null,
         clientEmail: null,
         clientPwdChanged: false,
+        active: true,
         clientBirthday: null,
         clientBirthdayEstimated: false,
         clientAddress: null,

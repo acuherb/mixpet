@@ -8,6 +8,9 @@ import com.ship.model.entity.Pet;
 import com.ship.model.dto.NameDo;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IPetService;
+import com.ship.service.IPetTransferService;
+import com.ship.model.vo.TransferVo;
+import com.ship.model.entity.PetTransfer;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,10 +31,12 @@ import java.util.List;
 @RequestMapping("/pet")
 public class PetController {
     private final IPetService petService;
+    private final IPetTransferService petTransferService;
 
     @Autowired
-    public PetController(IPetService petService) {
+    public PetController(IPetService petService, IPetTransferService petTransferService) {
         this.petService = petService;
+        this.petTransferService = petTransferService;
     }
 
     /**
@@ -118,5 +123,65 @@ public class PetController {
         if (StrUtil.isWhite(pet.getPetName())) return Result.error("姓名不能为空");
         if (StrUtil.isWhite(pet.getPetVariety())) return Result.error("品种不能为空");
         return Result.choice("修改", petService.updatePet(pet));
+    }
+
+    /**
+     * 检查宠物名下关联记录
+     */
+    @GetMapping("/ref/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result checkRef(@PathVariable Integer id) {
+        java.util.Map<String, Long> m = petService.countRefById(id);
+        long ap = m.getOrDefault("appointCount", 0L);
+        if (ap == 0) return Result.success("可彻底删除");
+        return Result.error("该宠物名下有 " + ap + " 条预约记录，不能彻底删除，请改为停用");
+    }
+
+    /**
+     * 停用宠物
+     */
+    @PutMapping("/deactivate/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result deactivate(@PathVariable Integer id) {
+        Pet db = petService.getById(id);
+        if (db == null) return Result.error("宠物不存在");
+        db.setActive(false);
+        return Result.choice("停用", petService.updateById(db));
+    }
+
+    /**
+     * 启用宠物
+     */
+    @PutMapping("/activate/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result activate(@PathVariable Integer id) {
+        Pet db = petService.getById(id);
+        if (db == null) return Result.error("宠物不存在");
+        db.setActive(true);
+        return Result.choice("启用", petService.updateById(db));
+    }
+
+    /**
+     * 宠物过户
+     */
+    @PutMapping("/transfer")
+    @Secured(RoleConst.MANAGER)
+    public Result transfer(@RequestBody TransferVo vo) {
+        if (vo.petId() == null) return Result.error("宠物不能为空");
+        if (vo.toClientId() == null || vo.toClientId() == 0) return Result.error("请选择新主人");
+        Pet dbPet = petService.getById(vo.petId());
+        if (dbPet == null) return Result.error("宠物不存在");
+        if (dbPet.getClientId() != null && dbPet.getClientId().equals(vo.toClientId()))
+            return Result.error("新主人与当前主人相同");
+        return Result.choice("过户", petTransferService.transfer(vo));
+    }
+
+    /**
+     * 查询宠物的过户历史
+     */
+    @GetMapping("/transfer/{petId}")
+    @Secured(RoleConst.NURSE)
+    public List<PetTransfer> transferHistory(@PathVariable Integer petId) {
+        return petTransferService.history(petId);
     }
 }

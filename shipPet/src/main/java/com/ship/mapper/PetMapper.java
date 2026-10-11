@@ -6,6 +6,7 @@ import com.ship.model.dto.PetDto;
 import com.ship.model.entity.Pet;
 import com.ship.model.dto.NameDo;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -48,4 +49,11 @@ public interface PetMapper extends BaseMapper<Pet> {
      * @return 修改成功
      */
     boolean updatePet(Pet pet);
+
+    /**
+     * 统计宠物名下关联的预约数量
+     */
+    @Select("SELECT " +
+            "(SELECT COUNT(*) FROM appointment WHERE pet_id=#{id} AND is_del=0) AS appointCount")
+    java.util.Map<String, Long> countRefById(@Param("id") Integer id);
 }

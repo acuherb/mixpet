@@ -70,4 +70,12 @@ public interface ClientMapper extends BaseMapper<Client> {
      */
     @Update("UPDATE client SET client_password=#{password} WHERE client_username=#{username}")
     boolean updatePwdByUsername(String password, String username);
+
+    /**
+     * 统计客户名下关联的宠物和预约数量
+     */
+    @Select("SELECT " +
+            "(SELECT COUNT(*) FROM pet WHERE client_id=#{id} AND is_del=0) AS petCount, " +
+            "(SELECT COUNT(*) FROM appointment WHERE client_id=#{id} AND is_del=0) AS appointCount")
+    java.util.Map<String, Long> countRefById(@Param("id") Integer id);
 }

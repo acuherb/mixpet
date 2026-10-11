@@ -36,6 +36,9 @@ public class Appointment implements Serializable {
      */
     private Integer petId;
 
+    /** 就诊时的宠物主人id */
+    private Integer petOwnerId;
+
     /**
      * 就诊时间
      */
@@ -165,6 +168,9 @@ public class Appointment implements Serializable {
     public void setIsDel(Long isDel) {
         this.isDel = isDel;
     }
+
+    public Integer getPetOwnerId() { return petOwnerId; }
+    public void setPetOwnerId(Integer petOwnerId) { this.petOwnerId = petOwnerId; }
 
     @Override
     public String toString() {

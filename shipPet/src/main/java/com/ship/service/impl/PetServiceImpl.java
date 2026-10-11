@@ -78,4 +78,9 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
         if (StrUtil.isWhite(pet.getPetStatus())) pet.setPetStatus("健康");
         return save(pet);
     }
+
+    @Override
+    public java.util.Map<String, Long> countRefById(Integer id) {
+        return baseMapper.countRefById(id);
+    }
 }

@@ -85,4 +85,9 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     public boolean updateSelf(Client client) {
         return baseMapper.updateSelfById(client);
     }
+
+    @Override
+    public java.util.Map<String, Long> countRefById(Integer id) {
+        return baseMapper.countRefById(id);
+    }
 }

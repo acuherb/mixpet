@@ -92,6 +92,9 @@ public class Client implements Serializable {
     /** 逻辑删除，默认0，填充删除日期 */
     private Long isDel;
 
+    /** 是否启用 0停用 1正常 */
+    private Boolean active;
+
     public Integer getClientId() { return clientId; }
     public void setClientId(Integer clientId) { this.clientId = clientId; }
 
@@ -160,6 +163,9 @@ public class Client implements Serializable {
 
     public Long getIsDel() { return isDel; }
     public void setIsDel(Long isDel) { this.isDel = isDel; }
+
+    public Boolean getActive() { return active; }
+    public void setActive(Boolean active) { this.active = active; }
 
     @Override
     public String toString() {

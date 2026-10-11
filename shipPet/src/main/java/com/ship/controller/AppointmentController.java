@@ -7,6 +7,8 @@ import com.ship.model.entity.Appointment;
 import com.ship.model.entity.Client;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IAppointmentService;
+import com.ship.service.IPetService;
+import com.ship.model.entity.Pet;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,10 +29,12 @@ import java.util.List;
 @RequestMapping("/appointment")
 public class AppointmentController {
     private final IAppointmentService appointmentService;
+    private final IPetService petService;
 
     @Autowired
-    public AppointmentController(IAppointmentService appointmentService) {
+    public AppointmentController(IAppointmentService appointmentService, IPetService petService) {
         this.appointmentService = appointmentService;
+        this.petService = petService;
     }
 
     @GetMapping("/page")
@@ -61,7 +65,11 @@ public class AppointmentController {
     public Result save(@RequestBody Appointment appointment) {
         Result checkAppoint = checkAppoint(appointment);
         if (checkAppoint.code() == 0) return checkAppoint;
-        else return Result.choice("添加", appointmentService.save(appointment));
+        // 自动记录就诊时的宠物主人
+        Pet pet = petService.getById(appointment.getPetId());
+        if (pet != null) appointment.setPetOwnerId(pet.getClientId());
+        else appointment.setPetOwnerId(appointment.getClientId());
+        return Result.choice("添加", appointmentService.save(appointment));
     }
 
     @DeleteMapping("/{id}")

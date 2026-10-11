@@ -81,4 +81,9 @@ public interface IClientService extends IService<Client> {
      * @return 修改成功
      */
     boolean updateSelf(Client client);
+
+    /**
+     * 统计客户名下关联的宠物、预约数量
+     */
+    java.util.Map<String, Long> countRefById(Integer id);
 }

@@ -18,6 +18,7 @@ export interface Pet {
     petHistory: string | null;
     petAlive: boolean;
     petNote: string | null;
+    active: boolean;
     clientId: number | null;
     petPhoto: string;
 }
@@ -43,6 +44,7 @@ export const examplePet = (): Pet => {
         petHistory: null,
         petAlive: true,
         petNote: null,
+        active: true,
         clientId: null,
         petPhoto: "",
     }

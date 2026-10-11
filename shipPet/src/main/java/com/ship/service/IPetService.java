@@ -78,4 +78,9 @@ public interface IPetService extends IService<Pet> {
      * 添加宠物，关于默认值
      */
     boolean addPet(Pet pet);
+
+    /**
+     * 统计宠物名下关联的预约数量
+     */
+    java.util.Map<String, Long> countRefById(Integer id);
 }

@@ -27,6 +27,12 @@
       <template #default="scope">{{ getAge(scope.row.clientBirthday, scope.row.clientBirthdayEstimated) }}</template>
     </el-table-column>
     <el-table-column label="联系方式" prop="clientTel"/>
+    <el-table-column label="状态" width="90">
+      <template #default="scope">
+        <el-tag v-if="scope.row.active" type="success" size="small">正常</el-tag>
+        <el-tag v-else type="info" size="small">停用</el-tag>
+      </template>
+    </el-table-column>
     <el-table-column label="密码状态" width="110">
       <template #default="scope">
         <el-tag v-if="scope.row.clientPwdChanged" type="success" size="small">已修改</el-tag>
@@ -47,6 +53,8 @@
       <template #default="scope">
         <el-button-group>
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
+          <el-button v-if="scope.row.active" circle type="warning" @click="toggleActive(scope.row)">停</el-button>
+          <el-button v-else circle type="success" @click="toggleActive(scope.row)">启</el-button>
           <el-button :icon="Key" circle type="info" @click="resetPwd(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
         </el-button-group>
@@ -185,7 +193,7 @@ import {PageQuery, YClientList} from "@/model/VO/BackQuery";
 import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {Client, exampleClient} from "@/model/entiy/Client";
 import TagSex from "@/components/show/TagSex.vue";
-import {reqAddClient, reqClientList, reqDelClient, reqDelClientBatch, reqUpdateClient, reqResetPwd} from "@/request/ClientApi";
+import {reqAddClient, reqActivateClient, reqCheckClientRef, reqClientList, reqDeactivateClient, reqDelClient, reqDelClientBatch, reqResetPwd, reqUpdateClient} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
@@ -256,23 +264,59 @@ const delBatchB = (): void => {
 }
 // 删除单个
 const delOne = (row: Client): void => {
-  ElMessageBox.confirm(
-      `【${row.clientName}】已无路可退，只能接受命运的裁决。`,
-      '删除单个确认',
-      {
-        confirmButtonText: '确认',
+  // 先检查关联
+  reqCheckClientRef(row.clientId).then(refRes => {
+    const canDelete = refRes.code === 1
+    const msg = canDelete
+        ? `确认彻底删除客户【${row.clientName}】吗？该客户名下没有任何宠物或预约，删除后可在回收站恢复。`
+        : `${refRes.msg}\n\n是否改为「停用」？停用后该客户不再出现在默认列表，但历史数据保留。`
+
+    if (canDelete) {
+      ElMessageBox.confirm(msg, '删除确认', {
+        confirmButtonText: '彻底删除',
         cancelButtonText: '取消',
         type: 'warning',
-      }
-  ).then(() => {
-    reqDelClient(row.clientId).then(res => sureFlush(res))
-  }).catch(() => {
-    ElMessage.info('删除取消')
+      }).then(() => {
+        reqDelClient(row.clientId).then(res => sureFlush(res))
+      }).catch(() => ElMessage.info('已取消'))
+    } else {
+      ElMessageBox.confirm(msg, '改为停用？', {
+        confirmButtonText: '停用',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        reqDeactivateClient(row.clientId).then(res => {
+          if (res.code === 1) {
+            ElMessage.success('已停用')
+            sendQuery()
+          } else ElMessage.error(res.msg || '操作失败')
+        })
+      }).catch(() => ElMessage.info('已取消'))
+    }
   })
 }
+
 // 确定请求的返回值，然后刷新
 const sureFlush = (res: Res): void => {
   if (res.code === 1) sendQuery()
+}
+
+// 启用/停用
+const toggleActive = (row: Client): void => {
+  const api = row.active ? reqDeactivateClient : reqActivateClient
+  const action = row.active ? '停用' : '启用'
+  ElMessageBox.confirm(`确认${action}客户【${row.clientName}】吗？`, `${action}确认`, {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(() => {
+    api(row.clientId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success(action + '成功')
+        sendQuery()
+      } else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 
 // 重置密码为 123456

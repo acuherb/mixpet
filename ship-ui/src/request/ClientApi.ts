@@ -41,3 +41,12 @@ export const reqResetPwd = (id: number): Promise<Res> =>
 // 用户绑定/修改邮箱
 export const reqUpdateEmail = (data: { email: string; code: string }): Promise<Res> =>
     reqApi.put<string, Res>("client/email", data)
+// 检查客户名下关联
+export const reqCheckClientRef = (id: number): Promise<Res> =>
+    reqApi<string, Res>("client/ref/" + id)
+// 停用客户
+export const reqDeactivateClient = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("client/deactivate/" + id, {})
+// 启用客户
+export const reqActivateClient = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("client/activate/" + id, {})

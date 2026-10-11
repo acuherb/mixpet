@@ -181,4 +181,41 @@ public class ClientController {
         }
         return Result.error("未登录");
     }
+
+    /**
+     * 检查客户名下关联记录
+     */
+    @GetMapping("/ref/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result checkRef(@PathVariable Integer id) {
+        java.util.Map<String, Long> m = clientService.countRefById(id);
+        long pet = m.getOrDefault("petCount", 0L);
+        long ap = m.getOrDefault("appointCount", 0L);
+        if (pet == 0 && ap == 0) return Result.success("可彻底删除");
+        return Result.error("该客户名下有 " + pet + " 只宠物、" + ap + " 条预约，不能彻底删除，请改为停用");
+    }
+
+    /**
+     * 停用客户
+     */
+    @PutMapping("/deactivate/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result deactivate(@PathVariable Integer id) {
+        Client db = clientService.getById(id);
+        if (db == null) return Result.error("客户不存在");
+        db.setActive(false);
+        return Result.choice("停用", clientService.updateById(db));
+    }
+
+    /**
+     * 启用客户
+     */
+    @PutMapping("/activate/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result activate(@PathVariable Integer id) {
+        Client db = clientService.getById(id);
+        if (db == null) return Result.error("客户不存在");
+        db.setActive(true);
+        return Result.choice("启用", clientService.updateById(db));
+    }
 }

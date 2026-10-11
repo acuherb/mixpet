@@ -41,3 +41,13 @@ export const reqPetNameByClientId = (clientId: number, petId: number): Promise<N
 // 管理员查看无主的宠物
 export const reqPetNoClient = (): Promise<NameDo[]> =>
     reqApi<string, NameDo[]>("pet/noClient")
+// 宠物过户
+export const reqTransferPet = (data: {
+  petId: number,
+  toClientId: number,
+  transferDate: string,
+  reason: string
+}): Promise<Res> => reqApi.put<string, Res>("pet/transfer", data)
+// 查询过户历史
+export const reqTransferHistory = (petId: number): Promise<any[]> =>
+    reqApi<string, any[]>("pet/transfer/" + petId)
