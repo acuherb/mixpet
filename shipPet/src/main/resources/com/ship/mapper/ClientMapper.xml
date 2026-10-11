@@ -38,6 +38,7 @@
             client_tel2=#{clientTel2},
             client_email=#{clientEmail},
             client_address=#{clientAddress},
+            client_id_card=#{clientIdCard},
             client_info=#{clientInfo},
             client_photo=#{clientPhoto},
             update_time=now()

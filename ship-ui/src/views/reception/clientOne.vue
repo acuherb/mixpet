@@ -48,6 +48,15 @@
             placeholder="选择出生日期"
             type="date"
             value-format="YYYY-MM-DD"
+            @change="onBirthdayChange"
+        />
+      </el-form-item>
+      <el-form-item label="年龄">
+        <el-input
+            v-model="ageInput"
+            clearable
+            placeholder="不知道生日可填年龄，如：26岁 / 约25岁"
+            @change="onAgeInput"
         />
       </el-form-item>
       <el-form-item label="手机号" prop="clientTel">
@@ -58,6 +67,9 @@
       </el-form-item>
       <el-form-item label="备用电话">
         <el-input v-model="form.clientTel2" clearable placeholder="选填"/>
+      </el-form-item>
+      <el-form-item label="身份证" prop="clientIdCard">
+        <el-input v-model="form.clientIdCard" clearable maxlength="18" placeholder="选填，18位"/>
       </el-form-item>
       <el-form-item label="地址">
         <el-input v-model="form.clientAddress" clearable placeholder="选填"/>
@@ -119,7 +131,7 @@
 import {Client, exampleClient} from "@/model/entiy/Client";
 import DetailTable from "@/components/card/DetailTable.vue";
 import {onMounted, reactive, ref} from "vue";
-import {getAge} from '@/utils/TimeUtil'
+import {getAge, parseAgeToBirthday} from '@/utils/TimeUtil'
 import {reqLoginUser} from "@/request/PowerApi";
 import UpImg from "@/components/UpImg.vue";
 import {FormInstance, FormRules} from "element-plus";
@@ -156,11 +168,28 @@ const updateRole = () => {
   form.clientBirthdayEstimated = client.value.clientBirthdayEstimated
   form.clientTel = client.value.clientTel
   form.clientTel2 = client.value.clientTel2
+  form.clientIdCard = client.value.clientIdCard
   form.clientAddress = client.value.clientAddress
   form.clientInfo = client.value.clientInfo
   form.clientPhoto = client.value.clientPhoto
+  // 年龄输入框同步显示
+  ageInput.value = form.clientBirthday ? getAge(form.clientBirthday, form.clientBirthdayEstimated) : ''
   // 显示
   modalView.value = true
+}
+// 年龄推算（和后台用户管理一致）：填年龄反推生日，模糊值标记为估算
+const ageInput = ref<string>('')
+const onBirthdayChange = (): void => {
+  ageInput.value = form.clientBirthday ? getAge(form.clientBirthday, form.clientBirthdayEstimated) : ''
+  form.clientBirthdayEstimated = false
+}
+const onAgeInput = (): void => {
+  if (!ageInput.value) return
+  const r = parseAgeToBirthday(ageInput.value)
+  if (r) {
+    form.clientBirthday = r.birthday
+    form.clientBirthdayEstimated = r.estimated
+  }
 }
 // 手机号只保留数字，且最多 11 位
 const sanitizeTel = () => {
@@ -190,6 +219,9 @@ const rules = reactive<FormRules>({
   "clientTel": [
     {required: true, message: '请输入手机号', trigger: 'blur'},
     {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur'},
+  ],
+  "clientIdCard": [
+    {pattern: /^[\dXx]{18}$/, message: '身份证应为18位（最后位可为X）', trigger: 'blur'},
   ],
 })
 // 头像参数的改变:子传父

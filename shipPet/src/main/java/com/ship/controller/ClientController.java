@@ -116,6 +116,9 @@ public class ClientController {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");
         if (!client.getClientTel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
+        if (!StrUtil.isWhite(client.getClientIdCard())
+                && !client.getClientIdCard().matches("^\\d{17}[\\dXx]$"))
+            return Result.error("身份证格式不正确");
         if (UserUtil.getUser() instanceof Client client1) {
             if (clientService.existsByTel(client.getClientTel(), client1.getClientId()))
                 return Result.error("手机号已被其他用户使用");
