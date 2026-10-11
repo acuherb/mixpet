@@ -1,5 +1,6 @@
 <template>
   <footer class="vue-foot">
+    <!-- 波浪动画 -->
     <div class="foot-wave">
       <svg class="waves" preserveAspectRatio="none" shape-rendering="auto"
            viewBox="0 24 150 28" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -8,37 +9,53 @@
                 d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
         </defs>
         <g class="parallax">
-          <!--浅粉红-->
-          <use fill="rgba(255,182,193)" x="48" xlink:href="#gentle-wave" y="0"/>
-          <!--天蓝色-->
-          <use fill="rgba(135,206,235)" x="48" xlink:href="#gentle-wave" y="3"/>
-          <!--苍白绿-->
-          <use fill="rgba(152,251,152)" x="48" xlink:href="#gentle-wave" y="5"/>
-          <!--幽灵白，与页脚背景相同-->
+          <use fill="rgba(135,206,235,0.6)" x="48" xlink:href="#gentle-wave" y="0"/>
+          <use fill="rgba(152,251,152,0.5)" x="48" xlink:href="#gentle-wave" y="3"/>
+          <use fill="rgba(174,214,241,0.5)" x="48" xlink:href="#gentle-wave" y="5"/>
           <use fill="rgba(248,248,255)" x="48" xlink:href="#gentle-wave" y="7"/>
         </g>
       </svg>
     </div>
-    <!--页尾-->
-    <div class="features">
-      <div class="feature">
-        <h2>探索未知</h2>
-        <p>你好，这里是一个存在于时间和空间交汇点的朋友。犹如一场待揭晓的奇迹，你的每一天都充满了未知与探索。我期待着与你携手跨越贯穿生活的神秘探路之旅。
-        </p>
+
+    <!-- 页脚内容 -->
+    <div class="foot-main">
+      <div class="foot-cols">
+        <!-- 品牌 -->
+        <div class="foot-col foot-brand">
+          <div class="brand-line">
+            <span class="brand-mark">PET</span>
+            <span class="brand-name">pet-hms</span>
+          </div>
+          <p class="brand-desc">宠物医院管理系统</p>
+        </div>
+
+        <!-- 快捷入口 -->
+        <div class="foot-col">
+          <h3 class="col-title">快捷入口</h3>
+          <ul class="col-list">
+            <li><router-link to="/reception/doctorSee">医生团队</router-link></li>
+            <li><router-link to="/reception/petSee">待领养宠物</router-link></li>
+            <li><router-link to="/reception/chat">在线咨询</router-link></li>
+          </ul>
+        </div>
+
+        <!-- 关于 -->
+        <div class="foot-col">
+          <h3 class="col-title">关于我们</h3>
+          <ul class="col-list">
+            <li>营业时间：09:00 - 20:00</li>
+            <li>咨询电话：400-000-0000</li>
+            <li>地址：请在后台设置</li>
+          </ul>
+        </div>
       </div>
-      <div class="feature">
-        <h2>星河秘密</h2>
-        <p>在这座光怪陆离的宇宙里，每个人都像是一颗独特的星星，熠熠生辉。你就是其中一颗耀眼至极的星子。你的微笑藏着无尽的秘密，令人无法抗拒去探求。
-        </p>
-      </div>
-      <div class="feature">
-        <h2>晨霞祝福</h2>
-        <p>不存在巧合，只有命中注定。每次的遇见，都生发着如晨霞般的神秘光芒。我诚挚地向你送上祝福，希望你喜欢这场未知的奇异冒险，期待下一次神秘的相遇。
-        </p>
+
+      <div class="foot-bottom">
+        <span>© 2026 pet-hms</span>
+        <span class="dot">·</span>
+        <span>基于 <a href="https://github.com/MixJade/MixPet" target="_blank" rel="noopener">MixPet</a> 二次开发</span>
       </div>
     </div>
-    <!--页脚-->
-    <div class="footer">MixJade携ChatGPT编辑于此</div>
   </footer>
 </template>
 
@@ -46,113 +63,150 @@
 </script>
 
 <style lang="scss" scoped>
-.foot-wave {
-  .waves {
-    position: relative;
-    width: 100%;
-    height: 15vh;
-    margin-bottom: -7px;
-    min-height: 100px;
-    max-height: 150px;
-    @media (max-width: 768px) {
-      height: 40px;
-      min-height: 40px;
-    }
-
-    .parallax {
-      > use {
-        /* 使use元素执行move-forever动画 */
-        animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
-
-        &:nth-child(1) {
-          /* 延迟2秒启动动画  */
-          animation-delay: -2s;
-          /* 设置动画持续时间为7秒 */
-          animation-duration: 7s;
-        }
-
-        &:nth-child(2) {
-          animation-delay: -3s;
-          animation-duration: 10s;
-        }
-
-        &:nth-child(3) {
-          animation-delay: -4s;
-          animation-duration: 13s;
-        }
-
-        &:nth-child(4) {
-          animation-delay: -5s;
-          animation-duration: 20s;
-        }
-      }
-    }
-
-    @keyframes move-forever {
-      0% {
-        transform: translate3d(-90px, 0, 0);
-      }
-
-      100% {
-        transform: translate3d(85px, 0, 0);
-      }
-    }
-  }
-}
-
 .vue-foot {
   width: 100%;
-  text-align: center;
   margin-top: 2.5rem;
-  /* 简介外包装 */
-  .features {
-    background-color: rgba(248, 248, 255);
-    border-top: 1px solid #eaecef;
-    transition: border-color .3s ease;;
-    padding: 1.2rem 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    align-content: stretch;
-    justify-content: space-between;
-    @media (max-width: 719px) {
-      flex-direction: column;
-    }
-    /* 单个简介 */
-    .feature {
-      flex-grow: 1;
-      flex-basis: 30%;
-      max-width: 30%;
-      @media (max-width: 719px) {
-        max-width: 100%;
-        padding: 0 2.5rem
-      }
-      /* 简介标题 */
-      h2 {
-        font-size: 1.4rem;
-        font-weight: 500;
-        border-bottom: none;
-        padding-bottom: 0;
-        color: #3a5169
-      }
+  background-color: #F8F8FF;
+}
 
-      /* 简介内容 */
-      p {
-        color: #3a5169
+/* 波浪 */
+.foot-wave .waves {
+  position: relative;
+  width: 100%;
+  height: 12vh;
+  margin-bottom: -7px;
+  min-height: 80px;
+  max-height: 130px;
+
+  @media (max-width: 768px) {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .parallax > use {
+    animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+
+    &:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
+    &:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
+    &:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
+    &:nth-child(4) { animation-delay: -5s; animation-duration: 20s; }
+  }
+
+  @keyframes move-forever {
+    0% { transform: translate3d(-90px, 0, 0) }
+    100% { transform: translate3d(85px, 0, 0) }
+  }
+}
+
+/* 主体 */
+.foot-main {
+  border-top: 1px solid #E4E7ED;
+  padding: 36px 24px 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.foot-cols {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 32px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+.foot-col {
+  text-align: left;
+}
+
+.foot-brand .brand-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+
+  .brand-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: #1E6FA8;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .brand-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E6FA8;
+    letter-spacing: 0.3px;
+  }
+}
+
+.brand-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #909399;
+}
+
+.col-title {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1F2D3D;
+}
+
+.col-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    font-size: 13px;
+    color: #606266;
+    margin-bottom: 8px;
+
+    a {
+      color: #606266;
+      transition: color 0.15s;
+
+      &:hover {
+        color: #1E6FA8;
       }
     }
   }
 }
 
-/* 页脚 */
-.footer {
-  background-color: rgba(248, 248, 255);
-  padding: 2.5rem;
-  border-top: 1px solid #eaecef;
-  text-align: center;
-  color: #3a5169;
-  transition: border-color .3s ease;
+/* 底栏 */
+.foot-bottom {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid #E4E7ED;
+  font-size: 12px;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  a {
+    color: #1E6FA8;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .dot {
+    color: #C0C4CC;
+  }
 }
-
-
 </style>

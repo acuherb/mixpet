@@ -113,22 +113,48 @@ const adminToClient = () => {
 .mixJade {
   position: absolute;
   top: 50%;
-  width: 380px;
+  width: 420px;
   left: 50%;
-  margin-left: -190px;
-  margin-top: -180px;
-  min-height: 360px;
+  margin-left: -210px;
+  margin-top: -220px;
+  min-height: 440px;
   text-align: center;
-  justify-content: center;
-  align-items: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 8px 20px rgba(0, 0, 0, 0.15);
   background-color: #FAFAFA;
-  border-radius: 16px;
+  border-radius: 20px;
   backface-visibility: hidden;
   transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   -webkit-user-select: none;
   user-select: none;
-  padding: 32px 20px 24px;
+  padding: 40px 36px 32px;
+  box-sizing: border-box;
   z-index: 1;
+
+  /* 底部两个辅助按钮的容器 */
+  > div:last-child {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
+/* 小屏适配 */
+@media (max-width: 480px) {
+  .mixJade {
+    width: calc(100vw - 40px);
+    left: 20px;
+    margin-left: 0;
+    margin-top: -220px;
+    padding: 32px 24px 24px;
+  }
+
+  .my-h2 {
+    font-size: 20px !important;
+    letter-spacing: 2px !important;
+    width: 90%;
+    text-align: center;
+  }
 }
 </style>

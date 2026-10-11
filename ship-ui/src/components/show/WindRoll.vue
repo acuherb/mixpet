@@ -1,288 +1,216 @@
 <template>
   <section ref="myRoll">
-    <img id="wind" ref="wind" alt="神像" src="/picture/wind.png">
-    <img id="wall-1" alt="围墙1" src="/picture/wall.png">
-    <img id="wall-2" alt="围墙2" src="/picture/wall.png">
-    <img id="star" ref="star" alt="流星" src="/picture/star.png">
-    <img id="cloud" ref="cloud" alt="云朵" src="/picture/cloud.png">
-    <div id="text" ref="text">HELLO_WORLD</div>
-    <router-link :to="isLogin?'/reception/clientCenter':'/'">
-      <MoveBtn id="btn">{{ isLogin ? "个人中心" : "前往登录" }}</MoveBtn>
-    </router-link>
+    <!-- 背景装饰：模糊光斑 -->
+    <div class="blob blob-1" ref="blob1"/>
+    <div class="blob blob-2" ref="blob2"/>
+    <div class="blob blob-3" ref="blob3"/>
+    <!-- 装饰网格 -->
+    <div class="grid"/>
+    <!-- 主内容 -->
+    <div class="hero-inner">
+      <div class="hero-tag">pet-hms · 宠物医疗</div>
+      <h1 class="hero-title">守护每一只毛孩子</h1>
+      <p class="hero-subtitle">
+        预约挂号 · 在线咨询 · 宠物档案 · 全程陪伴
+      </p>
+      <div class="hero-actions">
+        <router-link class="btn btn-primary" to="/reception/doctorSee">
+          查看医生
+        </router-link>
+        <router-link class="btn btn-ghost" to="/reception/chat">
+          在线咨询
+        </router-link>
+      </div>
+    </div>
   </section>
 </template>
 
 <script lang="ts" setup>
 import {onBeforeUnmount, onMounted, ref} from "vue";
-import MoveBtn from "@/components/button/MoveBtn.vue";
 
-// 接收参数：是否登陆
+// 保留 isLogin prop 接口（父组件仍会传入）
 defineProps<{
   readonly isLogin: boolean
 }>()
 
-const star = ref<HTMLDivElement>()
-const wind = ref<HTMLDivElement>()
-const cloud = ref<HTMLDivElement>()
-const text = ref<HTMLDivElement>()
-const myRoll = ref<HTMLDivElement>()
-let rollHeight: number = 880;
+const myRoll = ref<HTMLElement>()
+const blob1 = ref<HTMLElement>()
+const blob2 = ref<HTMLElement>()
+const blob3 = ref<HTMLElement>()
+let rollHeight = 900
 
-const scrollWind = () => {
-  let scrollY = window.scrollY
-  if (scrollY < rollHeight) {
-    star.value!.style.top = scrollY * 1.2 + 'px';
-    star.value!.style.left = scrollY * 1.2 + 'px';
-    wind.value!.style.bottom = -scrollY * 0.5 + 'px';
-    cloud.value!.style.marginLeft = -scrollY + 'px';
-    cloud.value!.style.marginTop = scrollY * 0.4 + 'px';
-    text.value!.style.marginLeft = -scrollY * 4 + 'px';
-    text.value!.style.marginTop = scrollY * 0.5 + 'px';
-  }
+const scrollBlobs = () => {
+  const y = window.scrollY
+  if (y > rollHeight) return
+  if (blob1.value) blob1.value.style.transform = `translate(${y * 0.15}px, ${y * 0.2}px)`
+  if (blob2.value) blob2.value.style.transform = `translate(${-y * 0.2}px, ${y * 0.15}px)`
+  if (blob3.value) blob3.value.style.transform = `translate(${y * 0.1}px, ${-y * 0.1}px)`
 }
 
 onMounted(() => {
   if (myRoll.value?.offsetHeight !== undefined) {
-    rollHeight = myRoll.value!.offsetHeight
+    rollHeight = myRoll.value.offsetHeight
   }
-  window.addEventListener('scroll', scrollWind)
+  window.addEventListener('scroll', scrollBlobs, {passive: true})
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', scrollWind)
+  window.removeEventListener('scroll', scrollBlobs)
 })
 </script>
 
 <style lang="scss" scoped>
-/* 滚动视觉差 */
 section {
   position: relative;
   width: 100%;
-  height: 90vh;
+  height: calc(100vh - 60px);
+  min-height: 520px;
   overflow: hidden;
-  background-image: linear-gradient(#3CB371, transparent);
-
-  img {
-    position: absolute;
-    pointer-events: none;
-
-    &#wind {
-      height: 80%;
-      width: auto;
-      object-fit: contain;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 40;
-    }
-
-    &#wall-1 {
-      height: auto;
-      width: 40%;
-      bottom: 0;
-      z-index: 50;
-    }
-
-    &#wall-2 {
-      height: auto;
-      width: 40%;
-      right: 0;
-      bottom: 0;
-      transform: scaleX(-1);
-      z-index: 50;
-    }
-
-    &#star {
-      height: 20%;
-      width: auto;
-      z-index: 10;
-      top: 0;
-      left: 0;
-    }
-
-    &#cloud {
-      mix-blend-mode: screen; /* 设置背景融合 */
-      height: 20%;
-      width: auto;
-      z-index: 20;
-      top: 25%;
-      left: 50%;
-    }
-  }
-
-  #text {
-    position: absolute;
-    color: #FFFAF0;
-    font-size: 6vw;
-    white-space: nowrap;
-    z-index: 30;
-    transform: translateY(100px);
-    left: 100%;
-  }
-}
-
-/* 导航栏 */
-header {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 0 60px;
-  background-color: #228B22;
+  max-width: 100vw;
+  background: linear-gradient(160deg, #E8F5EE 0%, #F5F7FA 55%, #EAF3FA 100%);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  z-index: 100;
-
-  & > a:first-child {
-    color: #fff;
-    text-decoration: none;
-    font-size: 1.5em;
-    font-weight: 700;
-    letter-spacing: 2px;
-  }
-
-  > ul {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    > li {
-      list-style: none;
-      margin-left: 20px;
-
-      a {
-        text-decoration: none;
-        color: #fff;
-        padding: 6px 25px;
-        border-radius: 20px;
-
-        &:hover, &:active {
-          background-color: #fff;
-          color: #000;
-        }
-      }
-    }
-  }
+  justify-content: center;
 }
 
-/* 导航下拉框 */
-.drop {
-  cursor: pointer;
-  color: #fff;
-
-  span {
-    display: inline-block;
-    transform: rotate(0deg);
-    transition: all 500ms;
-  }
-
-  &:hover {
-    color: #FFD700;
-
-    span {
-      transform: rotate(180deg);
-    }
-
-    .drop-list {
-      visibility: visible;
-      height: 128px;
-    }
-  }
-
-  .drop-list {
-    position: absolute;
-    width: 136px;
-    margin-left: -28px;
-    background: #3CB371;
-    box-shadow: 0 1px 2px #333333;
-    border: dashed seashell;
-    border-radius: 20px;
-    list-style: none;
-    text-align: center;
-    padding: 5px 5px;
-    z-index: 70;
-    transition: height 500ms;
-    height: 0;
-    overflow-y: hidden;
-    visibility: hidden;
-
-    li {
-      padding-top: 4px;
-      padding-bottom: 4px;
-    }
-  }
+/* 背景网格 */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(30, 111, 168, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 111, 168, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 75%);
+  pointer-events: none;
 }
 
-/* 滚动视觉差 */
-section {
+/* 模糊光斑 */
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.blob-1 {
+  width: 420px;
+  height: 420px;
+  background: #7BD1A8;
+  top: -80px;
+  left: -60px;
+  animation: float 12s ease-in-out infinite;
+}
+
+.blob-2 {
+  width: 380px;
+  height: 380px;
+  background: #A8D3EC;
+  bottom: -100px;
+  right: -80px;
+  animation: float 15s ease-in-out infinite reverse;
+}
+
+.blob-3 {
+  width: 260px;
+  height: 260px;
+  background: #FFD9A0;
+  top: 40%;
+  right: 25%;
+  opacity: 0.35;
+  animation: float 18s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) }
+  50% { transform: translateY(-24px) }
+}
+
+/* 内容 */
+.hero-inner {
   position: relative;
-  width: 100%;
-  height: 90vh;
-  overflow: hidden;
-  background-image: linear-gradient(#3CB371, transparent);
+  z-index: 10;
+  text-align: center;
+  padding: 0 24px;
+  max-width: 720px;
+}
 
-  img {
-    position: absolute;
-    pointer-events: none;
+.hero-tag {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(30, 111, 168, 0.10);
+  color: #1E6FA8;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
 
-    &#wind {
-      height: 80%;
-      width: auto;
-      object-fit: contain;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 40;
-    }
+.hero-title {
+  margin: 0 0 16px;
+  font-size: 48px;
+  font-weight: 700;
+  color: #1F2D3D;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
 
-    &#wall-1 {
-      height: auto;
-      width: 40%;
-      bottom: 0;
-      z-index: 50;
-    }
+.hero-subtitle {
+  margin: 0 0 32px;
+  font-size: 16px;
+  color: #606266;
+  letter-spacing: 0.5px;
+}
 
-    &#wall-2 {
-      height: auto;
-      width: 40%;
-      right: 0;
-      bottom: 0;
-      transform: scaleX(-1);
-      z-index: 50;
-    }
+.hero-actions {
+  display: inline-flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 
-    &#star {
-      height: 20%;
-      width: auto;
-      z-index: 10;
-      top: 0;
-      left: 0;
-    }
+.btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  cursor: pointer;
 
-    &#cloud {
-      mix-blend-mode: screen; /* 设置背景融合 */
-      height: 20%;
-      width: auto;
-      z-index: 20;
-      top: 25%;
-      left: 50%;
+  &.btn-primary {
+    background: #1E6FA8;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(30, 111, 168, 0.28);
+
+    &:hover {
+      background: #2A82C2;
+      box-shadow: 0 8px 22px rgba(30, 111, 168, 0.36);
+      transform: translateY(-1px);
     }
   }
 
-  #text {
-    position: absolute;
-    color: #FFFAF0;
-    font-size: 6vw;
-    white-space: nowrap;
-    z-index: 30;
-    transform: translateY(100px);
-    left: 100%;
-  }
+  &.btn-ghost {
+    background: #fff;
+    color: #1E6FA8;
+    border: 1px solid #D8E3EE;
 
-  #btn {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    z-index: 60;
+    &:hover {
+      border-color: #1E6FA8;
+      background: #F0F7FD;
+    }
   }
+}
+
+/* 窄屏适配 */
+@media (max-width: 768px) {
+  .hero-title { font-size: 34px }
+  .hero-subtitle { font-size: 14px }
+  section { height: 70vh }
 }
 </style>

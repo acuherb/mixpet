@@ -7,7 +7,6 @@
       {{ content }}
     </main>
     <footer>
-      点击按钮确认
       <button type="button" @click="closeMe">
         <svg height="24" width="24" fill="#FFFFFF" viewBox="0 0 24 24" id="sparkle">
           <path

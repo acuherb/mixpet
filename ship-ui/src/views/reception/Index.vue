@@ -7,10 +7,6 @@
           <span class="brand-name">pet-hms</span>
         </router-link>
         <ul class="nav">
-          <li><a @click="openDialog(notices[0])">网站公告</a></li>
-          <li>
-            <router-link to="/reception/chat">咨询医生</router-link>
-          </li>
           <li v-if="isLogin" class="drop">
             <span>个人中心</span>
             <span class="caret">▾</span>
@@ -45,11 +41,23 @@
             <p class="section-desc">最新通知与动态</p>
           </div>
         </div>
-        <MyRow>
-          <NoticeBtn v-for="notice in notices" :key="notice.noticeId" @click="openDialog(notice)">
-            {{ notice.noticeTitle }}
-          </NoticeBtn>
-        </MyRow>
+        <div v-if="notices.length" class="notice-grid">
+          <div
+              v-for="notice in notices.slice(0, 6)"
+              :key="notice.noticeId"
+              class="notice-card"
+              @click="openDialog(notice)"
+          >
+            <div class="notice-icon-wrap">
+              <span class="notice-icon">📢</span>
+            </div>
+            <div class="notice-card-body">
+              <div class="notice-title">{{ notice.noticeTitle }}</div>
+              <div class="notice-arrow">查看详情 →</div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="notice-empty">暂无公告</div>
       </section>
 
       <MyDialog :tit="noticeDialog.tit" :content="noticeDialog.content" ref="myShow"/>
@@ -134,7 +142,6 @@ import {useRouter} from "vue-router";
 import VueFoot from "@/components/show/VueFoot.vue";
 import WindRoll from "@/components/show/WindRoll.vue";
 import MyRow from "@/components/row/MyRow.vue";
-import NoticeBtn from "@/components/button/NoticeBtn.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
 
@@ -421,9 +428,253 @@ const myLogout = () => {
   }
 }
 
+/* 公告卡片网格 */
+.notice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+
+  @media (max-width: 992px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 576px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notice-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 20px 20px 24px;
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 100%);
+  border: 1px solid #E4E7ED;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(.55, .5, .45, .5);
+  box-shadow: 0 1px 2px rgba(31, 45, 61, 0.04);
+  overflow: hidden;
+
+  /* 左侧渐变色条 */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #1E6FA8 0%, #7BD1A8 100%);
+    opacity: 0.85;
+    transition: opacity 0.25s;
+  }
+
+  &:hover {
+    border-color: #B6D9EC;
+    box-shadow: 0 8px 22px rgba(30, 111, 168, 0.14);
+    transform: translateY(-3px);
+    background: linear-gradient(135deg, #FFFFFF 0%, #F0F7FD 100%);
+
+    &::before {
+      opacity: 1;
+    }
+
+    .notice-icon-wrap {
+      transform: scale(1.08);
+      background: linear-gradient(135deg, #EAF3FA 0%, #D6ECFA 100%);
+    }
+
+    .notice-arrow {
+      color: #1E6FA8;
+      opacity: 1;
+      transform: translateX(2px);
+    }
+  }
+}
+
+.notice-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #F5F7FA 0%, #EAF3FA 100%);
+  transition: all 0.25s;
+}
+
+.notice-icon {
+  font-size: 20px;
+}
+
+.notice-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notice-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F2D3D;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 42px;
+}
+
+.notice-arrow {
+  font-size: 12px;
+  color: #909399;
+  opacity: 0.7;
+  transition: color 0.2s, opacity 0.2s, transform 0.2s;
+}
+
+.notice-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #909399;
+  background: #fff;
+  border: 1px solid #E4E7ED;
+  border-radius: 10px;
+}
+
 /* 公告弹窗里的换行文本 */
 .textNotice {
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+/* ========== 手机端适配 ========== */
+@media (max-width: 768px) {
+  /* 顶栏 */
+  .topbar-inner {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand {
+    font-size: 16px;
+    gap: 8px;
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      font-size: 10px;
+    }
+  }
+
+  .nav {
+    gap: 2px;
+    flex-wrap: wrap;
+
+    > li > a {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+  }
+
+  .drop {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  /* 主体 */
+  .page {
+    padding: 20px 12px 32px;
+  }
+
+  .section {
+    margin-bottom: 28px;
+  }
+
+  .section-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+
+  .section-title {
+    font-size: 17px;
+  }
+
+  .section-desc {
+    font-size: 12px;
+  }
+
+  .section-action {
+    font-size: 12px;
+  }
+
+  /* 公告卡片 */
+  .notice-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .notice-card {
+    padding: 14px 14px 14px 18px;
+    gap: 12px;
+  }
+
+  .notice-icon-wrap {
+    width: 36px;
+    height: 36px;
+  }
+
+  .notice-icon {
+    font-size: 18px;
+  }
+
+  .notice-title {
+    font-size: 14px;
+    min-height: auto;
+  }
+
+  /* 公告弹窗 */
+  .textNotice {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-inner {
+    padding: 6px 12px;
+  }
+
+  .brand {
+    font-size: 15px;
+  }
+
+  .nav > li > a {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .drop {
+    padding: 5px 8px;
+    font-size: 12px;
+  }
+
+  .page {
+    padding: 16px 10px 24px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
 }
 </style>

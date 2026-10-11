@@ -3,48 +3,61 @@
     <h3>{{ getRoleName }}登录</h3>
     <div class="my-input">
       <label>
-        <input v-model="formLogin.username" autocomplete="off" name="username"
-               placeholder="username"
-               style="background-image: url('/icon/username.svg')" type="text">
-        <span>帐号</span>
+        <span class="icon">
+          <img alt="" src="/icon/username.svg">
+        </span>
+        <input
+            v-model="formLogin.username"
+            autocomplete="off"
+            name="username"
+            placeholder="请输入账号"
+            type="text"
+            @keyup.enter="toLogin"
+        >
       </label>
     </div>
     <div class="my-input">
       <label>
-        <input v-model="formLogin.password" name="password" placeholder="password"
-               style="background-image: url('/icon/password.svg')" type="password"
-               @keyup.enter="toLogin"
+        <span class="icon">
+          <img alt="" src="/icon/password.svg">
+        </span>
+        <input
+            v-model="formLogin.password"
+            autocomplete="new-password"
+            name="password"
+            placeholder="请输入密码"
+            type="password"
+            @keyup.enter="toLogin"
         >
-        <span>密码</span>
       </label>
     </div>
+
     <div class="remember">
       <label class="check-label">
-        <input v-model="formLogin.remember" class="check-input" name="remember" type="checkbox">
-        <span class="check-block">
-          <span class="inner">记住我</span>
-        </span>
+        <input v-model="formLogin.remember" class="check-input" type="checkbox">
+        <span class="check-box"></span>
+        <span class="check-text">记住我</span>
       </label>
     </div>
-    <MyBtn @click="toLogin">登录</MyBtn>
+
+    <MyBtn class="login-btn" @click="toLogin">登录</MyBtn>
   </div>
 </template>
 
 <script lang="ts" setup>
-/*=====登录的页面，不同的角色同一个登录页面，不同的请求路径=====*/
 import {computed, reactive} from "vue";
 import MyBtn from "@/components/button/MyBtn.vue";
 import {reqLogin} from "@/request/PowerApi";
 import {LoginVo, RoleEnum} from "@/model/VO/LoginVo";
-// 定义登录的角色
+
 const prop = defineProps<{
   role: RoleEnum
 }>()
-// 登陆成功的事件
+
 const emit = defineEmits<{
   (e: "loginSuc"): void
 }>()
-// 根据传来的角色设置展示
+
 const getRoleName = computed(() => {
   switch (prop.role) {
     case RoleEnum.DOCTOR:
@@ -53,7 +66,7 @@ const getRoleName = computed(() => {
       return "用户";
   }
 })
-// 登录的数据
+
 const formLogin: LoginVo = reactive({
   username: "",
   password: "",
@@ -61,7 +74,6 @@ const formLogin: LoginVo = reactive({
   role: RoleEnum.CLIENT
 })
 
-// 点击登录之后
 const toLogin = () => {
   formLogin.role = prop.role
   reqLogin(formLogin).then(resp => {
@@ -74,132 +86,154 @@ const toLogin = () => {
 </script>
 
 <style lang="scss" scoped>
-/*登录的小卡片*/
+/* 登录卡片 */
 .login-card {
   width: 100%;
   text-align: center;
+
   h3 {
     font-size: 22px;
-    color: #333;
-    margin: 0 0 20px 0;
+    color: #1F2D3D;
+    margin: 0 0 28px 0;
     font-weight: 600;
     letter-spacing: 1px;
   }
 }
 
-/* 自己写的浮动输入框 */
+/* 输入框 */
 .my-input {
-  position: relative;
-  text-align: left;
-  margin: 14px 0;
-  left: 50%;
-  margin-left: -140px;
-  width: 280px;
-  /* 输入框 */
-  input {
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  width: 100%;
+  margin-bottom: 16px;
+
+  label {
+    display: flex;
+    align-items: center;
     width: 100%;
-    height: 46px;
-    padding: 12px 12px 0 46px;
-    box-sizing: border-box;
-    font-size: 15px;
-    border: 2px solid #e0e0e0;
-    background-color: #fafafa;
+    height: 48px;
+    border: 1.5px solid #E4E7ED;
     border-radius: 10px;
-    background: {
-      size: 22px 22px;
-      repeat: no-repeat;
-      position: 14px center;
-    };
-    /*将占位符设为透明*/
-    &::placeholder {
-      color: transparent;
-    }
+    background-color: #FAFAFA;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    box-sizing: border-box;
+    overflow: hidden;
 
-    /* 获取焦点显示阴影 */
-    &:focus {
-      color: #212529;
+    &:focus-within {
+      border-color: #1E6FA8;
       background-color: #fff;
-      border-color: #86b7fe;
-      outline: 0;
-      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      box-shadow: 0 0 0 3px rgba(30, 111, 168, 0.12);
+    }
+  }
+
+  .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 100%;
+    flex-shrink: 0;
+
+    img {
+      width: 18px;
+      height: 18px;
+      opacity: 0.55;
+    }
+  }
+
+  input {
+    flex: 1;
+    height: 100%;
+    padding: 0 16px 0 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: #1F2D3D;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: #B0B3B8;
+      font-size: 14px;
     }
 
-    /* 标签上浮 */
-    &:not(:placeholder-shown) + span, &:focus + span {
-      color: #c9ab0a;
-      opacity: 0.65;
-      transform: scale(0.8) translateY(-3px) translateX(3px);
-    }
-
-    /*标签样式*/
-    & + span {
-      position: absolute;
-      font-size: medium;
-      color: #6c757d;
-      top: 0;
-      left: 36px;
-      height: 46px;
-      line-height: 46px;
-      overflow: hidden;
-      white-space: nowrap;
-      pointer-events: none;
-      border: 1px solid transparent;
-      transform-origin: 0 0;
-      transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+    /* 禁用浏览器自动填充的黄底 */
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px #FAFAFA inset !important;
+      -webkit-text-fill-color: #1F2D3D !important;
+      transition: background-color 9999s ease-out 0s;
     }
   }
 }
 
-/* 记住我的单选框 */
+/* 记住我 */
 .remember {
-  position: relative;
-  margin: 12px 0;
-  left: 50%;
-  margin-left: -110px;
-  width: 80px;
+  display: flex;
+  justify-content: flex-start;
+  margin: 4px 0 20px;
 
   .check-label {
-    .check-block {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 24px;
-      border-radius: 12px;
-      cursor: pointer;
-      -webkit-user-select: none;
-      padding: 2px 8px;
-      background-color: rgba(0, 0, 0, 0.16);
-      color: rgba(255, 255, 255, 0.7);
-      transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
-      transition-duration: 500ms;
-      transition-property: color, background-color, box-shadow;
-      box-shadow: rgba(0, 0, 0, 0.15) 0 2px 1px 0 inset, rgba(255, 255, 255, 0.17) 0 1px 1px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 
-      .inner {
-        display: inline-block;
-        padding: 8px;
-        font-size: 14px;
-        font-weight: 300;
-        pointer-events: none;
-      }
-    }
+  .check-input {
+    display: none;
+  }
 
-    .check-input {
-      display: none;
+  /* 复选框方块 */
+  .check-box {
+    position: relative;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border: 1.5px solid #C0C4CC;
+    border-radius: 4px;
+    background-color: #fff;
+    transition: all 0.2s;
+    box-sizing: border-box;
 
-      &:checked + .check-block {
-        background-color: #409EFF;
-        color: white;
-        box-shadow: rgba(0, 0, 0, 0.23) 0 -4px 1px 0 inset, rgba(255, 255, 255, 0.17) 0 -1px 1px 0, rgba(0, 0, 0, 0.17) 0 2px 4px 1px;
-
-        &:hover {
-          background-color: #337ecc;
-          box-shadow: rgba(0, 0, 0, 0.26) 0 -4px 1px 0 inset, rgba(255, 255, 255, 0.17) 0 -1px 1px 0, rgba(0, 0, 0, 0.15) 0 3px 6px 2px;
-        }
-      }
+    /* 对勾 */
+    &::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 1px;
+      width: 5px;
+      height: 10px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg) scale(0);
+      transition: transform 0.15s;
     }
   }
+
+  .check-input:checked + .check-box {
+    background-color: #1E6FA8;
+    border-color: #1E6FA8;
+
+    &::after {
+      transform: rotate(45deg) scale(1);
+    }
+  }
+
+  .check-label:hover .check-box {
+    border-color: #1E6FA8;
+  }
+
+  .check-text {
+    font-size: 14px;
+    color: #606266;
+    white-space: nowrap;
+    line-height: 1;
+  }
+}
+
+.login-btn {
+  width: 100%;
 }
 </style>
