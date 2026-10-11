@@ -29,7 +29,7 @@
   <div v-show="modalView">
     <h2>修改个人资料</h2>
     <!--头像上传框-->
-    <UpImg :photoNm="form.clientPhoto" @upPhoto="changePhoto"/>
+    <UpImg :photoNm="form.clientPhoto" :name="form.clientName" show-random @upPhoto="changePhoto"/>
     <!--表单-->
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="100px">
       <el-form-item label="姓名" prop="clientName">

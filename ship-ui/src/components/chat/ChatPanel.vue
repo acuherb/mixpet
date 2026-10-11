@@ -35,9 +35,9 @@
         <footer>
           <el-upload
               :before-upload="beforeImgUpload"
-              :on-success="handleAvatarSuccess"
+              :http-request="doImgUpload"
               :show-file-list="false"
-              action="/api/common/upChat"
+              accept="image/jpeg,image/png"
               name="myFile"
           >
             <el-icon size="26">
@@ -67,7 +67,9 @@ import {ChatGroup} from "@/model/DO/ChatGroup";
 import {MsgDo} from "@/model/DO/MsgDo";
 import ChatMain from "@/components/chat/ChatMain.vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
-import {ElMessage, UploadRawFile} from "element-plus";
+import {ElMessage, UploadRawFile, UploadRequestOptions} from "element-plus";
+import axios from "axios";
+import {compressImage} from "@/utils/ImageUtil";
 
 defineProps<{
   opType: "用户" | "医生",
@@ -108,18 +110,31 @@ const handleAvatarSuccess = (response: string): void => {
   emit("sendImgMsg", response)
 }
 /**
- * 图片上传框：上传前的校验
+ * 图片上传框：上传前的校验（大小不限，上传前会压缩）
  * @param rawFile 上传的聊天图片
  */
 const beforeImgUpload = (rawFile: UploadRawFile) => {
   if (rawFile.type !== 'image/png' && rawFile.type !== 'image/jpeg') {
     ElMessage.error('请上传JPG、PNG图片')
     return false
-  } else if (rawFile.size > 3145000) {
-    ElMessage.error('图片大小不能大于3MB')
-    return false
   }
   return true
+}
+/**
+ * 自定义上传：压缩后 POST 到 /api/common/upChat（返回新文件名）
+ */
+const doImgUpload = async (options: UploadRequestOptions): Promise<void> => {
+  try {
+    const file = await compressImage(options.file as File)
+    const fd = new FormData()
+    fd.append('myFile', file)
+    const resp = await axios.post<string>('/api/common/upChat', fd)
+    if (typeof resp.data === 'string' && resp.data) {
+      handleAvatarSuccess(resp.data)
+    } else ElMessage.error('图片发送失败，请重试')
+  } catch (e) {
+    ElMessage.error('图片发送失败，请重试')
+  }
 }
 </script>
 

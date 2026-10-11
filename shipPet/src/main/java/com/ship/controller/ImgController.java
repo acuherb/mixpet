@@ -107,6 +107,10 @@ public class ImgController {
         File input = new File(path);
         try {
             BufferedImage img = ImageIO.read(input);
+            if (img == null) { // 非图片或格式不支持（如 webp），保留原文件不处理
+                log.warn("图片读取失败（格式不支持？）：{}", path);
+                return false;
+            }
             // 裁剪图片
             int size = Math.min(img.getWidth(), img.getHeight());
             BufferedImage subImage = img.getSubimage(0, 0, size, size);

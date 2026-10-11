@@ -46,7 +46,7 @@
       <el-form ref="addFormRef" :model="addForm" :rules="addRules" label-width="80px">
         <!--头像（居中显示）-->
         <div class="photo-wrap">
-          <UpImg :photoNm="addForm.petPhoto" @upPhoto="changePhoto"/>
+          <UpImg :photoNm="addForm.petPhoto" :name="addForm.petName" show-random @upPhoto="changePhoto"/>
           <div class="photo-tip">点击虚线框上传头像（JPG/PNG，≤3MB，可选）</div>
         </div>
 
