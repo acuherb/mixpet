@@ -72,6 +72,26 @@ public class AppointmentController {
         return Result.choice("添加", appointmentService.save(appointment));
     }
 
+    /**
+     * 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物
+     */
+    @PostMapping("/self")
+    public Result saveSelf(@RequestBody Appointment appointment) {
+        if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
+        // 只能预约自己名下的宠物
+        Pet pet = petService.getById(appointment.getPetId());
+        if (pet == null) return Result.error("请选择宠物");
+        if (!client.getClientId().equals(pet.getClientId())) return Result.error("只能预约自己名下的宠物");
+        if (!Boolean.TRUE.equals(pet.getActive()))
+            return Result.error("该宠物信息待审核（或已停用），暂不能挂号，请联系医院");
+        appointment.setClientId(client.getClientId());
+        appointment.setPetOwnerId(client.getClientId());
+        Result checkAppoint = checkAppoint(appointment);
+        if (checkAppoint.code() == 0) return checkAppoint;
+        appointment.setIsSuc(false);
+        return Result.choice("预约", appointmentService.save(appointment));
+    }
+
     @DeleteMapping("/{id}")
     @Secured(RoleConst.DOCTOR)
     public Result delete(@PathVariable Integer id) {

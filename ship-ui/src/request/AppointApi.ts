@@ -16,6 +16,9 @@ export const reqAppointList = (page: YAppointList): Promise<Page<AppointDto>> =>
 // 管理员新增挂号
 export const reqAddAppoint = (data: Appoint): Promise<Res> =>
     reqApi.post<string, Res>("appointment", data)
+// 顾客自己预约挂号
+export const reqAddSelfAppoint = (data: Appoint): Promise<Res> =>
+    reqApi.post<string, Res>("appointment/self", data)
 // 管理员修改挂号
 export const reqUpdateAppoint = (data: Appoint): Promise<Res> =>
     reqApi.put<string, Res>("appointment", data)
