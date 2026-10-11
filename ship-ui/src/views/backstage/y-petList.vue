@@ -58,6 +58,13 @@
       </el-table-column>
       <el-table-column label="近况" prop="petInfo" min-width="100" show-overflow-tooltip/>
       <el-table-column label="主人" prop="clientName" width="80" show-overflow-tooltip/>
+      <el-table-column label="状态" width="86">
+        <template #default="scope">
+          <el-tag v-if="scope.row.active === false && scope.row.petSource === 1" type="warning">待审核</el-tag>
+          <el-tag v-else-if="scope.row.active === false" type="info">已停用</el-tag>
+          <el-tag v-else type="success">正常</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column fixed="right" label="操作" width="240">
         <template #default="scope">
           <el-button-group>
@@ -67,6 +74,11 @@
             <el-button circle type="info" title="查看过户历史" @click="openHistory(scope.row)">档</el-button>
             <el-button v-if="scope.row.active !== false"
                        :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
+            <template v-else-if="scope.row.petSource === 1">
+              <!-- 顾客自建宠物待审核：可审核通过，也可驳回删除 -->
+              <el-button :icon="Refresh" circle type="success" title="审核通过" @click="restorePet(scope.row)"/>
+              <el-button :icon="Delete" circle type="danger" title="驳回（删除该宠物）" @click="delOne(scope.row)"/>
+            </template>
             <el-button v-else :icon="Refresh" circle type="success" title="恢复启用" @click="restorePet(scope.row)"/>
           </el-button-group>
         </template>
