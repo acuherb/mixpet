@@ -1,64 +1,72 @@
 <template>
-  <div>
+  <div class="list-page">
     <!--操作框-->
     <BackOpCol role="宠物" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
       <el-input v-model="qp.petName" placeholder="宠物姓名" size="large" @keyup.enter="sendQuery"/>
       <el-input v-model="qp.clientName" placeholder="用户姓名" size="large" @keyup.enter="sendQuery"/>
+      <template #left>
+        <span v-if="roleIdList.length > 0" class="sel-tip">
+          已选 <b>{{ roleIdList.length }}</b> 项
+        </span>
+      </template>
     </BackOpCol>
     <!--列表展示-->
     <el-table :data="petList.records"
-              max-height="80vh"
+              :row-style="rowStyle"
+              max-height="calc(100vh - 130px)"
               row-key="petId"
               stripe
               @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="30"/>
-      <el-table-column label="图像">
+      <el-table-column label="图像" width="60">
         <template #default="scope">
           <MyAvatar :name="scope.row.petPhoto"/>
         </template>
       </el-table-column>
-      <el-table-column label="宠物名" prop="petName"/>
-      <el-table-column label="品种">
+      <el-table-column label="宠物名" prop="petName" width="100" show-overflow-tooltip/>
+      <el-table-column label="品种" width="80">
         <template #default="scope">
           <el-tag>{{ scope.row.petVariety }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="性别">
+      <el-table-column label="性别" width="60">
         <template #default="scope">
           <TagSex :sex="scope.row.petSex"/>
         </template>
       </el-table-column>
-      <el-table-column label="绝育" width="90">
+      <el-table-column label="绝育" width="70">
         <template #default="scope">
           <el-tag :type="scope.row.petSterilization ? 'success' : 'info'">
             {{ scope.row.petSterilization ? '已绝育' : '未绝育' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="生日" prop="petBirthday" sortable width="120"/>
-      <el-table-column label="年龄" width="120">
+      <el-table-column label="生日" prop="petBirthday" sortable width="100"/>
+      <el-table-column label="年龄" width="80">
         <template #default="scope">{{ getAge(scope.row.petBirthday, scope.row.petBirthdayEstimated) }}</template>
       </el-table-column>
-      <el-table-column label="体重(kg)" width="100">
+      <el-table-column label="体重(kg)" width="80">
         <template #default="scope">{{ scope.row.petWeight ?? '--' }}</template>
       </el-table-column>
-      <el-table-column label="毛色" width="100">
+      <el-table-column label="毛色" width="80">
         <template #default="scope">{{ scope.row.petColor || '--' }}</template>
       </el-table-column>
-      <el-table-column label="健康状态">
+      <el-table-column label="健康状态" width="90">
         <template #default="scope">
           <el-tag>{{ scope.row.petStatus }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="近况" prop="petInfo"/>
-      <el-table-column label="主人" prop="clientName"/>
-      <el-table-column fixed="right" label="操作">
+      <el-table-column label="近况" prop="petInfo" min-width="100" show-overflow-tooltip/>
+      <el-table-column label="主人" prop="clientName" width="80" show-overflow-tooltip/>
+      <el-table-column fixed="right" label="操作" width="200">
         <template #default="scope">
           <el-button-group>
-            <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
-            <el-button v-if="scope.row.clientId" circle type="primary" @click="openTransfer(scope.row)">过</el-button>
-            <el-button circle type="info" @click="openHistory(scope.row)">档</el-button>
-            <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
+            <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
+            <el-button v-if="scope.row.clientId" circle type="primary" title="过户给新主人" @click="openTransfer(scope.row)">过</el-button>
+            <el-button circle type="info" title="查看过户历史" @click="openHistory(scope.row)">档</el-button>
+            <el-button v-if="scope.row.active !== false"
+                       :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
+            <el-button v-else :icon="Refresh" circle type="success" title="恢复启用" @click="restorePet(scope.row)"/>
           </el-button-group>
         </template>
       </el-table-column>
@@ -330,7 +338,8 @@
 </template>
 
 <script lang="ts" setup>
-import {Delete, Edit} from "@element-plus/icons-vue"
+
+import {Delete, Edit, Refresh} from "@element-plus/icons-vue"
 import {computed, onMounted, reactive, ref} from 'vue'
 
 const ageInput = ref<string>('')
@@ -356,7 +365,7 @@ import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {examplePet, Pet} from "@/model/entiy/Pet";
 import TagSex from "@/components/show/TagSex.vue";
 import BackPage from "@/components/row/BackPage.vue";
-import {reqAddPet, reqDelPet, reqDelPetBatch, reqPetList, reqUpdatePet, reqTransferPet, reqTransferHistory} from "@/request/PetApi";
+import {reqAddPet, reqDelPet, reqActivatePet, reqDelPetBatch, reqPetList, reqUpdatePet, reqTransferPet, reqTransferHistory} from "@/request/PetApi";
 import {reqAddClient} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {NameDo} from "@/model/DO/NameDo";
@@ -365,6 +374,7 @@ import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import UpImg from "@/components/UpImg.vue";
 import {Res} from "@/request/Res";
 import MyAvatar from "@/components/show/MyAvatar.vue";
+
 
 /**
  ┌───────────────────────────────────┐
@@ -388,7 +398,7 @@ const qp = reactive<YPetList>({
   petName: '',
   clientName: '',
   numPage: 1,
-  pageSize: 6
+  pageSize: 15
 })
 // 列表展示
 const petList = ref<Page<PetDto>>({records: [], total: 0})
@@ -419,34 +429,59 @@ const handleSelectionChange = (val: Pet[]): void => {
 const delBatchB = (): void => {
   if (roleIdList.value.length == 0) return
   ElMessageBox.confirm(
-      '此处犹如寒冰之墓，飘落的雪消声无息。一群疲惫的动物在这冰冷的静寂里深深铭记，无尽等待，等待着凄凉的宿命落幕。',
-      '删除多个确认',
-      {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
+      `确定删除选中的 ${roleIdList.value.length} 只宠物吗？有就诊/寄养/领养/过户记录的不删除，仅改为停用。`,
+      '批量删除确认',
+      {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'}
   ).then(() => {
-    reqDelPetBatch(roleIdList.value).then(res => sureFlush(res))
-  }).catch(() => {
-    ElMessage.info('删除取消')
-  })
+    reqDelPetBatch(roleIdList.value).then(res => {
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '操作完成')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 // 删除单个
 const delOne = (row: Pet): void => {
   ElMessageBox.confirm(
-      `此地死寂如冰，落雪无声，一只憔悴的【${row.petName}】于静默中铭记与等待`,
-      '删除单个确认',
-      {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
+      `确定删除【${row.petName}】吗？有就诊/寄养/领养/过户记录的不删除，仅改为停用。`,
+      '删除确认',
+      {confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'}
   ).then(() => {
-    reqDelPet(row.petId).then(res => sureFlush(res))
-  }).catch(() => {
-    ElMessage.info('删除取消')
-  })
+    reqDelPet(row.petId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '操作完成')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '操作失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+// 恢复被停用的宠物
+const restorePet = (row: Pet): void => {
+  ElMessageBox.confirm(
+      `恢复【${row.petName}】到正常列表吗？`,
+      '恢复宠物',
+      {confirmButtonText: '恢复', cancelButtonText: '取消', type: 'info'}
+  ).then(() => {
+    reqActivatePet(row.petId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success('已恢复')
+        sendQuery()
+      } else {
+        ElMessage.error(res.msg || '恢复失败')
+      }
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+// 停用行的样式
+const rowStyle = ({row}: { row: Pet }) => {
+  return row.active === false ? {opacity: 0.5, background: '#fafafa'} : {}
 }
 // 确定请求的返回值，然后刷新
 const sureFlush = (res: Res): void => {
@@ -656,6 +691,26 @@ const changePhoto = (val: string): void => {
 </script>
 
 <style scoped>
+.sel-tip {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #409eff;
+}
+.sel-tip b {
+  font-size: 16px;
+  margin: 0 2px;
+}
+
+.list-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.list-page :deep(.el-table) {
+  flex: 1;
+  min-height: 0;
+}
+
 /* 过户弹窗 */
 .transfer-dialog :deep(.el-dialog__header) {
   padding: 0;

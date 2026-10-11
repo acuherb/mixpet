@@ -54,6 +54,9 @@ public interface PetMapper extends BaseMapper<Pet> {
      * 统计宠物名下关联的预约数量
      */
     @Select("SELECT " +
-            "(SELECT COUNT(*) FROM appointment WHERE pet_id=#{id} AND is_del=0) AS appointCount")
+            "(SELECT COUNT(*) FROM appointment WHERE pet_id=#{id} AND is_del=0) AS appointCount, " +
+            "(SELECT COUNT(*) FROM foster WHERE pet_id=#{id} AND is_del=0) AS fosterCount, " +
+            "(SELECT COUNT(*) FROM adopt WHERE pet_id=#{id} AND is_del=0) AS adoptCount, " +
+            "(SELECT COUNT(*) FROM pet_transfer WHERE pet_id=#{id}) AS transferCount")
     java.util.Map<String, Long> countRefById(@Param("id") Integer id);
 }

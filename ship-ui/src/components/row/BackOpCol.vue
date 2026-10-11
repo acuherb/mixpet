@@ -1,5 +1,6 @@
 <template>
   <div class="op-col">
+    <slot name="left"></slot>
     <div class="op-input">
       <slot></slot>
       <el-button plain size="large" type="primary" @click="queryB">搜索</el-button>
@@ -35,8 +36,13 @@ const delBatchB = (): void => {
 .op-col {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   /*搜索框*/
+  /* 左侧提示区（已选 N 项），不参与拉伸 */
+  ::v-slotted(.sel-tip) {
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
   .op-input {
     flex-grow: 1;
     /* 所有插槽内的元素设置宽度（都是输入框） */

@@ -83,4 +83,20 @@ public interface IPetService extends IService<Pet> {
      * 统计宠物名下关联的预约数量
      */
     java.util.Map<String, Long> countRefById(Integer id);
+
+    /**
+     * 智能删除：无引用则逻辑删；有引用则改为停用
+     *
+     * @param petId 宠物id
+     * @return 结果提示
+     */
+    com.ship.common.Result deleteOrDeactivate(Integer petId);
+
+    /**
+     * 批量智能删除
+     *
+     * @param ids 宠物id列表
+     * @return 结果提示
+     */
+    com.ship.common.Result deleteBatchSmart(java.util.List<Integer> ids);
 }

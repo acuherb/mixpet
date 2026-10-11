@@ -201,8 +201,7 @@ reqGetLoginD().then(res => {
   main {
     flex: 1;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow: hidden;
     box-sizing: border-box;
     padding: 12px;
     background-color: #F0EAD6;

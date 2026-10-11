@@ -108,13 +108,13 @@ public class PetController {
     @DeleteMapping("/{id}")
     @Secured(RoleConst.MANAGER)
     public Result delete(@PathVariable Integer id) {
-        return Result.choice("删除单个", petService.deleteById(id));
+        return petService.deleteOrDeactivate(id);
     }
 
     @DeleteMapping("/batch/{ids}")
     @Secured(RoleConst.MANAGER)
     public Result deleteGroup(@PathVariable List<Integer> ids) {
-        return Result.choice("删除多个", petService.deleteByIds(ids));
+        return petService.deleteBatchSmart(ids);
     }
 
     @PutMapping
@@ -133,8 +133,17 @@ public class PetController {
     public Result checkRef(@PathVariable Integer id) {
         java.util.Map<String, Long> m = petService.countRefById(id);
         long ap = m.getOrDefault("appointCount", 0L);
-        if (ap == 0) return Result.success("可彻底删除");
-        return Result.error("该宠物名下有 " + ap + " 条预约记录，不能彻底删除，请改为停用");
+        long fo = m.getOrDefault("fosterCount", 0L);
+        long ad = m.getOrDefault("adoptCount", 0L);
+        long tr = m.getOrDefault("transferCount", 0L);
+        long total = ap + fo + ad + tr;
+        if (total == 0) return Result.success("可彻底删除");
+        StringBuilder sb = new StringBuilder();
+        if (ap > 0) sb.append(ap).append(" 条预约 ");
+        if (fo > 0) sb.append(fo).append(" 条寄养 ");
+        if (ad > 0) sb.append(ad).append(" 条领养单 ");
+        if (tr > 0) sb.append(tr).append(" 条过户记录");
+        return Result.error("该宠物有 " + sb.toString().trim() + "，不能彻底删除，将改为停用");
     }
 
     /**

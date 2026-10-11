@@ -1,62 +1,68 @@
 <template>
+  <div class="list-page">
   <!--操作框-->
   <BackOpCol role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
     <el-input v-model="qp.clientName" placeholder="用户姓名" size="large" @keyup.enter="sendQuery"/>
+    <template #left>
+      <span v-if="roleIdList.length > 0" class="sel-tip">
+        已选 <b>{{ roleIdList.length }}</b> 项
+      </span>
+    </template>
   </BackOpCol>
   <!--列表展示-->
   <el-table :data="clientList.records"
-            max-height="80vh"
+            max-height="calc(100vh - 130px)"
             row-key="clientId"
             stripe
             @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="30"/>
-    <el-table-column label="图像">
+    <el-table-column label="图像" width="60">
       <template #default="scope">
         <MyAvatar :name="scope.row.clientPhoto"/>
       </template>
     </el-table-column>
-    <el-table-column label="用户名" prop="clientName"/>
-    <el-table-column label="账号" prop="clientUsername"/>
-    <el-table-column label="性别">
+    <el-table-column label="用户名" prop="clientName" width="100"/>
+    <el-table-column label="账号" prop="clientUsername" width="130"/>
+    <el-table-column label="性别" width="70">
       <template #default="scope">
         <TagSex :sex="scope.row.clientGender"/>
       </template>
     </el-table-column>
-    <el-table-column label="生日" prop="clientBirthday" sortable width="120"/>
-    <el-table-column label="年龄" width="120">
+    <el-table-column label="生日" prop="clientBirthday" sortable width="110"/>
+    <el-table-column label="年龄" width="90">
       <template #default="scope">{{ getAge(scope.row.clientBirthday, scope.row.clientBirthdayEstimated) }}</template>
     </el-table-column>
-    <el-table-column label="联系方式" prop="clientTel"/>
-    <el-table-column label="状态" width="90">
+    <el-table-column label="联系方式" prop="clientTel" width="130"/>
+    <el-table-column label="状态" width="70">
       <template #default="scope">
         <el-tag v-if="scope.row.active" type="success" size="small">正常</el-tag>
         <el-tag v-else type="info" size="small">停用</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="密码状态" width="110">
+    <el-table-column label="密码状态" width="90">
       <template #default="scope">
         <el-tag v-if="scope.row.clientPwdChanged" type="success" size="small">已修改</el-tag>
         <el-tag v-else type="warning" size="small">未修改</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="会员等级" width="100">
+    <el-table-column label="会员等级" width="90">
       <template #default="scope">
         <el-tag :type="levelTag(scope.row.clientLevel)">{{ levelText(scope.row.clientLevel) }}</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="积分" prop="clientPoints" width="80"/>
-    <el-table-column label="余额" width="100">
+    <el-table-column label="积分" prop="clientPoints" width="70"/>
+    <el-table-column label="余额" width="90">
       <template #default="scope">{{ scope.row.clientBalance ?? 0 }} 元</template>
     </el-table-column>
-    <el-table-column label="简介" prop="clientInfo"/>
-    <el-table-column fixed="right" label="操作">
+    <el-table-column label="简介" prop="clientInfo" min-width="120" show-overflow-tooltip/>
+    <el-table-column fixed="right" label="操作" width="200">
       <template #default="scope">
         <el-button-group>
-          <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
-          <el-button v-if="scope.row.active" circle type="warning" @click="toggleActive(scope.row)">停</el-button>
-          <el-button v-else circle type="success" @click="toggleActive(scope.row)">启</el-button>
-          <el-button :icon="Key" circle type="info" @click="resetPwd(scope.row)"/>
-          <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
+          <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
+          <el-button v-if="scope.row.active" circle type="warning" title="停用账号" @click="toggleActive(scope.row)">停</el-button>
+          <el-button v-else circle type="success" title="启用账号" @click="toggleActive(scope.row)">启</el-button>
+          <el-button :icon="Key" circle type="info" title="重置密码" @click="resetPwd(scope.row)"/>
+          <el-button :icon="Delete" circle type="danger" title="删除" @click="delOne(scope.row)"/>
         </el-button-group>
       </template>
     </el-table-column>
@@ -165,9 +171,11 @@
       </span>
     </template>
   </el-dialog>
+  </div>
 </template>
 
 <script lang="ts" setup>
+
 import {onMounted, reactive, ref} from 'vue'
 
 const ageInput = ref<string>('')
@@ -200,6 +208,7 @@ import {Res} from "@/request/Res";
 import UpImg from "@/components/UpImg.vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 
+
 /**
  ┌───────────────────────────────────┐
  │=============生命周期相关============│
@@ -218,7 +227,7 @@ onMounted(() => {
 const qp: YClientList = reactive({
   clientName: '',
   numPage: 1,
-  pageSize: 6
+  pageSize: 15
 })
 // 列表展示
 const clientList = ref<Page<Client>>({records: [], total: 0})
@@ -430,5 +439,25 @@ const changePhoto = (val: string): void => {
 </script>
 
 <style scoped>
+.sel-tip {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #409eff;
+}
+.sel-tip b {
+  font-size: 16px;
+  margin: 0 2px;
+}
+
+.list-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.list-page :deep(.el-table) {
+  flex: 1;
+  min-height: 0;
+}
+
 
 </style>

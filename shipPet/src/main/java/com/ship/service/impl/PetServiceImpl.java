@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.PhotoEnum;
+import com.ship.common.Result;
 import com.ship.mapper.PetMapper;
 import com.ship.model.dto.PetDto;
 import com.ship.model.entity.Pet;
@@ -11,8 +12,10 @@ import com.ship.model.dto.NameDo;
 import com.ship.service.IPetService;
 import com.ship.util.StrUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -83,4 +86,53 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
     public java.util.Map<String, Long> countRefById(Integer id) {
         return baseMapper.countRefById(id);
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result deleteOrDeactivate(Integer petId) {
+        Pet pet = getById(petId);
+        if (pet == null) return Result.error("宠物不存在");
+        Map<String, Long> m = baseMapper.countRefById(petId);
+        long total = m.values().stream().mapToLong(Long::longValue).sum();
+        if (total == 0) {
+            this.lambdaUpdate()
+                    .eq(Pet::getPetId, petId)
+                    .set(Pet::getIsDel, System.currentTimeMillis())
+                    .update();
+            return Result.success("已彻底删除");
+        } else {
+            this.lambdaUpdate()
+                    .eq(Pet::getPetId, petId)
+                    .set(Pet::getActive, false)
+                    .update();
+            return Result.success("有 " + total + " 条历史记录，已改为停用（保留档案）");
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result deleteBatchSmart(List<Integer> ids) {
+        int deleted = 0, deactivated = 0;
+        for (Integer id : ids) {
+            Pet pet = getById(id);
+            if (pet == null) continue;
+            Map<String, Long> m = baseMapper.countRefById(id);
+            long total = m.values().stream().mapToLong(Long::longValue).sum();
+            if (total == 0) {
+                this.lambdaUpdate()
+                        .eq(Pet::getPetId, id)
+                        .set(Pet::getIsDel, System.currentTimeMillis())
+                        .update();
+                deleted++;
+            } else {
+                this.lambdaUpdate()
+                        .eq(Pet::getPetId, id)
+                        .set(Pet::getActive, false)
+                        .update();
+                deactivated++;
+            }
+        }
+        return Result.success("彻底删除 " + deleted + " 只，停用 " + deactivated + " 只");
+    }
+
 }

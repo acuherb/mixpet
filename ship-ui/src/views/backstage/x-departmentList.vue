@@ -2,10 +2,15 @@
   <!--操作框-->
   <BackOpCol role="科室" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
     <el-input v-model="qp.departmentName" placeholder="科室名" size="large" @keyup.enter="sendQuery"/>
+    <template #left>
+      <span v-if="roleIdList.length > 0" class="sel-tip">
+        已选 <b>{{ roleIdList.length }}</b> 项
+      </span>
+    </template>
   </BackOpCol>
   <!--列表展示-->
   <el-table :data="departmentList.records"
-            max-height="80vh"
+            max-height="calc(100vh - 130px)"
             row-key="departmentId"
             stripe
             @selection-change="handleSelectionChange">
@@ -256,5 +261,15 @@ const rules = reactive<FormRules>({
 </script>
 
 <style scoped>
+.sel-tip {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #409eff;
+}
+.sel-tip b {
+  font-size: 16px;
+  margin: 0 2px;
+}
+
 
 </style>

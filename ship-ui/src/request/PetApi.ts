@@ -51,3 +51,10 @@ export const reqTransferPet = (data: {
 // 查询过户历史
 export const reqTransferHistory = (petId: number): Promise<any[]> =>
     reqApi<string, any[]>("pet/transfer/" + petId)
+
+// 恢复停用宠物
+export const reqActivatePet = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("pet/activate/" + id)
+// 停用宠物（手动）
+export const reqDeactivatePet = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("pet/deactivate/" + id)
