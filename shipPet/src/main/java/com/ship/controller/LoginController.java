@@ -116,7 +116,8 @@ public class LoginController {
             client.setClientGender(registerVo.sex());
             client.setClientEmail(registerVo.mail());
             client.setClientBirthday(null);
-            client.setClientPwdChanged(false);
+            // 注册时密码是用户自己设置的，不算初始密码，无需首次登录强制改密
+            client.setClientPwdChanged(true);
             return Result.choice("注册", clientMapper.insert(client) > 0);
         } else return Result.error("验证码不正确");
     }
