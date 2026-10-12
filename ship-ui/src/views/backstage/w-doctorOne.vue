@@ -68,7 +68,7 @@
         </div>
         <div class="info-item">
           <span class="lbl">座右铭</span>
-          <span class="val motto" :title="doctor.doctorMotto">{{ doctor.doctorMotto || '——' }}</span>
+          <span class="val motto" :title="doctor.doctorMotto || undefined">{{ doctor.doctorMotto || '——' }}</span>
         </div>
       </div>
 
