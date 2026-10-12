@@ -10,6 +10,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "",
         component: () => import('@/views/backstage/w-doctorOne.vue')
     }, {
+        // 收费表
+        path: "y-billList",
+        component: () => import('@/views/backstage/y-billList.vue')
+    }, {
         // 科室表
         path: "x-departmentList",
         component: () => import('@/views/backstage/x-departmentList.vue')
@@ -25,6 +29,10 @@ export const backstage: RouteRecordRaw[] = [
         // 用户表
         path: "y-clientList",
         component: () => import('@/views/backstage/y-clientList.vue')
+    }, {
+        // 药品表
+        path: "y-drugList",
+        component: () => import('@/views/backstage/y-drugList.vue')
     }, {
         // 医生表
         path: "x-doctorList",

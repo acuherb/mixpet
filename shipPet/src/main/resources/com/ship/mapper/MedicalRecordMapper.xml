@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ship.mapper.MedicalRecordMapper">
+    <!--宠物的就诊史：联查宠物/客户/医生/科室名与账单费用-->
+    <select id="selectPetRecords" resultType="com.ship.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.diagnosis, r.treatment, r.advice, r.revisit_date,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        LEFT JOIN department dep ON r.department_id = dep.department_id
+        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        WHERE r.is_del = 0
+        AND r.pet_id = #{petId}
+        ORDER BY r.create_time DESC
+    </select>
+
+    <!--单份病历详情（联查）-->
+    <select id="selectRecordOne" resultType="com.ship.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.internal_note,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        LEFT JOIN department dep ON r.department_id = dep.department_id
+        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        WHERE r.is_del = 0
+        AND r.record_id = #{recordId}
+    </select>
+</mapper>

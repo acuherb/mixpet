@@ -14,7 +14,7 @@
       </li>
     </ul>
     <div class="appoint-btn">
-      <el-button v-if="!a.isSuc" type="success" @click="toSuc">处理</el-button>
+      <el-button v-if="!a.isSuc" type="success" @click="toSuc">接诊</el-button>
     </div>
     <div class="card_content">
       <div class="card-tit">宠物：{{ a.petName }}</div>

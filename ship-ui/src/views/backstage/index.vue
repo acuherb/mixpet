@@ -62,6 +62,18 @@
             </el-icon>
           <span>挂号列表</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/y-drugList" :title="isCollapse ? '药品列表' : ''">
+          <el-icon>
+              <FirstAidKit/>
+            </el-icon>
+          <span>药品列表</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/y-billList" :title="isCollapse ? '收费列表' : ''">
+          <el-icon>
+              <Money/>
+            </el-icon>
+          <span>收费列表</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-adoptList" :title="isCollapse ? '领养列表' : ''">
           <el-icon>
               <School/>
@@ -89,7 +101,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Expand, Fold, Football, Menu as IconMenu, OfficeBuilding, School, Tickets, User,} from '@element-plus/icons-vue'
+import {DataBoard, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, School, Tickets, User,} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 

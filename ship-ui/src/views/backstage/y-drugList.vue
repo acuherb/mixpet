@@ -1,0 +1,266 @@
+<template>
+  <!--操作框-->
+  <BackOpCol role="药品" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.drugName" clearable placeholder="药品名 / 规格" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <el-select v-model="qp.drugType" clearable placeholder="全部分类" size="large" style="width: 110px" @change="nowQuery">
+      <el-option v-for="t in drugTypes" :key="t" :label="t" :value="t"/>
+    </el-select>
+    <template #left>
+      <span v-if="roleIdList.length > 0" class="sel-tip">
+        已选 <b>{{ roleIdList.length }}</b> 项
+      </span>
+    </template>
+  </BackOpCol>
+  <!--列表展示-->
+  <el-table :data="drugList.records"
+            max-height="calc(100vh - 130px)"
+            row-key="drugId"
+            stripe
+            @selection-change="handleSelectionChange">
+    <el-table-column type="selection" width="30"/>
+    <el-table-column label="药品名" min-width="130" prop="drugName" show-overflow-tooltip/>
+    <el-table-column label="规格" min-width="110" prop="drugSpec" show-overflow-tooltip/>
+    <el-table-column label="分类" prop="drugType" width="80">
+      <template #default="scope">
+        <el-tag size="small">{{ scope.row.drugType || '未分类' }}</el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="单价(元)" prop="drugPrice" sortable width="100"/>
+    <el-table-column label="库存" prop="drugStock" sortable width="80">
+      <template #default="scope">
+        <el-tag v-if="scope.row.drugStock === 0" size="small" type="danger">缺货</el-tag>
+        <el-tag v-else-if="scope.row.drugStock !== null && scope.row.drugStock <= 5" size="small" type="warning">
+          {{ scope.row.drugStock }}
+        </el-tag>
+        <span v-else>{{ scope.row.drugStock }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="状态" width="80">
+      <template #default="scope">
+        <el-tag v-if="scope.row.active" size="small" type="success">启用</el-tag>
+        <el-tag v-else size="small" type="info">停用</el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="说明" min-width="120" prop="drugInfo" show-overflow-tooltip/>
+    <el-table-column fixed="right" label="操作" width="150">
+      <template #default="scope">
+        <el-button-group>
+          <el-button :icon="Edit" circle title="编辑" type="warning" @click="showDialog(scope.row)"/>
+          <el-button :icon="Plus" circle title="快速入库 +10" type="primary" @click="stockIn(scope.row)"/>
+          <el-button :icon="Delete" circle title="删除" type="danger" @click="delOne(scope.row.drugId)"/>
+        </el-button-group>
+      </template>
+    </el-table-column>
+  </el-table>
+  <!--分页条-->
+  <BackPage :total="drugList.total" @changePu="changePuB"/>
+  <!--修改、新增时的模态框-->
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
+    <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
+      <el-form-item label="药品名" prop="drugName">
+        <el-input v-model="form.drugName" clearable maxlength="64" placeholder="如：阿莫西林克拉维酸钾片"/>
+      </el-form-item>
+      <el-form-item label="规格" prop="drugSpec">
+        <el-input v-model="form.drugSpec" clearable maxlength="64" placeholder="如：625mg×7片"/>
+      </el-form-item>
+      <el-form-item label="分类" prop="drugType">
+        <el-select v-model="form.drugType" allow-create filterable placeholder="选择或输入分类">
+          <el-option v-for="t in drugTypes" :key="t" :label="t" :value="t"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="单位" prop="drugUnit">
+        <el-select v-model="form.drugUnit" allow-create filterable placeholder="盒/瓶/支">
+          <el-option label="盒" value="盒"/>
+          <el-option label="瓶" value="瓶"/>
+          <el-option label="支" value="支"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="单价(元)" prop="drugPrice">
+        <el-input-number v-model="form.drugPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+      </el-form-item>
+      <el-form-item label="库存" prop="drugStock">
+        <el-input-number v-model="form.drugStock" :max="99999" :min="0" :step="10" style="width: 100%"/>
+      </el-form-item>
+      <el-form-item label="状态">
+        <el-switch v-model="form.active" active-text="启用" inactive-text="停用"/>
+      </el-form-item>
+      <el-form-item label="说明">
+        <el-input v-model="form.drugInfo" :rows="2" maxlength="255" type="textarea"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="modalView = false">取消</el-button>
+      <el-button type="primary" @click="formSubmit">确认</el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script lang="ts" setup>
+import {onMounted, reactive, ref} from 'vue'
+import {Delete, Edit, Plus} from '@element-plus/icons-vue'
+import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
+import BackPage from "@/components/row/BackPage.vue";
+import {PageQuery} from "@/model/VO/BackQuery";
+import {drugTypes, exampleDrug, Drug} from "@/model/entiy/Drug";
+import {Page} from "@/model/DO/Page";
+import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugPage, reqUpdateDrug} from "@/request/DrugApi";
+import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
+import {Res} from "@/request/Res";
+
+/**
+ ┌───────────────────────────────────┐
+ │=============生命周期相关============│
+ └───────────────────────────────────┘
+ */
+onMounted(() => {
+  sendQuery()
+})
+
+/**
+ ┌───────────────────────────────────┐
+ │=============表格查询相关============│
+ └───────────────────────────────────┘
+ */
+// 查询的参数
+const qp = reactive({
+  drugName: '',
+  drugType: '',
+  numPage: 1,
+  pageSize: 15
+})
+// 列表展示
+const drugList = ref<Page<Drug>>({records: [], total: 0})
+// 分页条
+const changePuB = (val: PageQuery) => {
+  qp.numPage = val.numPage
+  qp.pageSize = val.pageSize
+  sendQuery()
+}
+// 数据总览
+const sendQuery = (): void => {
+  reqDrugPage(qp).then(res => {
+    drugList.value = res
+  })
+}
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
+
+/**
+ ┌───────────────────────────────────┐
+ │=============数据删除相关============│
+ └───────────────────────────────────┘
+ */
+// 多选与反选
+const roleIdList = ref<number[]>([])
+const handleSelectionChange = (val: Drug[]): void => {
+  roleIdList.value = val.map(obj => obj.drugId)
+}
+// 批量删除
+const delBatchB = (): void => {
+  if (roleIdList.value.length == 0) return
+  ElMessageBox.confirm(
+      '确定删除选中的药品吗？历史处方不受影响。',
+      '删除多个确认',
+      {confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning'}
+  ).then(() => {
+    reqDelDrugBatch(roleIdList.value).then(res => sureFlush(res))
+  }).catch(() => ElMessage.info('删除取消'))
+}
+// 删除单个
+const delOne = (id: number): void => {
+  ElMessageBox.confirm(
+      '确定删除该药品吗？历史处方不受影响。',
+      '删除单个确认',
+      {confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning'}
+  ).then(() => {
+    reqDelDrug(id).then(res => sureFlush(res))
+  }).catch(() => ElMessage.info('删除取消'))
+}
+// 确定请求的返回值，然后刷新
+const sureFlush = (res: Res): void => {
+  if (res.code === 1) sendQuery()
+}
+
+/**
+ ┌───────────────────────────────────┐
+ │=============新增修改按钮============│
+ └───────────────────────────────────┘
+ */
+// 模态框
+const modalView = ref(false)
+const modalTit = ref<"新增药品" | "修改药品">("修改药品")
+// 添加
+const addRoleB = (): void => {
+  form.value = exampleDrug()
+  myFormRef.value?.resetFields()
+  modalTit.value = "新增药品"
+  modalView.value = true
+}
+// 修改时展示模态框
+const showDialog = (row: Drug) => {
+  myFormRef.value?.clearValidate()
+  // 赋值，防止响应式引用
+  form.value = {...row}
+  modalView.value = true
+  modalTit.value = "修改药品"
+}
+// 快速入库
+const stockIn = (row: Drug): void => {
+  ElMessageBox.prompt(`当前库存 ${row.drugStock ?? 0}，输入入库数量：`, '快速入库', {
+    confirmButtonText: '入库',
+    cancelButtonText: '取消',
+    inputPattern: /^[1-9]\d*$/,
+    inputErrorMessage: '请输入正整数'
+  }).then(({value}) => {
+    reqUpdateDrug({...row, drugStock: (row.drugStock ?? 0) + Number(value)}).then(res => sureFlush(res))
+  }).catch(() => ElMessage.info('取消入库'))
+}
+
+/**
+ ┌───────────────────────────────────┐
+ │=============表单校验相关============│
+ └───────────────────────────────────┘
+ */
+// 表单的数据
+const form = ref<Drug>(exampleDrug()) // 空的默认值
+const myFormRef = ref<FormInstance>()
+// 校验表单并提交
+const formSubmit = async (): Promise<void> => {
+  await myFormRef.value?.validate((valid: boolean): void => {
+    if (valid) {
+      modalView.value = false
+      if (modalTit.value == "新增药品") reqAddDrug(form.value).then(res => sureFlush(res))
+      else if (modalTit.value === "修改药品") reqUpdateDrug(form.value).then(res => sureFlush(res))
+    }
+  })
+}
+// 表单校验规则
+const rules = reactive<FormRules>({
+  "drugName": [
+    {required: true, message: '请输入药品名', trigger: 'blur'},
+  ],
+  "drugPrice": [
+    {required: true, message: '请输入单价', trigger: 'blur'},
+  ],
+  "drugStock": [
+    {required: true, message: '请输入库存', trigger: 'blur'},
+  ]
+})
+</script>
+
+<style scoped>
+.sel-tip {
+  margin-right: 12px;
+  font-size: 14px;
+  color: #409eff;
+}
+.sel-tip b {
+  font-size: 16px;
+  margin: 0 2px;
+}
+</style>

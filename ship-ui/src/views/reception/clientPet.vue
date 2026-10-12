@@ -33,6 +33,7 @@
             <el-descriptions-item align="center" label="操作" label-align="right">
               <el-button type="success" @click="$router.push('/reception/petOne/'+pet.petId)">详情
               </el-button>
+              <el-button type="primary" @click="openRecords(pet)">就诊记录</el-button>
               <el-button type="danger" @click="returnPet(pet)">退养</el-button>
             </el-descriptions-item>
           </el-descriptions>
@@ -40,6 +41,61 @@
       </div>
     </div>
     <el-empty v-if="petList.length===0" description="暂无宠物，点上方「添加宠物」登记您的宠物吧"/>
+
+    <!--就诊记录弹窗-->
+    <el-dialog v-model="recordsVisible" top="6vh" width="94%" style="max-width: 560px">
+      <template #header>
+        <span style="font-weight: bold">{{ recordsPet?.petName }} 的就诊记录</span>
+      </template>
+      <el-empty v-if="records.length === 0" description="暂无就诊记录"/>
+      <div v-else class="record-list">
+        <div v-for="r in records" :key="r.recordId" class="record-item" @click="openRecordDetail(r.recordId)">
+          <div class="record-head">
+            <span class="record-date">{{ (r.createTime || '').replace('T', ' ').slice(0, 16) }}</span>
+            <el-tag v-if="r.payStatus" size="small" type="success">已缴费</el-tag>
+            <el-tag v-else size="small" type="warning">待缴费</el-tag>
+          </div>
+          <div class="record-body">
+            <p><b>诊断：</b>{{ r.diagnosis || '—' }}</p>
+            <p class="muted">主诉：{{ r.chiefComplaint || '—' }}</p>
+            <p class="muted">医生：{{ r.doctorName }}（{{ r.departmentName }}）</p>
+          </div>
+          <div class="record-foot">
+            <span v-if="r.revisitDate" class="revisit">复诊：{{ r.revisitDate }}</span>
+            <span class="fee">￥{{ r.totalMoney ?? 0 }}</span>
+            <span class="link">查看详情 ›</span>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!--病历详情弹窗（顾客视角，脱敏）-->
+    <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 560px">
+      <template v-if="detail">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="宠物">{{ detail.record.petName }}</el-descriptions-item>
+          <el-descriptions-item label="就诊时间">{{ (detail.record.createTime || '').replace('T', ' ').slice(0, 16) }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="主诉">{{ detail.record.chiefComplaint || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="体格检查">{{ detail.record.physicalExam || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="诊断">{{ detail.record.diagnosis || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="治疗方案">{{ detail.record.treatment || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="医嘱">{{ detail.record.advice || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="接诊医生">{{ detail.record.doctorName }}</el-descriptions-item>
+          <el-descriptions-item label="科室">{{ detail.record.departmentName }}</el-descriptions-item>
+          <el-descriptions-item label="复诊日期">{{ detail.record.revisitDate || '无需复诊' }}</el-descriptions-item>
+          <el-descriptions-item label="费用合计">￥{{ detail.record.totalMoney ?? 0 }}</el-descriptions-item>
+        </el-descriptions>
+        <h4 style="margin: 12px 0 6px">处方用药</h4>
+        <el-table :data="detail.prescriptions" border size="small">
+          <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
+          <el-table-column label="数量" width="60">
+            <template #default="scope">{{ scope.row.quantity }}{{ scope.row.drugUnit }}</template>
+          </el-table-column>
+          <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
+        </el-table>
+        <p v-if="detail.prescriptions.length === 0" style="color:#999">本次未开处方</p>
+      </template>
+    </el-dialog>
 
     <!--添加宠物弹窗-->
     <el-dialog v-model="addVisible" title="添加宠物" top="6vh" width="90%" style="max-width: 480px">
@@ -140,8 +196,37 @@ import {reqReturnPet} from "@/request/AdoptApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import UpImg from "@/components/UpImg.vue";
 import {Plus} from "@element-plus/icons-vue";
+import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
+import {reqPetRecords, reqRecordOne} from "@/request/RecordApi";
 
 const petList = ref<Pet[]>([]);
+
+/**
+ ┌───────────────────────────────────┐
+ │=============就诊记录============│
+ └───────────────────────────────────┘
+ */
+const recordsVisible = ref(false)
+const recordsPet = ref<Pet | null>(null)
+const records = ref<RecordDto[]>([])
+const openRecords = (pet: Pet): void => {
+  recordsPet.value = pet
+  records.value = []
+  recordsVisible.value = true
+  reqPetRecords(pet.petId).then(res => {
+    records.value = res?.records || []
+  })
+}
+const detailVisible = ref(false)
+const detail = ref<RecordDetailVo | null>(null)
+const openRecordDetail = (recordId: number): void => {
+  reqRecordOne(recordId).then(res => {
+    if (res) {
+      detail.value = res
+      detailVisible.value = true
+    }
+  })
+}
 
 // 退养：把自己名下的宠物退回，宠物变回无主待领养
 const returnPet = (pet: Pet): void => {
@@ -245,6 +330,78 @@ onMounted(() => {
   .photo-tip {
     font-size: 12px;
     color: #909399;
+  }
+}
+
+/* 就诊记录列表 */
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.record-item {
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all .2s;
+
+  &:hover {
+    border-color: #1E6FA8;
+    box-shadow: 0 2px 10px rgba(30, 111, 168, .12);
+
+    .link {
+      color: #1E6FA8;
+    }
+  }
+
+  .record-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #606266;
+    border-bottom: 1px dashed #e4e7ed;
+    padding-bottom: 6px;
+    margin-bottom: 6px;
+  }
+
+  .record-body {
+    p {
+      margin: 3px 0;
+      font-size: 14px;
+    }
+
+    .muted {
+      color: #909399;
+      font-size: 13px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .record-foot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+    font-size: 13px;
+
+    .revisit {
+      color: #e6a23c;
+    }
+
+    .fee {
+      color: #f56c6c;
+      font-weight: bold;
+      margin-left: auto;
+    }
+
+    .link {
+      color: #909399;
+    }
   }
 }
 
