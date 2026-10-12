@@ -54,8 +54,11 @@ public class LoginController {
      */
     @GetMapping("/user")
     public Client getUser() {
-        if (UserUtil.getUser() instanceof Client client)
-            return clientMapper.selectById(client.getClientId());
+        if (UserUtil.getUser() instanceof Client client) {
+            Client full = clientMapper.selectById(client.getClientId());
+            if (full != null) full.setClientPassword(null); // 密码哈希不外发
+            return full;
+        }
         return null;
     }
 

@@ -129,7 +129,14 @@ public class DoctorLogController {
      * 医生：处理挂号
      */
     @PutMapping("/appoint/deal")
+    @Secured(RoleConst.DOCTOR)
     public Result dealAppoint(@RequestBody DealAppointVo dealAppointVo) {
+        // 医生只能处理自己的挂号单
+        if (!(UserUtil.getUser() instanceof Doctor doctor)) return Result.error("请登录医生账号");
+        Appointment appoint = appointService.getById(dealAppointVo.appointId());
+        if (appoint == null) return Result.error("挂号单不存在");
+        if (!doctor.getDoctorId().equals(appoint.getDoctorId()))
+            return Result.error("只能处理自己的挂号单");
         return Result.choice("处理", appointService.lambdaUpdate()
                 .eq(Appointment::getAppointmentId, dealAppointVo.appointId())
                 .set(Appointment::getIsSuc, dealAppointVo.isSuc())

@@ -31,9 +31,10 @@ public class ClientDetails implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         log.info("从数据库根据用户名查询数据");
-        // 从数据库获取用户信息
+        // 从数据库获取用户信息（active=0 已停用的账号不允许登录）
         QueryWrapper<Client> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("client_username", username);
+        queryWrapper.eq("active", 1);
         Client client = clientMapper.selectOne(queryWrapper);
         if (client == null) {
             log.warn("没有这个用户");

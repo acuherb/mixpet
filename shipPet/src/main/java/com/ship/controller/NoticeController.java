@@ -63,6 +63,7 @@ public class NoticeController {
      * 删除冗余资源
      */
     @DeleteMapping("/delImg")
+    @Secured(RoleConst.MANAGER)
     public Result delName() {
         if (noticeService.delImg()) return Result.success("删除冗余资源成功");
         else return Result.error("已无冗余资源");

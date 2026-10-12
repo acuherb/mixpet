@@ -40,6 +40,7 @@ public class ClientController {
      * 查询用户的名字与id
      */
     @GetMapping
+    @Secured(RoleConst.NURSE)
     public List<NameDo> getName() {
         return clientService.selectName();
     }
@@ -51,6 +52,7 @@ public class ClientController {
      * @return 客户名称+ID
      */
     @GetMapping("/full")
+    @Secured(RoleConst.NURSE)
     public List<NameDo> getNameHavePet(Integer clientId) {
         return clientService.selectNameHavePet(clientId);
     }
@@ -59,11 +61,13 @@ public class ClientController {
      * 根据id查询单个用户
      */
     @GetMapping("/one")
+    @Secured(RoleConst.MANAGER)
     public Client getOne(Integer id) {
         return clientService.getById(id);
     }
 
     @GetMapping("/page")
+    @Secured(RoleConst.MANAGER)
     public IPage<Client> getPage(int numPage, int pageSize, String clientName) {
         return clientService.selectByPage(clientName, numPage, pageSize);
     }

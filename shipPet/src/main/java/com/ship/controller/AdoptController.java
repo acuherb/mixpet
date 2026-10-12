@@ -34,6 +34,7 @@ public class AdoptController {
     }
 
     @GetMapping("/page")
+    @Secured(RoleConst.MANAGER)
     public IPage<AdoptDto> getPage(int numPage, int pageSize, String clientName, String petName) {
         return adoptService.selectByPage(clientName, petName, numPage, pageSize);
     }

@@ -43,6 +43,7 @@ public class PetController {
      * 添加寄养、挂号单时，查询主人对应的宠物
      */
     @GetMapping("/client")
+    @Secured(RoleConst.NURSE)
     public List<NameDo> getByClient(Integer clientId, Integer petId) {
         return petService.selectByClient(clientId, petId);
     }

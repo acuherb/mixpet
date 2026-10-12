@@ -90,6 +90,25 @@
 - 分页条「共 N 条」蓝色加粗
 - 宠物/用户列表列宽收紧 + 操作按钮 title 提示
 
+## 安全基线（2026-10-12 审计后）
+
+**已修复的越权**（顾客登录后原本可拉全量客户资料/所有挂号/领养寄养记录）：
+- `GET /client/one`、`/client/page`、`/appointment/page`、`/adopt/page`、`/foster/page` → MANAGER
+- `GET /client`、`/client/full`、`/pet/client` → NURSE（医生端 d-appoint 依赖，医生 auth_lv≥2 均有 NURSE）
+- `DELETE /notice/delImg` → MANAGER
+- `GET /login/user` 响应剔除密码哈希（setClientPassword(null)）
+- `PUT /doctorLog/appoint/deal` → DOCTOR + 只能处理自己的挂号单（原 LOSER 无归属校验）
+- 删除 `GET /power/getPwd/{password}` 调试接口（匿名可调且明文记日志）
+- ClientDetails 登录查询加 active=1：停用客户不能再登录
+- 接口被拦时 HTTP 仍 200、业务码 401/403（/power/error 统一转发，属项目风格）
+
+**已知未修（记录待决策）**：
+- `GET /doctor/page` 匿名放行且 SQL 带 doctor_tel/email/username/auth_lv——前台首页和后台医生列表共用此接口，需做脱敏版公开接口（中风险）
+- `GET /appointment/doctor` 前台 doctorOne.vue 用（展示医生接诊记录给顾客看，患者姓名/病情暴露），产品层面决定是否保留
+- CSRF 全局关闭（session+rememberMe 场景）
+- 黑名单客户（client_blacklist=1）仍可登录（只有停用 active 挡了）
+- /common/download 按文件名可枚举（UUID 文件名，风险低）
+
 ## 待办
 
 ### 明天计划（2026-10-12）
