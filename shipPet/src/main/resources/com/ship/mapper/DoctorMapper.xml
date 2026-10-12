@@ -7,7 +7,11 @@
         doctor_id,d.department_id,username,
         d.create_time,doctor_name,doctor_gender,
         doctor_age,doctor_photo,doctor_tel,doctor_email,
-        auth_lv,doctor_info,b.department_name
+        auth_lv,doctor_info,doctor_motto,b.department_name,
+        (SELECT GROUP_CONCAT(dep.department_name)
+         FROM doctor_department dd
+         JOIN department dep ON dd.department_id=dep.department_id
+         WHERE dd.doctor_id=d.doctor_id AND dep.is_del=0) AS departmentNames
         FROM doctor AS d
         LEFT JOIN department AS b
         ON d.department_id=b.department_id
@@ -17,47 +21,54 @@
             and (d.doctor_name like #{doctorKw} or d.doctor_tel like #{doctorKw} or d.username like #{doctorKw})
         </if>
         <if test="departmentName!=null and departmentName!=''">
-            <bind name="departmentName" value="'%'+departmentName+'%'"/>
-            and b.department_name like #{departmentName}
+            <bind name="departmentNameKw" value="'%'+departmentName+'%'"/>
+            and (b.department_name like #{departmentNameKw} or exists (
+                select 1 from doctor_department dd2
+                join department dep2 on dd2.department_id=dep2.department_id
+                where dd2.doctor_id=d.doctor_id and dep2.department_name like #{departmentNameKw}
+            ))
         </if>
     </select>
     <!--根据id查询单个-->
     <select id="selectOneById" resultType="com.ship.model.dto.DoctorDto">
-        SELECT doctor_id,
-               username,
-               doctor_name,
-               doctor_gender,
-               doctor_age,
-               doctor_photo,
-               doctor_tel,
-               doctor_email,
-               auth_lv,
-               doctor_info,
+        SELECT a.doctor_id,
+               a.username,
+               a.doctor_name,
+               a.doctor_gender,
+               a.doctor_age,
+               a.doctor_photo,
+               a.doctor_tel,
+               a.doctor_email,
+               a.auth_lv,
+               a.doctor_info,
+               a.doctor_motto,
                b.department_name
         FROM doctor AS a
                  LEFT JOIN department AS b
                            ON a.department_id = b.department_id
         WHERE a.is_del = 0
-          AND doctor_id = #{doctorId}
+          AND a.doctor_id = #{doctorId}
     </select>
-    <!--科室管理：查询科室下的所有医生-->
+    <!--科室管理：查询科室下的所有医生（经关系表）-->
     <select id="selectByDepartmentId" resultType="com.ship.model.entity.Doctor">
-        SELECT doctor_id,
-               username,
-               doctor_name,
-               doctor_gender,
-               doctor_age,
-               doctor_tel,
-               auth_lv
-        FROM doctor
-        WHERE is_del = 0
-          AND department_id = #{departmentId}
+        SELECT d.doctor_id,
+               d.username,
+               d.doctor_name,
+               d.doctor_gender,
+               d.doctor_age,
+               d.doctor_tel,
+               d.auth_lv
+        FROM doctor_department dd
+        JOIN doctor d ON dd.doctor_id=d.doctor_id
+        WHERE d.is_del = 0
+          AND dd.department_id = #{departmentId}
     </select>
     <!--医生更新自己的个人资料-->
     <update id="updateSelf">
         UPDATE doctor
         SET doctor_age=#{doctorAge},
             doctor_info=#{doctorInfo},
+            doctor_motto=#{doctorMotto},
             doctor_name=#{doctorName},
             doctor_gender=#{doctorGender},
             doctor_photo=#{doctorPhoto},

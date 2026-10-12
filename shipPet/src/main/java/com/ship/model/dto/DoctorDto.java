@@ -2,8 +2,23 @@ package com.ship.model.dto;
 
 import com.ship.model.entity.Doctor;
 
+import java.util.List;
+
 public class DoctorDto extends Doctor {
+    /**
+     * 主科室名（兼容旧逻辑，可空）
+     */
     private String departmentName;
+
+    /**
+     * 医生关联的多科室id（新增/编辑用）
+     */
+    private List<Integer> departmentIds;
+
+    /**
+     * 医生关联的多科室名（列表/详情展示用）
+     */
+    private List<String> departmentNames;
 
     public String getDepartmentName() {
         return departmentName;
@@ -11,5 +26,21 @@ public class DoctorDto extends Doctor {
 
     public void setDepartmentName(String departmentName) {
         this.departmentName = departmentName;
+    }
+
+    public List<Integer> getDepartmentIds() {
+        return departmentIds;
+    }
+
+    public void setDepartmentIds(List<Integer> departmentIds) {
+        this.departmentIds = departmentIds;
+    }
+
+    public List<String> getDepartmentNames() {
+        return departmentNames;
+    }
+
+    public void setDepartmentNames(List<String> departmentNames) {
+        this.departmentNames = departmentNames;
     }
 }

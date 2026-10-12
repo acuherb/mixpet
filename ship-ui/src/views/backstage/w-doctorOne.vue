@@ -30,7 +30,7 @@
           <div class="name-row">
             <span class="d-name">{{ doctor.doctorName || '未设置' }}</span>
             <el-tag round effect="light" :type="isAdmin ? 'danger' : 'success'">{{ getJob(doctor.authLv) }}</el-tag>
-            <el-tag v-if="doctor.departmentName" round effect="plain">{{ doctor.departmentName }}</el-tag>
+            <el-tag v-for="dn in (doctor.departmentNames && doctor.departmentNames.length ? doctor.departmentNames : (doctor.departmentName ? [doctor.departmentName] : []))" :key="dn" round effect="plain">{{ dn }}</el-tag>
           </div>
           <div class="account">账号：{{ doctor.username }}&nbsp;&nbsp;·&nbsp;&nbsp;工号：{{ doctorNo }}</div>
           <div class="head-btns">
@@ -64,11 +64,11 @@
         </div>
         <div class="info-item">
           <span class="lbl">入职日期</span>
-          <span class="val">{{ entryDate }}</span>
+          <span class="val">{{ entryDate }}<span v-if="tenure" style="opacity:.85">（{{ tenure }}）</span></span>
         </div>
         <div class="info-item">
-          <span class="lbl">星座</span>
-          <span class="val">{{ zodiac }}</span>
+          <span class="lbl">座右铭</span>
+          <span class="val motto" :title="doctor.doctorMotto">{{ doctor.doctorMotto || '——' }}</span>
         </div>
       </div>
 
@@ -120,12 +120,16 @@
         </el-select>
       </el-form-item>
       <el-form-item v-if="isAdmin" label="科室">
-        <el-select v-model="form.departmentId" filterable placeholder="请选择科室">
+        <el-select v-model="form.departmentIds" multiple filterable placeholder="请选择科室（可多选）">
           <el-option v-for="c in departNameL" :key="c.roleId" :label="c.roleName" :value="c.roleId"/>
         </el-select>
+        <el-button v-if="departNameL.length" size="small" type="primary" link @click="checkAllDepart">全科</el-button>
+      </el-form-item>
+      <el-form-item label="座右铭">
+        <el-input v-model="form.doctorMotto" clearable maxlength="100" show-word-limit placeholder="一句话座右铭（可选）"/>
       </el-form-item>
       <el-form-item label="简介">
-        <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="医生简介"/>
+        <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="医生简介"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -208,17 +212,28 @@ const fmtDate = (d: any): string => {
 }
 const entryDate = computed(() => fmtDate(doctor.value.createTime))
 
-const zodiac = computed(() => {
-  const d = doctor.value.doctorAge
-  if (!d) return '--'
-  const m = parseInt(Array.isArray(d) ? d[1] : String(d).slice(5, 7), 10)
-  const day = parseInt(Array.isArray(d) ? d[2] : String(d).slice(8, 10), 10)
-  if (!m || !day) return '--'
-  const cutoff = [20, 19, 21, 20, 21, 22, 23, 23, 23, 24, 23, 22]
-  const names = ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座']
-  const names2 = ['巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座']
-  const all = names.concat(names2)
-  return day <= cutoff[m - 1] ? all[m - 1] : all[m]
+// 工龄：从入职日期（createTime）推算
+const tenure = computed(() => {
+  const c = doctor.value.createTime
+  if (!c) return ''
+  let base: Date
+  if (Array.isArray(c)) {
+    base = new Date(c[0], (c[1] || 1) - 1, c[2] || 1)
+  } else if (typeof c === 'string') {
+    const s = c.slice(0, 10)
+    const p = s.split('-').map(Number)
+    if (p.length < 3 || isNaN(p[0])) return ''
+    base = new Date(p[0], (p[1] || 1) - 1, p[2] || 1)
+  } else {
+    return ''
+  }
+  const now = new Date()
+  let years = now.getFullYear() - base.getFullYear()
+  let months = now.getMonth() - base.getMonth()
+  if (months < 0) { years--; months += 12 }
+  if (years < 0) return ''
+  if (years === 0 && months === 0) return '入职不久'
+  return years > 0 ? years + '年' + (months > 0 ? months + '个月' : '') + '工龄' : months + '个月工龄'
 })
 
 // 科室下拉列表
@@ -228,6 +243,12 @@ onMounted(() => {
     departNameL.value = res
   })
 })
+// 一键全选科室
+const checkAllDepart = () => {
+  if (departNameL.value.length) {
+    form.value.departmentIds = departNameL.value.map(c => c.roleId)
+  }
+}
 // 发起请求
 onMounted(() => {
   reqGetLoginD().then(res => {
@@ -248,6 +269,7 @@ const updateRole = () => {
   form.value.doctorId = doctor.value.doctorId
   form.value.doctorAge = doctor.value.doctorAge
   form.value.doctorInfo = doctor.value.doctorInfo
+  form.value.doctorMotto = doctor.value.doctorMotto ?? ''
   form.value.doctorPhoto = doctor.value.doctorPhoto
   form.value.doctorName = doctor.value.doctorName
   form.value.doctorGender = doctor.value.doctorGender
@@ -255,6 +277,7 @@ const updateRole = () => {
   form.value.doctorEmail = doctor.value.doctorEmail
   form.value.authLv = doctor.value.authLv
   form.value.departmentId = doctor.value.departmentId
+  form.value.departmentIds = doctor.value.departmentIds ? [...doctor.value.departmentIds] : []
   form.value.username = doctor.value.username
   // 显示
   modalView.value = true
@@ -371,7 +394,7 @@ const rules2 = ref<FormRules>({
 
 /* 页面容器 */
 .profile-page {
-  max-width: 940px;
+  max-width: 1120px;
   margin: 8px auto 40px;
   padding: 0 20px;
 }
@@ -466,7 +489,7 @@ const rules2 = ref<FormRules>({
 /* 信息网格：科技亮块 */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   background:
       linear-gradient(135deg, rgba(58,123,255,0.06), rgba(108,92,231,0.06));
@@ -491,6 +514,12 @@ const rules2 = ref<FormRules>({
 }
 .info-item .lbl { font-size: 12px; color: #9AA3B5; }
 .info-item .val { font-size: 15px; font-weight: 650; color: #1F2D5A; word-break: break-all; }
+.info-item .val.motto {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
 
 /* 简介 */
 .intro { margin-top: 28px; }
@@ -506,6 +535,8 @@ const rules2 = ref<FormRules>({
 }
 .intro-body {
   margin-top: 16px;
+  height: 150px;
+  overflow-y: auto;
   line-height: 1.9;
   color: #3D4663;
   font-size: 15px;

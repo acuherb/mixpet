@@ -78,6 +78,11 @@ public class Doctor implements Serializable {
     private String doctorInfo;
 
     /**
+     * 医生座右铭
+     */
+    private String doctorMotto;
+
+    /**
      * 医生密码
      */
     private String doctorPassword;
@@ -187,6 +192,14 @@ public class Doctor implements Serializable {
         this.doctorInfo = doctorInfo;
     }
 
+    public String getDoctorMotto() {
+        return doctorMotto;
+    }
+
+    public void setDoctorMotto(String doctorMotto) {
+        this.doctorMotto = doctorMotto;
+    }
+
     public String getDoctorPassword() {
         return doctorPassword;
     }
@@ -233,6 +246,7 @@ public class Doctor implements Serializable {
                 ", doctorEmail = " + doctorEmail +
                 ", authLv = " + authLv +
                 ", doctorInfo = " + doctorInfo +
+                ", doctorMotto = " + doctorMotto +
                 ", doctorPassword = " + doctorPassword +
                 ", createTime = " + createTime +
                 ", updateTime = " + updateTime +

@@ -36,7 +36,10 @@
     <el-table-column label="简介" prop="doctorInfo"/>
     <el-table-column label="科室">
       <template #default="scope">
-        <el-tag>{{ scope.row.departmentName }}</el-tag>
+        <div class="depart-tags">
+          <el-tag v-if="scope.row.departmentNames && scope.row.departmentNames.length" v-for="(nm,i) in scope.row.departmentNames" :key="i" size="small" class="depart-tag">{{ nm }}</el-tag>
+          <el-tag v-else>{{ scope.row.departmentName }}</el-tag>
+        </div>
       </template>
     </el-table-column>
     <el-table-column label="职位" prop="authLv" sortable>
@@ -70,10 +73,14 @@
       <el-form-item label="姓名" prop="doctorName">
         <el-input v-model="form.doctorName" clearable placeholder="医生姓名"/>
       </el-form-item>
-      <el-form-item label="科室" prop="departmentId">
-        <el-select v-model="form.departmentId" filterable placeholder="科室">
-          <el-option v-for="c in departNameL" :key="c.roleId" :label="c.roleName" :value="c.roleId"/>
-        </el-select>
+      <el-form-item label="科室" prop="departmentIds">
+        <div class="depart-select">
+          <el-select v-model="form.departmentIds" multiple filterable collapse-tags placeholder="选一个或多个科室（可全选=全科）" style="width:100%">
+            <el-option v-for="c in departNameL" :key="c.roleId" :label="c.roleName" :value="c.roleId"/>
+          </el-select>
+          <el-button v-if="!isAllDepart" size="small" type="primary" plain @click="selectAllDepart">全科（全选）</el-button>
+          <el-button v-else size="small" type="info" plain @click="clearAllDepart">取消全选</el-button>
+        </div>
       </el-form-item>
       <el-form-item label="职位" prop="doctorJob">
         <el-select v-model="form.authLv" placeholder="医生">
@@ -137,7 +144,8 @@ import TagSex from "@/components/show/TagSex.vue";
 import {Page} from "@/model/DO/Page";
 import {reqAddDoctor, reqDelDoctor, reqDelDoctorBatch, reqDoctorList, reqUpdateDoctor} from "@/request/DoctorApi";
 import {Res} from "@/request/Res";
-import {Doctor, exampleDoctor} from "@/model/entiy/Doctor";
+import {Doctor} from "@/model/entiy/Doctor";
+import {exampleDoctorOne} from "@/model/DO/DoctorDto";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqDepartName} from "@/request/DepartApi";
 import {NameDo} from "@/model/DO/NameDo";
@@ -247,17 +255,18 @@ const modalView = ref(false)
 const modalTit = ref<"新增医生" | "修改医生">("修改医生")
 // 新增
 const addRoleB = (): void => {
-  form.value = exampleDoctor()
+  form.value = exampleDoctorOne()
   myFormRef.value?.resetFields()
   modalTit.value = "新增医生"
   modalView.value = true
 }
 // 修改时展示模态框
-const showDialog = (row: Doctor) => {
+const showDialog = (row: DoctorDto) => {
   myFormRef.value?.clearValidate()
   // 赋值，防止响应式引用
   form.value.doctorId = row.doctorId
   form.value.departmentId = row.departmentId
+  form.value.departmentIds = row.departmentIds ? [...row.departmentIds] : []
   form.value.authLv = row.authLv
   form.value.doctorAge = row.doctorAge
   form.value.doctorInfo = row.doctorInfo
@@ -279,6 +288,16 @@ const showDialog = (row: Doctor) => {
  */
 // 表单的数据
 const departNameL = ref<NameDo[]>([]) // 下拉框部门名称
+// 是否已选择全部科室
+const isAllDepart = () => !!(departNameL.value.length > 0 && form.value.departmentIds && form.value.departmentIds.length === departNameL.value.length)
+// 全科：选中全部科室
+const selectAllDepart = (): void => {
+  form.value.departmentIds = departNameL.value.map(c => c.roleId)
+}
+// 取消全选
+const clearAllDepart = (): void => {
+  form.value.departmentIds = []
+}
 // 手机号只保留数字，最多 11 位
 const sanitizeTel = () => {
   if (form.value.doctorTel) {
@@ -286,7 +305,7 @@ const sanitizeTel = () => {
   }
 }
 
-const form = ref<Doctor>(exampleDoctor()) // 空的默认值
+const form = ref<DoctorDto>(exampleDoctorOne()) // 空的默认值
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
 const formSubmit = async (): Promise<void> => {
@@ -314,8 +333,8 @@ const rules = reactive<FormRules>({
   "doctorAge": [
     {required: true, message: '请选择出生日期', trigger: 'blur'},
   ],
-  "departmentId": [
-    {required: true, message: '请选择科室', trigger: 'blur'},
+  "departmentIds": [
+    {required: true, type: 'array', min: 1, message: '请至少选择一个科室', trigger: 'change'},
   ],
 })
 // 头像参数的改变:子传父
@@ -333,6 +352,20 @@ const changePhoto = (val: string): void => {
 .sel-tip b {
   font-size: 16px;
   margin: 0 2px;
+}
+.depart-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.depart-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.depart-tag {
+  margin-right: 4px;
 }
 
 </style>

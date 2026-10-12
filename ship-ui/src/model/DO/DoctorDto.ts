@@ -5,6 +5,8 @@ import {Doctor} from "@/model/entiy/Doctor";
 
 export interface DoctorDto extends Doctor {
     departmentName: string;
+    departmentIds: number[];
+    departmentNames: string[];
 }
 
 /**
@@ -23,9 +25,12 @@ export const exampleDoctorOne = (): DoctorDto => {
         "doctorEmail": null,
         "authLv": 0,
         "doctorInfo": "",
+        "doctorMotto": "",
         "doctorPassword": null,
         "createTime": null,
         "updateTime": null,
-        "departmentName": ""
+        "departmentName": "",
+        "departmentIds": [],
+        "departmentNames": []
     }
 }

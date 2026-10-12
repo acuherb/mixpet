@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.DepartmentMapper;
+import com.ship.mapper.DoctorDepartMapper;
 import com.ship.model.dto.DepartmentDto;
 import com.ship.model.entity.Department;
 import com.ship.model.entity.Doctor;
+import com.ship.model.entity.DoctorDepart;
 import com.ship.model.dto.NameDo;
 import com.ship.service.IDepartmentService;
 import com.ship.service.IDoctorService;
@@ -28,15 +30,26 @@ import java.util.List;
 public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Department> implements IDepartmentService {
 
     private final IDoctorService doctorService;
+    private final DoctorDepartMapper doctorDepartMapper;
 
     @Autowired
-    public DepartmentServiceImpl(IDoctorService doctorService) {
+    public DepartmentServiceImpl(IDoctorService doctorService, DoctorDepartMapper doctorDepartMapper) {
         this.doctorService = doctorService;
+        this.doctorDepartMapper = doctorDepartMapper;
+    }
+
+    /**
+     * 检查科室下是否还有医生（经关系表）
+     */
+    private boolean hasDoctor(Integer departmentId) {
+        return doctorDepartMapper.selectCount(com.baomidou.mybatisplus.core.toolkit.Wrappers
+                .<DoctorDepart>lambdaQuery()
+                .eq(DoctorDepart::getDepartmentId, departmentId)) > 0;
     }
 
     @Override
     public Result deleteById(Integer departmentId) {
-        if (doctorService.lambdaQuery().eq(Doctor::getDepartmentId, departmentId).count() > 0)
+        if (hasDoctor(departmentId))
             return Result.error("当前科室下有人");
         return Result.choice("删除单个", this.lambdaUpdate()
                 .eq(Department::getDepartmentId, departmentId)
@@ -47,7 +60,9 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     @Override
     public Result deleteByIds(List<Integer> idGroup) {
         if (idGroup.size() < 1) return Result.error("请选择数据"); // IN语句中没有数据会报错
-        if (doctorService.lambdaQuery().in(Doctor::getDepartmentId, idGroup).count() > 0) {
+        int cnt = 0;
+        for (Integer id : idGroup) if (hasDoctor(id)) cnt++;
+        if (cnt > 0) {
             if (idGroup.size() == 1) return Result.error("所选科室有人");
             else return Result.error("部分所选科室有人");
         }

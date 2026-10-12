@@ -1,5 +1,5 @@
 <template>
-  <MyRow>
+  <div class="doctor-card-row">
     <MyCard
         v-for="doctor in cardList"
         :key="doctor.doctorId"
@@ -10,16 +10,15 @@
         sex: doctor.doctorGender ? "男" : "女",
         job: getJob(doctor.authLv),
         info1: doctor.doctorInfo,
-        info2: "帐号："+doctor.username,
+        info2: doctor.doctorMotto ? "座右铭："+doctor.doctorMotto : "",
         link:"/reception/doctorOne/"+doctor.doctorId
       }' :type="'primary'"/>
-  </MyRow>
+  </div>
 </template>
 
 <script lang="ts" setup>
 /*=====前台的医生卡片批量展示=====*/
 import MyCard from "@/components/card/MyCard.vue";
-import MyRow from "@/components/row/MyRow.vue";
 import {getAge} from "@/utils/TimeUtil";
 import {getJob} from "@/utils/JobUtil";
 import {DoctorDto} from "@/model/DO/DoctorDto";
@@ -30,4 +29,10 @@ defineProps<{
 </script>
 
 <style scoped>
+.doctor-card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  justify-items: center;
+  grid-gap: 16px;
+}
 </style>

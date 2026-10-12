@@ -12,8 +12,8 @@
         <span class="dot">·</span>
         <span>{{ data.job }}</span>
       </div>
-      <div class="card-line">{{ data.info1 }}</div>
-      <div class="card-line card-line--mute">{{ data.info2 }}</div>
+      <div v-if="data.info2" class="card-line card-line--mute">{{ data.info2 }}</div>
+      <div class="card-line card-line--intro">{{ data.info1 }}</div>
       <button type="button" class="card-action" @click="$router.push(data.link)">查看详情</button>
     </div>
   </div>
@@ -41,16 +41,16 @@ export interface CardData {
 .img-card {
   --accent: #1E6FA8;
 
-  width: 340px;
+  width: 350px;
   max-width: 92vw;
   background: #fff;
   border: 1px solid #E4E7ED;
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 18px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 18px;
   box-shadow: 0 1px 2px rgba(31, 45, 61, 0.04);
   transition: box-shadow .2s, border-color .2s, transform .2s;
   user-select: none;
@@ -67,9 +67,9 @@ export interface CardData {
 
   .card-avatar {
     flex-shrink: 0;
-    width: 88px;
-    height: 88px;
-    border-radius: 8px;
+    width: 104px;
+    height: 104px;
+    border-radius: 12px;
     overflow: hidden;
     background: #F5F7FA;
     border: 1px solid #E4E7ED;
@@ -87,11 +87,11 @@ export interface CardData {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .card-title {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 600;
     color: #1F2D3D;
     line-height: 1.3;
@@ -101,7 +101,7 @@ export interface CardData {
   }
 
   .card-meta {
-    font-size: 13px;
+    font-size: 14px;
     color: #909399;
     display: flex;
     align-items: center;
@@ -113,22 +113,33 @@ export interface CardData {
   }
 
   .card-line {
-    font-size: 13px;
+    font-size: 14px;
     color: #606266;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+
+    &--intro {
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
 
     &--mute {
       color: #909399;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
   .card-action {
-    margin-top: 4px;
+    margin-top: 6px;
     align-self: flex-start;
-    padding: 5px 14px;
-    font-size: 13px;
+    padding: 6px 18px;
+    font-size: 14px;
     color: var(--accent);
     background: #fff;
     border: 1px solid var(--accent);

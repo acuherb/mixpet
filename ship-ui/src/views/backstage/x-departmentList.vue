@@ -17,7 +17,7 @@
     <el-table-column type="selection" width="30"/>
     <el-table-column label="科室名" prop="departmentName"/>
     <el-table-column label="简介" prop="departmentInfo"/>
-    <el-table-column label="吉祥物" prop="headName"/>
+    <el-table-column label="负责人" prop="headName"/>
     <el-table-column :formatter="doctorNumStr" label="人数" prop="doctorNum" sortable/>
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
@@ -41,7 +41,7 @@
       <el-form-item label="简介" prop="departmentInfo">
         <el-input v-model="form.departmentInfo" clearable placeholder="科室简介"/>
       </el-form-item>
-      <el-form-item label="吉祥物">
+      <el-form-item label="负责人">
         <el-select v-model="form.headId" filterable placeholder="选择用户">
           <el-option label="无" value=""/>
           <el-option v-for="d in doctorNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
@@ -120,7 +120,7 @@ onMounted(() => {
 const qp: XDepartmentList = reactive({
   departmentName: '',
   numPage: 1,
-  pageSize: 6
+  pageSize: 100
 })
 // 列表展示
 const departmentList = ref<Page<DepartDto>>({records: [], total: 0})

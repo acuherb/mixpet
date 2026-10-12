@@ -82,7 +82,7 @@ public class DoctorController {
 
     @PostMapping
     @Secured(RoleConst.ADMIN)
-    public Result save(@RequestBody Doctor doctor) {
+    public Result save(@RequestBody DoctorDto doctor) {
         if (StrUtil.isWhite(doctor.getUsername())) return Result.error("帐号不能为空");
         if (StrUtil.isWhite(doctor.getDoctorName())) return Result.error("姓名不能为空");
         return Result.choice("添加", doctorService.addDoctor(doctor));
@@ -102,7 +102,7 @@ public class DoctorController {
 
     @PutMapping
     @Secured(RoleConst.ADMIN)
-    public Result update(@RequestBody Doctor doctor) {
+    public Result update(@RequestBody DoctorDto doctor) {
         if (StrUtil.isWhite(doctor.getDoctorName())) return Result.error("姓名不能为空");
         if (doctor.getAuthLv() == null) doctor.setAuthLv(0);
         // 手机号非空时必须为 11 位
