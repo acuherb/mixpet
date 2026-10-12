@@ -1,9 +1,9 @@
 <template>
   <el-tag v-if="authLv===8" type="danger">
-    院长
+    {{ getJob(authLv) }}
   </el-tag>
   <el-tag v-else-if="authLv===6" type="warning">
-    主任
+    {{ getJob(authLv) }}
   </el-tag>
   <el-tag v-else>
     {{ getJob(authLv) }}

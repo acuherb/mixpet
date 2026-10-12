@@ -1,26 +1,85 @@
 <template>
-  <el-button plain style="position: absolute;margin-left: 24px" type="warning" @click="isShow=!isShow">
-    {{ isShow ? "隐藏" : "显示" }}面板
-  </el-button>
-  <LightBox v-show="isShow">
+  <!--顶部操作条-->
+  <div class="top-bar">
+    <el-button plain type="warning" @click="isShow = !isShow">
+      {{ isShow ? "隐藏" : "显示" }}面板
+    </el-button>
     <router-link to="/doctorPage">
-      <el-button style="position: absolute" type="success">悬壶济世</el-button>
+      <el-button type="success">悬壶济世</el-button>
     </router-link>
-    <DetailTable
-        :role-photo="doctor.doctorPhoto"
-        :tab-con='[{tit: "账号", con: doctor.username},
-          {tit: "姓名", con: doctor.doctorName},
-          {tit: "简介", con: doctor.doctorInfo},
-          {tit: "性别", con: doctor.doctorGender ? "男" : "女"},
-          {tit: "职位", con: getJob(doctor.authLv)},
-          {tit: "科室", con: doctor.departmentName},
-          {tit: "电话", con: doctor.doctorTel || "--"},
-          {tit: "邮箱", con: doctor.doctorEmail || "--"},
-          {tit: "年龄", con: getAge(doctor.doctorAge)}]'
-        @upPwd="updatePwd"
-        @upRole="updateRole"
-    />
-  </LightBox>
+  </div>
+
+  <div v-show="isShow" class="profile-page">
+    <!--封面横幅-->
+    <div class="banner">
+      <div class="banner-overlay"></div>
+      <img src="https://img.tukuppt.com/ad_preview/00/10/29/jbWQzB3UOL.jpg!/fw/980"
+           class="banner-img" alt="背景" v-if="false" style="display:none"/>
+    </div>
+
+    <!--主体卡片-->
+    <div class="profile-card">
+      <!--头部：头像 + 身份-->
+      <div class="card-head">
+        <div class="avatar-wrap">
+          <el-avatar :size="108" :src="avatarUrl" class="avatar">
+            {{ doctor.doctorName?.charAt(0) || '医' }}
+          </el-avatar>
+        </div>
+        <div class="head-info">
+          <div class="name-row">
+            <span class="d-name">{{ doctor.doctorName || '未设置' }}</span>
+            <el-tag round effect="light" :type="isAdmin ? 'danger' : 'success'">{{ getJob(doctor.authLv) }}</el-tag>
+            <el-tag v-if="doctor.departmentName" round effect="plain">{{ doctor.departmentName }}</el-tag>
+          </div>
+          <div class="account">账号：{{ doctor.username }}&nbsp;&nbsp;·&nbsp;&nbsp;工号：{{ doctorNo }}</div>
+          <div class="head-btns">
+            <el-button type="primary" round @click="updateRole">
+              <el-icon><Edit/></el-icon>&nbsp;修改资料
+            </el-button>
+            <el-button type="warning" plain round @click="updatePwd">
+              <el-icon><Key/></el-icon>&nbsp;重置密码
+            </el-button>
+          </div>
+        </div>
+      </div>
+
+      <!--信息网格-->
+      <div class="info-grid">
+        <div class="info-item">
+          <span class="lbl">性别</span>
+          <span class="val">{{ doctor.doctorGender ? '男' : '女' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="lbl">年龄</span>
+          <span class="val">{{ getAge(doctor.doctorAge) }}</span>
+        </div>
+        <div class="info-item">
+          <span class="lbl">电话</span>
+          <span class="val">{{ doctor.doctorTel || '--' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="lbl">邮箱</span>
+          <span class="val">{{ doctor.doctorEmail || '--' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="lbl">入职日期</span>
+          <span class="val">{{ entryDate }}</span>
+        </div>
+        <div class="info-item">
+          <span class="lbl">星座</span>
+          <span class="val">{{ zodiac }}</span>
+        </div>
+      </div>
+
+      <!--简介-->
+      <div class="intro">
+        <div class="intro-title"><el-icon><Document/></el-icon>&nbsp;个人简介</div>
+        <div class="intro-body">{{ doctor.doctorInfo || '这个医生很懒，还没有填写简介~' }}</div>
+      </div>
+    </div>
+  </div>
+
   <!--修改个人资料时的模态框-->
   <el-dialog v-model="modalView" draggable title="修改个人资料" width="60%">
     <!--头像上传框-->
@@ -55,9 +114,9 @@
         <el-select v-model="form.authLv" placeholder="请选择职位">
           <el-option :value="8" label="院长"/>
           <el-option :value="6" label="主任"/>
-          <el-option :value="4" label="医生"/>
-          <el-option :value="2" label="护士"/>
-          <el-option :value="0" label="临时工"/>
+          <el-option :value="4" label="主治医师"/>
+          <el-option :value="2" label="护理技师"/>
+          <el-option :value="0" label="实习助理"/>
         </el-select>
       </el-form-item>
       <el-form-item v-if="isAdmin" label="科室">
@@ -102,7 +161,6 @@
 </template>
 
 <script lang="ts" setup>
-import DetailTable from "@/components/card/DetailTable.vue";
 import {getJob} from "@/utils/JobUtil";
 import {getAge} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
@@ -110,12 +168,12 @@ import {DoctorDto, exampleDoctorOne} from "@/model/DO/DoctorDto";
 import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD, reqUpdateDoctor} from "@/request/DoctorApi";
 import {reqDepartName} from "@/request/DepartApi";
 import {NameDo} from "@/model/DO/NameDo";
-import LightBox from "@/components/card/LightBox.vue";
 import {Doctor, exampleDoctor} from "@/model/entiy/Doctor";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 import UpImg from "@/components/UpImg.vue";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
+import {Edit, Key, Document} from "@element-plus/icons-vue";
 // 手机号只保留数字，最多 11 位
 const sanitizeTel = () => {
   if (form.value.doctorTel) {
@@ -127,8 +185,41 @@ const sanitizeTel = () => {
 const doctor = ref<DoctorDto>(exampleDoctorOne())
 const isShow = ref<boolean>(true)
 
+// 头像地址（有照片用下载地址，无则显示默认）
+const avatarUrl = computed(() =>
+    doctor.value.doctorPhoto ? `/api/common/download?name=${doctor.value.doctorPhoto}` : ''
+)
+
 // 是否院长（authLv=8）
 const isAdmin = computed(() => doctor.value.authLv === 8)
+
+const doctorNo = computed(() =>
+  doctor.value.doctorId ? 'DOCTOR-' + String(doctor.value.doctorId).padStart(4, '0') : '--'
+)
+
+const fmtDate = (d: any): string => {
+  if (!d) return '--'
+  if (Array.isArray(d)) {
+    const y = d[0]; const mo = d[1]; const da = d[2]
+    return y + '-' + String(mo).padStart(2, '0') + '-' + String(da).padStart(2, '0')
+  }
+  if (typeof d === 'string') return d.slice(0, 10)
+  return String(d)
+}
+const entryDate = computed(() => fmtDate(doctor.value.createTime))
+
+const zodiac = computed(() => {
+  const d = doctor.value.doctorAge
+  if (!d) return '--'
+  const m = parseInt(Array.isArray(d) ? d[1] : String(d).slice(5, 7), 10)
+  const day = parseInt(Array.isArray(d) ? d[2] : String(d).slice(8, 10), 10)
+  if (!m || !day) return '--'
+  const cutoff = [20, 19, 21, 20, 21, 22, 23, 23, 23, 24, 23, 22]
+  const names = ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座']
+  const names2 = ['巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座']
+  const all = names.concat(names2)
+  return day <= cutoff[m - 1] ? all[m - 1] : all[m]
+})
 
 // 科室下拉列表
 const departNameL = ref<NameDo[]>([])
@@ -154,6 +245,7 @@ const form = ref<Doctor>(exampleDoctor()) // 空的默认值
 const updateRole = () => {
   myFormRef.value?.clearValidate()
   // 赋值，防止响应式引用
+  form.value.doctorId = doctor.value.doctorId
   form.value.doctorAge = doctor.value.doctorAge
   form.value.doctorInfo = doctor.value.doctorInfo
   form.value.doctorPhoto = doctor.value.doctorPhoto
@@ -263,4 +355,164 @@ const rules2 = ref<FormRules>({
 </script>
 
 <style scoped>
+/* 顶部操作条 */
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(108,92,231,0.12);
+}
+
+/* 页面容器 */
+.profile-page {
+  max-width: 940px;
+  margin: 8px auto 40px;
+  padding: 0 20px;
+}
+
+/* 封面横幅：深色科技渐变 + 光斑 */
+.banner {
+  height: 190px;
+  border-radius: 20px 20px 0 0;
+  background:
+      radial-gradient(420px 220px at 90% -20%, rgba(138,124,255,0.55), transparent 70%),
+      radial-gradient(460px 240px at 8% 120%, rgba(64,151,255,0.4), transparent 70%),
+      linear-gradient(135deg, #0F172A 0%, #1E2A5A 48%, #3B3B98 100%);
+  position: relative;
+  overflow: hidden;
+}
+.banner::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: -70px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: inset 0 0 60px rgba(108,92,231,0.35);
+}
+.banner::before {
+  content: "";
+  position: absolute;
+  left: 16%;
+  bottom: -90px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(64,151,255,0.35), rgba(108,92,231,0.25));
+  filter: blur(6px);
+}
+
+/* 主体卡片：玻璃拟态 */
+.profile-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,246,255,0.96));
+  border: 1px solid rgba(108,92,231,0.16);
+  border-radius: 0 0 20px 20px;
+  box-shadow:
+      0 24px 60px -20px rgba(30, 42, 90, 0.35),
+      0 0 0 1px rgba(108,92,231,0.06) inset;
+  padding: 0 34px 34px;
+  overflow: hidden;
+}
+
+/* 头部 */
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-top: -58px;
+  position: relative;
+  z-index: 2;
+}
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.avatar {
+  border: 4px solid #fff;
+  background: linear-gradient(135deg, #3A7BFF, #6C5CE7);
+  color: #fff;
+  font-size: 40px;
+  box-shadow: 0 10px 26px rgba(108,92,231,0.4);
+}
+.level-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border: 2px solid #fff;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+.level-admin { background: linear-gradient(135deg, #F26D78, #E5495F); }
+.level-doc   { background: linear-gradient(135deg, #2BC48C, #17A36E); }
+
+.head-info { flex: 1; padding-top: 78px; }
+.name-row { display: flex; align-items: center; gap: 12px; }
+.d-name { font-size: 28px; font-weight: 800; color: #16213E; letter-spacing: .4px; }
+.account { margin-top: 8px; color: #8A93A6; font-size: 13px; font-variant-numeric: tabular-nums; }
+.head-btns { margin-top: 16px; display: flex; gap: 10px; }
+
+/* 信息网格：科技亮块 */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 14px;
+  background:
+      linear-gradient(135deg, rgba(58,123,255,0.06), rgba(108,92,231,0.06));
+  border: 1px solid rgba(108,92,231,0.12);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-top: 30px;
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid rgba(108,92,231,0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: transform .18s, box-shadow .18s;
+}
+.info-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(108,92,231,0.12);
+}
+.info-item .lbl { font-size: 12px; color: #9AA3B5; }
+.info-item .val { font-size: 15px; font-weight: 650; color: #1F2D5A; word-break: break-all; }
+
+/* 简介 */
+.intro { margin-top: 28px; }
+.intro-title {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1F2D5A;
+  padding-bottom: 12px;
+  border-bottom: 2px solid linear-gradient(90deg,#3A7BFF,#6C5CE7);
+  border-image: linear-gradient(90deg,#3A7BFF,#6C5CE7) 1;
+}
+.intro-body {
+  margin-top: 16px;
+  line-height: 1.9;
+  color: #3D4663;
+  font-size: 15px;
+  white-space: pre-wrap;
+  background: rgba(108,92,231,0.04);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
 </style>

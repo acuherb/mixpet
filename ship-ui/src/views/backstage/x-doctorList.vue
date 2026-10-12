@@ -79,9 +79,9 @@
         <el-select v-model="form.authLv" placeholder="医生">
           <el-option :value="8" label="院长"/>
           <el-option :value="6" label="主任"/>
-          <el-option :value="4" label="医生"/>
-          <el-option :value="2" label="护士"/>
-          <el-option :value="0" label="临时工"/>
+          <el-option :value="4" label="主治医师"/>
+          <el-option :value="2" label="护理技师"/>
+          <el-option :value="0" label="实习助理"/>
         </el-select>
       </el-form-item>
       <el-form-item label="性别">

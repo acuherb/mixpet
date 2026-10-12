@@ -5,11 +5,11 @@
 export const getJob = (level: number): string => {
     switch (level) {
         case 0:
-            return "临时工"
+            return "实习助理"
         case 2:
-            return "护士"
+            return "护理技师"
         case 4:
-            return "医生"
+            return "主治医师"
         case 6:
             return "主任"
         case 8:

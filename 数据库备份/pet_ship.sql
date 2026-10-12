@@ -148,17 +148,21 @@ CREATE TABLE `department` (
   UNIQUE KEY `department_name` (`department_name`),
   KEY `head_id` (`head_id`),
   CONSTRAINT `department_ibfk_1` FOREIGN KEY (`head_id`) REFERENCES `doctor` (`doctor_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb3 COMMENT='部门表';
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb3 COMMENT='部门表';
 
 -- ----------------------------
 -- Records of department
 -- ----------------------------
 BEGIN;
-INSERT INTO `department` VALUES (1, '犬猫科', '主要整治猫猫狗狗', 1, '2022-12-22 11:11:19', '2023-03-08 18:16:54', 0);
-INSERT INTO `department` VALUES (2, '骨科', '专治跌打损伤', 8, '2023-01-03 21:00:02', '2023-08-23 23:44:15', 0);
-INSERT INTO `department` VALUES (3, '化验室', '进行化验', NULL, '2023-01-03 21:02:17', '2023-03-08 18:19:01', 0);
-INSERT INTO `department` VALUES (4, '美容室', '对宠物进行美容', 2, '2023-01-03 21:04:50', '2023-03-08 18:17:32', 0);
-INSERT INTO `department` VALUES (8, '中兽科', '传统中医治兽', NULL, '2023-01-07 20:11:51', '2023-03-08 18:18:35', 0);
+INSERT INTO `department` VALUES (1, '内科', '犬猫综合内科、常见病与传染病', 1, '2022-12-22 11:11:19', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (2, '骨科', '骨折、关节与脊椎疾病', 8, '2023-01-03 21:00:02', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (3, '化验室', '血常规、生化、镜检等检验', NULL, '2023-01-03 21:02:17', '2023-03-08 18:19:01', 0);
+INSERT INTO `department` VALUES (4, '美容洗护室', '宠物美容、洗澡与日常护理', 2, '2023-01-03 21:04:50', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (5, '外科', '外科手术与创伤处理', NULL, '2026-10-12 10:00:00', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (6, '影像科', 'X光、B超、内窥镜影像诊断', NULL, '2026-10-12 10:00:00', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (7, '皮肤科', '皮肤病与皮肤过敏诊治', NULL, '2026-10-12 10:00:00', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (8, '中兽医科', '中兽医、针灸与中药调理', NULL, '2023-01-07 20:11:51', '2026-10-12 10:00:00', 0);
+INSERT INTO `department` VALUES (9, '眼科与口腔科', '眼科、耳鼻喉与口腔疾病', NULL, '2026-10-12 10:00:00', '2026-10-12 10:00:00', 0);
 COMMIT;
 
 -- ----------------------------
