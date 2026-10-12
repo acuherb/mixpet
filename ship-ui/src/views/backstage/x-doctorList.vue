@@ -1,8 +1,8 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="医生" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.doctorName" placeholder="医生姓名" size="large" @keyup.enter="sendQuery"/>
-    <el-input v-model="qp.departmentName" placeholder="科室名" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="医生" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.doctorName" clearable placeholder="医生姓名 / 手机号 / 账号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <el-input v-model="qp.departmentName" clearable placeholder="科室名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -127,6 +127,7 @@
 import {onMounted, reactive, ref} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import UpImg from "@/components/UpImg.vue";
 import {PageQuery, YDoctorList} from "@/model/VO/BackQuery";
@@ -181,6 +182,12 @@ const sendQuery = (): void => {
     doctorList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

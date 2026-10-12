@@ -1,8 +1,8 @@
 <template>
   <div class="list-page">
   <!--操作框-->
-  <BackOpCol role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.clientName" placeholder="用户姓名" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.clientName" clearable placeholder="姓名 / 手机号 / 身份证" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -196,6 +196,7 @@ const onAgeInput = () => {
 }
 import {Delete, Edit, Key} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YClientList} from "@/model/VO/BackQuery";
 import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
@@ -243,6 +244,12 @@ const sendQuery = (): void => {
     clientList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

@@ -1,8 +1,8 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="领养" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.clientName" placeholder="申请人" size="large" @keyup.enter="sendQuery"/>
-    <el-input v-model="qp.petName" placeholder="宠物名" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="领养" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.clientName" clearable placeholder="申请人姓名 / 手机号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <el-input v-model="qp.petName" clearable placeholder="宠物名 / 品种" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -99,6 +99,7 @@
 import {onMounted, reactive, ref} from 'vue'
 import {Check, Close, Delete, Edit, Refresh} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YAdoptList} from "@/model/VO/BackQuery";
 import {Adopt, exampleAdopt} from "@/model/entiy/Adopt";
@@ -165,6 +166,12 @@ const sendQuery = (): void => {
     adoptList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

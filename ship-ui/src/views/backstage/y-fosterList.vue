@@ -1,8 +1,8 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="寄养" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.petName" placeholder="宠物名" size="large" @keyup.enter="sendQuery"/>
-    <el-input v-model="qp.clientName" placeholder="寄养人" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="寄养" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.petName" clearable placeholder="宠物名 / 品种" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <el-input v-model="qp.clientName" clearable placeholder="寄养人姓名 / 手机号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -89,6 +89,7 @@
 import {onMounted, reactive, ref, watch} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YFosterList} from "@/model/VO/BackQuery";
 import {exampleFoster, Foster} from "@/model/entiy/Foster";
@@ -151,6 +152,12 @@ const sendQuery = (): void => {
     fosterList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

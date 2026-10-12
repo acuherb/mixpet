@@ -1,9 +1,9 @@
 <template>
   <div class="list-page">
     <!--操作框-->
-    <BackOpCol role="宠物" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-      <el-input v-model="qp.petName" placeholder="宠物姓名" size="large" @keyup.enter="sendQuery"/>
-      <el-input v-model="qp.clientName" placeholder="用户姓名" size="large" @keyup.enter="sendQuery"/>
+    <BackOpCol role="宠物" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+      <el-input v-model="qp.petName" clearable placeholder="宠物名 / 品种 / 芯片号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+      <el-input v-model="qp.clientName" clearable placeholder="主人姓名 / 手机号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
       <template #left>
         <span v-if="roleIdList.length > 0" class="sel-tip">
           已选 <b>{{ roleIdList.length }}</b> 项
@@ -372,6 +372,7 @@ const onAgeInput = () => {
   }
 }
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import {PageQuery, YPetList} from "@/model/VO/BackQuery";
 import {PetDto} from "@/model/DO/PetDto";
 import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
@@ -427,6 +428,12 @@ const sendQuery = (): void => {
     petList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

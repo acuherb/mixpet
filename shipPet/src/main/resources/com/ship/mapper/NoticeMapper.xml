@@ -29,8 +29,8 @@
         WHERE
         a.is_del = 0
         <if test="noticeName!=null and noticeName!=''">
-            <bind name="noticeName" value="'%'+noticeName+'%'"/>
-            and notice_title like #{noticeName}
+            <bind name="noticeKw" value="'%'+noticeName+'%'"/>
+            and (a.notice_title like #{noticeKw} or b.doctor_name like #{noticeKw})
         </if>
     </select>
     <!--主页：查询-->

@@ -10,12 +10,12 @@
         AND f.pet_id = p.pet_id
         AND f.client_id = c.client_id
         <if test="clientName!=null and clientName!=''">
-            <bind name="clientName" value="'%'+clientName+'%'"/>
-            and c.client_name like #{clientName}
+            <bind name="clientKw" value="'%'+clientName+'%'"/>
+            and (c.client_name like #{clientKw} or c.client_tel like #{clientKw})
         </if>
         <if test="petName!=null and petName!=''">
-            <bind name="petName" value="'%'+petName+'%'"/>
-            and p.pet_name like #{petName}
+            <bind name="petKw" value="'%'+petName+'%'"/>
+            and (p.pet_name like #{petKw} or p.pet_variety like #{petKw})
         </if>
     </select>
     <!--查询被寄养宠物信息-->

@@ -13,8 +13,8 @@
         ON d.department_id=b.department_id
         WHERE d.is_del = 0
         <if test="doctorName!=null and doctorName!=''">
-            <bind name="doctorName" value="'%'+doctorName+'%'"/>
-            and doctor_name like #{doctorName}
+            <bind name="doctorKw" value="'%'+doctorName+'%'"/>
+            and (d.doctor_name like #{doctorKw} or d.doctor_tel like #{doctorKw} or d.username like #{doctorKw})
         </if>
         <if test="departmentName!=null and departmentName!=''">
             <bind name="departmentName" value="'%'+departmentName+'%'"/>

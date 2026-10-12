@@ -1,7 +1,7 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="公告" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.noticeName" placeholder="公告名" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="公告" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.noticeName" clearable placeholder="公告名 / 创建医生" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #right>
       <el-button plain size="large" type="primary" @click="delImg">清理垃圾</el-button>
     </template>
@@ -74,6 +74,7 @@
 import {onMounted, reactive, ref} from 'vue'
 import {Check, Close, Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YNoticeList} from "@/model/VO/BackQuery";
 import {exampleNotice, NoticeDto} from "@/model/DO/NoticeDto";
@@ -131,6 +132,12 @@ const sendQuery = (): void => {
     noticeList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐

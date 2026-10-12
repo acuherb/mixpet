@@ -10,12 +10,12 @@
         ON a.client_id=b.client_id
         WHERE a.is_del = 0
         <if test="petName!=null and petName!=''">
-            <bind name="petName" value="'%'+petName+'%'"/>
-            and pet_name like #{petName}
+            <bind name="petKw" value="'%'+petName+'%'"/>
+            and (a.pet_name like #{petKw} or a.pet_variety like #{petKw} or a.pet_chip like #{petKw})
         </if>
         <if test="clientName!=null and clientName!=''">
-            <bind name="clientName" value="'%'+clientName+'%'"/>
-            and b.client_name like #{clientName}
+            <bind name="clientKw" value="'%'+clientName+'%'"/>
+            and (b.client_name like #{clientKw} or b.client_tel like #{clientKw})
         </if>
     </select>
     <!--查询:主页待领养-->

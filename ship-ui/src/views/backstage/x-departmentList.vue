@@ -1,7 +1,7 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="科室" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-input v-model="qp.departmentName" placeholder="科室名" size="large" @keyup.enter="sendQuery"/>
+  <BackOpCol role="科室" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-input v-model="qp.departmentName" clearable placeholder="科室名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -84,6 +84,7 @@
 import {onMounted, reactive, ref} from 'vue'
 import {Delete, Edit, View} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, XDepartmentList} from "@/model/VO/BackQuery";
 import {Department, exampleDepart} from "@/model/entiy/Department";
@@ -140,6 +141,12 @@ const sendQuery = (): void => {
     departmentList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 // 查看科室人员的模态框
 const isDoctorShow = ref(false)

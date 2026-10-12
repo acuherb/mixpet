@@ -20,12 +20,12 @@
         AND a.pet_id = b.pet_id
         AND a.client_id = c.client_id
         <if test="clientName!=null and clientName!=''">
-            <bind name="clientName" value="'%'+clientName+'%'"/>
-            and c.client_name like #{clientName}
+            <bind name="clientKw" value="'%'+clientName+'%'"/>
+            and (c.client_name like #{clientKw} or c.client_tel like #{clientKw})
         </if>
         <if test="petName!=null and petName!=''">
-            <bind name="petName" value="'%'+petName+'%'"/>
-            and b.pet_name like #{petName}
+            <bind name="petKw" value="'%'+petName+'%'"/>
+            and (b.pet_name like #{petKw} or b.pet_variety like #{petKw})
         </if>
         ORDER BY create_time DESC
     </select>

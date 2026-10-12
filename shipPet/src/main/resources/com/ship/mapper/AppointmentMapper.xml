@@ -35,19 +35,19 @@
         AND a.department_id = d.department_id
         AND a.doctor_id = e.doctor_id
         <if test="seaName!=null and seaName!=''">
-            <bind name="seaName" value="'%'+seaName+'%'"/>
+            <bind name="seaKw" value="'%'+seaName+'%'"/>
             <choose>
                 <when test="seaType==0">
-                    and b.client_name like #{seaName}
+                    and (b.client_name like #{seaKw} or b.client_tel like #{seaKw})
                 </when>
                 <when test="seaType==1">
-                    and c.pet_Name like #{seaName}
+                    and (c.pet_Name like #{seaKw} or c.pet_variety like #{seaKw})
                 </when>
                 <when test="seaType==2">
-                    and e.doctor_name like #{seaName}
+                    and (e.doctor_name like #{seaKw} or e.doctor_tel like #{seaKw})
                 </when>
                 <otherwise>
-                    and d.department_name like #{seaName}
+                    and d.department_name like #{seaKw}
                 </otherwise>
             </choose>
         </if>

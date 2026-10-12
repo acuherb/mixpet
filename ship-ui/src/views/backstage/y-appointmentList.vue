@@ -1,13 +1,13 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="挂号" @addRole="addRoleB" @delBatch="delBatchB" @query="sendQuery">
-    <el-select v-model="qp.seaType" placeholder="Select" size="large">
+  <BackOpCol role="挂号" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <el-select v-model="qp.seaType" size="large" @change="nowQuery">
       <el-option :value="0" label="挂号人"/>
       <el-option :value="1" label="宠物"/>
       <el-option :value="2" label="医生"/>
       <el-option :value="3" label="科室"/>
     </el-select>
-    <el-input v-model="qp.seaName" placeholder="名称" size="large" @keyup.enter="sendQuery"/>
+    <el-input v-model="qp.seaName" clearable placeholder="名称 / 手机号 / 品种" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -95,6 +95,7 @@
 import {onMounted, reactive, ref, watch} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YAppointList} from "@/model/VO/BackQuery";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
@@ -151,6 +152,12 @@ const sendQuery = (): void => {
     appointList.value = res
   })
 }
+// 搜索：输入即查（防抖），查询回到第一页
+const nowQuery = (): void => {
+  qp.numPage = 1
+  sendQuery()
+}
+const debQuery = debounce(nowQuery, 400)
 
 /**
  ┌───────────────────────────────────┐
