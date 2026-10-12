@@ -26,7 +26,7 @@ public class SecurityConfig {
                                                    RememberService rememberService) throws Exception {
         String[] quiet = {"/", "/index.html", "/favicon.ico"};
         // 放行的后端接口
-        String[] rearEnd = {"/login/**", "/power/**", "/doctor/page", "/pet/four",
+        String[] rearEnd = {"/login/**", "/power/**", "/doctor/page", "/doctor/view", "/pet/four",
                 "/foster/pet", "/notice/four", "/common/download", "/common/downChat"};
         PowerHandler powerHandler = new PowerHandler();
         http.authorizeHttpRequests((requests) -> requests.requestMatchers(quiet).permitAll() // 放行静态资源

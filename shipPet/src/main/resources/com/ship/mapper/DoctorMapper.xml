@@ -29,6 +29,34 @@
             ))
         </if>
     </select>
+    <!--分页查询（顾客端脱敏版：不返回 phone/email/username）-->
+    <select id="selectDoctorPagePublic" resultType="com.ship.model.dto.DoctorDto">
+        SELECT
+        doctor_id,d.department_id,
+        d.create_time,doctor_name,doctor_gender,
+        doctor_age,doctor_photo,
+        auth_lv,doctor_info,doctor_motto,b.department_name,
+        (SELECT GROUP_CONCAT(dep.department_name)
+         FROM doctor_department dd
+         JOIN department dep ON dd.department_id=dep.department_id
+         WHERE dd.doctor_id=d.doctor_id AND dep.is_del=0) AS departmentNames
+        FROM doctor AS d
+        LEFT JOIN department AS b
+        ON d.department_id=b.department_id
+        WHERE d.is_del = 0
+        <if test="doctorName!=null and doctorName!=''">
+            <bind name="doctorKw" value="'%'+doctorName+'%'"/>
+            and (d.doctor_name like #{doctorKw} or d.doctor_tel like #{doctorKw})
+        </if>
+        <if test="departmentName!=null and departmentName!=''">
+            <bind name="departmentNameKw" value="'%'+departmentName+'%'"/>
+            and (b.department_name like #{departmentNameKw} or exists (
+                select 1 from doctor_department dd2
+                join department dep2 on dd2.department_id=dep2.department_id
+                where dd2.doctor_id=d.doctor_id and dep2.department_name like #{departmentNameKw}
+            ))
+        </if>
+    </select>
     <!--根据id查询单个-->
     <select id="selectOneById" resultType="com.ship.model.dto.DoctorDto">
         SELECT a.doctor_id,

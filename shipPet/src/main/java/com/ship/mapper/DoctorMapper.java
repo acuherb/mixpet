@@ -23,6 +23,11 @@ import java.util.List;
 public interface DoctorMapper extends BaseMapper<Doctor> {
     IPage<DoctorDto> selectDoctorPage(IPage<DoctorDto> page, String doctorName, String departmentName);
 
+    /**
+     * 顾客端展示用分页，脱敏：不返回 phone/email/username 等敏感字段
+     */
+    IPage<DoctorDto> selectDoctorPagePublic(IPage<DoctorDto> page, String doctorName, String departmentName);
+
     DoctorDto selectOneById(@Param("doctorId") Integer doctorId);
 
     @Select("SELECT doctor_id as roleId,doctor_name as roleName FROM doctor WHERE is_del=0")

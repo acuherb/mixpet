@@ -45,6 +45,11 @@ public interface IDoctorService extends IService<Doctor> {
     IPage<DoctorDto> selectByPage(String doctorName, String departmentName, int numPage, int pageSize);
 
     /**
+     * 顾客端展示医生分页（脱敏，不返回电话/邮箱/账号）
+     */
+    IPage<DoctorDto> selectByPagePublic(String doctorName, String departmentName, int numPage, int pageSize);
+
+    /**
      * 根据id查询医生
      *
      * @param doctorId 医生id

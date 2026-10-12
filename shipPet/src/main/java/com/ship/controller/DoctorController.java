@@ -70,6 +70,14 @@ public class DoctorController {
     }
 
     /**
+     * 顾客端展示医生分页（脱敏：不返回电话/邮箱/账号）
+     */
+    @GetMapping("/view")
+    public IPage<DoctorDto> getView(int numPage, int pageSize, String doctorName, String departmentName) {
+        return doctorService.selectByPagePublic(doctorName, departmentName, numPage, pageSize);
+    }
+
+    /**
      * 根据id查询单个医生
      *
      * @param doctorId 网页读取get参数，必须用包装类，因为可能不是数字
@@ -77,7 +85,19 @@ public class DoctorController {
      */
     @GetMapping("/one")
     public DoctorDto getOne(Integer doctorId) {
-        return doctorService.selectById(doctorId);
+        DoctorDto dto = doctorService.selectById(doctorId);
+        // 顾客端详情：脱敏，不暴露完整手机号/邮箱/账号
+        if (dto != null) {
+            dto.setUsername(null);
+            dto.setDoctorEmail(null);
+            String tel = dto.getDoctorTel();
+            if (tel != null && tel.matches("^1[3-9]\\d{9}$")) {
+                dto.setDoctorTel(tel.substring(0, 3) + "****" + tel.substring(7));
+            } else if (tel != null && tel.length() >= 7) {
+                dto.setDoctorTel(tel.substring(0, 3) + "****" + tel.substring(tel.length() - 4));
+            }
+        }
+        return dto;
     }
 
     @PostMapping

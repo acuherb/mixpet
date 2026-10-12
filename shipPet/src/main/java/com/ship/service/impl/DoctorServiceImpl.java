@@ -62,6 +62,11 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
     }
 
     @Override
+    public IPage<DoctorDto> selectByPagePublic(String doctorName, String departmentName, int numPage, int pageSize) {
+        return baseMapper.selectDoctorPagePublic(new Page<>(numPage, pageSize), doctorName, departmentName);
+    }
+
+    @Override
     public DoctorDto selectById(Integer doctorId) {
         DoctorDto dto = baseMapper.selectOneById(doctorId);
         if (dto == null) return null;

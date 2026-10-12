@@ -9,12 +9,12 @@ import {AppointDto2} from "@/model/DO/AppointDto2";
 import {DealAppointVo} from "@/model/VO/DealAppointVo";
 import {Appoint} from "@/model/entiy/Appoint";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
-// 主页查询医生
+// 主页查询医生（顾客端脱敏接口，不返回电话/邮箱/账号）
 export const reqFourDoctor = (): Promise<Page<DoctorDto>> =>
-    reqApi<string, Page<DoctorDto>>("doctor/page?numPage=1&pageSize=6")
-// 用户查看许多医生
+    reqApi<string, Page<DoctorDto>>("doctor/view?numPage=1&pageSize=6")
+// 顾客端查看看医生列表（脱敏）
 export const reqDoctorSee = (page: PageQuery): Promise<Page<DoctorDto>> =>
-    reqApi<string, Page<DoctorDto>>("doctor/page", {params: page})
+    reqApi<string, Page<DoctorDto>>("doctor/view", {params: page})
 // 用户查看一个医生详情
 export const reqDoctorOne = (doctorId: number): Promise<DoctorDto> =>
     reqApi<string, DoctorDto>("doctor/one?doctorId=" + doctorId)
