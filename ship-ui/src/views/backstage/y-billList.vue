@@ -314,7 +314,7 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[]): void => 
 }
 
 /** 在独立窗口打印 HTML */
-const openPrintWindow = (title: string, html: string): void => {
+const openPrintWindow = (_title: string, html: string): void => {
   const w = window.open('', '_blank', 'width=820,height=960')
   if (w) {
     w.document.write(html)
