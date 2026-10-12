@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -94,6 +95,24 @@ public class ClientController {
     @Secured(RoleConst.MANAGER)
     public Result deleteGroup(@PathVariable List<Integer> ids) {
         return Result.choice("删除多个", clientService.deleteByIds(ids));
+    }
+
+    /**
+     * 前台为客户充值（现金收款存入余额，供收费时余额扣款）
+     */
+    @PutMapping("/recharge")
+    @Secured(RoleConst.NURSE)
+    public Result recharge(Integer clientId, BigDecimal money) {
+        if (clientId == null) return Result.error("缺少客户id");
+        if (money == null || money.compareTo(BigDecimal.ZERO) <= 0) return Result.error("充值金额必须大于0");
+        if (money.compareTo(new BigDecimal("100000")) > 0) return Result.error("单次充值不可超过10万元");
+        Client client = clientService.getById(clientId);
+        if (client == null) return Result.error("客户不存在");
+        boolean ok = clientService.lambdaUpdate()
+                .eq(Client::getClientId, clientId)
+                .setSql("client_balance = client_balance + " + money.toPlainString())
+                .update();
+        return Result.choice("充值", ok);
     }
 
     @PutMapping

@@ -55,10 +55,11 @@
       <template #default="scope">{{ scope.row.clientBalance ?? 0 }} 元</template>
     </el-table-column>
     <el-table-column label="简介" prop="clientInfo" min-width="120" show-overflow-tooltip/>
-    <el-table-column fixed="right" label="操作" width="200">
+    <el-table-column fixed="right" label="操作" width="230">
       <template #default="scope">
         <el-button-group>
           <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
+          <el-button :icon="Coin" circle type="primary" title="充值余额" @click="recharge(scope.row)"/>
           <el-button v-if="scope.row.active" circle type="warning" title="停用账号" @click="toggleActive(scope.row)">停</el-button>
           <el-button v-else circle type="success" title="启用账号" @click="toggleActive(scope.row)">启</el-button>
           <el-button :icon="Key" circle type="info" title="重置密码" @click="resetPwd(scope.row)"/>
@@ -194,7 +195,7 @@ const onAgeInput = () => {
     form.value.clientBirthdayEstimated = r.estimated
   }
 }
-import {Delete, Edit, Key} from '@element-plus/icons-vue'
+import {Coin, Delete, Edit, Key} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
@@ -202,7 +203,7 @@ import {PageQuery, YClientList} from "@/model/VO/BackQuery";
 import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {Client, exampleClient} from "@/model/entiy/Client";
 import TagSex from "@/components/show/TagSex.vue";
-import {reqAddClient, reqActivateClient, reqCheckClientRef, reqClientList, reqDeactivateClient, reqDelClient, reqDelClientBatch, reqResetPwd, reqUpdateClient} from "@/request/ClientApi";
+import {reqAddClient, reqActivateClient, reqCheckClientRef, reqClientList, reqDeactivateClient, reqDelClient, reqDelClientBatch, reqRechargeClient, reqResetPwd, reqUpdateClient} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
@@ -279,6 +280,20 @@ const delBatchB = (): void => {
   })
 }
 // 删除单个
+// 为客户充值余额
+const recharge = (row: Client): void => {
+  ElMessageBox.prompt(`客户【${row.clientName}】当前余额 ￥${row.clientBalance ?? 0}，输入充值金额：`, '充值余额', {
+    confirmButtonText: '充值',
+    cancelButtonText: '取消',
+    inputPattern: /^([1-9]\d{0,4})(\.\d{1,2})?$/,
+    inputErrorMessage: '请输入 0.01~99999 之间的金额'
+  }).then(({value}) => {
+    reqRechargeClient(row.clientId, Number(value)).then(res => {
+      if (res.code === 1) sendQuery()
+    })
+  }).catch(() => ElMessage.info('取消充值'))
+}
+
 const delOne = (row: Client): void => {
   // 先检查关联
   reqCheckClientRef(row.clientId).then(refRes => {

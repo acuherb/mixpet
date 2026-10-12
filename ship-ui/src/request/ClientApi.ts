@@ -50,3 +50,6 @@ export const reqDeactivateClient = (id: number): Promise<Res> =>
 // 启用客户
 export const reqActivateClient = (id: number): Promise<Res> =>
     reqApi.put<string, Res>("client/activate/" + id, {})
+// 前台为客户充值（存入余额）
+export const reqRechargeClient = (clientId: number, money: number): Promise<Res> =>
+    reqApi.put<string, Res>("client/recharge", {}, {params: {clientId, money}})
