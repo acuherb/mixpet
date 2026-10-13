@@ -38,6 +38,11 @@ public class DoctorDepart implements Serializable {
      */
     private LocalDateTime createTime;
 
+    /**
+     * 修改时间
+     */
+    private LocalDateTime updateTime;
+
     public Integer getId() {
         return id;
     }
@@ -68,5 +73,13 @@ public class DoctorDepart implements Serializable {
 
     public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
+    }
+
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
     }
 }
