@@ -180,3 +180,11 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 4. pet_source 已加（0后台录入 1顾客自建），自建走 POST /pet/self
 5. 邮件功能延后，上线前处理
 6. 权限(auth_lv)与职称(job)解耦：权限固定 5 档驱动角色、名称带"能干什么"说明；职称走 job 字典可维护。允许自助改职称，改权限仅院长(ADMIN)
+
+### 接诊一次性开全套单（2026-10-13，流程重构）
+- 背景：原接诊只能录药品+套餐，化验/影像/手术要等"完成接诊"后跳转到 5 个页面单独开（子单都外键 record_id，而 recordId 保存后才生成，属绕过非根治）。
+- 改法：接诊弹窗内嵌「检验申请（勾选，字典实时价）+ 影像申请（项目+部位/目的）+ 手术申请（开关+名称/类型/麻醉/费用）」；后端 `RecordVo` 加 `labTestIds/imageItemId/imageExamPart/surgery`，`saveRecord` 在同一事务内：建 record → 处方 → 套餐 → 化验单主表+明细（快照 name/group/unit/ref_range，计 fee_lab）→ 影像申请单（计 fee_image）→ 手术单（计 fee_surgery）→ 未付账单（total = 挂号+诊疗+药+套餐+检验+影像+手术）。任一子单校验失败整体回滚。
+- 就诊汇总：展示检验/影像/手术费用（仅 >0 显示）；按钮按本次是否已开切换"去录结果"↔"补开"。
+- 前端 `SurgeryVo.recordId` 改可空（后端填）；接诊弹窗加 `.lab-pick/.img-pick` 样式。
+- 住院（出院才计费）/免疫（不计费）仍走单独入口，未嵌入接诊弹窗。
+- 后续可优化：流程顺手度（弹窗分区/分步、批量开单交互）待实际使用后再调。
