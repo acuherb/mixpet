@@ -25,6 +25,11 @@ public class DoctorDto extends Doctor {
      */
     private String jobName;
 
+    /**
+     * 执业兽医资格证号（处方笺用）
+     */
+    private String doctorCert;
+
     public String getDepartmentName() {
         return departmentName;
     }
@@ -55,5 +60,13 @@ public class DoctorDto extends Doctor {
 
     public void setJobName(String jobName) {
         this.jobName = jobName;
+    }
+
+    public String getDoctorCert() {
+        return doctorCert;
+    }
+
+    public void setDoctorCert(String doctorCert) {
+        this.doctorCert = doctorCert;
     }
 }

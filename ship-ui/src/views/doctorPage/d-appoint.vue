@@ -136,6 +136,24 @@
         <el-button :loading="treatSubmitting" type="primary" @click="submitTreat">完成接诊</el-button>
       </template>
     </el-dialog>
+
+    <!--接诊成功·就诊汇总（流程连通）-->
+    <el-dialog v-model="summaryView" title="接诊成功" width="520px" append-to-body>
+      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。可继续为本次就诊开具检验/影像，或打印国标兽医处方笺。</p>
+      <el-descriptions :column="1" border size="small">
+        <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="合计">
+          <b style="color: #f56c6c">￥{{ summaryFee.total.toFixed(2) }}</b>
+        </el-descriptions-item>
+      </el-descriptions>
+      <div class="summary-btns">
+        <el-button type="primary" @click="printRx">打印处方笺</el-button>
+        <el-button @click="goOrder('d-lab')">开检验单</el-button>
+        <el-button @click="goOrder('d-image')">开影像单</el-button>
+        <el-button @click="summaryView = false">完成</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -156,8 +174,10 @@ import {Delete, Plus} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqSaveRecord} from "@/request/RecordApi";
+import {reqRecordByAppointment, reqSaveRecord} from "@/request/RecordApi";
+import {useRouter} from 'vue-router';
 
+const router = useRouter()
 const appoint = ref<AppointDto2[]>([])
 onMounted(() => {
   queryAppoint()
@@ -219,9 +239,30 @@ const totalMoney = (): string => {
   const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0) + Number(feeDrug())
   return sum.toFixed(2)
 }
+// 就诊汇总（接诊成功后的流程连通入口）
+const summaryView = ref(false)
+const summaryRecordId = ref(0)
+const summaryFee = ref({reg: 0, treat: 0, drug: 0, total: 0})
+const openSummary = (recordId: number): void => {
+  summaryRecordId.value = recordId
+  summaryFee.value = {
+    reg: recordForm.value.feeRegister || 0,
+    treat: recordForm.value.feeTreat || 0,
+    drug: Number(feeDrug()),
+    total: Number(totalMoney())
+  }
+  summaryView.value = true
+}
+const printRx = (): void => {
+  router.push('/doctorPage/d-rx?recordId=' + summaryRecordId.value)
+}
+const goOrder = (path: string): void => {
+  const id = summaryRecordId.value
+  summaryView.value = false
+  router.push('/doctorPage/' + path + '?recordId=' + id)
+}
 // 提交接诊
-const submitTreat = async (): Promise<void> => {
-  await recordFormRef.value?.validate((valid: boolean): void => {
+const submitTreat = async (): Promise<void> => {  await recordFormRef.value?.validate((valid: boolean): void => {
     if (!valid) return
     // 过滤没选药品的行
     const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
@@ -230,6 +271,10 @@ const submitTreat = async (): Promise<void> => {
       if (res.code === 1) {
         treatView.value = false
         queryAppoint()
+        // 接诊成功：取 recordId，弹就诊汇总（打印处方笺/继续开检验影像）
+        reqRecordByAppointment(treatAppoint.value!.appointmentId).then(rec => {
+          if (rec) openSummary(rec.recordId)
+        })
       }
     }).finally(() => {
       treatSubmitting.value = false
@@ -303,5 +348,9 @@ watch(() => form.value.clientId, (newValue): void => {
 .fee-sep {
   margin: 0 12px 0 24px;
   color: #909399;
+}
+.summary-btns {
+  margin-top: 16px;
+  text-align: right;
 }
 </style>

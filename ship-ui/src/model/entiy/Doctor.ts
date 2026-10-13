@@ -13,6 +13,7 @@ export interface Doctor {
     jobName?: string | null;
     doctorInfo: string;
     doctorMotto?: string | null;
+    doctorCert?: string | null;
     doctorPassword?: string | null;
     departmentIds?: number[];
     createTime?: string | null;
@@ -37,6 +38,7 @@ export const exampleDoctor = (): Doctor => {
         jobId: null,
         jobName: null,
         doctorInfo: "",
-        doctorMotto: null
+        doctorMotto: null,
+        doctorCert: null
     }
 }

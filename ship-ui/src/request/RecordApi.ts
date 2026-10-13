@@ -2,11 +2,18 @@ import {Page} from "@/model/DO/Page";
 import reqApi from "@/request/reqAPI";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {RecordVo} from "@/model/entiy/MedicalRecord";
+import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
 // 医生接诊：保存病历+处方
 export const reqSaveRecord = (data: RecordVo): Promise<Res> =>
     reqApi.post<string, Res>("record/save", data)
+// 按挂号单查已生成病历（接诊后取 recordId）
+export const reqRecordByAppointment = (appointmentId: number): Promise<RecordDto> =>
+    reqApi<string, RecordDto>("record/appointment/" + appointmentId)
+// 兽医处方笺数据（国标）
+export const reqRxSheet = (recordId: number): Promise<RxSheet> =>
+    reqApi<string, RxSheet>("record/rx/" + recordId)
 // 宠物就诊史
 export const reqPetRecords = (petId: number, numPage = 1, pageSize = 20): Promise<Page<RecordDto>> =>
     reqApi<string, Page<RecordDto>>(`record/pet/${petId}`, {params: {numPage, pageSize}})

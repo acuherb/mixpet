@@ -88,6 +88,11 @@ public class Doctor implements Serializable {
     private String doctorMotto;
 
     /**
+     * 执业兽医资格证号（国标处方笺用）
+     */
+    private String doctorCert;
+
+    /**
      * 医生密码
      */
     private String doctorPassword;
@@ -197,6 +202,14 @@ public class Doctor implements Serializable {
         this.jobId = jobId;
     }
 
+    public String getDoctorCert() {
+        return doctorCert;
+    }
+
+    public void setDoctorCert(String doctorCert) {
+        this.doctorCert = doctorCert;
+    }
+
     public String getDoctorInfo() {
         return doctorInfo;
     }
@@ -259,6 +272,7 @@ public class Doctor implements Serializable {
                 ", doctorEmail = " + doctorEmail +
                 ", authLv = " + authLv +
                 ", jobId = " + jobId +
+                ", doctorCert = " + doctorCert +
                 ", doctorInfo = " + doctorInfo +
                 ", doctorMotto = " + doctorMotto +
                 ", doctorPassword = " + doctorPassword +

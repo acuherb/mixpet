@@ -7,6 +7,7 @@ import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
 import com.ship.model.vo.RecordVo;
+import com.ship.model.vo.RxSheetVo;
 
 /**
  * 电子病历 Service
@@ -20,4 +21,10 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 单份病历详情（联查） */
     RecordDto selectRecordOne(Integer recordId);
+
+    /** 按挂号单查已生成的病历（接诊后取 recordId 用） */
+    RecordDto selectByAppointment(Integer appointmentId);
+
+    /** 兽医处方笺数据（国标）：聚合病历+宠物+医生+处方 */
+    RxSheetVo selectRxSheet(Integer recordId);
 }

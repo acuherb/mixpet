@@ -118,6 +118,25 @@
           </el-table>
         </template>
         <p v-if="labs.length === 0" style="color:#999">本次无化验项目</p>
+        <h4 style="margin: 14px 0 6px">影像检查</h4>
+        <template v-for="img in images" :key="img.orderId">
+          <div class="lab-hd">
+            {{ img.itemName }}（{{ img.groupName || '—' }}）· 部位：{{ img.examPart || '—' }} · 费用 ￥{{ img.fee }}
+            <el-tag v-if="img.status" size="small" type="success">已出报告</el-tag>
+            <el-tag v-else size="small" type="warning">待检查</el-tag>
+          </div>
+          <div class="lab-note" style="margin-bottom:8px">报告：{{ img.result || '尚未出报告' }}</div>
+        </template>
+        <p v-if="images.length === 0" style="color:#999">本次无影像检查</p>
+        <h4 style="margin: 14px 0 6px">住院信息</h4>
+        <template v-for="h in hospitals" :key="h.hospitalId">
+          <div class="lab-hd">
+            病房 {{ h.roomNo || '—' }} · 日均 ￥{{ h.dailyFee }} · {{ h.days ?? 0 }} 天
+            <el-tag v-if="h.status" size="small" type="info">已出院</el-tag>
+            <el-tag v-else size="small" type="warning">住院中</el-tag>
+          </div>
+        </template>
+        <p v-if="hospitals.length === 0" style="color:#999">本次无住院记录</p>
       </template>
     </el-dialog>
 
@@ -224,6 +243,10 @@ import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {reqPetRecords, reqRecordOne} from "@/request/RecordApi";
 import {reqLabByRecord} from "@/request/LabApi";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
+import {reqImageByRecord} from "@/request/ImageApi";
+import {reqHospitalByRecord} from "@/request/HospitalApi";
+import {ImageOrder} from "@/model/entiy/ImageOrder";
+import {HospitalDto} from "@/model/DO/HospitalDto";
 
 const petList = ref<Pet[]>([]);
 
@@ -246,15 +269,25 @@ const openRecords = (pet: Pet): void => {
 const detailVisible = ref(false)
 const detail = ref<RecordDetailVo | null>(null)
 const labs = ref<LabOrderDto[]>([])
+const images = ref<ImageOrder[]>([])
+const hospitals = ref<HospitalDto[]>([])
 const openRecordDetail = (recordId: number): void => {
   labs.value = []
+  images.value = []
+  hospitals.value = []
   reqRecordOne(recordId).then(res => {
     if (res) {
       detail.value = res
       detailVisible.value = true
-      // 顾客只能查自己宠物的化验结果（后端已做归属校验）
+      // 顾客只能查自己宠物的就诊结果（后端已做归属校验）
       reqLabByRecord(recordId).then(list => {
         labs.value = list || []
+      })
+      reqImageByRecord(recordId).then(list => {
+        images.value = list || []
+      })
+      reqHospitalByRecord(recordId).then(list => {
+        hospitals.value = list || []
       })
     }
   })

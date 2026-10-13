@@ -79,6 +79,7 @@ import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {ImageTest} from "@/model/entiy/ImageTest";
 import {reqCreateImageOrder, reqImageByRecord, reqImgGroup} from "@/request/ImageApi";
 import {reqDoctorRecords} from "@/request/LabApi";
+import {useRoute} from 'vue-router';
 import {ElMessage} from "element-plus";
 
 const records = ref<RecordDto[]>([])
@@ -146,6 +147,7 @@ const loadOrders = (): void => {
   })
 }
 
+const route = useRoute()
 onMounted(() => {
   reqDoctorRecords().then(res => {
     records.value = res || []
@@ -153,6 +155,12 @@ onMounted(() => {
   reqImgGroup().then(res => {
     tests.value = res || []
   })
+  // 从就诊汇总跳转过来：预填本次病历
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    form.recordId = rid
+    loadOrders()
+  }
 })
 </script>
 

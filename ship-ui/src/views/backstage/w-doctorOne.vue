@@ -134,6 +134,9 @@
       <el-form-item label="简介">
         <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="1000" show-word-limit placeholder="医生简介"/>
       </el-form-item>
+      <el-form-item label="执业资格证号">
+        <el-input v-model="form.doctorCert" clearable maxlength="64" placeholder="执业兽医资格证号（用于国标处方笺）"/>
+      </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
@@ -289,6 +292,7 @@ const updateRole = () => {
   form.value.departmentId = doctor.value.departmentId
   form.value.departmentIds = doctor.value.departmentIds ? [...doctor.value.departmentIds] : []
   form.value.username = doctor.value.username
+  form.value.doctorCert = doctor.value.doctorCert
   // 显示
   modalView.value = true
 }

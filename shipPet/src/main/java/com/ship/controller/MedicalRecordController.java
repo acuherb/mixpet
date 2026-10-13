@@ -9,6 +9,7 @@ import com.ship.model.entity.Pet;
 import com.ship.model.entity.Prescription;
 import com.ship.mapper.PrescriptionMapper;
 import com.ship.model.vo.RecordVo;
+import com.ship.model.vo.RxSheetVo;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IMedicalRecordService;
 import com.ship.service.IPetService;
@@ -72,6 +73,27 @@ public class MedicalRecordController {
                 && !client.getClientId().equals(dto.getClientId())) return null;
         List<Prescription> prescriptions = prescriptionMapper.selectByRecord(recordId);
         return new RecordDetailVo(dto, prescriptions);
+    }
+
+    /**
+     * 按挂号单查已生成病历（接诊后取 recordId；员工可用）
+     */
+    @GetMapping("/appointment/{appointmentId}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    public RecordDto selectByAppointment(@PathVariable Integer appointmentId) {
+        return recordService.selectByAppointment(appointmentId);
+    }
+
+    /**
+     * 兽医处方笺（国标）：顾客只能看自己宠物的
+     */
+    @GetMapping("/rx/{recordId}")
+    public RxSheetVo selectRx(@PathVariable Integer recordId) {
+        RecordDto dto = recordService.selectRecordOne(recordId);
+        if (dto == null) return null;
+        if (UserUtil.getUser() instanceof Client client
+                && !client.getClientId().equals(dto.getClientId())) return null;
+        return recordService.selectRxSheet(recordId);
     }
 
     /**

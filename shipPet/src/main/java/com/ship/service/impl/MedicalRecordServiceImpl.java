@@ -5,12 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.BillMapper;
+import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.DrugMapper;
 import com.ship.mapper.MedicalRecordMapper;
+import com.ship.mapper.PetMapper;
 import com.ship.mapper.PrescriptionMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
 import com.ship.model.vo.RecordVo;
+import com.ship.model.vo.RxSheetVo;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IMedicalRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,14 +33,19 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final DrugMapper drugMapper;
     private final PrescriptionMapper prescriptionMapper;
     private final BillMapper billMapper;
+    private final PetMapper petMapper;
+    private final DoctorMapper doctorMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
-                                    PrescriptionMapper prescriptionMapper, BillMapper billMapper) {
+                                    PrescriptionMapper prescriptionMapper, BillMapper billMapper,
+                                    PetMapper petMapper, DoctorMapper doctorMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
         this.billMapper = billMapper;
+        this.petMapper = petMapper;
+        this.doctorMapper = doctorMapper;
     }
 
     @Override
@@ -115,5 +123,51 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     @Override
     public RecordDto selectRecordOne(Integer recordId) {
         return baseMapper.selectRecordOne(recordId);
+    }
+
+    @Override
+    public RecordDto selectByAppointment(Integer appointmentId) {
+        MedicalRecord r = this.lambdaQuery().eq(MedicalRecord::getAppointmentId, appointmentId).one();
+        return r == null ? null : baseMapper.selectRecordOne(r.getRecordId());
+    }
+
+    @Override
+    public RxSheetVo selectRxSheet(Integer recordId) {
+        RecordDto record = baseMapper.selectRecordOne(recordId);
+        if (record == null) return null;
+        RxSheetVo vo = new RxSheetVo();
+        vo.setRecordId(record.getRecordId());
+        vo.setRxNo("No." + record.getRecordId());
+        vo.setCreateTime(record.getCreateTime());
+        vo.setClientName(record.getClientName());
+        vo.setPetName(record.getPetName());
+        vo.setDiagnosis(record.getDiagnosis());
+        vo.setDoctorName(record.getDoctorName());
+        vo.setDepartmentName(record.getDepartmentName());
+        // 宠物信息（品种/性别/生日/体重/芯片）
+        Pet pet = petMapper.selectById(record.getPetId());
+        if (pet != null) {
+            vo.setPetVariety(pet.getPetVariety());
+            vo.setPetSex(pet.getPetSex());
+            vo.setPetBirthday(pet.getPetBirthday());
+            vo.setPetWeight(pet.getPetWeight());
+            vo.setPetChip(pet.getPetChip());
+        }
+        // 开方兽医执业资格证号
+        Doctor doctor = doctorMapper.selectById(record.getDoctorId());
+        if (doctor != null) vo.setDoctorCert(doctor.getDoctorCert());
+        // 处方明细与药费合计
+        List<Prescription> items = prescriptionMapper.selectByRecord(recordId);
+        vo.setItems(items == null ? new ArrayList<>() : items);
+        BigDecimal total = BigDecimal.ZERO;
+        if (items != null) {
+            for (Prescription p : items) {
+                if (p.getDrugPrice() != null && p.getQuantity() != null) {
+                    total = total.add(p.getDrugPrice().multiply(BigDecimal.valueOf(p.getQuantity())));
+                }
+            }
+        }
+        vo.setTotalAmount(total);
+        return vo;
     }
 }

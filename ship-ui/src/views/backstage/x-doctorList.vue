@@ -123,6 +123,9 @@
       <el-form-item label="简介">
         <el-input v-model="form.doctorInfo" type="textarea" :rows="3" maxlength="255" show-word-limit placeholder="医生简介"/>
       </el-form-item>
+      <el-form-item label="执业资格证号">
+        <el-input v-model="form.doctorCert" clearable maxlength="64" placeholder="执业兽医资格证号（用于国标处方笺）"/>
+      </el-form-item>
       <el-form-item v-if="modalTit==='新增医生'" label="密码">
         <el-input v-model="form.doctorPassword" clearable placeholder="123456"/>
       </el-form-item>
@@ -290,6 +293,7 @@ const showDialog = (row: DoctorDto) => {
   form.value.doctorName = row.doctorName
   form.value.doctorGender = row.doctorGender
   form.value.username = row.username
+  form.value.doctorCert = row.doctorCert
   // 显示
   modalView.value = true
   modalTit.value = "修改医生"

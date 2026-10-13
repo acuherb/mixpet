@@ -107,6 +107,15 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - SQL：`数据库备份/vaccine_merge_into_drug.sql`（drug 加 3 字段 → vaccine 数据迁入 drug（临时列记来源 id）→ immune_record 改列名并回填 drug_id → 删临时列和 vaccine 表），已应用。迁移后 drug_type=疫苗 共 8 条（6 个原疫苗 + 2 个演示数据）。
 - 后续可优化药品列表：疫苗库存/批号/保质期、统一计费（接种也收钱）等。
 
+### 就诊流程连通 + 国标兽医处方笺（2026-10-13）
+- 背景：原接诊只能加药品；化验/影像/住院/免疫各自单独建、未与本次就诊连通；缺国标处方笺。
+- 执业资格证号：doctor 加 `doctor_cert`（国标处方笺必填），医生表单/个人页可维护。
+- 国标兽医处方笺：`GET /record/rx/{recordId}` 聚合 病历+宠物+主人+医生+处方（`RxSheetVo`）；前端 `d-rx.vue` 可打印页（标题/编号/畜主/宠物(种名·品种·性别·年龄·体重·芯片)/临床诊断/Rp 药品表/金额大小写/开方兽医+资格证号/兽药房调配/日期），`@media print` 打印样式；路由 `/doctorPage/d-rx?recordId=`。
+- 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（带 recordId 跳转，`d-lab`/`d-image` 读路由 query 预填本次病历）。
+- 顾客端闭环：病历详情(clientPet)在处方/化验外，补显 影像检查报告、住院信息（后端接口原有，前端接上）。
+- SQL：`数据库备份/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
+- 后续可做：检验申请单/影像申请单国标样式、住院/免疫也并入就诊汇总、处方笺顾客端自助打印。
+
 ## 8. 待办
 ### 回测（待做）
 - [ ] 顾客添加宠物（完整表单+待审核）→ 后台审核通过/驳回 → 挂号可选性

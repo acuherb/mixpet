@@ -91,6 +91,7 @@
 
 <script lang="ts" setup>
 import {computed, onMounted, reactive, ref} from 'vue'
+import {useRoute} from 'vue-router'
 import {RecordDto} from "@/model/DO/RecordDto";
 import {LabTest} from "@/model/entiy/LabTest";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
@@ -188,6 +189,7 @@ const loadOrders = (): void => {
   })
 }
 
+const route = useRoute()
 onMounted(() => {
   reqDoctorRecords().then(res => {
     records.value = res || []
@@ -195,6 +197,12 @@ onMounted(() => {
   reqLabTestList().then(res => {
     tests.value = res || []
   })
+  // 从就诊汇总跳转过来：预填本次病历
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    form.recordId = rid
+    loadOrders()
+  }
 })
 </script>
 

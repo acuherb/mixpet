@@ -7,7 +7,7 @@
         doctor_id,d.department_id,username,
         d.create_time,doctor_name,doctor_gender,
         doctor_age,doctor_photo,doctor_tel,doctor_email,
-        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,b.department_name,
+        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,doctor_cert,b.department_name,
         (SELECT GROUP_CONCAT(dep.department_name)
          FROM doctor_department dd
          JOIN department dep ON dd.department_id=dep.department_id
@@ -37,7 +37,7 @@
         doctor_id,d.department_id,
         d.create_time,doctor_name,doctor_gender,
         doctor_age,doctor_photo,
-        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,b.department_name,
+        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,doctor_cert,b.department_name,
         (SELECT GROUP_CONCAT(dep.department_name)
          FROM doctor_department dd
          JOIN department dep ON dd.department_id=dep.department_id
@@ -76,6 +76,7 @@
                j.job_name,
                a.doctor_info,
                a.doctor_motto,
+               a.doctor_cert,
                b.department_name
         FROM doctor AS a
                  LEFT JOIN department AS b
@@ -111,6 +112,7 @@
             doctor_tel=#{doctorTel},
             doctor_email=#{doctorEmail},
             job_id=#{jobId},
+            doctor_cert=#{doctorCert},
             update_time=now()
         WHERE doctor_id = #{doctorId}
     </update>

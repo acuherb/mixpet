@@ -25,5 +25,9 @@ export const doctorPage: RouteRecordRaw[] = [
         // 医生开影像检查单
         path: "d-image",
         component: () => import('@/views/doctorPage/d-image.vue'),
+    }, {
+        // 兽医处方笺（国标，可打印）
+        path: "d-rx",
+        component: () => import('@/views/doctorPage/d-rx.vue'),
     },
 ]
