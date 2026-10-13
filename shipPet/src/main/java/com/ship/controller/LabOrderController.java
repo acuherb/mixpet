@@ -10,6 +10,7 @@ import com.ship.model.entity.Doctor;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.vo.LabOrderVo;
 import com.ship.model.vo.LabResultVo;
+import com.ship.model.vo.RequisitionVo;
 import com.ship.security.model.MyUser;
 import com.ship.security.model.RoleConst;
 import com.ship.service.ILabOrderService;
@@ -79,6 +80,13 @@ public class LabOrderController {
     @Secured({RoleConst.NURSE, RoleConst.MANAGER})
     public Result saveResult(@RequestBody LabResultVo vo) {
         return labService.saveResult(vo, operatorName());
+    }
+
+    /** 检验申请单（国标，可打印） */
+    @GetMapping("/requisition/{orderId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.DOCTOR})
+    public RequisitionVo requisition(@PathVariable Integer orderId) {
+        return labService.selectRequisition(orderId);
     }
 
     /** 当前操作人名称（写 result_by） */

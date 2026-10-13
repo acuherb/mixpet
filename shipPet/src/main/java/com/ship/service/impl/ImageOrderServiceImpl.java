@@ -6,16 +6,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.BillMapper;
+import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.ImageOrderMapper;
 import com.ship.mapper.ImageTestMapper;
+import com.ship.mapper.PetMapper;
 import com.ship.model.dto.ImageOrderDto;
 import com.ship.model.entity.Bill;
 import com.ship.model.entity.Doctor;
 import com.ship.model.entity.ImageOrder;
 import com.ship.model.entity.ImageTest;
 import com.ship.model.entity.MedicalRecord;
+import com.ship.model.entity.Pet;
 import com.ship.model.vo.ImageOrderVo;
 import com.ship.model.vo.ImageReportVo;
+import com.ship.model.vo.RequisitionVo;
 import com.ship.service.IImageOrderService;
 import com.ship.service.IMedicalRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +37,17 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     private final IMedicalRecordService recordService;
     private final ImageTestMapper testMapper;
     private final BillMapper billMapper;
+    private final PetMapper petMapper;
+    private final DoctorMapper doctorMapper;
 
     @Autowired
-    public ImageOrderServiceImpl(IMedicalRecordService recordService, ImageTestMapper testMapper, BillMapper billMapper) {
+    public ImageOrderServiceImpl(IMedicalRecordService recordService, ImageTestMapper testMapper, BillMapper billMapper,
+                                 PetMapper petMapper, DoctorMapper doctorMapper) {
         this.recordService = recordService;
         this.testMapper = testMapper;
         this.billMapper = billMapper;
+        this.petMapper = petMapper;
+        this.doctorMapper = doctorMapper;
     }
 
     @Override
@@ -120,5 +129,49 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     @Override
     public List<ImageOrderDto> selectByRecord(Integer recordId) {
         return baseMapper.selectByRecord(recordId);
+    }
+
+    @Override
+    public RequisitionVo selectRequisition(Integer orderId) {
+        ImageOrder order = this.getById(orderId);
+        if (order == null) return null;
+        RequisitionVo vo = new RequisitionVo();
+        vo.setType("影像申请单");
+        vo.setOrderId(orderId);
+        vo.setOrderNo("No." + orderId);
+        vo.setCreateTime(order.getCreateTime());
+        vo.setFee(order.getFee());
+        vo.setExamPart(order.getExamPart());
+        vo.setRemark(order.getNote());
+        ImageOrderDto dto = selectByRecord(order.getRecordId()).stream()
+                .filter(d -> d.getOrderId().equals(orderId)).findFirst().orElse(null);
+        if (dto != null) {
+            vo.setClientName(dto.getClientName());
+            vo.setPetName(dto.getPetName());
+            vo.setDoctorName(dto.getDoctorName());
+            vo.setDiagnosis(dto.getDiagnosis());
+        }
+        RequisitionVo.ReqItem item = new RequisitionVo.ReqItem();
+        item.setName(order.getItemName());
+        item.setGroup(order.getGroupName());
+        vo.setItems(List.of(item));
+        fillHeader(vo, order.getRecordId(), order.getPetId(), order.getDoctorId());
+        return vo;
+    }
+
+    /** 补头部：诊断 + 宠物详情 + 医生资格证号 */
+    private void fillHeader(RequisitionVo vo, Integer recordId, Integer petId, Integer doctorId) {
+        MedicalRecord record = recordService.getById(recordId);
+        if (record != null) vo.setDiagnosis(record.getDiagnosis());
+        Pet pet = petMapper.selectById(petId);
+        if (pet != null) {
+            vo.setPetVariety(pet.getPetVariety());
+            vo.setPetSex(pet.getPetSex());
+            vo.setPetBirthday(pet.getPetBirthday());
+            vo.setPetWeight(pet.getPetWeight());
+            vo.setPetChip(pet.getPetChip());
+        }
+        Doctor doctor = doctorMapper.selectById(doctorId);
+        if (doctor != null) vo.setDoctorCert(doctor.getDoctorCert());
     }
 }

@@ -2,6 +2,7 @@ import {Page} from "@/model/DO/Page";
 import {Res} from "@/request/Res";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {ImageTest} from "@/model/entiy/ImageTest";
+import {Requisition} from "@/model/entiy/Requisition";
 import reqApi from "@/request/reqAPI";
 
 // 影像项目字典 ----------------------------------------------------------
@@ -33,3 +34,6 @@ export const reqImageOrderPage = (params: { numPage: number; pageSize: number; s
 // 某病历的申请单
 export const reqImageByRecord = (recordId: number): Promise<ImageOrder[]> =>
     reqApi<string, ImageOrder[]>("imageOrder/record/" + recordId)
+// 影像申请单（国标，可打印）
+export const reqImageRequisition = (orderId: number): Promise<Requisition> =>
+    reqApi<string, Requisition>("imageOrder/requisition/" + orderId)

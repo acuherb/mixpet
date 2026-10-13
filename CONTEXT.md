@@ -114,7 +114,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（带 recordId 跳转，`d-lab`/`d-image` 读路由 query 预填本次病历）。
 - 顾客端闭环：病历详情(clientPet)在处方/化验外，补显 影像检查报告、住院信息（后端接口原有，前端接上）。
 - SQL：`数据库备份/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
-- 后续可做：检验申请单/影像申请单国标样式、住院/免疫也并入就诊汇总、处方笺顾客端自助打印。
+- 后续可做：住院/免疫也并入就诊汇总、处方笺顾客端自助打印、随访复诊提醒。
+
+### 检验/影像申请单国标样式（2026-10-13）
+- 复用处方笺模式：`GET /lab/requisition/{orderId}`、`GET /imageOrder/requisition/{orderId}` 返回统一 `RequisitionVo`（头部=畜主/宠物(品种·性别·年龄·体重·芯片)/申请医生+资格证号/临床诊断；body：检验为多项表(名称/分组/参考范围/单位)，影像为单项目+检查部位/目的+费用）。
+- 前端 `z-requisition.vue` 可打印页（`/backstage/z-requisition?type=lab|image&orderId=`），`@media print` 打印样式。
+- 入口：化验结果(z-labResult)、影像报告(z-imageResult)列表每行加「申请单」按钮。至此国标单据三件套：处方笺 + 检验申请单 + 影像申请单。
 
 ## 8. 待办
 ### 回测（待做）

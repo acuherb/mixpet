@@ -8,6 +8,7 @@ import com.ship.model.entity.Doctor;
 import com.ship.model.entity.ImageOrder;
 import com.ship.model.vo.ImageOrderVo;
 import com.ship.model.vo.ImageReportVo;
+import com.ship.model.vo.RequisitionVo;
 
 import java.util.List;
 
@@ -26,4 +27,7 @@ public interface IImageOrderService extends IService<ImageOrder> {
 
     /** 某病历的申请单 */
     List<ImageOrderDto> selectByRecord(Integer recordId);
+
+    /** 影像申请单（国标，可打印）：聚合申请单+病历+宠物+医生 */
+    RequisitionVo selectRequisition(Integer orderId);
 }

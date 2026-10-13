@@ -25,6 +25,10 @@ export const backstage: RouteRecordRaw[] = [
         // 职务/职称字典
         path: "z-job",
         component: () => import('@/views/backstage/z-job.vue')
+    }, {
+        // 检验/影像申请单（国标，可打印）
+        path: "z-requisition",
+        component: () => import('@/views/backstage/z-requisition.vue')
     },{
         // 领养表
         path: "y-adoptList",

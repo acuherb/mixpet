@@ -31,8 +31,9 @@
         <el-tag v-else size="small" type="warning">待检查</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="110" fixed="right">
+    <el-table-column label="操作" width="170" fixed="right">
       <template #default="scope">
+        <el-button size="small" @click="printReq(scope.row)">申请单</el-button>
         <el-button :type="scope.row.status ? 'info' : 'primary'" plain size="small" @click="showDialog(scope.row)">
           {{ scope.row.status ? '查看报告' : '录报告' }}
         </el-button>
@@ -62,6 +63,7 @@
 
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
+import {useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
@@ -88,6 +90,11 @@ const sendQuery = (): void => {
 const nowQuery = (): void => {
   qp.value.numPage = 1
   sendQuery()
+}
+const router = useRouter()
+// 打印影像申请单（国标）
+const printReq = (row: ImageOrder): void => {
+  router.push('/backstage/z-requisition?type=image&orderId=' + row.orderId)
 }
 
 const modalView = ref(false)

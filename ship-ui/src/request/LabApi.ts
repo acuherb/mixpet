@@ -5,6 +5,7 @@ import {LabTest} from "@/model/entiy/LabTest";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
 import {LabOrderVo, LabResultVo} from "@/model/VO/LabOrderVo";
 import {RecordDto} from "@/model/DO/RecordDto";
+import {Requisition} from "@/model/entiy/Requisition";
 
 // ---------- 检验项字典 ----------
 // 启用中的检验项（医生开单勾选）
@@ -39,3 +40,6 @@ export const reqDoctorRecords = (): Promise<RecordDto[]> =>
 // 录入化验结果
 export const reqSaveLabResult = (data: LabResultVo): Promise<Res> =>
     reqApi.put<string, Res>("lab/result", data)
+// 检验申请单（国标，可打印）
+export const reqLabRequisition = (orderId: number): Promise<Requisition> =>
+    reqApi<string, Requisition>("lab/requisition/" + orderId)

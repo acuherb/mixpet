@@ -6,13 +6,16 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.BillMapper;
+import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.LabOrderItemMapper;
 import com.ship.mapper.LabOrderMapper;
 import com.ship.mapper.LabTestMapper;
+import com.ship.mapper.PetMapper;
 import com.ship.model.dto.LabOrderDto;
 import com.ship.model.entity.*;
 import com.ship.model.vo.LabOrderVo;
 import com.ship.model.vo.LabResultVo;
+import com.ship.model.vo.RequisitionVo;
 import com.ship.service.ILabOrderService;
 import com.ship.service.IMedicalRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,14 +36,19 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
     private final LabTestMapper labTestMapper;
     private final LabOrderItemMapper labOrderItemMapper;
     private final BillMapper billMapper;
+    private final PetMapper petMapper;
+    private final DoctorMapper doctorMapper;
 
     @Autowired
     public LabOrderServiceImpl(IMedicalRecordService recordService, LabTestMapper labTestMapper,
-                               LabOrderItemMapper labOrderItemMapper, BillMapper billMapper) {
+                               LabOrderItemMapper labOrderItemMapper, BillMapper billMapper,
+                               PetMapper petMapper, DoctorMapper doctorMapper) {
         this.recordService = recordService;
         this.labTestMapper = labTestMapper;
         this.labOrderItemMapper = labOrderItemMapper;
         this.billMapper = billMapper;
+        this.petMapper = petMapper;
+        this.doctorMapper = doctorMapper;
     }
 
     @Override
@@ -163,5 +171,55 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
             result.add(dto);
         }
         return result;
+    }
+
+    @Override
+    public RequisitionVo selectRequisition(Integer orderId) {
+        LabOrder order = this.getById(orderId);
+        if (order == null) return null;
+        RequisitionVo vo = new RequisitionVo();
+        vo.setType("检验申请单");
+        vo.setOrderId(orderId);
+        vo.setOrderNo("No." + orderId);
+        vo.setCreateTime(order.getCreateTime());
+        vo.setFee(order.getFee());
+        vo.setRemark(order.getOrderNote());
+        LabOrderDto dto = selectByRecord(order.getRecordId()).stream()
+                .filter(d -> d.getOrderId().equals(orderId)).findFirst().orElse(null);
+        if (dto != null) {
+            vo.setClientName(dto.getClientName());
+            vo.setPetName(dto.getPetName());
+            vo.setDoctorName(dto.getDoctorName());
+            List<RequisitionVo.ReqItem> items = new ArrayList<>();
+            if (dto.getItems() != null) {
+                for (LabOrderItem it : dto.getItems()) {
+                    RequisitionVo.ReqItem r = new RequisitionVo.ReqItem();
+                    r.setName(it.getItemName());
+                    r.setGroup(it.getItemGroup());
+                    r.setRefRange(it.getRefRange());
+                    r.setUnit(it.getItemUnit());
+                    items.add(r);
+                }
+            }
+            vo.setItems(items);
+        }
+        fillHeader(vo, order.getRecordId(), order.getPetId(), order.getDoctorId());
+        return vo;
+    }
+
+    /** 补头部：诊断 + 宠物详情 + 医生资格证号 */
+    private void fillHeader(RequisitionVo vo, Integer recordId, Integer petId, Integer doctorId) {
+        MedicalRecord record = recordService.getById(recordId);
+        if (record != null) vo.setDiagnosis(record.getDiagnosis());
+        Pet pet = petMapper.selectById(petId);
+        if (pet != null) {
+            vo.setPetVariety(pet.getPetVariety());
+            vo.setPetSex(pet.getPetSex());
+            vo.setPetBirthday(pet.getPetBirthday());
+            vo.setPetWeight(pet.getPetWeight());
+            vo.setPetChip(pet.getPetChip());
+        }
+        Doctor doctor = doctorMapper.selectById(doctorId);
+        if (doctor != null) vo.setDoctorCert(doctor.getDoctorCert());
     }
 }

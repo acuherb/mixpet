@@ -8,6 +8,7 @@ import com.ship.model.entity.Doctor;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.vo.ImageOrderVo;
 import com.ship.model.vo.ImageReportVo;
+import com.ship.model.vo.RequisitionVo;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IImageOrderService;
 import com.ship.service.IMedicalRecordService;
@@ -63,5 +64,12 @@ public class ImageOrderController {
             if (record == null || !client.getClientId().equals(record.getClientId())) return null;
         }
         return orderService.selectByRecord(recordId);
+    }
+
+    /** 影像申请单（国标，可打印） */
+    @GetMapping("/requisition/{orderId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.DOCTOR})
+    public RequisitionVo requisition(@PathVariable Integer orderId) {
+        return orderService.selectRequisition(orderId);
     }
 }
