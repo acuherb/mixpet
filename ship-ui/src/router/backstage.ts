@@ -33,6 +33,10 @@ export const backstage: RouteRecordRaw[] = [
         // 随访/复诊提醒
         path: "z-remind",
         component: () => import('@/views/backstage/z-remind.vue')
+    }, {
+        // 套餐字典
+        path: "z-package",
+        component: () => import('@/views/backstage/z-package.vue')
     },{
         // 领养表
         path: "y-adoptList",

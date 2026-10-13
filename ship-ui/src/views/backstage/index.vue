@@ -81,6 +81,12 @@
             </el-icon>
           <span>药品列表</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-package" :title="isCollapse ? '套餐管理' : ''">
+          <el-icon>
+              <Goods/>
+            </el-icon>
+          <span>套餐管理</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-billList" :title="isCollapse ? '收费列表' : ''">
           <el-icon>
               <Money/>
@@ -150,7 +156,7 @@
 </template>
 
 <script lang="ts" setup>
-import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User, Bell,} from '@element-plus/icons-vue'
+import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User, Bell, Goods,} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
