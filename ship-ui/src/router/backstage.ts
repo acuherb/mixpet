@@ -37,6 +37,10 @@ export const backstage: RouteRecordRaw[] = [
         // 套餐字典
         path: "z-package",
         component: () => import('@/views/backstage/z-package.vue')
+    }, {
+        // 手术/麻醉管理
+        path: "z-surgery",
+        component: () => import('@/views/backstage/z-surgery.vue')
     },{
         // 领养表
         path: "y-adoptList",

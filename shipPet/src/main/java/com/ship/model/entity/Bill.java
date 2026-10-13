@@ -36,6 +36,8 @@ public class Bill implements Serializable {
     private BigDecimal feeImage;
     /** 套餐费 */
     private BigDecimal feePackage;
+    /** 手术费 */
+    private BigDecimal feeSurgery;
     private BigDecimal totalMoney;
     /** 0未付 1已付 */
     private Boolean payStatus;

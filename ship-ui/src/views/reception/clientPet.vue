@@ -146,6 +146,15 @@
           </div>
         </template>
         <p v-if="hospitals.length === 0" style="color:#999">本次无住院记录</p>
+        <h4 style="margin: 14px 0 6px">手术/麻醉</h4>
+        <template v-for="su in surgeries" :key="su.surgeryId">
+          <div class="lab-hd">
+            {{ su.surgeryName }}（{{ su.surgeryType || '—' }}）· 麻醉：{{ su.anesthesiaType || '—' }} · 费用 ￥{{ su.fee }}
+            <el-tag :type="surgeryStatusType(su.status)" size="small">{{ surgeryStatusText(su.status) }}</el-tag>
+          </div>
+          <div class="lab-note" style="margin-bottom:8px" v-if="su.postopNote">术后：{{ su.postopNote }}</div>
+        </template>
+        <p v-if="surgeries.length === 0" style="color:#999">本次无手术</p>
       </template>
     </el-dialog>
 
@@ -256,6 +265,8 @@ import {reqImageByRecord} from "@/request/ImageApi";
 import {reqHospitalByRecord} from "@/request/HospitalApi";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {HospitalDto} from "@/model/DO/HospitalDto";
+import {reqSurgeryByRecord} from "@/request/SurgeryApi";
+import {Surgery, surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
 import {useRouter} from 'vue-router';
 
 const petList = ref<Pet[]>([]);
@@ -281,6 +292,7 @@ const detail = ref<RecordDetailVo | null>(null)
 const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])
 const hospitals = ref<HospitalDto[]>([])
+const surgeries = ref<Surgery[]>([])
 const router = useRouter()
 // 顾客自助打印兽医处方笺（后端 Rx 接口已按归属校验，仅本人宠物）
 const printRx = (): void => {
@@ -290,6 +302,7 @@ const openRecordDetail = (recordId: number): void => {
   labs.value = []
   images.value = []
   hospitals.value = []
+  surgeries.value = []
   reqRecordOne(recordId).then(res => {
     if (res) {
       detail.value = res
@@ -303,6 +316,9 @@ const openRecordDetail = (recordId: number): void => {
       })
       reqHospitalByRecord(recordId).then(list => {
         hospitals.value = list || []
+      })
+      reqSurgeryByRecord(recordId).then(list => {
+        surgeries.value = list || []
       })
     }
   })

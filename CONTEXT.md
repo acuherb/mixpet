@@ -131,6 +131,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 入口：化验结果(z-labResult)、影像报告(z-imageResult)列表每行加「申请单」按钮。至此国标单据三件套：处方笺 + 检验申请单 + 影像申请单。
 
 ## 8. 待办
+### 手术/麻醉模块（2026-10-13，③）
+- 表：`surgery`(手术单：名称/类型/麻醉方式/预约与实际时间/主刀助手/状态0待1中2完成3取消/术前术中术后记录/手术费)、`anesthesia_record`(麻醉记录：方式/麻醉师/时间/用药/生命体征/备注，一手术一条)、bill 加 `fee_surgery`。脚本 `数据库备份/surgery_module.sql`，已应用。
+- 后端 `/surgery`：POST 新建排程(DOCTOR/NURSE/MANAGER，含计费累加 fee_surgery 进未付账单或新建)、GET /page、GET /record/{id}(顾客归属校验)、GET /{id} 详情(含麻醉)、PUT 更新术前/术中/术后/状态、PUT /anesthesia 保存麻醉记录(upsert)。
+- 前端 `z-surgery.vue`：手术列表(状态筛选)+新建排程弹窗(病历下拉/名称/类型/麻醉/预约时间/主刀助手/费用)+手术·麻醉记录弹窗(状态/实际时间/术前术中术后/麻醉全套)，路由 /backstage/z-surgery，菜单「手术麻醉」，支持路由 recordId 预填。
+- 连通：接诊成功"就诊汇总"加「手术安排」(带 recordId 跳 z-surgery)；顾客端病历详情加"手术/麻醉"展示；账单三处(列表/小票/A4)加"手术费"。
+
+## 8. 待办
 ### 服务套餐（2026-10-13，②-a 字典已建）
 - 表：`service_package`(套餐字典：名称/分类/价格/包含内容/启停)、`record_package`(就诊选购记录)、bill 加 `fee_package` 分项。脚本 `数据库备份/package_module.sql`，预置 5 个套餐（体检/驱虫/免疫）。
 - 计费决策：套餐走固定分项 `fee_package`（与 fee_lab/hospital/image 一致，不做通用费用明细重构）。

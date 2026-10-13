@@ -49,6 +49,12 @@
         <span v-else>-</span>
       </template>
     </el-table-column>
+    <el-table-column label="手术费" prop="feeSurgery" width="80">
+      <template #default="scope">
+        <span v-if="scope.row.feeSurgery > 0">￥{{ scope.row.feeSurgery }}</span>
+        <span v-else>-</span>
+      </template>
+    </el-table-column>
     <el-table-column label="合计(元)" prop="totalMoney" sortable width="100">
       <template #default="scope">
         <b style="color: #f56c6c">￥{{ scope.row.totalMoney }}</b>
@@ -323,6 +329,7 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[]): void => 
   <div class="row"><span>影像费</span><span>￥${money(row.feeImage)}</span></div>
   <div class="row"><span>住院费</span><span>￥${money(row.feeHospital)}</span></div>
   <div class="row"><span>套餐费</span><span>￥${money(row.feePackage)}</span></div>
+  <div class="row"><span>手术费</span><span>￥${money(row.feeSurgery)}</span></div>
   ${drugSection}
   <hr class="line">
   <div class="row total"><span>合计</span><span>￥${money(row.totalMoney)}</span></div>
@@ -429,6 +436,9 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void =
   }
   if (row.feePackage > 0) {
     rows.push(['套餐费', '项', '1', row.feePackage])
+  }
+  if (row.feeSurgery > 0) {
+    rows.push(['手术费', '项', '1', row.feeSurgery])
   }
   const totalMoney = row.totalMoney || 0
   const trs = rows.map(r => `

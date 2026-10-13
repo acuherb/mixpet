@@ -111,6 +111,12 @@
             </el-icon>
           <span>住院管理</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-surgery" :title="isCollapse ? '手术麻醉' : ''">
+          <el-icon>
+              <FirstAidKit/>
+            </el-icon>
+          <span>手术麻醉</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/z-imageTest" :title="isCollapse ? '影像项字典' : ''">
           <el-icon>
               <Camera/>

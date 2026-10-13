@@ -1,0 +1,256 @@
+<template>
+  <div>
+    <!--操作框：新增 + 状态筛选-->
+    <BackOpCol role="手术" @addRole="addRoleB" @query="nowQuery">
+      <el-select v-model="statusFilter" clearable placeholder="全部状态" size="large" style="width: 140px" @change="nowQuery">
+        <el-option label="待手术" :value="0"/>
+        <el-option label="手术中" :value="1"/>
+        <el-option label="已完成" :value="2"/>
+        <el-option label="已取消" :value="3"/>
+      </el-select>
+    </BackOpCol>
+    <!--列表展示-->
+    <el-table :data="list.records" max-height="calc(100vh - 200px)" row-key="surgeryId" stripe>
+      <el-table-column label="宠物" min-width="100" prop="petName" show-overflow-tooltip/>
+      <el-table-column label="客户" min-width="100" prop="clientName" show-overflow-tooltip/>
+      <el-table-column label="手术名称" min-width="140" prop="surgeryName" show-overflow-tooltip/>
+      <el-table-column label="类型" width="80" prop="surgeryType"/>
+      <el-table-column label="麻醉" width="100" prop="anesthesiaType"/>
+      <el-table-column label="主刀" width="90" prop="surgeon" show-overflow-tooltip/>
+      <el-table-column label="预约时间" width="160" prop="scheduledTime">
+        <template #default="scope">{{ fmt(scope.row.scheduledTime) }}</template>
+      </el-table-column>
+      <el-table-column label="费用(元)" width="90" prop="fee"/>
+      <el-table-column label="状态" width="90">
+        <template #default="scope">
+          <el-tag :type="surgeryStatusType(scope.row.status)" size="small">{{ surgeryStatusText(scope.row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" width="110">
+        <template #default="scope">
+          <el-button size="small" type="primary" @click="openRecord(scope.row)">记录</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <!--分页条-->
+    <BackPage :total="list.total" @changePu="changePuB"/>
+
+    <!--新建手术单弹窗-->
+    <el-dialog v-model="createView" title="新建手术单" width="560px">
+      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="110px">
+        <el-form-item label="选择病历" prop="recordId">
+          <el-select v-model="createForm.recordId" filterable placeholder="选择本次就诊病历（确定宠物）" style="width: 100%">
+            <el-option v-for="r in records" :key="r.recordId" :label="recordLabel(r)" :value="r.recordId"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="手术名称" prop="surgeryName">
+          <el-input v-model="createForm.surgeryName" clearable maxlength="128" placeholder="如：绝育手术（母）"/>
+        </el-form-item>
+        <el-form-item label="手术类型" prop="surgeryType">
+          <el-select v-model="createForm.surgeryType" allow-create filterable placeholder="选择或输入">
+            <el-option v-for="t in surgeryTypes" :key="t" :label="t" :value="t"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="麻醉方式" prop="anesthesiaType">
+          <el-select v-model="createForm.anesthesiaType" placeholder="选择麻醉方式">
+            <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="预约时间">
+          <el-date-picker v-model="createForm.scheduledTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss"
+                          format="YYYY-MM-DD HH:mm" placeholder="选择预约手术时间" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="主刀医生">
+          <el-input v-model="createForm.surgeon" clearable maxlength="64" placeholder="主刀（可空）"/>
+        </el-form-item>
+        <el-form-item label="助手">
+          <el-input v-model="createForm.assistant" clearable maxlength="64" placeholder="助手（可空）"/>
+        </el-form-item>
+        <el-form-item label="手术费(元)" prop="fee">
+          <el-input-number v-model="createForm.fee" :max="99999" :min="0" :precision="2" :step="50" style="width: 100%"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createView = false">取消</el-button>
+        <el-button type="primary" @click="createSubmit">确认安排</el-button>
+      </template>
+    </el-dialog>
+
+    <!--手术/麻醉记录弹窗-->
+    <el-dialog v-model="recordView" title="手术 / 麻醉记录" width="680px" top="4vh">
+      <el-scrollbar max-height="70vh">
+        <div v-if="current" class="rec-head">
+          {{ current.surgeryName }} · {{ current.petName }}（{{ current.clientName }}）
+        </div>
+        <el-form label-width="110px">
+          <el-divider content-position="left">手术记录</el-divider>
+          <el-form-item label="状态">
+            <el-select v-model="rec.status" style="width: 160px">
+              <el-option label="待手术" :value="0"/>
+              <el-option label="手术中" :value="1"/>
+              <el-option label="已完成" :value="2"/>
+              <el-option label="已取消" :value="3"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="实际时间">
+            <el-date-picker v-model="rec.startTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" format="YYYY-MM-DD HH:mm" placeholder="开始" style="width: 46%"/>
+            <span style="margin: 0 8px">至</span>
+            <el-date-picker v-model="rec.endTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" format="YYYY-MM-DD HH:mm" placeholder="结束" style="width: 46%"/>
+          </el-form-item>
+          <el-form-item label="主刀 / 助手">
+            <el-input v-model="rec.surgeon" clearable placeholder="主刀" style="width: 46%"/>
+            <el-input v-model="rec.assistant" clearable placeholder="助手" style="width: 46%; margin-left: 8%"/>
+          </el-form-item>
+          <el-form-item label="术前评估/准备">
+            <el-input v-model="rec.preopNote" :rows="2" maxlength="500" type="textarea" placeholder="术前检查、禁食、风险评估等"/>
+          </el-form-item>
+          <el-form-item label="术中记录">
+            <el-input v-model="rec.intraopNote" :rows="3" maxlength="1000" type="textarea" placeholder="术中所见、操作过程"/>
+          </el-form-item>
+          <el-form-item label="术后记录/医嘱">
+            <el-input v-model="rec.postopNote" :rows="3" maxlength="1000" type="textarea" placeholder="术后情况、恢复建议、复诊"/>
+          </el-form-item>
+
+          <el-divider content-position="left">麻醉记录</el-divider>
+          <el-form-item label="麻醉方式">
+            <el-select v-model="anesthesia.anesthesiaType" allow-create filterable placeholder="选择或输入" style="width: 200px">
+              <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="麻醉师">
+            <el-input v-model="anesthesia.anesthetist" clearable maxlength="64" placeholder="麻醉师" style="width: 200px"/>
+          </el-form-item>
+          <el-form-item label="麻醉时间">
+            <el-date-picker v-model="anesthesia.startTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" format="YYYY-MM-DD HH:mm" placeholder="开始" style="width: 46%"/>
+            <span style="margin: 0 8px">至</span>
+            <el-date-picker v-model="anesthesia.endTime" type="datetime" value-format="YYYY-MM-DDTHH:mm:ss" format="YYYY-MM-DD HH:mm" placeholder="结束" style="width: 46%"/>
+          </el-form-item>
+          <el-form-item label="麻醉用药">
+            <el-input v-model="anesthesia.drugUsed" clearable maxlength="255" placeholder="如：丙泊酚 + 异氟烷"/>
+          </el-form-item>
+          <el-form-item label="生命体征监护">
+            <el-input v-model="anesthesia.vitals" :rows="2" maxlength="500" type="textarea" placeholder="心率/呼吸/体温/血氧等监护记录"/>
+          </el-form-item>
+          <el-form-item label="备注/异常">
+            <el-input v-model="anesthesia.note" :rows="2" maxlength="500" type="textarea" placeholder="麻醉异常及处理"/>
+          </el-form-item>
+        </el-form>
+      </el-scrollbar>
+      <template #footer>
+        <el-button @click="recordView = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="recordSubmit">保存记录</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import {onMounted, reactive, ref} from 'vue'
+import {useRoute} from 'vue-router'
+import BackOpCol from "@/components/row/BackOpCol.vue";
+import BackPage from "@/components/row/BackPage.vue";
+import {PageQuery} from "@/model/VO/BackQuery";
+import {Page} from "@/model/DO/Page";
+import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {anesthesiaTypes, Surgery, surgeryStatusText, surgeryStatusType, surgeryTypes, SurgeryVo} from "@/model/entiy/Surgery";
+import {AnesthesiaRecord} from "@/model/entiy/AnesthesiaRecord";
+import {RecordDto} from "@/model/DO/RecordDto";
+import {reqDoctorRecords} from "@/request/LabApi";
+import {reqCreateSurgery, reqSaveAnesthesia, reqSurgeryOne, reqSurgeryPage, reqUpdateSurgery} from "@/request/SurgeryApi";
+
+const route = useRoute()
+const qp = reactive({numPage: 1, pageSize: 15, status: null as number | null})
+const statusFilter = ref<number | null>(null)
+const list = ref<Page<Surgery>>({records: [], total: 0})
+
+const changePuB = (val: PageQuery): void => { qp.numPage = val.numPage; qp.pageSize = val.pageSize; sendQuery() }
+const sendQuery = (): void => {
+  qp.status = statusFilter.value
+  reqSurgeryPage(qp).then(res => { list.value = res })
+}
+const nowQuery = (): void => { qp.numPage = 1; sendQuery() }
+const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)
+
+// ---- 新建手术单 ----
+const records = ref<RecordDto[]>([])
+const createView = ref(false)
+const createFormRef = ref<FormInstance>()
+const createForm = ref<SurgeryVo>({recordId: 0, surgeryName: '', surgeryType: '绝育', anesthesiaType: '全身麻醉', scheduledTime: null, surgeon: '', assistant: '', fee: 0})
+const createRules = reactive<FormRules>({
+  recordId: [{required: true, type: 'number', message: '请选择病历', trigger: 'change'}],
+  surgeryName: [{required: true, message: '请填写手术名称', trigger: 'blur'}],
+  fee: [{required: true, message: '请输入手术费', trigger: 'blur'}]
+})
+const recordLabel = (r: RecordDto): string => `#${r.recordId} ${r.petName || ''}（${r.clientName || ''}）`
+const addRoleB = (): void => {
+  createForm.value = {recordId: 0, surgeryName: '', surgeryType: '绝育', anesthesiaType: '全身麻醉', scheduledTime: null, surgeon: '', assistant: '', fee: 0}
+  createFormRef.value?.resetFields()
+  createView.value = true
+}
+const createSubmit = (): void => {
+  createFormRef.value?.validate((valid: boolean) => {
+    if (!valid) return
+    reqCreateSurgery(createForm.value).then(res => {
+      if (res.code === 1) { createView.value = false; ElMessage.success(res.msg || '手术安排成功'); sendQuery() }
+    })
+  })
+}
+
+// ---- 手术/麻醉记录 ----
+const recordView = ref(false)
+const saving = ref(false)
+const current = ref<Surgery | null>(null)
+const rec = ref<{status: number; startTime: string | null; endTime: string | null; surgeon: string | null; assistant: string | null; preopNote: string | null; intraopNote: string | null; postopNote: string | null}>({
+  status: 0, startTime: null, endTime: null, surgeon: '', assistant: '', preopNote: '', intraopNote: '', postopNote: ''
+})
+const emptyAnesthesia = (surgeryId: number): AnesthesiaRecord => ({
+  surgeryId, anesthesiaType: '', anesthetist: '', startTime: null, endTime: null, drugUsed: '', vitals: '', note: ''
+})
+const anesthesia = ref<AnesthesiaRecord>(emptyAnesthesia(0))
+
+const openRecord = (row: Surgery): void => {
+  reqSurgeryOne(row.surgeryId).then(res => {
+    current.value = res
+    rec.value = {
+      status: res.status ?? 0, startTime: res.startTime, endTime: res.endTime,
+      surgeon: res.surgeon, assistant: res.assistant,
+      preopNote: res.preopNote, intraopNote: res.intraopNote, postopNote: res.postopNote
+    }
+    anesthesia.value = res.anesthesia ? {...res.anesthesia, surgeryId: res.surgeryId} : emptyAnesthesia(res.surgeryId)
+    recordView.value = true
+  })
+}
+const recordSubmit = (): void => {
+  if (!current.value) return
+  saving.value = true
+  const surgery: Surgery = {...current.value, ...rec.value}
+  reqUpdateSurgery(surgery).then(r1 => {
+    if (r1.code !== 1) { ElMessage.error(r1.msg || '保存失败'); return }
+    reqSaveAnesthesia(anesthesia.value).then(r2 => {
+      saving.value = false
+      if (r2.code === 1) { ElMessage.success('记录已保存'); recordView.value = false; sendQuery() }
+      else ElMessage.error(r2.msg || '麻醉记录保存失败')
+    })
+  }).catch(() => { saving.value = false })
+}
+
+onMounted(() => {
+  sendQuery()
+  reqDoctorRecords().then(res => { records.value = res || [] })
+  // 从就诊汇总跳转过来：预填病历并打开新建弹窗
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    createForm.value.recordId = rid
+    createView.value = true
+  }
+})
+</script>
+
+<style scoped>
+.rec-head {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #1f2d5a;
+}
+</style>

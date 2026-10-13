@@ -13,6 +13,7 @@ export interface BillDto {
     feeHospital: number;
     feeImage: number;
     feePackage: number;
+    feeSurgery: number;
     totalMoney: number;
     payStatus: boolean;
     payType: boolean | null;
