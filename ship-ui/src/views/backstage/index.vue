@@ -111,12 +111,6 @@
             </el-icon>
           <span>影像报告录入</span>
         </el-menu-item>
-        <el-menu-item index="/backstage/z-vaccine" :title="isCollapse ? '疫苗字典' : ''">
-          <el-icon>
-              <FirstAidKit/>
-            </el-icon>
-          <span>疫苗字典</span>
-        </el-menu-item>
         <el-menu-item index="/backstage/z-immune" :title="isCollapse ? '免疫档案' : ''">
           <el-icon>
               <CirclePlusFilled/>

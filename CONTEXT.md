@@ -99,6 +99,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 前端：PermissionUtil.ts 定义 5 档权限名 + "能干什么"说明(permName/permDesc)，医生/个人页权限下拉带说明；医生列表拆「职称 + 权限」两列；表单拆「权限(仅院长可改，保留 isAdmin 守卫) + 职称(全员可改，自助 updateSelf 已加 job_id)」；顾客端医生卡/详情由 getJob(authLv) 改显真实 jobName。TagJob.vue 现显示权限名；科室详情"职位"列改名"权限"。
 - SQL：`数据库备份/job_module.sql`（建 job 表 + doctor 加 job_id + 预置 10 职称 + 按 auth_lv 给老医生播种），已应用。
 
+### 疫苗字典合并进药品字典（2026-10-13）
+- 背景：疫苗与药品概念重叠（药品表本就预留 drug_type=疫苗 分类），且疫苗 price 是死字段（接种不计费）、疫苗无库存，单独一套字典重复维护。
+- 改法：疫苗 = 药品分类 `drug_type=疫苗`。drug 加 `brand/prevent/interval_days`（可空，仅疫苗用）；删除独立 vaccine 字典（表+实体+Mapper+Service+Controller+前端 z-vaccine 页/模型/API/菜单/路由）。
+- 免疫模块：`immune_record` 外键 `vaccine_id→drug_id`、`vaccine_name→drug_name`；登记时按 drug_id 取药、校验 drug_type=疫苗+启用+未删，按 interval_days 算下一针；下拉用 `GET /drug/vaccine`（启用中的疫苗类药品）。
+- 药品表单：选"疫苗"分类时才显示 品牌/预防疾病/接种间隔；列表加"接种间隔"列。开方下拉 `GET /drug` 改为**排除疫苗**（疫苗不走处方，走免疫登记）。
+- SQL：`数据库备份/vaccine_merge_into_drug.sql`（drug 加 3 字段 → vaccine 数据迁入 drug（临时列记来源 id）→ immune_record 改列名并回填 drug_id → 删临时列和 vaccine 表），已应用。迁移后 drug_type=疫苗 共 8 条（6 个原疫苗 + 2 个演示数据）。
+- 后续可优化药品列表：疫苗库存/批号/保质期、统一计费（接种也收钱）等。
+
 ## 8. 待办
 ### 回测（待做）
 - [ ] 顾客添加宠物（完整表单+待审核）→ 后台审核通过/驳回 → 挂号可选性
@@ -124,7 +132,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 1. **化验/检验**：`lab_test`(字典,10条,有 active 标志)/`lab_order`/`lab_order_item`。d-lab 开单 `POST /lab/order`(DOCTOR)、z-labResult 录结果 `PUT /lab/result`(NURSE/MANAGER)、z-labTest 字典(MANAGER，被引用则停用不删)。顾客端 clientPet 展示 `GET /lab/record/{id}`。
 2. **住院**：`hospital_record`。z-hospital 入院登记 `POST /hospital`(DOCTOR/NURSE，防重复未出院)、出院结算 `PUT /hospital/discharge/{id}`(DOCTOR/NURSE/MANAGER，按 天数×日均费 计 fee_hospital，至少1天)。
 3. **影像**：`image_test`(字典,7条,无 active 用 isDel 软删)/`image_order`。d-image 开单 `POST /imageOrder`(DOCTOR，单项目)、z-imageResult 录报告 `PUT /imageOrder/report`(NURSE/MANAGER)、z-imageTest 字典(MANAGER)。状态 boolean：false 待检查 / true 已出报告。
-4. **免疫**：`vaccine`(字典,6条)/`immune_record`。z-vaccine 疫苗字典(MANAGER)、z-immune 接种登记 `POST /immune`(DOCTOR/NURSE/MANAGER，需选病历推导宠物；按疫苗 interval_days 自动算 next_time 下一针、dose_cnt 第几针)。`GET /immune/pet/{petId}` 顾客查自己宠物。
+4. **免疫**：`immune_record`（疫苗字典已合并进药品，见下方"疫苗合并"）。z-immune 接种登记 `POST /immune`(DOCTOR/NURSE/MANAGER，需选病历推导宠物；按疫苗 interval_days 自动算 next_time 下一针、dose_cnt 第几针)。`GET /immune/pet/{petId}` 顾客查自己宠物。疫苗下拉取药品中 `drug_type=疫苗` 的启用项（`GET /drug/vaccine`）。
 5. **统计看板**：z-dashboard `GET /statistics/overview`(MANAGER/NURSE/DOCTOR)。今日/本月实收、待收费数、在院数、待检验/待影像数、近30天应接种数、近7日营收趋势(revenueTrend)、医生接诊Top(doctorTop)。SQL 在 StatisticsMapper.xml，实收按 bill.update_time+pay_status=1 计。
 
 **踩坑修复（2026-10-13）**：ImageTestServiceImpl 误给静态工厂 `Wrappers.lambdaUpdate()` 加 `new`（语法错）；ILabOrderService 漏 `import ...entity.LabOrder`；前端 BillDto 缺 feeHospital/feeImage；z-imageResult 状态筛选误用 number(0/1) 应为 boolean；DB 需跑 hospital/image/immune 脚本补表+补 bill 两列；`dev-tools/check.sh` 后端编译需 `LANG=C.UTF-8`（中文路径），已修。

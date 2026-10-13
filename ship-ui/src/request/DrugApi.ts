@@ -6,6 +6,9 @@ import {Res} from "@/request/Res";
 // 启用中的药品（医生开方下拉）
 export const reqDrugList = (): Promise<Drug[]> =>
     reqApi<string, Drug[]>("drug")
+// 启用中的疫苗（免疫登记下拉，即 drug_type=疫苗）
+export const reqDrugVaccineList = (): Promise<Drug[]> =>
+    reqApi<string, Drug[]>("drug/vaccine")
 // 后台药品分页
 export const reqDrugPage = (params: { numPage: number; pageSize: number; drugName?: string; drugType?: string }): Promise<Page<Drug>> =>
     reqApi<string, Page<Drug>>("drug/page", {params})

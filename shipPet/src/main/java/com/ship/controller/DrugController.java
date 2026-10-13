@@ -26,11 +26,18 @@ public class DrugController {
         this.drugService = drugService;
     }
 
-    /** 启用中的药品列表（医生开处方下拉用） */
+    /** 启用中的药品列表（医生开处方下拉用，不含疫苗） */
     @GetMapping
     @Secured(RoleConst.NURSE)
     public List<Drug> listActive() {
         return drugService.listActive();
+    }
+
+    /** 启用中的疫苗列表（免疫登记下拉用，即 drug_type=疫苗） */
+    @GetMapping("/vaccine")
+    @Secured(RoleConst.NURSE)
+    public List<Drug> listVaccine() {
+        return drugService.listVaccine();
     }
 
     @GetMapping("/page")

@@ -78,10 +78,6 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-imageResult",
         component: () => import('@/views/backstage/z-imageResult.vue')
     }, {
-        // 疫苗字典
-        path: "z-vaccine",
-        component: () => import('@/views/backstage/z-vaccine.vue')
-    }, {
         // 免疫档案
         path: "z-immune",
         component: () => import('@/views/backstage/z-immune.vue')

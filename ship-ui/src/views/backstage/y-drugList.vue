@@ -35,6 +35,12 @@
         <span v-else>{{ scope.row.drugStock }}</span>
       </template>
     </el-table-column>
+    <el-table-column label="接种间隔" width="100">
+      <template #default="scope">
+        <span v-if="scope.row.intervalDays">{{ scope.row.intervalDays }}天</span>
+        <span v-else>—</span>
+      </template>
+    </el-table-column>
     <el-table-column label="状态" width="80">
       <template #default="scope">
         <el-tag v-if="scope.row.active" size="small" type="success">启用</el-tag>
@@ -87,6 +93,17 @@
       <el-form-item label="说明">
         <el-input v-model="form.drugInfo" :rows="2" maxlength="255" type="textarea"/>
       </el-form-item>
+      <template v-if="form.drugType === '疫苗'">
+        <el-form-item label="品牌/厂家">
+          <el-input v-model="form.brand" clearable maxlength="64" placeholder="如：辉瑞 / 英特威"/>
+        </el-form-item>
+        <el-form-item label="预防疾病">
+          <el-input v-model="form.prevent" clearable maxlength="128" placeholder="如：犬瘟/细小/狂犬病"/>
+        </el-form-item>
+        <el-form-item label="接种间隔(天)">
+          <el-input-number v-model="form.intervalDays" :min="0" :max="3650" style="width: 100%"/>
+        </el-form-item>
+      </template>
     </el-form>
     <template #footer>
       <el-button @click="modalView = false">取消</el-button>

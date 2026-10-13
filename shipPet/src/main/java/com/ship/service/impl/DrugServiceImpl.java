@@ -45,6 +45,16 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
 
     @Override
     public List<Drug> listActive() {
-        return this.lambdaQuery().eq(Drug::getActive, true).orderByAsc(Drug::getDrugName).list();
+        // 开方下拉不含疫苗（疫苗走免疫登记，不开处方）
+        return this.lambdaQuery().eq(Drug::getActive, true)
+                .ne(Drug::getDrugType, "疫苗")
+                .orderByAsc(Drug::getDrugName).list();
+    }
+
+    @Override
+    public List<Drug> listVaccine() {
+        return this.lambdaQuery().eq(Drug::getActive, true)
+                .eq(Drug::getDrugType, "疫苗")
+                .orderByAsc(Drug::getDrugName).list();
     }
 }

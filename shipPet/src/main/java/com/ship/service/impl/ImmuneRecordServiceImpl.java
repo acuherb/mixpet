@@ -4,13 +4,13 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
+import com.ship.mapper.DrugMapper;
 import com.ship.mapper.ImmuneRecordMapper;
-import com.ship.mapper.VaccineMapper;
 import com.ship.model.dto.ImmuneRecordDto;
 import com.ship.model.entity.Doctor;
+import com.ship.model.entity.Drug;
 import com.ship.model.entity.ImmuneRecord;
 import com.ship.model.entity.MedicalRecord;
-import com.ship.model.entity.Vaccine;
 import com.ship.model.vo.ImmuneVo;
 import com.ship.service.IImmuneRecordService;
 import com.ship.service.IMedicalRecordService;
@@ -27,21 +27,24 @@ import java.util.List;
 @Service
 public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, ImmuneRecord> implements IImmuneRecordService {
     private final IMedicalRecordService recordService;
-    private final VaccineMapper vaccineMapper;
+    private final DrugMapper drugMapper;
 
     @Autowired
-    public ImmuneRecordServiceImpl(IMedicalRecordService recordService, VaccineMapper vaccineMapper) {
+    public ImmuneRecordServiceImpl(IMedicalRecordService recordService, DrugMapper drugMapper) {
         this.recordService = recordService;
-        this.vaccineMapper = vaccineMapper;
+        this.drugMapper = drugMapper;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result saveImmune(ImmuneVo vo, Doctor doctor) {
-        if (vo == null || vo.getVaccineId() == null) return Result.error("请选择疫苗");
+        if (vo == null || vo.getDrugId() == null) return Result.error("请选择疫苗");
         if (vo.getPetId() == null && vo.getRecordId() == null) return Result.error("缺少宠物信息");
-        Vaccine vaccine = vaccineMapper.selectById(vo.getVaccineId());
-        if (vaccine == null || vaccine.getIsDel() != null && vaccine.getIsDel() == 1) return Result.error("疫苗不存在或已停用");
+        Drug drug = drugMapper.selectById(vo.getDrugId());
+        if (drug == null) return Result.error("疫苗不存在");
+        boolean deleted = drug.getIsDel() != null && drug.getIsDel() != 0L;
+        if (!"疫苗".equals(drug.getDrugType()) || !Boolean.TRUE.equals(drug.getActive()) || deleted)
+            return Result.error("疫苗不存在或已停用");
 
         Integer petId = vo.getPetId();
         Integer clientId = null;
@@ -56,13 +59,13 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
 
         // 计算此针为第几针
         Long cnt = this.lambdaQuery().eq(ImmuneRecord::getPetId, petId)
-                .eq(ImmuneRecord::getVaccineId, vo.getVaccineId()).count();
+                .eq(ImmuneRecord::getDrugId, vo.getDrugId()).count();
         int dose = (cnt == null ? 0 : cnt.intValue()) + 1;
 
         LocalDateTime vaccinate = vo.getVaccinateTime() == null ? LocalDateTime.now() : vo.getVaccinateTime();
         LocalDateTime next = null;
-        if (vaccine.getIntervalDays() != null && vaccine.getIntervalDays() > 0) {
-            next = vaccinate.plusDays(vaccine.getIntervalDays());
+        if (drug.getIntervalDays() != null && drug.getIntervalDays() > 0) {
+            next = vaccinate.plusDays(drug.getIntervalDays());
         }
 
         ImmuneRecord record = new ImmuneRecord();
@@ -70,8 +73,8 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
         record.setPetId(petId);
         record.setClientId(clientId);
         record.setDoctorId(doctor == null ? null : doctor.getDoctorId());
-        record.setVaccineId(vaccine.getVaccineId());
-        record.setVaccineName(vaccine.getVaccineName());
+        record.setDrugId(drug.getDrugId());
+        record.setDrugName(drug.getDrugName());
         record.setDoseCnt(dose);
         record.setVaccinateTime(vaccinate);
         record.setNextTime(next);

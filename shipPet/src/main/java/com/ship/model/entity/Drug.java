@@ -29,6 +29,12 @@ public class Drug implements Serializable {
     private BigDecimal drugPrice;
     private Integer drugStock;
     private String drugInfo;
+    /** 品牌/厂家（疫苗用） */
+    private String brand;
+    /** 预防疾病（疫苗用） */
+    private String prevent;
+    /** 建议接种间隔天数（疫苗用，用于推算下一针） */
+    private Integer intervalDays;
     /** 启停（停用后不可再开方） */
     private Boolean active;
 

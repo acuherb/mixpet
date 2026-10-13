@@ -16,6 +16,9 @@ public interface IDrugService extends IService<Drug> {
 
     IPage<Drug> selectByPage(String drugName, String drugType, int numPage, int pageSize);
 
-    /** 启用中的药品（医生开方下拉用） */
+    /** 启用中的药品（医生开方下拉用，不含疫苗） */
     List<Drug> listActive();
+
+    /** 启用中的疫苗（免疫登记下拉用，即 drug_type=疫苗） */
+    List<Drug> listVaccine();
 }

@@ -22,9 +22,9 @@ public class ImmuneRecord implements Serializable {
     private Integer petId;
     private Integer clientId;
     private Integer doctorId;
-    private Integer vaccineId;
-    /** 冗余疫苗名 */
-    private String vaccineName;
+    private Integer drugId;
+    /** 冗余疫苗药品名 */
+    private String drugName;
     /** 此针为第几针 */
     private Integer doseCnt;
     private LocalDateTime vaccinateTime;

@@ -14,8 +14,8 @@ public class ImmuneRecordDto {
     private Integer petId;
     private Integer clientId;
     private Integer doctorId;
-    private Integer vaccineId;
-    private String vaccineName;
+    private Integer drugId;
+    private String drugName;
     private Integer doseCnt;
     private LocalDateTime vaccinateTime;
     private LocalDateTime nextTime;

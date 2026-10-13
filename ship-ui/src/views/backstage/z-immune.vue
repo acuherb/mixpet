@@ -15,7 +15,7 @@
             stripe>
     <el-table-column label="宠物" min-width="110" prop="petName" show-overflow-tooltip/>
     <el-table-column label="客户" min-width="110" prop="clientName" show-overflow-tooltip/>
-    <el-table-column label="疫苗" min-width="140" prop="vaccineName" show-overflow-tooltip/>
+    <el-table-column label="疫苗" min-width="140" prop="drugName" show-overflow-tooltip/>
     <el-table-column label="针次" prop="doseCnt" width="60"/>
     <el-table-column label="接种时间" width="160" prop="vaccinateTime"/>
     <el-table-column label="下一针建议" width="160">
@@ -43,9 +43,9 @@
           <el-option v-for="r in records" :key="r.recordId" :label="recordLabel(r)" :value="r.recordId"/>
         </el-select>
       </el-form-item>
-      <el-form-item label="疫苗" prop="vaccineId">
-        <el-select v-model="form.vaccineId" filterable placeholder="选择疫苗" style="width: 100%">
-          <el-option v-for="v in vaccines" :key="v.vaccineId" :label="`${v.vaccineName}（间隔${v.intervalDays}天）`" :value="v.vaccineId"/>
+      <el-form-item label="疫苗" prop="drugId">
+        <el-select v-model="form.drugId" filterable placeholder="选择疫苗（在药品列表按疫苗分类维护）" style="width: 100%">
+          <el-option v-for="v in vaccineDrugs" :key="v.drugId" :label="`${v.drugName}${v.intervalDays ? '（间隔'+v.intervalDays+'天）' : ''}`" :value="v.drugId"/>
         </el-select>
       </el-form-item>
       <el-form-item label="接种时间">
@@ -67,18 +67,19 @@ import {onMounted, reactive, ref} from 'vue'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {RecordDto} from "@/model/DO/RecordDto";
-import {Vaccine} from "@/model/entiy/Vaccine";
+import {Drug} from "@/model/entiy/Drug";
 import {ImmuneRecord} from "@/model/entiy/ImmuneRecord";
 import {Page} from "@/model/DO/Page";
 import {reqDoctorRecords} from "@/request/LabApi";
-import {reqImmunePage, reqSaveImmune, reqVaccineList} from "@/request/ImmuneApi";
+import {reqDrugVaccineList} from "@/request/DrugApi";
+import {reqImmunePage, reqSaveImmune} from "@/request/ImmuneApi";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
 const qp = reactive({numPage: 1, pageSize: 15, dueSoon: false})
 const dueSoonFilter = ref<boolean | null>(null)
 const list = ref<Page<ImmuneRecord>>({records: [], total: 0})
-const vaccines = ref<Vaccine[]>([])
+const vaccineDrugs = ref<Drug[]>([])
 const records = ref<RecordDto[]>([])
 
 const isDue = (row: ImmuneRecord): boolean =>
@@ -102,9 +103,9 @@ const nowQuery = (): void => {
 
 // 登记弹窗
 const modalView = ref(false)
-const form = reactive<{ recordId: number | null; vaccineId: number | null; vaccinateTime: string | Date; note: string }>({
+const form = reactive<{ recordId: number | null; drugId: number | null; vaccinateTime: string | Date; note: string }>({
   recordId: null,
-  vaccineId: null,
+  drugId: null,
   vaccinateTime: new Date(),
   note: ''
 })
@@ -115,7 +116,7 @@ const recordLabel = (r: RecordDto): string =>
 
 const addRoleB = (): void => {
   form.recordId = null
-  form.vaccineId = null
+  form.drugId = null
   form.vaccinateTime = new Date()
   form.note = ''
   myFormRef.value?.resetFields()
@@ -126,7 +127,7 @@ const formSubmit = (): void => {
     if (valid) {
       reqSaveImmune({
         recordId: form.recordId,
-        vaccineId: form.vaccineId as number,
+        drugId: form.drugId as number,
         vaccinateTime: new Date(form.vaccinateTime).toISOString(),
         note: form.note
       }).then((res: Res) => {
@@ -141,12 +142,12 @@ const formSubmit = (): void => {
 }
 const rules = reactive<FormRules>({
   "recordId": [{required: true, type: 'number', message: '请选择病历', trigger: 'change'}],
-  "vaccineId": [{required: true, type: 'number', message: '请选择疫苗', trigger: 'change'}]
+  "drugId": [{required: true, type: 'number', message: '请选择疫苗', trigger: 'change'}]
 })
 
 onMounted(() => {
   sendQuery()
-  reqVaccineList().then(res => { vaccines.value = res || [] })
+  reqDrugVaccineList().then(res => { vaccineDrugs.value = res || [] })
   reqDoctorRecords().then(res => { records.value = res || [] })
 })
 </script>

@@ -7,6 +7,9 @@ export interface Drug {
     drugPrice: number | null;
     drugStock: number | null;
     drugInfo: string | null;
+    brand?: string | null;
+    prevent?: string | null;
+    intervalDays?: number | null;
     active: boolean;
 }
 
@@ -23,6 +26,9 @@ export const exampleDrug = (): Drug => {
         drugPrice: 0,
         drugStock: 0,
         drugInfo: "",
+        brand: null,
+        prevent: null,
+        intervalDays: null,
         active: true
     }
 }

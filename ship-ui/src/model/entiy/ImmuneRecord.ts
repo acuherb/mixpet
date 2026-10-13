@@ -7,8 +7,8 @@ export interface ImmuneRecord {
     petId: number;
     clientId: number;
     doctorId: number | null;
-    vaccineId: number;
-    vaccineName: string;
+    drugId: number;
+    drugName: string;
     doseCnt: number;
     vaccinateTime: string;
     nextTime: string | null;
