@@ -29,10 +29,16 @@ CREATE TABLE `record_package` (
   `package_name` varchar(64) DEFAULT NULL COMMENT '冗余套餐名',
   `price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '成交价',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
   `is_del` bigint NOT NULL DEFAULT '0' COMMENT '逻辑删除',
   PRIMARY KEY (`id`),
   KEY `idx_record` (`record_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb3 COMMENT='就诊套餐记录';
+
+-- 兼容旧库：补 update_time 列（实体有 @TableField(fill=INSERT_UPDATE)，缺列会导致插入报
+-- "There is no setter for property named 'updateTime'"）
+ALTER TABLE `record_package`
+  ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '修改时间' AFTER `create_time`;
 
 -- 3. 账单增加套餐费分项
 ALTER TABLE `bill`
