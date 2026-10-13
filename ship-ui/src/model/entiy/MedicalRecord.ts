@@ -1,4 +1,5 @@
 import {ServicePackage} from "@/model/entiy/ServicePackage";
+import {SurgeryVo} from "@/model/entiy/Surgery";
 
 /**
  * 处方明细
@@ -69,4 +70,12 @@ export interface RecordVo {
     record: MedicalRecord;
     prescriptions: Prescription[];
     packages: ServicePackage[];
+    /** 接诊时一次性开的检验项 id 列表 */
+    labTestIds: number[];
+    /** 接诊时一次性开的影像项目 id */
+    imageItemId: number | null;
+    /** 影像检查部位/目的 */
+    imageExamPart: string;
+    /** 接诊时一次性提交的手术申请 */
+    surgery: SurgeryVo | null;
 }

@@ -147,13 +147,53 @@
             </el-table-column>
           </el-table>
           <el-button :icon="Plus" plain size="small" style="margin-top: 6px; width: 100%" @click="addPackage">添加套餐</el-button>
+
+          <el-divider content-position="left">检验申请（一次勾选，结果由检验科补录）</el-divider>
+          <div class="lab-pick">
+            <el-checkbox-group v-model="labTestIds">
+              <el-checkbox v-for="t in labTests" :key="t.testId" :value="t.testId" :disabled="!t.active">
+                {{ t.testName }}（{{ t.testGroup }}）￥{{ t.testPrice }}
+              </el-checkbox>
+            </el-checkbox-group>
+            <p v-if="labTests.length === 0" style="color:#999">暂无可选检验项（在"检验项字典"维护）</p>
+          </div>
+
+          <el-divider content-position="left">影像申请（报告由影像科补录）</el-divider>
+          <div class="img-pick">
+            <el-select v-model="imageItemId" clearable filterable placeholder="选择影像项目（可不选）" size="small" style="width: 100%">
+              <el-option v-for="t in imageTests" :key="t.itemId" :label="`${t.itemName}（${t.groupName}）￥${t.price}`" :value="t.itemId"/>
+            </el-select>
+            <el-input v-if="imageItemId" v-model="imageExamPart" clearable size="small" style="margin-top: 6px"
+                      maxlength="128" placeholder="检查部位/目的（如：右后肢X光）"/>
+          </div>
+
+          <el-divider content-position="left">手术申请（术中/术后记录在手术模块补）</el-divider>
+          <el-form-item label="需要手术">
+            <el-switch v-model="needSurgery"/>
+          </el-form-item>
+          <template v-if="needSurgery">
+            <el-form-item label="手术名称">
+              <el-input v-model="surgeryForm.surgeryName" clearable maxlength="128" placeholder="如：绝育手术（母）"/>
+            </el-form-item>
+            <el-form-item label="类型/麻醉">
+              <el-select v-model="surgeryForm.surgeryType" clearable allow-create filterable placeholder="类型" size="small" style="width: 48%">
+                <el-option v-for="t in surgeryTypes" :key="t" :label="t" :value="t"/>
+              </el-select>
+              <el-select v-model="surgeryForm.anesthesiaType" clearable placeholder="麻醉" size="small" style="width: 48%; margin-left: 4%">
+                <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="手术费(元)">
+              <el-input-number v-model="surgeryForm.fee" :max="99999" :min="0" :precision="2" :step="100" style="width: 100%"/>
+            </el-form-item>
+          </template>
         </el-form>
       </el-scrollbar>
       <template #footer>
         <div style="text-align: left">
           <span style="font-size: 15px">
             合计：<b style="color: #f56c6c; font-size: 18px">￥{{ totalMoney() }}</b>
-            （挂号 ￥{{ recordForm.feeRegister }} + 诊疗 ￥{{ recordForm.feeTreat }} + 药费 ￥{{ feeDrug() }} + 套餐 ￥{{ feePackage() }}）
+            （挂号 ￥{{ recordForm.feeRegister }} + 诊疗 ￥{{ recordForm.feeTreat }} + 药费 ￥{{ feeDrug() }} + 套餐 ￥{{ feePackage() }} + 检验 ￥{{ feeLab() }} + 影像 ￥{{ feeImg() }} + 手术 ￥{{ feeSurgery() }}）
           </span>
         </div>
         <el-button @click="treatView = false">取消</el-button>
@@ -162,23 +202,28 @@
     </el-dialog>
 
     <!--接诊成功·就诊汇总（流程连通）-->
-    <el-dialog v-model="summaryView" title="接诊成功" width="520px" append-to-body>
-      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。可继续为本次就诊开具检验/影像，或打印国标兽医处方笺。</p>
+    <el-dialog v-model="summaryView" title="接诊成功" width="560px" append-to-body>
+      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。检验/影像/手术申请已随接诊一次性开出，各科室只需补录结果。</p>
       <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="套餐费">￥{{ summaryFee.pkg.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item v-if="summaryFee.lab > 0" label="检验费">￥{{ summaryFee.lab.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item v-if="summaryFee.img > 0" label="影像费">￥{{ summaryFee.img.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item v-if="summaryFee.surgery > 0" label="手术费">￥{{ summaryFee.surgery.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="合计">
           <b style="color: #f56c6c">￥{{ summaryFee.total.toFixed(2) }}</b>
         </el-descriptions-item>
       </el-descriptions>
       <div class="summary-btns">
         <el-button type="primary" @click="printRx">打印处方笺</el-button>
-        <el-button @click="goOrder('d-lab')">开检验单</el-button>
-        <el-button @click="goOrder('d-image')">开影像单</el-button>
+        <el-button v-if="summaryFee.lab > 0" @click="goOrder('d-lab')">去录检验结果</el-button>
+        <el-button v-else @click="goOrder('d-lab')">补开检验单</el-button>
+        <el-button v-if="summaryFee.img > 0" @click="goOrder('d-image')">去录影像报告</el-button>
+        <el-button v-else @click="goOrder('d-image')">补开影像单</el-button>
+        <el-button v-if="summaryFee.surgery > 0" @click="goBackstage('z-surgery')">手术记录</el-button>
         <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
         <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
-        <el-button @click="goBackstage('z-surgery')">手术安排</el-button>
         <el-button @click="summaryView = false">完成</el-button>
       </div>
     </el-dialog>
@@ -205,6 +250,11 @@ import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} 
 import {reqRecordByAppointment, reqSaveRecord} from "@/request/RecordApi";
 import {reqPackageList} from "@/request/PackageApi";
 import {examplePackage, ServicePackage} from "@/model/entiy/ServicePackage";
+import {reqLabTestList} from "@/request/LabApi";
+import {reqImgGroup} from "@/request/ImageApi";
+import {LabTest} from "@/model/entiy/LabTest";
+import {ImageTest} from "@/model/entiy/ImageTest";
+import {anesthesiaTypes, surgeryTypes, SurgeryVo} from "@/model/entiy/Surgery";
 import {useRouter} from 'vue-router';
 
 const router = useRouter()
@@ -237,6 +287,27 @@ const packages = ref<ServicePackage[]>([])
 const recordFormRef = ref<FormInstance>()
 const drugList = ref<Drug[]>([])
 const packageList = ref<ServicePackage[]>([])
+// 接诊时一次性开的检查/手术申请
+const labTests = ref<LabTest[]>([])
+const labTestIds = ref<number[]>([])
+const imageTests = ref<ImageTest[]>([])
+const imageItemId = ref<number | null>(null)
+const imageExamPart = ref('')
+const needSurgery = ref(false)
+const surgeryForm = ref<SurgeryVo>({recordId: null, surgeryName: '', surgeryType: null, anesthesiaType: null, scheduledTime: null, surgeon: null, assistant: null, fee: 0})
+const feeLab = (): string => {
+  let sum = 0
+  for (const id of labTestIds.value) {
+    const t = labTests.value.find(x => x.testId === id)
+    if (t && t.testPrice != null) sum += t.testPrice
+  }
+  return sum.toFixed(2)
+}
+const feeImg = (): string => {
+  const t = imageTests.value.find(x => x.itemId === imageItemId.value)
+  return (t?.price ?? 0).toFixed(2)
+}
+const feeSurgery = (): string => (needSurgery.value ? (surgeryForm.value.fee || 0).toFixed(2) : '0.00')
 // 打开接诊弹窗
 const openTreat = (a: AppointDto2): void => {
   treatAppoint.value = a
@@ -244,6 +315,11 @@ const openTreat = (a: AppointDto2): void => {
   recordForm.value.chiefComplaint = a.appointmentInfo || ''
   prescriptions.value = []
   packages.value = []
+  labTestIds.value = []
+  imageItemId.value = null
+  imageExamPart.value = ''
+  needSurgery.value = false
+  surgeryForm.value = {recordId: null, surgeryName: '', surgeryType: null, anesthesiaType: null, scheduledTime: null, surgeon: null, assistant: null, fee: 0}
   recordFormRef.value?.clearValidate()
   if (drugList.value.length === 0) {
     reqDrugList().then(res => {
@@ -253,6 +329,16 @@ const openTreat = (a: AppointDto2): void => {
   if (packageList.value.length === 0) {
     reqPackageList().then(res => {
       packageList.value = res
+    })
+  }
+  if (labTests.value.length === 0) {
+    reqLabTestList().then(res => {
+      labTests.value = res || []
+    })
+  }
+  if (imageTests.value.length === 0) {
+    reqImgGroup().then(res => {
+      imageTests.value = res || []
     })
   }
   treatView.value = true
@@ -290,12 +376,13 @@ const feeDrug = (): string => {
 // 总价
 const totalMoney = (): string => {
   const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0) + Number(feeDrug()) + Number(feePackage())
+      + Number(feeLab()) + Number(feeImg()) + Number(feeSurgery())
   return sum.toFixed(2)
 }
 // 就诊汇总（接诊成功后的流程连通入口）
 const summaryView = ref(false)
 const summaryRecordId = ref(0)
-const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, total: 0})
+const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, lab: 0, img: 0, surgery: 0, total: 0})
 const openSummary = (recordId: number): void => {
   summaryRecordId.value = recordId
   summaryFee.value = {
@@ -303,6 +390,9 @@ const openSummary = (recordId: number): void => {
     treat: recordForm.value.feeTreat || 0,
     drug: Number(feeDrug()),
     pkg: Number(feePackage()),
+    lab: Number(feeLab()),
+    img: Number(feeImg()),
+    surgery: Number(feeSurgery()),
     total: Number(totalMoney())
   }
   summaryView.value = true
@@ -327,8 +417,19 @@ const submitTreat = async (): Promise<void> => {  await recordFormRef.value?.val
     // 过滤没选药品的行
     const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
     const pks = packages.value.filter(p => p.packageId && p.packageId > 0)
+    const surgery: SurgeryVo | null = (needSurgery.value && surgeryForm.value.surgeryName.trim())
+        ? {...surgeryForm.value}
+        : null
     treatSubmitting.value = true
-    reqSaveRecord({record: recordForm.value, prescriptions: ps, packages: pks}).then(res => {
+    reqSaveRecord({
+      record: recordForm.value,
+      prescriptions: ps,
+      packages: pks,
+      labTestIds: labTestIds.value,
+      imageItemId: imageItemId.value,
+      imageExamPart: imageExamPart.value,
+      surgery: surgery
+    }).then(res => {
       if (res.code === 1) {
         treatView.value = false
         queryAppoint()
@@ -413,5 +514,22 @@ watch(() => form.value.clientId, (newValue): void => {
 .summary-btns {
   margin-top: 16px;
   text-align: right;
+}
+.lab-pick {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+.lab-pick .el-checkbox {
+  display: flex;
+  margin-right: 0;
+  line-height: 1.9;
+}
+.img-pick {
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  padding: 8px 10px;
 }
 </style>

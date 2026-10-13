@@ -1,20 +1,28 @@
 package com.ship.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.BillMapper;
 import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.DrugMapper;
+import com.ship.mapper.ImageOrderMapper;
+import com.ship.mapper.ImageTestMapper;
+import com.ship.mapper.LabOrderItemMapper;
+import com.ship.mapper.LabOrderMapper;
+import com.ship.mapper.LabTestMapper;
 import com.ship.mapper.MedicalRecordMapper;
 import com.ship.mapper.PetMapper;
 import com.ship.mapper.PrescriptionMapper;
 import com.ship.mapper.RecordPackageMapper;
+import com.ship.mapper.SurgeryMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
+import com.ship.model.vo.SurgeryVo;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IMedicalRecordService;
 import com.ship.service.IServicePackageService;
@@ -39,12 +47,21 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final DoctorMapper doctorMapper;
     private final IServicePackageService packageService;
     private final RecordPackageMapper recordPackageMapper;
+    private final LabTestMapper labTestMapper;
+    private final LabOrderMapper labOrderMapper;
+    private final LabOrderItemMapper labOrderItemMapper;
+    private final ImageTestMapper imageTestMapper;
+    private final ImageOrderMapper imageOrderMapper;
+    private final SurgeryMapper surgeryMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
                                     PrescriptionMapper prescriptionMapper, BillMapper billMapper,
                                     PetMapper petMapper, DoctorMapper doctorMapper,
-                                    IServicePackageService packageService, RecordPackageMapper recordPackageMapper) {
+                                    IServicePackageService packageService, RecordPackageMapper recordPackageMapper,
+                                    LabTestMapper labTestMapper, LabOrderMapper labOrderMapper,
+                                    LabOrderItemMapper labOrderItemMapper, ImageTestMapper imageTestMapper,
+                                    ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -53,6 +70,12 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.doctorMapper = doctorMapper;
         this.packageService = packageService;
         this.recordPackageMapper = recordPackageMapper;
+        this.labTestMapper = labTestMapper;
+        this.labOrderMapper = labOrderMapper;
+        this.labOrderItemMapper = labOrderItemMapper;
+        this.imageTestMapper = imageTestMapper;
+        this.imageOrderMapper = imageOrderMapper;
+        this.surgeryMapper = surgeryMapper;
     }
 
     @Override
@@ -119,6 +142,78 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 if (real.getPrice() != null) feePackage = feePackage.add(real.getPrice());
             }
         }
+        // 一次性开的检验单：勾选检验项 → 建化验单主表+明细（快照）→ 计 fee_lab
+        BigDecimal feeLab = BigDecimal.ZERO;
+        if (vo.getLabTestIds() != null && !vo.getLabTestIds().isEmpty()) {
+            LabOrder order = new LabOrder();
+            order.setRecordId(record.getRecordId());
+            order.setPetId(record.getPetId());
+            order.setClientId(record.getClientId());
+            order.setDoctorId(record.getDoctorId());
+            order.setFee(BigDecimal.ZERO);
+            order.setStatus(false);
+            labOrderMapper.insert(order);
+            for (Integer testId : vo.getLabTestIds()) {
+                if (testId == null) continue;
+                LabTest test = labTestMapper.selectById(testId);
+                if (test == null || !Boolean.TRUE.equals(test.getActive()))
+                    return Result.error("检验项不存在或已停用");
+                LabOrderItem item = new LabOrderItem();
+                item.setOrderId(order.getOrderId());
+                item.setTestId(test.getTestId());
+                item.setItemName(test.getTestName());
+                item.setItemGroup(test.getTestGroup());
+                item.setItemUnit(test.getTestUnit());
+                item.setRefRange(test.getRefRange());
+                labOrderItemMapper.insert(item);
+                if (test.getTestPrice() != null) feeLab = feeLab.add(test.getTestPrice());
+            }
+            labOrderMapper.update(null, Wrappers.<LabOrder>lambdaUpdate()
+                    .eq(LabOrder::getOrderId, order.getOrderId())
+                    .set(LabOrder::getFee, feeLab));
+        }
+        // 一次性开的影像申请单
+        BigDecimal feeImage = BigDecimal.ZERO;
+        if (vo.getImageItemId() != null) {
+            ImageTest img = imageTestMapper.selectById(vo.getImageItemId());
+            if (img == null) return Result.error("影像项目不存在");
+            ImageOrder imageOrder = new ImageOrder();
+            imageOrder.setRecordId(record.getRecordId());
+            imageOrder.setPetId(record.getPetId());
+            imageOrder.setClientId(record.getClientId());
+            imageOrder.setDoctorId(record.getDoctorId());
+            imageOrder.setItemId(img.getItemId());
+            imageOrder.setItemName(img.getItemName());
+            imageOrder.setGroupName(img.getGroupName());
+            imageOrder.setFee(img.getPrice());
+            imageOrder.setExamPart(vo.getImageExamPart());
+            imageOrder.setStatus(false);
+            imageOrderMapper.insert(imageOrder);
+            if (img.getPrice() != null) feeImage = feeImage.add(img.getPrice());
+        }
+        // 一次性提交的手术申请
+        BigDecimal feeSurgery = BigDecimal.ZERO;
+        if (vo.getSurgery() != null && vo.getSurgery().getRecordId() == null
+                && vo.getSurgery().getSurgeryName() != null && !vo.getSurgery().getSurgeryName().isBlank()) {
+            SurgeryVo sv = vo.getSurgery();
+            BigDecimal sFee = sv.getFee() == null ? BigDecimal.ZERO : sv.getFee();
+            if (sFee.compareTo(BigDecimal.ZERO) < 0) return Result.error("手术费不能为负数");
+            Surgery surgery = new Surgery();
+            surgery.setRecordId(record.getRecordId());
+            surgery.setPetId(record.getPetId());
+            surgery.setClientId(record.getClientId());
+            surgery.setDoctorId(record.getDoctorId());
+            surgery.setSurgeryName(sv.getSurgeryName());
+            surgery.setSurgeryType(sv.getSurgeryType());
+            surgery.setAnesthesiaType(sv.getAnesthesiaType());
+            surgery.setScheduledTime(sv.getScheduledTime());
+            surgery.setSurgeon(sv.getSurgeon());
+            surgery.setAssistant(sv.getAssistant());
+            surgery.setFee(sFee);
+            surgery.setStatus(0);
+            surgeryMapper.insert(surgery);
+            feeSurgery = sFee;
+        }
         // 生成未付账单
         Bill bill = new Bill();
         bill.setClientId(record.getClientId());
@@ -128,7 +223,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         bill.setFeeTreat(record.getFeeTreat());
         bill.setFeeDrug(feeDrug);
         bill.setFeePackage(feePackage);
-        bill.setTotalMoney(record.getFeeRegister().add(record.getFeeTreat()).add(feeDrug).add(feePackage));
+        bill.setFeeLab(feeLab);
+        bill.setFeeImage(feeImage);
+        bill.setFeeSurgery(feeSurgery);
+        bill.setTotalMoney(record.getFeeRegister().add(record.getFeeTreat())
+                .add(feeDrug).add(feePackage).add(feeLab).add(feeImage).add(feeSurgery));
         bill.setPayStatus(false);
         bill.setPayType(false);
         billMapper.insert(bill);

@@ -29,9 +29,9 @@ export interface Surgery {
     anesthesia?: AnesthesiaRecord | null;
 }
 
-/** 新建手术单请求 */
+/** 新建手术单请求（recordId 由后端填，前端不传） */
 export interface SurgeryVo {
-    recordId: number;
+    recordId: number | null;
     surgeryName: string;
     surgeryType: string | null;
     anesthesiaType: string | null;
