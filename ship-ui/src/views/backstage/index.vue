@@ -31,6 +31,7 @@
           <el-menu-item-group :title="doctorNow.name">
             <el-menu-item index="/backstage">个人资料</el-menu-item>
             <el-menu-item index="/backstage/x-departmentList">科室列表</el-menu-item>
+            <el-menu-item index="/backstage/z-job">职务/职称</el-menu-item>
             <el-menu-item index="/backstage/x-doctorList">医生列表</el-menu-item>
           </el-menu-item-group>
         </el-sub-menu>

@@ -15,7 +15,7 @@
       </ul>
       <ul class="hide-narrow">
         <li>{{ getAge(doctorDetail.doctorAge)}}&nbsp;&nbsp;&nbsp;{{ doctorDetail.doctorGender ? "男" : "女" }}</li>
-        <li>{{ getJob(doctorDetail.authLv) }}&nbsp;&nbsp;&nbsp;{{ departmentNames.join("、") }}</li>
+        <li>{{ doctorDetail.jobName || '宠物医生' }}&nbsp;&nbsp;&nbsp;{{ departmentNames.join("、") }}</li>
         <li>{{ doctorDetail.doctorTel }}</li>
         <li class="doc-intro">{{ doctorDetail.doctorInfo }}</li>
       </ul>
@@ -56,7 +56,6 @@
 <script lang="ts" setup>
 import PageHead from "@/components/row/PageHead.vue";
 import {getAge, moveT} from "@/utils/TimeUtil";
-import {getJob} from "@/utils/JobUtil";
 import {DoctorDto} from "@/model/DO/DoctorDto";
 import {AppointDto} from "@/model/DO/AppointDto";
 import {computed, onMounted, reactive, ref} from "vue";

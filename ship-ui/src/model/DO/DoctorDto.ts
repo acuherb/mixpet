@@ -24,6 +24,8 @@ export const exampleDoctorOne = (): DoctorDto => {
         "doctorTel": "",
         "doctorEmail": null,
         "authLv": 0,
+        "jobId": null,
+        "jobName": null,
         "doctorInfo": "",
         "doctorMotto": "",
         "doctorPassword": null,

@@ -92,6 +92,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 ### 回测通过（2026-10-12）
 管理员/顾客登录、顾客自建宠物、编辑资料写身份证、预约挂号、充值闭环、收费结算、打印小票发票
 
+### 职务/职称与权限解耦（2026-10-13）
+- 背景：原"职位"把权限(auth_lv)与职称混在一根轴上、名称写死（JobUtil.getJob + 表单 option + DoctorDetails switch），顾客端还误把权限当职称显示（有管理权限的医生对顾客显示成"主任"）。
+- 改法：权限轴仍是固定 auth_lv(0/2/4/6/8→ADMIN/MANAGER/DOCTOR/NURSE/LOSER，DoctorDetails 贯穿 switch 不动)；新增职称轴 job 字典(job_id)，doctor 加 job_id，可增删改、纯展示，与权限解耦。
+- 新增：job 表 + 实体/Mapper/Service/Controller（MANAGER 增删改，删前校验名下是否有医生）、后台「职务/职称」页 z-job（路由 /backstage/z-job，菜单在个人中心组）。
+- 前端：PermissionUtil.ts 定义 5 档权限名 + "能干什么"说明(permName/permDesc)，医生/个人页权限下拉带说明；医生列表拆「职称 + 权限」两列；表单拆「权限(仅院长可改，保留 isAdmin 守卫) + 职称(全员可改，自助 updateSelf 已加 job_id)」；顾客端医生卡/详情由 getJob(authLv) 改显真实 jobName。TagJob.vue 现显示权限名；科室详情"职位"列改名"权限"。
+- SQL：`数据库备份/job_module.sql`（建 job 表 + doctor 加 job_id + 预置 10 职称 + 按 auth_lv 给老医生播种），已应用。
+
 ## 8. 待办
 ### 回测（待做）
 - [ ] 顾客添加宠物（完整表单+待审核）→ 后台审核通过/驳回 → 挂号可选性
@@ -128,3 +135,4 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 3. 只存生日（真相源），年龄前端实时计算；反推生日标记为估算
 4. pet_source 已加（0后台录入 1顾客自建），自建走 POST /pet/self
 5. 邮件功能延后，上线前处理
+6. 权限(auth_lv)与职称(job)解耦：权限固定 5 档驱动角色、名称带"能干什么"说明；职称走 job 字典可维护。允许自助改职称，改权限仅院长(ADMIN)

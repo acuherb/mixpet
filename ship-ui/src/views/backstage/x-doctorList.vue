@@ -42,7 +42,13 @@
         </div>
       </template>
     </el-table-column>
-    <el-table-column label="职位" prop="authLv" sortable>
+    <el-table-column label="职称" prop="jobName">
+      <template #default="scope">
+        <el-tag v-if="scope.row.jobName" size="small" effect="plain" type="info">{{ scope.row.jobName }}</el-tag>
+        <span v-else>—</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="权限" prop="authLv" sortable width="110">
       <template #default="scope">
         <TagJob :auth-lv="scope.row.authLv"/>
       </template>
@@ -82,13 +88,15 @@
           <el-button v-else size="small" type="info" plain @click="clearAllDepart">取消全选</el-button>
         </div>
       </el-form-item>
-      <el-form-item label="职位" prop="doctorJob">
-        <el-select v-model="form.authLv" placeholder="医生">
-          <el-option :value="8" label="院长"/>
-          <el-option :value="6" label="主任"/>
-          <el-option :value="4" label="主治医师"/>
-          <el-option :value="2" label="护理技师"/>
-          <el-option :value="0" label="实习助理"/>
+      <el-form-item label="权限" prop="authLv">
+        <el-select v-model="form.authLv" placeholder="选择权限">
+          <el-option v-for="p in PERMISSIONS" :key="p.lv" :value="p.lv" :label="p.name"/>
+        </el-select>
+        <div class="perm-desc">{{ permDesc(form.authLv) }}</div>
+      </el-form-item>
+      <el-form-item label="职称" prop="jobId">
+        <el-select v-model="form.jobId" filterable placeholder="选择职称（在职务/职称管理维护）">
+          <el-option v-for="j in jobNameL" :key="j.roleId" :label="j.roleName" :value="j.roleId"/>
         </el-select>
       </el-form-item>
       <el-form-item label="性别">
@@ -151,6 +159,8 @@ import {reqDepartName} from "@/request/DepartApi";
 import {NameDo} from "@/model/DO/NameDo";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 import TagJob from "@/components/show/TagJob.vue";
+import {PERMISSIONS, permDesc} from "@/utils/PermissionUtil";
+import {reqJobName} from "@/request/JobApi";
 
 /**
  ┌───────────────────────────────────┐
@@ -161,6 +171,9 @@ onMounted(() => {
   sendQuery()
   reqDepartName().then(res => {
     departNameL.value = res
+  })
+  reqJobName().then(res => {
+    jobNameL.value = res
   })
 })
 
@@ -268,6 +281,7 @@ const showDialog = (row: DoctorDto) => {
   form.value.departmentId = row.departmentId
   form.value.departmentIds = row.departmentIds ? [...row.departmentIds] : []
   form.value.authLv = row.authLv
+  form.value.jobId = row.jobId ?? null
   form.value.doctorAge = row.doctorAge
   form.value.doctorInfo = row.doctorInfo
   form.value.doctorTel = row.doctorTel
@@ -288,6 +302,7 @@ const showDialog = (row: DoctorDto) => {
  */
 // 表单的数据
 const departNameL = ref<NameDo[]>([]) // 下拉框部门名称
+const jobNameL = ref<NameDo[]>([]) // 下拉框职称
 // 是否已选择全部科室
 const isAllDepart = () => !!(departNameL.value.length > 0 && form.value.departmentIds && form.value.departmentIds.length === departNameL.value.length)
 // 全科：选中全部科室
@@ -336,6 +351,9 @@ const rules = reactive<FormRules>({
   "departmentIds": [
     {required: true, type: 'array', min: 1, message: '请至少选择一个科室', trigger: 'change'},
   ],
+  "jobId": [
+    {required: true, type: 'number', message: '请选择职称', trigger: 'change'},
+  ],
 })
 // 头像参数的改变:子传父
 const changePhoto = (val: string): void => {
@@ -366,6 +384,12 @@ const changePhoto = (val: string): void => {
 }
 .depart-tag {
   margin-right: 4px;
+}
+.perm-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+  padding-top: 2px;
 }
 
 </style>

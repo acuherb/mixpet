@@ -7,7 +7,7 @@
         doctor_id,d.department_id,username,
         d.create_time,doctor_name,doctor_gender,
         doctor_age,doctor_photo,doctor_tel,doctor_email,
-        auth_lv,doctor_info,doctor_motto,b.department_name,
+        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,b.department_name,
         (SELECT GROUP_CONCAT(dep.department_name)
          FROM doctor_department dd
          JOIN department dep ON dd.department_id=dep.department_id
@@ -15,6 +15,8 @@
         FROM doctor AS d
         LEFT JOIN department AS b
         ON d.department_id=b.department_id
+        LEFT JOIN job AS j
+        ON d.job_id=j.job_id
         WHERE d.is_del = 0
         <if test="doctorName!=null and doctorName!=''">
             <bind name="doctorKw" value="'%'+doctorName+'%'"/>
@@ -35,7 +37,7 @@
         doctor_id,d.department_id,
         d.create_time,doctor_name,doctor_gender,
         doctor_age,doctor_photo,
-        auth_lv,doctor_info,doctor_motto,b.department_name,
+        auth_lv,d.job_id,j.job_name,doctor_info,doctor_motto,b.department_name,
         (SELECT GROUP_CONCAT(dep.department_name)
          FROM doctor_department dd
          JOIN department dep ON dd.department_id=dep.department_id
@@ -43,6 +45,8 @@
         FROM doctor AS d
         LEFT JOIN department AS b
         ON d.department_id=b.department_id
+        LEFT JOIN job AS j
+        ON d.job_id=j.job_id
         WHERE d.is_del = 0
         <if test="doctorName!=null and doctorName!=''">
             <bind name="doctorKw" value="'%'+doctorName+'%'"/>
@@ -68,12 +72,16 @@
                a.doctor_tel,
                a.doctor_email,
                a.auth_lv,
+               a.job_id,
+               j.job_name,
                a.doctor_info,
                a.doctor_motto,
                b.department_name
         FROM doctor AS a
                  LEFT JOIN department AS b
                            ON a.department_id = b.department_id
+                 LEFT JOIN job AS j
+                           ON a.job_id = j.job_id
         WHERE a.is_del = 0
           AND a.doctor_id = #{doctorId}
     </select>
@@ -102,6 +110,7 @@
             doctor_photo=#{doctorPhoto},
             doctor_tel=#{doctorTel},
             doctor_email=#{doctorEmail},
+            job_id=#{jobId},
             update_time=now()
         WHERE doctor_id = #{doctorId}
     </update>

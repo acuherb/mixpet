@@ -20,6 +20,11 @@ public class DoctorDto extends Doctor {
      */
     private List<String> departmentNames;
 
+    /**
+     * 职称名称（联查 job 字典，展示用）
+     */
+    private String jobName;
+
     public String getDepartmentName() {
         return departmentName;
     }
@@ -42,5 +47,13 @@ public class DoctorDto extends Doctor {
 
     public void setDepartmentNames(List<String> departmentNames) {
         this.departmentNames = departmentNames;
+    }
+
+    public String getJobName() {
+        return jobName;
+    }
+
+    public void setJobName(String jobName) {
+        this.jobName = jobName;
     }
 }

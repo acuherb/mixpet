@@ -73,6 +73,11 @@ public class Doctor implements Serializable {
     private Integer authLv;
 
     /**
+     * 职称id（关联 job 字典，仅展示，与权限解耦）
+     */
+    private Integer jobId;
+
+    /**
      * 医生简介
      */
     private String doctorInfo;
@@ -184,6 +189,14 @@ public class Doctor implements Serializable {
         this.authLv = authLv;
     }
 
+    public Integer getJobId() {
+        return jobId;
+    }
+
+    public void setJobId(Integer jobId) {
+        this.jobId = jobId;
+    }
+
     public String getDoctorInfo() {
         return doctorInfo;
     }
@@ -245,6 +258,7 @@ public class Doctor implements Serializable {
                 ", doctorTel = " + doctorTel +
                 ", doctorEmail = " + doctorEmail +
                 ", authLv = " + authLv +
+                ", jobId = " + jobId +
                 ", doctorInfo = " + doctorInfo +
                 ", doctorMotto = " + doctorMotto +
                 ", doctorPassword = " + doctorPassword +

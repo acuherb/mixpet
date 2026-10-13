@@ -8,7 +8,7 @@
         tit: doctor.doctorName,
         age: getAge(doctor.doctorAge),
         sex: doctor.doctorGender ? "男" : "女",
-        job: getJob(doctor.authLv),
+        job: doctor.jobName || "宠物医生",
         info1: doctor.doctorInfo,
         info2: doctor.doctorMotto ? "座右铭："+doctor.doctorMotto : "",
         link:"/reception/doctorOne/"+doctor.doctorId
@@ -20,7 +20,6 @@
 /*=====前台的医生卡片批量展示=====*/
 import MyCard from "@/components/card/MyCard.vue";
 import {getAge} from "@/utils/TimeUtil";
-import {getJob} from "@/utils/JobUtil";
 import {DoctorDto} from "@/model/DO/DoctorDto";
 // 接收参数：医生卡片
 defineProps<{

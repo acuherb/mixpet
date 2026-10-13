@@ -71,7 +71,7 @@
         <template #default="scope">{{ getAge(scope.row.doctorAge)}}</template>
       </el-table-column>
       <el-table-column label="联系方式" prop="doctorTel" width="220"/>
-      <el-table-column label="职位" prop="authLv">
+      <el-table-column label="权限" prop="authLv" width="110">
         <template #default="scope">
           <TagJob :auth-lv="scope.row.authLv"/>
         </template>

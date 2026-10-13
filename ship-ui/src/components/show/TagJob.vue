@@ -1,18 +1,18 @@
 <template>
   <el-tag v-if="authLv===8" type="danger">
-    {{ getJob(authLv) }}
+    {{ permName(authLv) }}
   </el-tag>
   <el-tag v-else-if="authLv===6" type="warning">
-    {{ getJob(authLv) }}
+    {{ permName(authLv) }}
   </el-tag>
   <el-tag v-else>
-    {{ getJob(authLv) }}
+    {{ permName(authLv) }}
   </el-tag>
 </template>
 
 <script lang="ts" setup>
-/*=====医生职业的封装展示标签=====*/
-import {getJob} from "@/utils/JobUtil";
+/*=====医生权限等级标签（按 auth_lv 显示权限名，与职称解耦）=====*/
+import {permName} from "@/utils/PermissionUtil";
 
 defineProps<{
   authLv: number

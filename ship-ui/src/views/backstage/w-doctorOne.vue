@@ -29,7 +29,8 @@
         <div class="head-info">
           <div class="name-row">
             <span class="d-name">{{ doctor.doctorName || '未设置' }}</span>
-            <el-tag round effect="light" :type="isAdmin ? 'danger' : 'success'">{{ getJob(doctor.authLv) }}</el-tag>
+            <el-tag round effect="light" type="primary">{{ doctor.jobName || '未设职称' }}</el-tag>
+            <el-tag round effect="plain" :type="isAdmin ? 'danger' : 'success'">{{ permName(doctor.authLv) }}</el-tag>
             <el-tag v-for="dn in (doctor.departmentNames && doctor.departmentNames.length ? doctor.departmentNames : (doctor.departmentName ? [doctor.departmentName] : []))" :key="dn" round effect="plain">{{ dn }}</el-tag>
           </div>
           <div class="account">账号：{{ doctor.username }}&nbsp;&nbsp;·&nbsp;&nbsp;工号：{{ doctorNo }}</div>
@@ -110,14 +111,16 @@
       <el-form-item label="邮箱">
         <el-input v-model="form.doctorEmail" clearable placeholder="用于接收验证码"/>
       </el-form-item>
-      <el-form-item v-if="isAdmin" label="职位">
-        <el-select v-model="form.authLv" placeholder="请选择职位">
-          <el-option :value="8" label="院长"/>
-          <el-option :value="6" label="主任"/>
-          <el-option :value="4" label="主治医师"/>
-          <el-option :value="2" label="护理技师"/>
-          <el-option :value="0" label="实习助理"/>
+      <el-form-item label="职称">
+        <el-select v-model="form.jobId" filterable placeholder="请选择职称（职务/职称管理维护）">
+          <el-option v-for="j in jobNameL" :key="j.roleId" :label="j.roleName" :value="j.roleId"/>
         </el-select>
+      </el-form-item>
+      <el-form-item v-if="isAdmin" label="权限">
+        <el-select v-model="form.authLv" placeholder="请选择权限">
+          <el-option v-for="p in PERMISSIONS" :key="p.lv" :value="p.lv" :label="p.name"/>
+        </el-select>
+        <div class="perm-desc">{{ permDesc(form.authLv) }}</div>
       </el-form-item>
       <el-form-item v-if="isAdmin" label="科室">
         <el-select v-model="form.departmentIds" multiple filterable placeholder="请选择科室（可多选）">
@@ -165,12 +168,13 @@
 </template>
 
 <script lang="ts" setup>
-import {getJob} from "@/utils/JobUtil";
+import {permName, permDesc, PERMISSIONS} from "@/utils/PermissionUtil";
 import {getAge} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
 import {DoctorDto, exampleDoctorOne} from "@/model/DO/DoctorDto";
 import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD, reqUpdateDoctor} from "@/request/DoctorApi";
 import {reqDepartName} from "@/request/DepartApi";
+import {reqJobName} from "@/request/JobApi";
 import {NameDo} from "@/model/DO/NameDo";
 import {Doctor, exampleDoctor} from "@/model/entiy/Doctor";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
@@ -238,9 +242,14 @@ const tenure = computed(() => {
 
 // 科室下拉列表
 const departNameL = ref<NameDo[]>([])
+// 职称下拉列表
+const jobNameL = ref<NameDo[]>([])
 onMounted(() => {
   reqDepartName().then(res => {
     departNameL.value = res
+  })
+  reqJobName().then(res => {
+    jobNameL.value = res
   })
 })
 // 一键全选科室
@@ -276,6 +285,7 @@ const updateRole = () => {
   form.value.doctorTel = doctor.value.doctorTel
   form.value.doctorEmail = doctor.value.doctorEmail
   form.value.authLv = doctor.value.authLv
+  form.value.jobId = doctor.value.jobId ?? null
   form.value.departmentId = doctor.value.departmentId
   form.value.departmentIds = doctor.value.departmentIds ? [...doctor.value.departmentIds] : []
   form.value.username = doctor.value.username
@@ -544,6 +554,13 @@ const rules2 = ref<FormRules>({
   background: rgba(108,92,231,0.04);
   border-radius: 12px;
   padding: 16px 18px;
+}
+
+.perm-desc {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.4;
+  padding-top: 2px;
 }
 
 </style>
