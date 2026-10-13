@@ -54,4 +54,18 @@
         ORDER BY r.create_time DESC
         LIMIT #{limit}
     </select>
+
+    <!--随访提醒：复诊日期在30天内（含逾期）的病历-->
+    <select id="selectDueRevisits" resultType="com.ship.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.revisit_date, r.create_time,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        WHERE r.is_del = 0 AND r.revisit_date IS NOT NULL
+        AND r.revisit_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        ORDER BY r.revisit_date ASC
+    </select>
 </mapper>

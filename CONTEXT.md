@@ -114,7 +114,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（跳医生端 d-lab/d-image）/ 入院登记 / 免疫接种（跳后台 z-hospital/z-immune），均带 recordId 预填本次病历。
 - 顾客端闭环：病历详情(clientPet)在处方/化验外，补显 影像检查报告、住院信息（后端接口原有，前端接上）。
 - SQL：`数据库备份/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
-- 后续可做：随访复诊提醒。
+- 后续可做：随访复诊提醒（已完成，见下）。
+
+### 随访/复诊提醒（2026-10-13）
+- 数据来源：`medical_record.revisit_date`（复诊）、`immune_record.next_time`（下一针）。
+- 后端 `GET /remind`（NURSE/MANAGER/DOCTOR）返回 `RemindVo`：`selectDueRevisits`（复诊日期≤今+30天，含逾期）+ `selectDueVaccines`（下一针≤今+30天），联查宠物/客户/医生。
+- 前端 `z-remind.vue` 提醒中心：应复诊、应接种两张表，逾期红/临近黄高亮；路由 `/backstage/z-remind`，菜单加「随访提醒」（经营看板旁）。
+- 说明：目前是"查询型"提醒（员工进页面查看）；如需主动推送（站内消息/短信）可后续接消息推送。
 
 ### 检验/影像申请单国标样式（2026-10-13）
 - 复用处方笺模式：`GET /lab/requisition/{orderId}`、`GET /imageOrder/requisition/{orderId}` 返回统一 `RequisitionVo`（头部=畜主/宠物(品种·性别·年龄·体重·芯片)/申请医生+资格证号/临床诊断；body：检验为多项表(名称/分组/参考范围/单位)，影像为单项目+检查部位/目的+费用）。

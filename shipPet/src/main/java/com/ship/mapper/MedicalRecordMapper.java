@@ -22,4 +22,7 @@ public interface MedicalRecordMapper extends BaseMapper<MedicalRecord> {
 
     /** 某医生的接诊病历（开化验单时选择病历用） */
     List<RecordDto> selectDoctorRecords(@Param("doctorId") Integer doctorId, @Param("limit") int limit);
+
+    /** 随访提醒：复诊日期在30天内（含逾期）的病历 */
+    List<RecordDto> selectDueRevisits();
 }

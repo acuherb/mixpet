@@ -21,4 +21,7 @@ public interface ImmuneRecordMapper extends BaseMapper<ImmuneRecord> {
 
     /** 某宠物的接种档案 */
     List<ImmuneRecordDto> selectByPet(@Param("petId") Integer petId);
+
+    /** 接种提醒：下一针在30天内的档案 */
+    List<ImmuneRecordDto> selectDueVaccines();
 }

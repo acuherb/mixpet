@@ -29,6 +29,10 @@ export const backstage: RouteRecordRaw[] = [
         // 检验/影像申请单（国标，可打印）
         path: "z-requisition",
         component: () => import('@/views/backstage/z-requisition.vue')
+    }, {
+        // 随访/复诊提醒
+        path: "z-remind",
+        component: () => import('@/views/backstage/z-remind.vue')
     },{
         // 领养表
         path: "y-adoptList",

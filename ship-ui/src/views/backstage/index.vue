@@ -51,6 +51,12 @@
             </el-icon>
           <span>经营看板</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-remind" :title="isCollapse ? '随访提醒' : ''">
+          <el-icon>
+              <Bell/>
+            </el-icon>
+          <span>随访提醒</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
           <el-icon>
               <User/>
@@ -144,7 +150,7 @@
 </template>
 
 <script lang="ts" setup>
-import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User,} from '@element-plus/icons-vue'
+import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User, Bell,} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
