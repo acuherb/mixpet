@@ -85,6 +85,9 @@
           <el-descriptions-item label="复诊日期">{{ detail.record.revisitDate || '无需复诊' }}</el-descriptions-item>
           <el-descriptions-item label="费用合计">￥{{ detail.record.totalMoney ?? 0 }}</el-descriptions-item>
         </el-descriptions>
+        <div class="no-print" style="text-align: right; margin-bottom: 6px">
+          <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
+        </div>
         <h4 style="margin: 12px 0 6px">处方用药</h4>
         <el-table :data="detail.prescriptions" border size="small">
           <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
@@ -247,6 +250,7 @@ import {reqImageByRecord} from "@/request/ImageApi";
 import {reqHospitalByRecord} from "@/request/HospitalApi";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {HospitalDto} from "@/model/DO/HospitalDto";
+import {useRouter} from 'vue-router';
 
 const petList = ref<Pet[]>([]);
 
@@ -271,6 +275,11 @@ const detail = ref<RecordDetailVo | null>(null)
 const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])
 const hospitals = ref<HospitalDto[]>([])
+const router = useRouter()
+// 顾客自助打印兽医处方笺（后端 Rx 接口已按归属校验，仅本人宠物）
+const printRx = (): void => {
+  if (detail.value) router.push('/doctorPage/d-rx?recordId=' + detail.value.record.recordId)
+}
 const openRecordDetail = (recordId: number): void => {
   labs.value = []
   images.value = []
