@@ -188,3 +188,11 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 前端 `SurgeryVo.recordId` 改可空（后端填）；接诊弹窗加 `.lab-pick/.img-pick` 样式。
 - 住院（出院才计费）/免疫（不计费）仍走单独入口，未嵌入接诊弹窗。
 - 后续可优化：流程顺手度（弹窗分区/分步、批量开单交互）待实际使用后再调。
+
+### 接诊报"系统繁忙"实体字段缺失修复（2026-10-13）
+- 现象：接诊加套餐（或保存医生科室关系）点完成/保存，前端提示"系统繁忙，请稍后再试！"。
+- 真正根因：`FieldFill.insertFill` 会无条件给所有实体 `set createTime + updateTime`；`RecordPackage`(接诊保存套餐)与 `DoctorDepart`(保存医生科室关系) 缺 `updateTime` 字段 → MyBatis 抛 `ReflectionException: There is no setter for property named 'updateTime'` → 事务回滚 → `ExceptionAdvice` 兜底成"系统繁忙"。
+- 首判曾误以为只缺 `record_package.update_time` 库列（commit 22a1802 补列，属不完整修复），实际必须补**实体字段**才根治。
+- 修复（commit e2986b2）：① `RecordPackage`/`DoctorDepart` 补 `updateTime` 字段(+getter/setter/@TableField)；② **加固 `FieldFill`：仅当 `metaObject.hasSetter` 存在才赋值**，杜绝今后任何实体再踩坑；③ `doctor_department` 补 `update_time` 列 + 迁移脚本 `fix_entity_update_time_20261013.sql`。
+- 排查：扫描全部实体，`createTime`/`updateTime` 现已齐全；重启后端验证 `Started ShipPetApplication` + `/department/name` 返回 200。
+- 教训：本项目约定所有实体含 createTime/updateTime；新实体务必两字段都加，否则相关 insert 必崩。
