@@ -6,11 +6,12 @@
         SELECT
         o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id,
         o.order_note, o.fee, o.status, o.result_note, o.result_by, o.create_time,
-        p.pet_name, c.client_name, d.doctor_name
+        p.pet_name, c.client_name, d.doctor_name, m.diagnosis
         FROM lab_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id
         LEFT JOIN client c ON o.client_id = c.client_id
         LEFT JOIN doctor d ON o.doctor_id = d.doctor_id
+        LEFT JOIN medical_record m ON o.record_id = m.record_id
         WHERE o.is_del = 0
         <if test="status != null">
             AND o.status = #{status}

@@ -25,6 +25,7 @@ export interface Surgery {
     petName?: string;
     clientName?: string;
     doctorName?: string;
+    diagnosis?: string;
     anesthesia?: AnesthesiaRecord | null;
 }
 

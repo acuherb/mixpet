@@ -28,6 +28,8 @@ public class LabOrderDto {
     private String petName;
     private String clientName;
     private String doctorName;
+    /** 临床诊断（联查病历，便于录结果时参考） */
+    private String diagnosis;
 
     /** 化验明细 */
     private List<LabOrderItem> items;

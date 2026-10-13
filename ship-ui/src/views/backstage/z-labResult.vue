@@ -47,6 +47,7 @@
     <el-table-column label="宠物" min-width="110" prop="petName" show-overflow-tooltip/>
     <el-table-column label="客户" min-width="110" prop="clientName" show-overflow-tooltip/>
     <el-table-column label="开单医生" min-width="100" prop="doctorName" show-overflow-tooltip/>
+    <el-table-column label="诊断" min-width="120" prop="diagnosis" show-overflow-tooltip/>
     <el-table-column label="检验费(元)" prop="fee" width="100" sortable/>
     <el-table-column label="开单时间" width="160" prop="createTime"/>
     <el-table-column label="状态" width="90">

@@ -13,6 +13,7 @@
     <el-table :data="list.records" max-height="calc(100vh - 200px)" row-key="surgeryId" stripe>
       <el-table-column label="宠物" min-width="100" prop="petName" show-overflow-tooltip/>
       <el-table-column label="客户" min-width="100" prop="clientName" show-overflow-tooltip/>
+      <el-table-column label="诊断" min-width="120" prop="diagnosis" show-overflow-tooltip/>
       <el-table-column label="手术名称" min-width="140" prop="surgeryName" show-overflow-tooltip/>
       <el-table-column label="类型" width="80" prop="surgeryType"/>
       <el-table-column label="麻醉" width="100" prop="anesthesiaType"/>

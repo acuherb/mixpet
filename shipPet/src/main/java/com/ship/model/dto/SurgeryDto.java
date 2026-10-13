@@ -12,6 +12,8 @@ public class SurgeryDto extends Surgery {
     private String petName;
     private String clientName;
     private String doctorName;
+    /** 临床诊断（联查病历） */
+    private String diagnosis;
     /** 麻醉记录（详情时带出） */
     private AnesthesiaRecord anesthesia;
 }

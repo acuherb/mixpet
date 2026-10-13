@@ -8,5 +8,6 @@ export interface LabOrderDto extends LabOrder {
     petName?: string;
     clientName?: string;
     doctorName?: string;
+    diagnosis?: string;
     items?: LabOrderItem[];
 }

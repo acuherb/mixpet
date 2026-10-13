@@ -6,11 +6,12 @@
         SELECT s.surgery_id, s.record_id, s.pet_id, s.client_id, s.doctor_id,
         s.surgery_name, s.surgery_type, s.anesthesia_type, s.scheduled_time, s.start_time, s.end_time,
         s.surgeon, s.assistant, s.status, s.fee, s.create_time,
-        p.pet_name, c.client_name, d.doctor_name
+        p.pet_name, c.client_name, d.doctor_name, m.diagnosis
         FROM surgery s
         LEFT JOIN pet p ON s.pet_id = p.pet_id
         LEFT JOIN client c ON s.client_id = c.client_id
         LEFT JOIN doctor d ON s.doctor_id = d.doctor_id
+        LEFT JOIN medical_record m ON s.record_id = m.record_id
         WHERE s.is_del = 0
         <if test="status != null">
             AND s.status = #{status}
@@ -37,11 +38,12 @@
         SELECT s.surgery_id, s.record_id, s.pet_id, s.client_id, s.doctor_id,
         s.surgery_name, s.surgery_type, s.anesthesia_type, s.scheduled_time, s.start_time, s.end_time,
         s.surgeon, s.assistant, s.status, s.preop_note, s.intraop_note, s.postop_note, s.fee, s.create_time,
-        p.pet_name, c.client_name, d.doctor_name
+        p.pet_name, c.client_name, d.doctor_name, m.diagnosis
         FROM surgery s
         LEFT JOIN pet p ON s.pet_id = p.pet_id
         LEFT JOIN client c ON s.client_id = c.client_id
         LEFT JOIN doctor d ON s.doctor_id = d.doctor_id
+        LEFT JOIN medical_record m ON s.record_id = m.record_id
         WHERE s.is_del = 0 AND s.surgery_id = #{surgeryId}
     </select>
 </mapper>
