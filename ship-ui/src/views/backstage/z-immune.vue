@@ -64,6 +64,7 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
+import {useRoute} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {RecordDto} from "@/model/DO/RecordDto";
@@ -145,10 +146,17 @@ const rules = reactive<FormRules>({
   "drugId": [{required: true, type: 'number', message: '请选择疫苗', trigger: 'change'}]
 })
 
+const route = useRoute()
 onMounted(() => {
   sendQuery()
   reqDrugVaccineList().then(res => { vaccineDrugs.value = res || [] })
   reqDoctorRecords().then(res => { records.value = res || [] })
+  // 从就诊汇总跳转过来：预填病历并打开接种登记
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    form.recordId = rid
+    modalView.value = true
+  }
 })
 </script>
 

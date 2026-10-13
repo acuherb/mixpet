@@ -151,6 +151,8 @@
         <el-button type="primary" @click="printRx">打印处方笺</el-button>
         <el-button @click="goOrder('d-lab')">开检验单</el-button>
         <el-button @click="goOrder('d-image')">开影像单</el-button>
+        <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
+        <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
         <el-button @click="summaryView = false">完成</el-button>
       </div>
     </el-dialog>
@@ -260,6 +262,12 @@ const goOrder = (path: string): void => {
   const id = summaryRecordId.value
   summaryView.value = false
   router.push('/doctorPage/' + path + '?recordId=' + id)
+}
+// 跳后台页（入院/免疫），预填本次病历
+const goBackstage = (path: string): void => {
+  const id = summaryRecordId.value
+  summaryView.value = false
+  router.push('/backstage/' + path + '?recordId=' + id)
 }
 // 提交接诊
 const submitTreat = async (): Promise<void> => {  await recordFormRef.value?.validate((valid: boolean): void => {

@@ -111,10 +111,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 背景：原接诊只能加药品；化验/影像/住院/免疫各自单独建、未与本次就诊连通；缺国标处方笺。
 - 执业资格证号：doctor 加 `doctor_cert`（国标处方笺必填），医生表单/个人页可维护。
 - 国标兽医处方笺：`GET /record/rx/{recordId}` 聚合 病历+宠物+主人+医生+处方（`RxSheetVo`）；前端 `d-rx.vue` 可打印页（标题/编号/畜主/宠物(种名·品种·性别·年龄·体重·芯片)/临床诊断/Rp 药品表/金额大小写/开方兽医+资格证号/兽药房调配/日期），`@media print` 打印样式；路由 `/doctorPage/d-rx?recordId=`。
-- 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（带 recordId 跳转，`d-lab`/`d-image` 读路由 query 预填本次病历）。
+- 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（跳医生端 d-lab/d-image）/ 入院登记 / 免疫接种（跳后台 z-hospital/z-immune），均带 recordId 预填本次病历。
 - 顾客端闭环：病历详情(clientPet)在处方/化验外，补显 影像检查报告、住院信息（后端接口原有，前端接上）。
 - SQL：`数据库备份/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
-- 后续可做：住院/免疫也并入就诊汇总、处方笺顾客端自助打印、随访复诊提醒。
+- 后续可做：处方笺顾客端自助打印、随访复诊提醒。
 
 ### 检验/影像申请单国标样式（2026-10-13）
 - 复用处方笺模式：`GET /lab/requisition/{orderId}`、`GET /imageOrder/requisition/{orderId}` 返回统一 `RequisitionVo`（头部=畜主/宠物(品种·性别·年龄·体重·芯片)/申请医生+资格证号/临床诊断；body：检验为多项表(名称/分组/参考范围/单位)，影像为单项目+检查部位/目的+费用）。

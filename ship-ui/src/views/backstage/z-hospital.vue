@@ -64,6 +64,7 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
+import {useRoute} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {HospitalDto} from "@/model/DO/HospitalDto";
@@ -159,8 +160,15 @@ const showDetail = (row: HospitalDto): void => {
 }
 
 /** 生命周期 */
+const route = useRoute()
 onMounted(() => {
   sendQuery()
+  // 从就诊汇总跳转过来：预填病历号并打开入院登记
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    form.value = {recordId: rid, roomNo: '', dailyFee: 50, note: ''}
+    modalView.value = true
+  }
 })
 </script>
 
