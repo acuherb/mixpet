@@ -21,3 +21,14 @@ export const examplePackage = (): ServicePackage => ({
 
 /** 套餐分类选项 */
 export const packageCategories = ['体检', '驱虫', '免疫', '美容', '其他']
+
+/**
+ * 就诊选购的套餐记录（快照）
+ */
+export interface RecordPackage {
+    id: number;
+    recordId: number;
+    packageId: number | null;
+    packageName: string;
+    price: number;
+}

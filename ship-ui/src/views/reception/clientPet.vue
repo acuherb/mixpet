@@ -97,6 +97,12 @@
           <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
         </el-table>
         <p v-if="detail.prescriptions.length === 0" style="color:#999">本次未开处方</p>
+        <h4 style="margin: 14px 0 6px">套餐服务</h4>
+        <el-table :data="detail.packages" border size="small">
+          <el-table-column label="套餐" min-width="140" prop="packageName" show-overflow-tooltip/>
+          <el-table-column label="价格(元)" width="90" prop="price"/>
+        </el-table>
+        <p v-if="!detail.packages || detail.packages.length === 0" style="color:#999">本次无套餐</p>
         <h4 style="margin: 14px 0 6px">化验结果</h4>
         <template v-for="lab in labs" :key="lab.orderId">
           <div class="lab-hd">

@@ -17,9 +17,10 @@ export interface RecordDto extends MedicalRecord {
 }
 
 /**
- * 病历详情响应：病历 + 处方列表
+ * 病历详情响应：病历 + 处方列表 + 套餐
  */
 export interface RecordDetailVo {
     record: RecordDto;
     prescriptions: import("@/model/entiy/MedicalRecord").Prescription[];
+    packages: import("@/model/entiy/ServicePackage").RecordPackage[];
 }

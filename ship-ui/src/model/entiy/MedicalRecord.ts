@@ -1,3 +1,5 @@
+import {ServicePackage} from "@/model/entiy/ServicePackage";
+
 /**
  * 处方明细
  */
@@ -66,4 +68,5 @@ export const exampleMedicalRecord = (appointmentId: number): MedicalRecord => {
 export interface RecordVo {
     record: MedicalRecord;
     prescriptions: Prescription[];
+    packages: ServicePackage[];
 }

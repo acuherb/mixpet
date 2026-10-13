@@ -10,12 +10,14 @@ import com.ship.mapper.DrugMapper;
 import com.ship.mapper.MedicalRecordMapper;
 import com.ship.mapper.PetMapper;
 import com.ship.mapper.PrescriptionMapper;
+import com.ship.mapper.RecordPackageMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IMedicalRecordService;
+import com.ship.service.IServicePackageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,17 +37,22 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final BillMapper billMapper;
     private final PetMapper petMapper;
     private final DoctorMapper doctorMapper;
+    private final IServicePackageService packageService;
+    private final RecordPackageMapper recordPackageMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
                                     PrescriptionMapper prescriptionMapper, BillMapper billMapper,
-                                    PetMapper petMapper, DoctorMapper doctorMapper) {
+                                    PetMapper petMapper, DoctorMapper doctorMapper,
+                                    IServicePackageService packageService, RecordPackageMapper recordPackageMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
         this.billMapper = billMapper;
         this.petMapper = petMapper;
         this.doctorMapper = doctorMapper;
+        this.packageService = packageService;
+        this.recordPackageMapper = recordPackageMapper;
     }
 
     @Override
@@ -95,6 +102,23 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             p.setRecordId(record.getRecordId());
             prescriptionMapper.insert(p);
         }
+        // 套餐：校验 + 快照 + 记录 + 计费
+        BigDecimal feePackage = BigDecimal.ZERO;
+        if (vo.getPackages() != null) {
+            for (ServicePackage pkg : vo.getPackages()) {
+                if (pkg == null || pkg.getPackageId() == null) continue;
+                ServicePackage real = packageService.getById(pkg.getPackageId());
+                if (real == null || !Boolean.TRUE.equals(real.getActive()))
+                    return Result.error("套餐不存在或已停用");
+                RecordPackage rp = new RecordPackage();
+                rp.setRecordId(record.getRecordId());
+                rp.setPackageId(real.getPackageId());
+                rp.setPackageName(real.getPackageName());
+                rp.setPrice(real.getPrice());
+                recordPackageMapper.insert(rp);
+                if (real.getPrice() != null) feePackage = feePackage.add(real.getPrice());
+            }
+        }
         // 生成未付账单
         Bill bill = new Bill();
         bill.setClientId(record.getClientId());
@@ -103,7 +127,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         bill.setFeeRegister(record.getFeeRegister());
         bill.setFeeTreat(record.getFeeTreat());
         bill.setFeeDrug(feeDrug);
-        bill.setTotalMoney(record.getFeeRegister().add(record.getFeeTreat()).add(feeDrug));
+        bill.setFeePackage(feePackage);
+        bill.setTotalMoney(record.getFeeRegister().add(record.getFeeTreat()).add(feeDrug).add(feePackage));
         bill.setPayStatus(false);
         bill.setPayType(false);
         billMapper.insert(bill);

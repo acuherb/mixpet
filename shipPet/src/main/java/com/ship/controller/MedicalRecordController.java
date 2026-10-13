@@ -1,13 +1,16 @@
 package com.ship.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ship.common.Result;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.Client;
 import com.ship.model.entity.Doctor;
 import com.ship.model.entity.Pet;
 import com.ship.model.entity.Prescription;
+import com.ship.model.entity.RecordPackage;
 import com.ship.mapper.PrescriptionMapper;
+import com.ship.mapper.RecordPackageMapper;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.security.model.RoleConst;
@@ -29,14 +32,17 @@ public class MedicalRecordController {
     private final IMedicalRecordService recordService;
     private final PrescriptionMapper prescriptionMapper;
     private final IPetService petService;
+    private final RecordPackageMapper recordPackageMapper;
 
     @Autowired
     public MedicalRecordController(IMedicalRecordService recordService,
                                    PrescriptionMapper prescriptionMapper,
-                                   IPetService petService) {
+                                   IPetService petService,
+                                   RecordPackageMapper recordPackageMapper) {
         this.recordService = recordService;
         this.prescriptionMapper = prescriptionMapper;
         this.petService = petService;
+        this.recordPackageMapper = recordPackageMapper;
     }
 
     /**
@@ -72,7 +78,9 @@ public class MedicalRecordController {
         if (UserUtil.getUser() instanceof Client client
                 && !client.getClientId().equals(dto.getClientId())) return null;
         List<Prescription> prescriptions = prescriptionMapper.selectByRecord(recordId);
-        return new RecordDetailVo(dto, prescriptions);
+        List<RecordPackage> packages = recordPackageMapper.selectList(
+                Wrappers.<RecordPackage>lambdaQuery().eq(RecordPackage::getRecordId, recordId).orderByAsc(RecordPackage::getId));
+        return new RecordDetailVo(dto, prescriptions, packages);
     }
 
     /**
@@ -97,8 +105,8 @@ public class MedicalRecordController {
     }
 
     /**
-     * 病历详情响应：病历 + 处方
+     * 病历详情响应：病历 + 处方 + 套餐
      */
-    public record RecordDetailVo(RecordDto record, List<Prescription> prescriptions) {
+    public record RecordDetailVo(RecordDto record, List<Prescription> prescriptions, List<RecordPackage> packages) {
     }
 }

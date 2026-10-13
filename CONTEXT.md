@@ -8,7 +8,9 @@
 5. 改完必须给验证方式（grep 或 npm run build 确认成功）。
 6. 拿不准的决策一次问完，不要来回。
 7. 用户是新手，命令要完整可粘贴，不给"把 XXX 换成你的值"这种占位。
-8. 每次 git commit 后必须 git push origin <当前分支>，并在回复里给出 push 的远程 URL 和 commit hash 的前 7 位，让我能在 GitHub 上核对。没 push 就不算「已提交」。
+8. **本项目是生产系统，不是毕设。** 所有功能按生产标准实现：不允许占位、不允许 TODO、不允许"先简单处理后面再说"。缺依赖/缺表/缺配置要一次性说清并给迁移脚本，不要偷偷降级实现。
+9. **不许替我做取舍。** 如果觉得某需求"没必要"，先说明理由并给 2-3 个方案让我选，不许直接砍功能或简化。我认为必要的功能就是必要的。
+10. **每次 commit 后必须 push。** 回复里给出远程 URL 和 commit hash 前 7 位，让我能在 GitHub 核对。没 push 不算完成。
 
 ## 1. 脚本避坑清单（踩过的坑，别再踩）
 1. 不要用 rpartition("}") 给 Java 类追加方法——类末尾的 } 会被切走导致编译错误。改法：文件末尾 printf '}\n'。
@@ -134,7 +136,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 计费决策：套餐走固定分项 `fee_package`（与 fee_lab/hospital/image 一致，不做通用费用明细重构）。
 - 后端 `/package`：GET(启用列表，接诊下拉)、GET /page、POST/PUT/DELETE/{id}（MANAGER）。
 - 前端 `z-package.vue` 套餐字典管理页（CRUD+分类筛选+搜索），路由 /backstage/z-package，菜单「套餐管理」。
-- ②-b 待做：接诊建档加"套餐"选择 → saveRecord 写 record_package + 计 fee_package；账单/顾客端展示套餐费。
+- ②-b 已完成：接诊建档加"套餐"选择（d-appoint）→ saveRecord 写 record_package + 计 fee_package；账单列表/小票/A4 发票加"套餐费"；顾客端病历详情展示"套餐服务"。
 ### 回测（待做）
 - [ ] 顾客添加宠物（完整表单+待审核）→ 后台审核通过/驳回 → 挂号可选性
 - [ ] 顾客端资料编辑（身份证/年龄推算）

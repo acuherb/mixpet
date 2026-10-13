@@ -123,13 +123,37 @@
             </el-table-column>
           </el-table>
           <el-button :icon="Plus" plain size="small" style="margin-top: 6px; width: 100%" @click="addPrescription">添加药品</el-button>
+
+          <el-divider content-position="left">套餐</el-divider>
+          <el-table :data="packages" border size="small">
+            <el-table-column label="套餐" min-width="200">
+              <template #default="scope">
+                <el-select v-model="scope.row.packageId" filterable placeholder="选择套餐" size="small" style="width: 100%">
+                  <el-option v-for="pk in packageList" :key="pk.packageId"
+                             :label="`${pk.packageName}（￥${pk.price}）`" :value="pk.packageId"/>
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="分类" width="80">
+              <template #default="scope">{{ pkgOf(scope.row.packageId)?.category || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="价格(元)" width="90">
+              <template #default="scope">￥{{ pkgOf(scope.row.packageId)?.price ?? 0 }}</template>
+            </el-table-column>
+            <el-table-column width="50">
+              <template #default="scope">
+                <el-button :icon="Delete" circle size="small" type="danger" @click="packages.splice(scope.$index, 1)"/>
+              </template>
+            </el-table-column>
+          </el-table>
+          <el-button :icon="Plus" plain size="small" style="margin-top: 6px; width: 100%" @click="addPackage">添加套餐</el-button>
         </el-form>
       </el-scrollbar>
       <template #footer>
         <div style="text-align: left">
           <span style="font-size: 15px">
             合计：<b style="color: #f56c6c; font-size: 18px">￥{{ totalMoney() }}</b>
-            （挂号 ￥{{ recordForm.feeRegister }} + 诊疗 ￥{{ recordForm.feeTreat }} + 药费 ￥{{ feeDrug() }}）
+            （挂号 ￥{{ recordForm.feeRegister }} + 诊疗 ￥{{ recordForm.feeTreat }} + 药费 ￥{{ feeDrug() }} + 套餐 ￥{{ feePackage() }}）
           </span>
         </div>
         <el-button @click="treatView = false">取消</el-button>
@@ -143,6 +167,7 @@
       <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
+        <el-descriptions-item label="套餐费">￥{{ summaryFee.pkg.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="合计">
           <b style="color: #f56c6c">￥{{ summaryFee.total.toFixed(2) }}</b>
         </el-descriptions-item>
@@ -177,6 +202,8 @@ import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
 import {reqRecordByAppointment, reqSaveRecord} from "@/request/RecordApi";
+import {reqPackageList} from "@/request/PackageApi";
+import {examplePackage, ServicePackage} from "@/model/entiy/ServicePackage";
 import {useRouter} from 'vue-router';
 
 const router = useRouter()
@@ -205,18 +232,26 @@ const treatAppoint = ref<AppointDto2 | null>(null)
 const treatSubmitting = ref(false)
 const recordForm = ref<MedicalRecord>(exampleMedicalRecord(0))
 const prescriptions = ref<Prescription[]>([])
+const packages = ref<ServicePackage[]>([])
 const recordFormRef = ref<FormInstance>()
 const drugList = ref<Drug[]>([])
+const packageList = ref<ServicePackage[]>([])
 // 打开接诊弹窗
 const openTreat = (a: AppointDto2): void => {
   treatAppoint.value = a
   recordForm.value = exampleMedicalRecord(a.appointmentId)
   recordForm.value.chiefComplaint = a.appointmentInfo || ''
   prescriptions.value = []
+  packages.value = []
   recordFormRef.value?.clearValidate()
   if (drugList.value.length === 0) {
     reqDrugList().then(res => {
       drugList.value = res
+    })
+  }
+  if (packageList.value.length === 0) {
+    reqPackageList().then(res => {
+      packageList.value = res
     })
   }
   treatView.value = true
@@ -226,6 +261,21 @@ const drugOf = (drugId: number): Drug | undefined => drugList.value.find(d => d.
 // 添加处方行
 const addPrescription = (): void => {
   prescriptions.value.push(examplePrescription())
+}
+// 套餐字典查找
+const pkgOf = (packageId: number): ServicePackage | undefined => packageList.value.find(p => p.packageId === packageId)
+// 添加套餐行
+const addPackage = (): void => {
+  packages.value.push(examplePackage())
+}
+// 套餐费合计
+const feePackage = (): string => {
+  let sum = 0
+  for (const p of packages.value) {
+    const pk = pkgOf(p.packageId)
+    if (pk && pk.price != null) sum += pk.price
+  }
+  return sum.toFixed(2)
 }
 // 药费合计
 const feeDrug = (): string => {
@@ -238,19 +288,20 @@ const feeDrug = (): string => {
 }
 // 总价
 const totalMoney = (): string => {
-  const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0) + Number(feeDrug())
+  const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0) + Number(feeDrug()) + Number(feePackage())
   return sum.toFixed(2)
 }
 // 就诊汇总（接诊成功后的流程连通入口）
 const summaryView = ref(false)
 const summaryRecordId = ref(0)
-const summaryFee = ref({reg: 0, treat: 0, drug: 0, total: 0})
+const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, total: 0})
 const openSummary = (recordId: number): void => {
   summaryRecordId.value = recordId
   summaryFee.value = {
     reg: recordForm.value.feeRegister || 0,
     treat: recordForm.value.feeTreat || 0,
     drug: Number(feeDrug()),
+    pkg: Number(feePackage()),
     total: Number(totalMoney())
   }
   summaryView.value = true
@@ -274,8 +325,9 @@ const submitTreat = async (): Promise<void> => {  await recordFormRef.value?.val
     if (!valid) return
     // 过滤没选药品的行
     const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
+    const pks = packages.value.filter(p => p.packageId && p.packageId > 0)
     treatSubmitting.value = true
-    reqSaveRecord({record: recordForm.value, prescriptions: ps}).then(res => {
+    reqSaveRecord({record: recordForm.value, prescriptions: ps, packages: pks}).then(res => {
       if (res.code === 1) {
         treatView.value = false
         queryAppoint()
