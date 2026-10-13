@@ -126,28 +126,34 @@
       <!--预留功能位-->
       <div class="future-grid">
         <div class="future-card">
-          <span class="f-ico ico-lab"><el-icon><FirstAidKit/></el-icon></span>
-          <div class="f-txt">
-            <h4>化验管理</h4>
-            <p>检验检查结果管理</p>
-          </div>
-          <el-tag size="small" type="info" effect="plain">建设中</el-tag>
+          <router-link to="/doctorPage/d-lab" class="future-link">
+            <span class="f-ico ico-lab"><el-icon><FirstAidKit/></el-icon></span>
+            <div class="f-txt">
+              <h4>化验管理</h4>
+              <p>检验检查开单与查看</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去开单</el-tag>
+          </router-link>
         </div>
         <div class="future-card">
-          <span class="f-ico ico-ward"><el-icon><HomeFilled/></el-icon></span>
-          <div class="f-txt">
-            <h4>住院管理</h4>
-            <p>住院床位照护安排</p>
-          </div>
-          <el-tag size="small" type="info" effect="plain">建设中</el-tag>
+          <router-link to="/backstage/z-hospital" class="future-link">
+            <span class="f-ico ico-ward"><el-icon><HomeFilled/></el-icon></span>
+            <div class="f-txt">
+              <h4>住院管理</h4>
+              <p>住院床位照护安排</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去办理</el-tag>
+          </router-link>
         </div>
         <div class="future-card">
-          <span class="f-ico ico-other"><el-icon><Grid/></el-icon></span>
-          <div class="f-txt">
-            <h4>更多功能</h4>
-            <p>即将到来</p>
-          </div>
-          <el-tag size="small" type="info" effect="plain">敬请期待</el-tag>
+          <router-link to="/doctorPage/d-image" class="future-link">
+            <span class="f-ico ico-other"><el-icon><Camera/></el-icon></span>
+            <div class="f-txt">
+              <h4>影像检查</h4>
+              <p>X光/B超/CT开单</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去开单</el-tag>
+          </router-link>
         </div>
       </div>
     </main>
@@ -156,7 +162,7 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {User, Calendar, ArrowRight, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, Grid} from "@element-plus/icons-vue";
+import {ArrowRight, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorGetNearClient} from "@/request/MsgApi";
@@ -587,6 +593,15 @@ onBeforeUnmount(() => {
 
   &:hover {
     opacity: 1;
+  }
+
+  .future-link {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
   }
 
   .f-ico {

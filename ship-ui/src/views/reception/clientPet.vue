@@ -94,6 +94,30 @@
           <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
         </el-table>
         <p v-if="detail.prescriptions.length === 0" style="color:#999">本次未开处方</p>
+        <h4 style="margin: 14px 0 6px">化验结果</h4>
+        <template v-for="lab in labs" :key="lab.orderId">
+          <div class="lab-hd">
+            化验单 #{{ lab.orderId }} · 费用 ￥{{ lab.fee }}
+            <el-tag v-if="lab.status" size="small" type="success">已出结果</el-tag>
+            <el-tag v-else size="small" type="warning">待检验</el-tag>
+          </div>
+          <el-table :data="lab.items || []" border size="small" style="margin-bottom: 8px">
+            <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip/>
+            <el-table-column label="结果" width="110">
+              <template #default="s">{{ s.row.resultValue || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="参考范围" width="120" prop="refRange" show-overflow-tooltip/>
+            <el-table-column label="单位" width="60" prop="itemUnit"/>
+            <el-table-column label="异常" width="70">
+              <template #default="s">
+                <el-tag v-if="s.row.isAbnormal" size="small" type="danger">异常</el-tag>
+                <el-tag v-else-if="s.row.resultValue" size="small" type="success">正常</el-tag>
+                <span v-else>—</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
+        <p v-if="labs.length === 0" style="color:#999">本次无化验项目</p>
       </template>
     </el-dialog>
 
@@ -198,6 +222,8 @@ import UpImg from "@/components/UpImg.vue";
 import {Plus} from "@element-plus/icons-vue";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {reqPetRecords, reqRecordOne} from "@/request/RecordApi";
+import {reqLabByRecord} from "@/request/LabApi";
+import {LabOrderDto} from "@/model/DO/LabOrderDto";
 
 const petList = ref<Pet[]>([]);
 
@@ -219,11 +245,17 @@ const openRecords = (pet: Pet): void => {
 }
 const detailVisible = ref(false)
 const detail = ref<RecordDetailVo | null>(null)
+const labs = ref<LabOrderDto[]>([])
 const openRecordDetail = (recordId: number): void => {
+  labs.value = []
   reqRecordOne(recordId).then(res => {
     if (res) {
       detail.value = res
       detailVisible.value = true
+      // 顾客只能查自己宠物的化验结果（后端已做归属校验）
+      reqLabByRecord(recordId).then(list => {
+        labs.value = list || []
+      })
     }
   })
 }
@@ -456,6 +488,16 @@ onMounted(() => {
     .left img.my-avatar {
       width: 96px;
       height: 96px;
+    }
+  }
+
+  .lab-hd {
+    font-size: 13px;
+    color: #606266;
+    margin: 4px 0 6px;
+
+    .el-tag {
+      margin-left: 6px;
     }
   }
 }

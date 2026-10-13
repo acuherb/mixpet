@@ -28,6 +28,7 @@
 
 ### ✅ 已有
 - 预约挂号、病历（medical_record）、药品字典（drug）+ 处方（prescription）+ 账单（bill）收费发药、医生接诊
+- 医疗扩展（2026-10-13）：化验/检验、住院、影像检查、免疫接种、经营统计看板（均开单/录入并计费入 bill，见「## 医疗扩展模块」）
 - 顾客：资料/自建宠物/挂号/余额充值/就诊记录/退养/在线咨询
 - 领养（adopt）、寄养（foster）、公告（notice）、图片上传（Img）
 - 后台：客户/宠物/医生/科室/药品/账单/领养/寄养/公告/挂号列表管理
@@ -37,13 +38,12 @@
 ### ❌ 缺口（宠物医院常有、本项目尚未做）
 | 项目 | 说明 |
 |---|---|
-| 住院管理 | 医生工作台已留占位卡，未实现 |
-| 化验/检验管理 | 已留「化验管理」占位卡；现仅"化验室"科室名，无检验单/结果录入 |
 | 手术管理 | 有外科/骨科科室，缺手术排程、麻醉记录 |
-| 疫苗接种/免疫档案 | 病历无疫苗记录 |
 | 驱虫/体检套餐 | 常见项目，未覆盖 |
 | 随访/复诊提醒 | 病历有"复诊日期"字段，缺提醒机制 |
 | 科室项目缺口 | 暂无神经科/消化内科等细分；如要可后续扩 |
+
+（住院/化验/影像/免疫/统计已于 2026-10-13 上线，见「## 医疗扩展模块」）
 
 ## 4. 医疗主链路（挂号→接诊→开方→收费→发药）
 数据表：medical_record（appointment_id 唯一）、drug（10 条演示）、prescription、bill。金额 DECIMAL(10,2)/BigDecimal（ALTER 的，不在旧备份 SQL）。
@@ -103,14 +103,24 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - [ ] 手机端按钮错位修复效果
 ### 开发
 - [ ] 忘记密码改为邮箱找回（现 findMail 逻辑重构）——需先配 QQ 邮箱授权码 MAIL_USER/MAIL_PASS
-- [ ] 住院管理
-- [ ] 化验/检验管理（明日优先：需建化验单/检验项表+医生开单+后台/化验室录入结果+关联病历）
-- [ ] 疫苗接种/免疫档案
+- [x] 住院管理、化验/检验、影像检查、免疫接种、经营统计看板（详见「## 医疗扩展模块」）
 ### 上线前
 - [ ] 删除测试数据
 - [ ] 改默认密码 123456
 - [ ] 配置 HTTPS+域名（聊天 WebSocket 现按 location.hostname:8085 直连，上线需给 8085 配 wss 反代）
 - [ ] 重导数据库时带 ALTER 过的字段（pet_source 等，不在旧备份 SQL）
+
+## 医疗扩展模块（2026-10-13 上线：化验/住院/影像/免疫/统计）
+
+**通用套路（5 个模块一致）**：医生/医护开单 → 费用按"字典价"计入 bill（优先累加进该病历未付账单的分项 `fee_*`+`total_money`，否则新建一张只含该费用的未付账单）→ 后台/化验室录入结果或报告 → 顾客端按 client_id 归属校验查看。归属以病历为准、价格以字典为准（前端传值不作数）；均 `@Transactional` 回滚。bill 分项：`fee_register/fee_treat/fee_drug/fee_lab/fee_hospital/fee_image`。建表脚本 `数据库备份/{lab,hospital,image,immune}_module.sql`（DROP+CREATE+预置+ALTER，已对线上库执行；image 的 ALTER 依赖 hospital 先建 fee_hospital，故应用顺序 hospital→image→immune）。
+
+1. **化验/检验**：`lab_test`(字典,10条,有 active 标志)/`lab_order`/`lab_order_item`。d-lab 开单 `POST /lab/order`(DOCTOR)、z-labResult 录结果 `PUT /lab/result`(NURSE/MANAGER)、z-labTest 字典(MANAGER，被引用则停用不删)。顾客端 clientPet 展示 `GET /lab/record/{id}`。
+2. **住院**：`hospital_record`。z-hospital 入院登记 `POST /hospital`(DOCTOR/NURSE，防重复未出院)、出院结算 `PUT /hospital/discharge/{id}`(DOCTOR/NURSE/MANAGER，按 天数×日均费 计 fee_hospital，至少1天)。
+3. **影像**：`image_test`(字典,7条,无 active 用 isDel 软删)/`image_order`。d-image 开单 `POST /imageOrder`(DOCTOR，单项目)、z-imageResult 录报告 `PUT /imageOrder/report`(NURSE/MANAGER)、z-imageTest 字典(MANAGER)。状态 boolean：false 待检查 / true 已出报告。
+4. **免疫**：`vaccine`(字典,6条)/`immune_record`。z-vaccine 疫苗字典(MANAGER)、z-immune 接种登记 `POST /immune`(DOCTOR/NURSE/MANAGER，需选病历推导宠物；按疫苗 interval_days 自动算 next_time 下一针、dose_cnt 第几针)。`GET /immune/pet/{petId}` 顾客查自己宠物。
+5. **统计看板**：z-dashboard `GET /statistics/overview`(MANAGER/NURSE/DOCTOR)。今日/本月实收、待收费数、在院数、待检验/待影像数、近30天应接种数、近7日营收趋势(revenueTrend)、医生接诊Top(doctorTop)。SQL 在 StatisticsMapper.xml，实收按 bill.update_time+pay_status=1 计。
+
+**踩坑修复（2026-10-13）**：ImageTestServiceImpl 误给静态工厂 `Wrappers.lambdaUpdate()` 加 `new`（语法错）；ILabOrderService 漏 `import ...entity.LabOrder`；前端 BillDto 缺 feeHospital/feeImage；z-imageResult 状态筛选误用 number(0/1) 应为 boolean；DB 需跑 hospital/image/immune 脚本补表+补 bill 两列；`dev-tools/check.sh` 后端编译需 `LANG=C.UTF-8`（中文路径），已修。
 
 ## 9. 关键决策
 1. 账号=手机号，不开放自主注册，前台录入客户自动生成

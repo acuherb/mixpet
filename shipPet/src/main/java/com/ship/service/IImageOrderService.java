@@ -1,0 +1,29 @@
+package com.ship.service;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.ship.common.Result;
+import com.ship.model.dto.ImageOrderDto;
+import com.ship.model.entity.Doctor;
+import com.ship.model.entity.ImageOrder;
+import com.ship.model.vo.ImageOrderVo;
+import com.ship.model.vo.ImageReportVo;
+
+import java.util.List;
+
+/**
+ * 影像申请单 Service
+ */
+public interface IImageOrderService extends IService<ImageOrder> {
+    /** 医生开单（自动计费入账单） */
+    Result createOrder(ImageOrderVo vo, Doctor doctor);
+
+    /** 影像报告录入 */
+    Result saveReport(ImageReportVo vo);
+
+    /** 申请单分页 */
+    IPage<ImageOrderDto> selectPage(Boolean status, int numPage, int pageSize);
+
+    /** 某病历的申请单 */
+    List<ImageOrderDto> selectByRecord(Integer recordId);
+}

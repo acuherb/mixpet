@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.MedicalRecord;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 电子病历 Mapper
@@ -16,4 +19,7 @@ public interface MedicalRecordMapper extends BaseMapper<MedicalRecord> {
 
     /** 单份病历详情（联查） */
     RecordDto selectRecordOne(Integer recordId);
+
+    /** 某医生的接诊病历（开化验单时选择病历用） */
+    List<RecordDto> selectDoctorRecords(@Param("doctorId") Integer doctorId, @Param("limit") int limit);
 }

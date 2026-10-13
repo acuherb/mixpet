@@ -10,6 +10,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "",
         component: () => import('@/views/backstage/w-doctorOne.vue')
     }, {
+        // 经营看板
+        path: "z-dashboard",
+        component: () => import('@/views/backstage/z-dashboard.vue')
+    }, {
         // 收费表
         path: "y-billList",
         component: () => import('@/views/backstage/y-billList.vue')
@@ -49,5 +53,33 @@ export const backstage: RouteRecordRaw[] = [
         // 宠物表
         path: "y-petList",
         component: () => import('@/views/backstage/y-petList.vue')
+    }, {
+        // 检验项字典
+        path: "z-labTest",
+        component: () => import('@/views/backstage/z-labTest.vue')
+    }, {
+        // 化验结果录入
+        path: "z-labResult",
+        component: () => import('@/views/backstage/z-labResult.vue')
+    }, {
+        // 住院管理
+        path: "z-hospital",
+        component: () => import('@/views/backstage/z-hospital.vue')
+    }, {
+        // 影像项字典
+        path: "z-imageTest",
+        component: () => import('@/views/backstage/z-imageTest.vue')
+    }, {
+        // 影像报告录入
+        path: "z-imageResult",
+        component: () => import('@/views/backstage/z-imageResult.vue')
+    }, {
+        // 疫苗字典
+        path: "z-vaccine",
+        component: () => import('@/views/backstage/z-vaccine.vue')
+    }, {
+        // 免疫档案
+        path: "z-immune",
+        component: () => import('@/views/backstage/z-immune.vue')
     }
 ]

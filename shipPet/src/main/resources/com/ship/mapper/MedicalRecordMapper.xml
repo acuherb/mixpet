@@ -39,4 +39,19 @@
         WHERE r.is_del = 0
         AND r.record_id = #{recordId}
     </select>
+
+    <!--某医生的接诊病历：开化验单选择病历用-->
+    <select id="selectDoctorRecords" resultType="com.ship.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.create_time,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        WHERE r.is_del = 0
+        AND r.doctor_id = #{doctorId}
+        ORDER BY r.create_time DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

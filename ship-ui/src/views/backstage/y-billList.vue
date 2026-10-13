@@ -25,6 +25,24 @@
     <el-table-column label="挂号费" prop="feeRegister" width="80"/>
     <el-table-column label="诊疗费" prop="feeTreat" width="80"/>
     <el-table-column label="药费" prop="feeDrug" width="80"/>
+    <el-table-column label="化验费" prop="feeLab" width="80">
+      <template #default="scope">
+        <span v-if="scope.row.feeLab > 0">￥{{ scope.row.feeLab }}</span>
+        <span v-else>-</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="影像费" prop="feeImage" width="80">
+      <template #default="scope">
+        <span v-if="scope.row.feeImage > 0">￥{{ scope.row.feeImage }}</span>
+        <span v-else>-</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="住院费" prop="feeHospital" width="80">
+      <template #default="scope">
+        <span v-if="scope.row.feeHospital > 0">￥{{ scope.row.feeHospital }}</span>
+        <span v-else>-</span>
+      </template>
+    </el-table-column>
     <el-table-column label="合计(元)" prop="totalMoney" sortable width="100">
       <template #default="scope">
         <b style="color: #f56c6c">￥{{ scope.row.totalMoney }}</b>
@@ -295,6 +313,9 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[]): void => 
   <div class="row"><span>挂号费</span><span>￥${money(row.feeRegister)}</span></div>
   <div class="row"><span>诊疗费</span><span>￥${money(row.feeTreat)}</span></div>
   <div class="row"><span>药费</span><span>￥${money(row.feeDrug)}</span></div>
+  <div class="row"><span>化验费</span><span>￥${money(row.feeLab)}</span></div>
+  <div class="row"><span>影像费</span><span>￥${money(row.feeImage)}</span></div>
+  <div class="row"><span>住院费</span><span>￥${money(row.feeHospital)}</span></div>
   ${drugSection}
   <hr class="line">
   <div class="row total"><span>合计</span><span>￥${money(row.totalMoney)}</span></div>
@@ -389,6 +410,15 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void =
     } else {
       rows.push(['药品费', '项', '1', row.feeDrug])
     }
+  }
+  if (row.feeLab > 0) {
+    rows.push(['化验检查费', '项', '1', row.feeLab])
+  }
+  if (row.feeImage > 0) {
+    rows.push(['影像检查费', '项', '1', row.feeImage])
+  }
+  if (row.feeHospital > 0) {
+    rows.push(['住院费', '天', '1', row.feeHospital])
   }
   const totalMoney = row.totalMoney || 0
   const trs = rows.map(r => `

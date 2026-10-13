@@ -17,5 +17,13 @@ export const doctorPage: RouteRecordRaw[] = [
         // 医生的聊天
         path: "d-chat",
         component: () => import('@/views/doctorPage/d-chat.vue'),
+    }, {
+        // 医生开化验单
+        path: "d-lab",
+        component: () => import('@/views/doctorPage/d-lab.vue'),
+    }, {
+        // 医生开影像检查单
+        path: "d-image",
+        component: () => import('@/views/doctorPage/d-image.vue'),
     },
 ]

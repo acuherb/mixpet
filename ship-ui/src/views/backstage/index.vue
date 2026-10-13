@@ -44,6 +44,12 @@
           </el-tooltip>
           <span>个人中心</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-dashboard" :title="isCollapse ? '经营看板' : ''">
+          <el-icon>
+              <DataAnalysis/>
+            </el-icon>
+          <span>经营看板</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
           <el-icon>
               <User/>
@@ -74,6 +80,48 @@
             </el-icon>
           <span>收费列表</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-labTest" :title="isCollapse ? '检验项字典' : ''">
+          <el-icon>
+              <FirstAidKit/>
+            </el-icon>
+          <span>检验项字典</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-labResult" :title="isCollapse ? '化验结果' : ''">
+          <el-icon>
+              <DataLine/>
+            </el-icon>
+          <span>化验结果录入</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-hospital" :title="isCollapse ? '住院管理' : ''">
+          <el-icon>
+              <OfficeBuilding/>
+            </el-icon>
+          <span>住院管理</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-imageTest" :title="isCollapse ? '影像项字典' : ''">
+          <el-icon>
+              <Camera/>
+            </el-icon>
+          <span>影像项字典</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-imageResult" :title="isCollapse ? '影像报告' : ''">
+          <el-icon>
+              <Picture/>
+            </el-icon>
+          <span>影像报告录入</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-vaccine" :title="isCollapse ? '疫苗字典' : ''">
+          <el-icon>
+              <FirstAidKit/>
+            </el-icon>
+          <span>疫苗字典</span>
+        </el-menu-item>
+        <el-menu-item index="/backstage/z-immune" :title="isCollapse ? '免疫档案' : ''">
+          <el-icon>
+              <CirclePlusFilled/>
+            </el-icon>
+          <span>免疫档案</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-adoptList" :title="isCollapse ? '领养列表' : ''">
           <el-icon>
               <School/>
@@ -101,7 +149,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, School, Tickets, User,} from '@element-plus/icons-vue'
+import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User,} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 

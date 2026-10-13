@@ -9,6 +9,9 @@ export interface BillDto {
     feeRegister: number;
     feeTreat: number;
     feeDrug: number;
+    feeLab: number;
+    feeHospital: number;
+    feeImage: number;
     totalMoney: number;
     payStatus: boolean;
     payType: boolean | null;
