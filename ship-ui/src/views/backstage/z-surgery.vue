@@ -27,9 +27,10 @@
           <el-tag :type="surgeryStatusType(scope.row.status)" size="small">{{ surgeryStatusText(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="110">
+      <el-table-column fixed="right" label="操作" width="170">
         <template #default="scope">
           <el-button size="small" type="primary" @click="openRecord(scope.row)">记录</el-button>
+          <el-button size="small" plain type="warning" @click="openConsent(scope.row)">同意书</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -142,12 +143,36 @@
         <el-button type="primary" :loading="saving" @click="recordSubmit">保存记录</el-button>
       </template>
     </el-dialog>
+
+    <!--手术/麻醉知情同意书弹窗-->
+    <el-dialog v-model="consentView" title="手术 / 麻醉知情同意书" width="580px">
+      <div v-if="consentRow" class="rec-head">{{ consentRow.surgeryName }} · {{ consentRow.petName }}（{{ consentRow.clientName }}）</div>
+      <el-form label-width="90px">
+        <el-form-item label="风险告知">
+          <el-input v-model="consentForm.risks" :rows="5" maxlength="1000" placeholder="麻醉与手术风险、可能并发症、术后注意事项等" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="畜主同意">
+          <el-switch v-model="consentForm.agree" active-text="同意手术及麻醉" inactive-text="不同意"/>
+        </el-form-item>
+        <el-form-item label="签字人">
+          <el-input v-model="consentForm.signer" clearable maxlength="64" placeholder="畜主本人签字（姓名）"/>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="consentForm.note" :rows="2" maxlength="255" type="textarea"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="consentView = false">取消</el-button>
+        <el-button type="warning" @click="printConsent">打印同意书</el-button>
+        <el-button :loading="consentSaving" type="primary" @click="consentSubmit">确认签署</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {useRoute} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
@@ -157,7 +182,7 @@ import {anesthesiaTypes, Surgery, surgeryStatusText, surgeryStatusType, surgeryT
 import {AnesthesiaRecord} from "@/model/entiy/AnesthesiaRecord";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {reqDoctorRecords} from "@/request/LabApi";
-import {reqCreateSurgery, reqSaveAnesthesia, reqSurgeryOne, reqSurgeryPage, reqUpdateSurgery} from "@/request/SurgeryApi";
+import {reqConsentOne, reqCreateSurgery, reqSaveAnesthesia, reqSignConsent, reqSurgeryOne, reqSurgeryPage, reqUpdateSurgery} from "@/request/SurgeryApi";
 
 const route = useRoute()
 const qp = reactive({numPage: 1, pageSize: 15, status: null as number | null})
@@ -245,6 +270,50 @@ onMounted(() => {
     createView.value = true
   }
 })
+
+// ---- 手术/麻醉知情同意书 ----
+const router = useRouter()
+const consentView = ref(false)
+const consentSaving = ref(false)
+const consentRow = ref<Surgery | null>(null)
+const defaultRisks = '本人已被告知：本次手术及麻醉可能存在麻醉过敏、呼吸抑制、心跳异常、术中及术后出血、感染、切口愈合不良等风险，医院将尽最大努力防范；本人知悉上述风险，同意对上述宠物实施手术及麻醉，并承担相应责任。'
+const consentForm = ref<{ surgeryId: number; risks: string; agree: boolean; signer: string; note: string }>({
+  surgeryId: 0, risks: defaultRisks, agree: true, signer: '', note: ''
+})
+const openConsent = (row: Surgery): void => {
+  consentRow.value = row
+  consentForm.value = {surgeryId: row.surgeryId, risks: defaultRisks, agree: true, signer: '', note: ''}
+  consentView.value = true
+  // 已签过则回显
+  reqConsentOne(row.surgeryId).then(res => {
+    if (res && res.consentId) {
+      consentForm.value = {
+        surgeryId: row.surgeryId,
+        risks: res.risks || defaultRisks,
+        agree: res.agree ?? true,
+        signer: res.signer || '',
+        note: res.note || ''
+      }
+    }
+  })
+}
+const consentSubmit = (): void => {
+  if (!consentForm.value.signer.trim()) {
+    ElMessage.warning('请填写签字人（畜主）姓名')
+    return
+  }
+  consentSaving.value = true
+  reqSignConsent(consentForm.value).then(res => {
+    consentSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success('知情同意书已签署')
+      consentView.value = false
+    } else ElMessage.error(res.msg || '签署失败')
+  }).catch(() => { consentSaving.value = false })
+}
+const printConsent = (): void => {
+  router.push('/backstage/z-consent?surgeryId=' + consentForm.value.surgeryId)
+}
 </script>
 
 <style scoped>

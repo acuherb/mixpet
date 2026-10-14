@@ -41,6 +41,10 @@ export const backstage: RouteRecordRaw[] = [
         // 手术/麻醉管理
         path: "z-surgery",
         component: () => import('@/views/backstage/z-surgery.vue')
+    }, {
+        // 手术/麻醉知情同意书（可打印）
+        path: "z-consent",
+        component: () => import('@/views/backstage/z-consent.vue')
     },{
         // 领养表
         path: "y-adoptList",

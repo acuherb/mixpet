@@ -2,6 +2,8 @@ import {Page} from "@/model/DO/Page";
 import {Res} from "@/request/Res";
 import {Surgery, SurgeryVo} from "@/model/entiy/Surgery";
 import {AnesthesiaRecord} from "@/model/entiy/AnesthesiaRecord";
+import {SurgeryConsent} from "@/model/entiy/SurgeryConsent";
+import {ConsentSheet} from "@/model/VO/ConsentSheet";
 import reqApi from "@/request/reqAPI";
 
 // 手术列表分页
@@ -22,3 +24,12 @@ export const reqUpdateSurgery = (data: Surgery): Promise<Res> =>
 // 保存/更新麻醉记录
 export const reqSaveAnesthesia = (data: AnesthesiaRecord): Promise<Res> =>
     reqApi.put<string, Res>("surgery/anesthesia", data)
+// 签署/更新手术知情同意书
+export const reqSignConsent = (data: { surgeryId: number; risks: string; agree: boolean; signer: string; note?: string }): Promise<Res> =>
+    reqApi.post<string, Res>("surgery/consent", data)
+// 某手术的同意书
+export const reqConsentOne = (surgeryId: number): Promise<SurgeryConsent> =>
+    reqApi<string, SurgeryConsent>("surgery/consent/" + surgeryId)
+// 可打印的手术知情同意书数据
+export const reqConsentSheet = (surgeryId: number): Promise<ConsentSheet> =>
+    reqApi<string, ConsentSheet>("surgery/consent/sheet/" + surgeryId)

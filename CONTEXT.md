@@ -249,3 +249,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 迁移脚本：`数据库备份/feature_20261014_hospital_monitor.sql`。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处闭包空指针窄化）；DB 表已建；重启后端 `Started`+200，`/hospital/monitor/{id}` 匿名 `code:401`。
 - 仍待办（未做）：手术知情同意书、复诊关联与随访记录。
+
+### 手术/麻醉知情同意书（2026-10-14 夜·收官）
+- 背景：手术单已有术前/术中/术后记录 + 麻醉记录，但缺**知情同意书**（合规刚需，国标单据三件套缺一件）。
+- 新建 `surgery_consent` 表 + `SurgeryConsent` 实体/Mapper；`ISurgeryConsentService`：`sign`（一手术一条 upsert，需"同意+签字人"，已取消手术拒签）、`getBySurgery`、`consentSheet`（聚合 手术+宠物+主人+主刀兽医+病历诊断+同意书，供打印）。
+- `SurgeryConsentController` `/surgery/consent`：`POST`（DOCTOR/NURSE 签署）、`GET /{surgeryId}`（同意书）、`GET /sheet/{surgeryId}`（可打印数据）；后两者顾客端做归属校验（仅本人宠物）。
+- 前端 `z-surgery.vue`：操作列加"同意书"按钮 → 弹窗（风险告知预置模板可改、畜主同意开关、签字人、备注；已签自动回显；可重复签署更新）+ "打印同意书"跳转。新增打印页 `z-consent.vue`（对齐 z-requisition 打印风格，`@media print` 隐藏工具栏）并注册路由 `/backstage/z-consent`。`SurgeryApi` 加 `reqSignConsent`/`reqConsentOne`/`reqConsentSheet`。
+- 迁移脚本：`数据库备份/feature_20261014_surgery_consent.sql`。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；`surgery_consent` 表已建；重启后端 `/surgery/consent/sheet/{id}` 匿名 `code:401`、端口 200。
+- 至此体检清单仅剩最后一项：**复诊关联 + 随访记录**（复诊单关联原病历、术后/出院随访）。
