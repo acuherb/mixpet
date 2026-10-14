@@ -256,6 +256,29 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result cancelPrescription(Integer prescriptionId) {
+        Prescription p = prescriptionMapper.selectById(prescriptionId);
+        if (p == null) return Result.error("处方不存在");
+        if (Boolean.TRUE.equals(p.getIsCancel())) return Result.error("该处方已作废");
+        Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                .eq(Bill::getRecordId, p.getRecordId())
+                .eq(Bill::getPayStatus, false)
+                .last("limit 1"));
+        if (unpaid == null) return Result.error("未找到可冲减的未付账单（可能已收款，请走退款流程）");
+        BigDecimal amount = (p.getDrugPrice() == null ? BigDecimal.ZERO : p.getDrugPrice())
+                .multiply(BigDecimal.valueOf(p.getQuantity() == null ? 0 : p.getQuantity()));
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getBillId, unpaid.getBillId())
+                .setSql("fee_drug = fee_drug - " + amount.toPlainString())
+                .setSql("total_money = total_money - " + amount.toPlainString()));
+        prescriptionMapper.update(null, Wrappers.<Prescription>lambdaUpdate()
+                .eq(Prescription::getPrescriptionId, prescriptionId)
+                .set(Prescription::getIsCancel, true));
+        return Result.success("处方已作废，费用已冲减");
+    }
+
+    @Override
     public RxSheetVo selectRxSheet(Integer recordId) {
         RecordDto record = baseMapper.selectRecordOne(recordId);
         if (record == null) return null;

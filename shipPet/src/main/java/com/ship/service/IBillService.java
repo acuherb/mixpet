@@ -17,4 +17,7 @@ public interface IBillService extends IService<Bill> {
 
     /** 发药核对：护士确认发药，记录核对人与时间（需先收款） */
     Result dispense(Integer billId, String operator);
+
+    /** 退款冲正：退还余额(余额支付时)、回滚已扣库存并记台账，标记已退（需已收款且未退） */
+    Result refund(Integer billId, String operator);
 }

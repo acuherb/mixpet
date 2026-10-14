@@ -13,6 +13,6 @@ import java.util.List;
 @Mapper
 public interface PrescriptionMapper extends BaseMapper<Prescription> {
     /** 某病历的全部处方明细 */
-    @Select("SELECT * FROM prescription WHERE record_id = #{recordId} AND is_del = 0 ORDER BY prescription_id")
+    @Select("SELECT * FROM prescription WHERE record_id = #{recordId} AND is_del = 0 AND is_cancel = 0 ORDER BY prescription_id")
     List<Prescription> selectByRecord(Integer recordId);
 }

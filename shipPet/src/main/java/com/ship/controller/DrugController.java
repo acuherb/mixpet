@@ -3,6 +3,7 @@ package com.ship.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ship.common.Result;
 import com.ship.model.entity.Drug;
+import com.ship.model.entity.DrugRecord;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IDrugService;
 import com.ship.util.StrUtil;
@@ -11,6 +12,7 @@ import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -78,5 +80,26 @@ public class DrugController {
     @Secured(RoleConst.MANAGER)
     public Result deleteGroup(@PathVariable List<Integer> ids) {
         return Result.choice("删除多个", drugService.deleteByIds(ids));
+    }
+
+    /** 低库存预警列表（stock <= warningStock） */
+    @GetMapping("/warning")
+    @Secured(RoleConst.MANAGER)
+    public List<Drug> warning() {
+        return drugService.listWarning();
+    }
+
+    /** 入库：增加库存并记台账，可同时更新有效期 */
+    @PostMapping("/inbound")
+    @Secured(RoleConst.MANAGER)
+    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note) {
+        return drugService.inbound(drugId, quantity, expireDate, note);
+    }
+
+    /** 出入库台账分页 */
+    @GetMapping("/record/page")
+    @Secured(RoleConst.MANAGER)
+    public IPage<DrugRecord> recordPage(Integer drugId, int numPage, int pageSize) {
+        return drugService.stockRecordPage(drugId, numPage, pageSize);
     }
 }

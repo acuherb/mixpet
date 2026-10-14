@@ -49,6 +49,13 @@ public class ImageOrderController {
         return orderService.saveReport(vo);
     }
 
+    /** 作废申请单（未出报告）：冲减未付账单影像费 */
+    @PutMapping("/cancel/{orderId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result cancel(@PathVariable Integer orderId) {
+        return orderService.cancel(orderId);
+    }
+
     /** 申请单分页 */
     @GetMapping("/page")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.DOCTOR})

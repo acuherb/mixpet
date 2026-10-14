@@ -36,6 +36,8 @@ public class LabOrder implements Serializable {
     private String resultBy;
     /** 报告文件(图片/PDF)路径，可选 */
     private String reportFile;
+    /** 是否作废 0否 1是 */
+    private Boolean isCancel;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

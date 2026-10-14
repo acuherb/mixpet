@@ -50,4 +50,11 @@ public class BillController {
     public Result dispense(@PathVariable Integer billId, String operator) {
         return billService.dispense(billId, operator);
     }
+
+    /** 退款冲正：退还余额、回滚库存并记台账 */
+    @PutMapping("/refund/{billId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result refund(@PathVariable Integer billId, String operator) {
+        return billService.refund(billId, operator);
+    }
 }

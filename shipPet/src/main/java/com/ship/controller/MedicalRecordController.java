@@ -56,6 +56,13 @@ public class MedicalRecordController {
         } else return Result.error("请登录医生账号");
     }
 
+    /** 作废单条处方：冲减未付账单药费 */
+    @PutMapping("/prescription/cancel/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result cancelPrescription(@PathVariable Integer id) {
+        return recordService.cancelPrescription(id);
+    }
+
     /**
      * 宠物的就诊史：顾客只能查自己名下宠物，员工可查任意
      */

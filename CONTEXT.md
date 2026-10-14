@@ -216,3 +216,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **T4 免疫计划与到期提醒**：项目原本**无任何定时任务基础设施**，新增 `@EnableScheduling`（ShipPetApplication）+ `VaccineReminderScheduler`（`@Scheduled(cron="0 0 8 * * ?")` 每日 08:00）。扫描 `immune_record` 中 `next_time` 落在未来 7 天内的记录（去已删），按 客户/宠物 汇总，调用新增的 `INoticeService.createSystemNotice` 程序化生成系统公告（creatId=0，不经登录校验）。每日仅生成一条（按日期标题去重），异常被 catch 仅记日志不中断。
 - 验证：`mvn clean compile` 通过；前端 `npm run build`（vue-tsc + vite）通过（仅 chunk 体积警告）；后端重启后 `/bill/dispense` 端点注册并正确拦截匿名；新 DB 列已 `ALTER` 生效。四项均后端编译/运行 + 前端类型检查双重验证。
 - 已知边界：①T2 报告附件沿用 `/common/upload`（图片类型校验已在昨日加固），文件服务经 `/api/common/download?name=`；②T4 提醒依赖 `immune_record.next_time` 已被填写，若前台录入免疫时未填下一针时间则不会触发提醒（属前台录入规范问题）；③发药核对与收费解耦——收费即扣库存，发药核对为护士线下发药后的系统确认记录，二者不互斥。
+
+### 隐私加固 + 库存台账 + 退款冲正/单据作废（2026-10-14 下午续）
+- 起因：全项目体检发现 T4 引入的**疫苗提醒公告隐私回归**——系统公告含全院宠物名+客户名，却因 `is_disable=0` 默认出现在顾客端 `/notice/four`（匿名放行），顾客可点开正文看到他人信息。
+- **公告分流（修隐私）**：`notice` 加 `notice_type`（0顾客公告/1系统提醒仅员工）。`createSystemNotice` 改走新 `addSystemNotice`（`notice_type=1, creat_id=0`）；`selectFour`（顾客端）加 `AND notice_type=0` 过滤；员工端分页补 `notice_type` 并在 `y-noticeList` 标题加"系统"标记（顺手修了该页 `prop="clientName"` 错配）。
+- **库存台账**：`Drug` 加 `warning_stock`（预警阈值）+ `expire_date`（有效期）；新建 `drug_record` 出入库台账表（change_type 1入库/2发药出库/3退款回库/4盘亏）。`IDrugService` 增 `inbound`（入库+记台账）、`stockRecordPage`、`listWarning`、`logStockChange`；`DrugController` 增 `POST /drug/inbound`、`GET /drug/warning`、`GET /drug/record/page`（均 MANAGER）。`BillServiceImpl.pay()` 发药扣减后记"出库"台账。前端 `y-drugList`：低库存改用 `warningStock`（未设默认5，取代硬编码）、加有效期列、加"入库"弹窗（数量/有效期/备注）与"出入库台账"抽屉，表单补预警阈值/有效期。
+- **退款冲正**：`Bill` 加 `refund_status/refund_by/refund_time`；`IBillService.refund` + 实现（需已收款且未退：回滚库存并记"退款回库"台账、余额支付则退还余额、现金支付提示线下退现金、标记已退）；`BillController PUT /bill/refund/{id}`（NURSE/MANAGER/ADMIN）。前端 `y-billList` 加"退"按钮+`已退`状态+退款二次确认（输操作人）。
+- **单据作废**：`Prescription/LabOrder/ImageOrder` 加 `is_cancel`；`PrescriptionMapper.selectByRecord` 加 `AND is_cancel=0`（作废处方不再参与发药/计费）。作废接口均**冲减未付账单**对应费用列（处方→feeDrug=价×量；化验→feeLab；影像→feeImage）与 total，已收款则拒绝并提示走退款：`PUT /lab/cancel/{id}`、`PUT /imageOrder/cancel/{id}`、`PUT /record/prescription/cancel/{id}`。前端 `z-labResult`/`z-imageResult` 加"作废"按钮（仅未出结果/报告可见）。
+- 迁移脚本：`数据库备份/feature_20261014_refund_inventory.sql`（notice_type、drug 两列、drug_record 表、bill 三列、三表 is_cancel）。
+- 验证：`mvn clean compile` 通过；前端 `npm run build` 通过；DB 新列/表已生效；重启后端 `/bill/refund`、`/drug/warning`、`/lab/cancel` 匿名均 `code:401`，`/notice/four` 200，后端无 ERROR。
+- 后续待办（体检发现、未在本轮做）：住院每日监护记录、手术知情同意书、顾客取消/改期预约+号源容量校验、复诊关联与随访记录、remember-me 过期/签名校验、黑名单客户记住我拦截、默认口令可配置、补全顾客端检验/影像报告查看页。

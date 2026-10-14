@@ -125,6 +125,26 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result cancel(Integer orderId) {
+        ImageOrder order = this.getById(orderId);
+        if (order == null) return Result.error("申请单不存在");
+        if (Boolean.TRUE.equals(order.getIsCancel())) return Result.error("该申请单已作废");
+        if (Boolean.TRUE.equals(order.getStatus())) return Result.error("已出报告的申请单不可作废");
+        Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                .eq(Bill::getRecordId, order.getRecordId())
+                .eq(Bill::getPayStatus, false)
+                .last("limit 1"));
+        if (unpaid == null) return Result.error("未找到可冲减的未付账单（可能已收款，请走退款流程）");
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getBillId, unpaid.getBillId())
+                .setSql("fee_image = fee_image - " + order.getFee().toPlainString())
+                .setSql("total_money = total_money - " + order.getFee().toPlainString()));
+        this.lambdaUpdate().eq(ImageOrder::getOrderId, orderId).set(ImageOrder::getIsCancel, true).update();
+        return Result.success("申请单已作废，费用已冲减");
+    }
+
+    @Override
     public IPage<ImageOrderDto> selectPage(Boolean status, int numPage, int pageSize) {
         return baseMapper.selectImageOrderPage(new Page<>(numPage, pageSize), status);
     }

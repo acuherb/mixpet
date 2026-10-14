@@ -2,8 +2,11 @@ package com.ship.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.ship.common.Result;
 import com.ship.model.entity.Drug;
+import com.ship.model.entity.DrugRecord;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -21,4 +24,16 @@ public interface IDrugService extends IService<Drug> {
 
     /** 启用中的疫苗（免疫登记下拉用，即 drug_type=疫苗） */
     List<Drug> listVaccine();
+
+    /** 低库存预警列表（stock <= warningStock） */
+    List<Drug> listWarning();
+
+    /** 入库：增加库存并记台账，可同时更新有效期 */
+    Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note);
+
+    /** 出入库台账分页 */
+    IPage<DrugRecord> stockRecordPage(Integer drugId, int numPage, int pageSize);
+
+    /** 记一条库存流水（发药出库/退款回库等由业务方调用） */
+    void logStockChange(Integer drugId, String drugName, int changeType, int quantity, int before, int after, String note);
 }

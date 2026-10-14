@@ -14,6 +14,7 @@ import com.ship.model.entity.Drug;
 import com.ship.model.entity.Prescription;
 import com.ship.service.IBillService;
 import com.ship.service.IClientService;
+import com.ship.service.IDrugService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,12 +30,15 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
     private final IClientService clientService;
     private final DrugMapper drugMapper;
     private final PrescriptionMapper prescriptionMapper;
+    private final IDrugService drugService;
 
     @Autowired
-    public BillServiceImpl(IClientService clientService, DrugMapper drugMapper, PrescriptionMapper prescriptionMapper) {
+    public BillServiceImpl(IClientService clientService, DrugMapper drugMapper,
+                           PrescriptionMapper prescriptionMapper, IDrugService drugService) {
         this.clientService = clientService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
+        this.drugService = drugService;
     }
 
     @Override
@@ -71,8 +75,10 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 return Result.error("「" + p.getDrugName() + "」库存不足（剩余 "
                         + (drug.getDrugStock() == null ? 0 : drug.getDrugStock()) + "），无法发药");
         }
-        // 扣减库存加 WHERE drug_stock >= quantity 原子校验，防并发发药超扣
+        // 扣减库存加 WHERE drug_stock >= quantity 原子校验，防并发发药超扣；并记出入库台账
         for (Prescription p : prescriptions) {
+            Drug drug = drugMapper.selectById(p.getDrugId());
+            int before = (drug != null && drug.getDrugStock() != null) ? drug.getDrugStock() : 0;
             int affected = drugMapper.update(null,
                     new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Drug>()
                             .eq(Drug::getDrugId, p.getDrugId())
@@ -80,6 +86,8 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                             .setSql("drug_stock = drug_stock - " + p.getQuantity()));
             if (affected == 0)
                 return Result.error("「" + p.getDrugName() + "」库存不足，无法发药");
+            drugService.logStockChange(p.getDrugId(), p.getDrugName(), 2, p.getQuantity(),
+                    before, before - p.getQuantity(), "收款发药");
         }
         // 账单标记已付
         this.lambdaUpdate()
@@ -103,5 +111,45 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .set(Bill::getDispenseTime, LocalDateTime.now())
                 .update();
         return Result.success("发药核对完成");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result refund(Integer billId, String operator) {
+        Bill bill = this.getById(billId);
+        if (bill == null) return Result.error("账单不存在");
+        if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单未收款，无需退款");
+        if (Boolean.TRUE.equals(bill.getRefundStatus())) return Result.error("该账单已退款，请勿重复操作");
+        boolean wasBalance = bill.getPayType() == null || !bill.getPayType();
+        // 回滚库存 + 记台账（退款回库）；已作废处方未扣库存，不在 selectByRecord 中，无需回滚
+        List<Prescription> prescriptions = prescriptionMapper.selectByRecord(bill.getRecordId());
+        for (Prescription p : prescriptions) {
+            Drug drug = drugMapper.selectById(p.getDrugId());
+            int before = (drug != null && drug.getDrugStock() != null) ? drug.getDrugStock() : 0;
+            drugMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Drug>()
+                    .eq(Drug::getDrugId, p.getDrugId())
+                    .setSql("drug_stock = drug_stock + " + p.getQuantity()));
+            drugService.logStockChange(p.getDrugId(), p.getDrugName(), 3, p.getQuantity(),
+                    before, before + p.getQuantity(), "退款回库");
+        }
+        // 余额支付才退还余额（现金收款无余额变动）
+        if (wasBalance) {
+            Client client = clientService.getById(bill.getClientId());
+            if (client != null) {
+                clientService.lambdaUpdate()
+                        .eq(Client::getClientId, client.getClientId())
+                        .setSql("client_balance = client_balance + " + bill.getTotalMoney().toPlainString())
+                        .update();
+            }
+        }
+        this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .set(Bill::getRefundStatus, true)
+                .set(Bill::getRefundBy, operator)
+                .set(Bill::getRefundTime, LocalDateTime.now())
+                .update();
+        return Result.success("退款成功"
+                + (prescriptions.isEmpty() ? "" : "，库存已回滚")
+                + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）"));
     }
 }

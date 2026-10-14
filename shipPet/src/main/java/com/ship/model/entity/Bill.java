@@ -49,6 +49,12 @@ public class Bill implements Serializable {
     private String dispenseBy;
     /** 发药核对时间 */
     private LocalDateTime dispenseTime;
+    /** 退款状态：0未退 1已退（冲正） */
+    private Boolean refundStatus;
+    /** 退款操作人 */
+    private String refundBy;
+    /** 退款时间 */
+    private LocalDateTime refundTime;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

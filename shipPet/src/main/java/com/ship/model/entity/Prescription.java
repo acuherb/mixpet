@@ -30,6 +30,8 @@ public class Prescription implements Serializable {
     private Integer quantity;
     /** 用法，如 每日2次，每次1片 */
     private String usageInfo;
+    /** 是否作废 0否 1是（作废后不参与发药/计费） */
+    private Boolean isCancel;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

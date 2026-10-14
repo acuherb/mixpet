@@ -45,6 +45,9 @@ public interface NoticeMapper extends BaseMapper<Notice> {
 
     boolean addNotice(Integer creatId, String noticeTitle, String noticeFile);
 
+    /** 系统公告（notice_type=1，仅员工可见），creat/update 记为系统 0 */
+    boolean addSystemNotice(String noticeTitle, String noticeFile);
+
     @Update("update notice set is_disable = #{isDis} where notice_id=#{id}")
     boolean disableNotice(@Param("id") Integer noticeId, @Param("isDis") boolean isDis);
 }

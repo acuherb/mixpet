@@ -17,6 +17,7 @@
         notice_id,
         notice_title,
         notice_file,
+        notice_type,
         a.create_time,
         a.update_time,
         is_disable,
@@ -33,12 +34,13 @@
             and (a.notice_title like #{noticeKw} or b.doctor_name like #{noticeKw})
         </if>
     </select>
-    <!--主页：查询-->
+    <!--主页：查询（仅顾客可见公告，排除系统提醒，避免泄露全院宠物/客户信息）-->
     <select id="selectFour" resultType="com.ship.model.dto.NoticeDto">
         SELECT notice_id, notice_title, notice_file
         FROM notice
         WHERE is_del = 0
-          AND is_disable = 0 LIMIT 3
+          AND is_disable = 0
+          AND notice_type = 0 LIMIT 3
     </select>
     <!--修改公告信息-->
     <update id="updateNotice">
@@ -52,5 +54,10 @@
     <insert id="addNotice">
         INSERT INTO notice (notice_title, notice_file, creat_id, create_time, update_id, update_time)
         VALUES (#{noticeTitle}, #{noticeFile}, #{creatId}, now(), creat_id, create_time)
+    </insert>
+    <!--添加系统公告（notice_type=1 仅员工可见，creat/update 记为系统0）-->
+    <insert id="addSystemNotice">
+        INSERT INTO notice (notice_title, notice_file, creat_id, create_time, update_id, update_time, notice_type)
+        VALUES (#{noticeTitle}, #{noticeFile}, 0, now(), 0, now(), 1)
     </insert>
 </mapper>

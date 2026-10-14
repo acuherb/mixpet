@@ -12,3 +12,6 @@ export const reqBillPay = (billId: number, payType: boolean): Promise<Res> =>
 // 发药核对（护士确认发药）
 export const reqBillDispense = (billId: number, operator: string): Promise<Res> =>
     reqApi.post<string, Res>(`bill/dispense/${billId}`, {}, {params: {operator}})
+// 退款冲正（退还余额、回滚库存）
+export const reqBillRefund = (billId: number, operator: string): Promise<Res> =>
+    reqApi.put<string, Res>(`bill/refund/${billId}`, {}, {params: {operator}})

@@ -26,13 +26,19 @@
       </template>
     </el-table-column>
     <el-table-column label="单价(元)" prop="drugPrice" sortable width="100"/>
-    <el-table-column label="库存" prop="drugStock" sortable width="80">
+    <el-table-column label="库存" prop="drugStock" sortable width="110">
       <template #default="scope">
         <el-tag v-if="scope.row.drugStock === 0" size="small" type="danger">缺货</el-tag>
-        <el-tag v-else-if="scope.row.drugStock !== null && scope.row.drugStock <= 5" size="small" type="warning">
+        <el-tag v-else-if="scope.row.drugStock !== null && scope.row.drugStock <= warnOf(scope.row)" size="small" type="warning">
           {{ scope.row.drugStock }}
         </el-tag>
         <span v-else>{{ scope.row.drugStock }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="有效期至" width="120">
+      <template #default="scope">
+        <span v-if="scope.row.expireDate">{{ scope.row.expireDate }}</span>
+        <span v-else>—</span>
       </template>
     </el-table-column>
     <el-table-column label="接种间隔" width="100">
@@ -48,11 +54,12 @@
       </template>
     </el-table-column>
     <el-table-column label="说明" min-width="120" prop="drugInfo" show-overflow-tooltip/>
-    <el-table-column fixed="right" label="操作" width="150">
+    <el-table-column fixed="right" label="操作" width="210">
       <template #default="scope">
         <el-button-group>
           <el-button :icon="Edit" circle title="编辑" type="warning" @click="showDialog(scope.row)"/>
-          <el-button :icon="Plus" circle title="快速入库 +10" type="primary" @click="stockIn(scope.row)"/>
+          <el-button size="small" title="入库" type="primary" @click="openIn(scope.row)">入库</el-button>
+          <el-button size="small" title="出入库台账" type="info" @click="openLedger(scope.row)">台账</el-button>
           <el-button :icon="Delete" circle title="删除" type="danger" @click="delOne(scope.row.drugId)"/>
         </el-button-group>
       </template>
@@ -87,6 +94,12 @@
       <el-form-item label="库存" prop="drugStock">
         <el-input-number v-model="form.drugStock" :max="99999" :min="0" :step="10" style="width: 100%"/>
       </el-form-item>
+      <el-form-item label="预警阈值">
+        <el-input-number v-model="form.warningStock" :max="9999" :min="0" style="width: 100%"/>
+      </el-form-item>
+      <el-form-item label="有效期至">
+        <el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择有效期" style="width: 100%"/>
+      </el-form-item>
       <el-form-item label="状态">
         <el-switch v-model="form.active" active-text="启用" inactive-text="停用"/>
       </el-form-item>
@@ -110,18 +123,58 @@
       <el-button type="primary" @click="formSubmit">确认</el-button>
     </template>
   </el-dialog>
+
+  <!--入库弹窗-->
+  <el-dialog v-model="inView" draggable title="药品入库" width="420px">
+    <el-form label-width="90px">
+      <el-form-item label="药品">
+        <span>{{ inDrug?.drugName }}（当前库存 {{ inDrug?.drugStock ?? 0 }}）</span>
+      </el-form-item>
+      <el-form-item label="入库数量">
+        <el-input-number v-model="inQty" :min="1" :max="99999" style="width: 100%"/>
+      </el-form-item>
+      <el-form-item label="有效期至">
+        <el-date-picker v-model="inExpire" placeholder="可留空" style="width: 100%" type="date" value-format="YYYY-MM-DD"/>
+      </el-form-item>
+      <el-form-item label="备注">
+        <el-input v-model="inNote" maxlength="128" placeholder="如：采购入库"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="inView = false">取消</el-button>
+      <el-button type="primary" @click="submitIn">确认入库</el-button>
+    </template>
+  </el-dialog>
+
+  <!--出入库台账抽屉-->
+  <el-drawer v-model="ledgerView" :title="ledgerTitle" size="560px">
+    <el-table :data="ledger.records" border max-height="80vh" size="small">
+      <el-table-column label="时间" prop="createTime" width="160"/>
+      <el-table-column label="类型" width="90">
+        <template #default="s">
+          <el-tag :type="s.row.changeType === 2 ? 'warning' : 'success'" size="small">{{ changeTypeText(s.row.changeType) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="数量" prop="quantity" width="60"/>
+      <el-table-column label="变动后" prop="afterStock" width="70"/>
+      <el-table-column label="操作人" prop="operator" show-overflow-tooltip/>
+      <el-table-column label="备注" prop="note" show-overflow-tooltip/>
+    </el-table>
+    <BackPage :total="ledger.total" @changePu="ledgerPage"/>
+  </el-drawer>
 </template>
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {Delete, Edit, Plus} from '@element-plus/icons-vue'
+import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {drugTypes, exampleDrug, Drug} from "@/model/entiy/Drug";
+import {DrugRecord, changeTypeText} from "@/model/entiy/DrugRecord";
 import {Page} from "@/model/DO/Page";
-import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugPage, reqUpdateDrug} from "@/request/DrugApi";
+import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugInbound, reqDrugPage, reqDrugRecordPage, reqUpdateDrug} from "@/request/DrugApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -226,16 +279,58 @@ const showDialog = (row: Drug) => {
   modalView.value = true
   modalTit.value = "修改药品"
 }
-// 快速入库
-const stockIn = (row: Drug): void => {
-  ElMessageBox.prompt(`当前库存 ${row.drugStock ?? 0}，输入入库数量：`, '快速入库', {
-    confirmButtonText: '入库',
-    cancelButtonText: '取消',
-    inputPattern: /^[1-9]\d*$/,
-    inputErrorMessage: '请输入正整数'
-  }).then(({value}) => {
-    reqUpdateDrug({...row, drugStock: (row.drugStock ?? 0) + Number(value)}).then(res => sureFlush(res))
-  }).catch(() => ElMessage.info('取消入库'))
+// 低库存阈值（未设置则默认5）
+const warnOf = (row: Drug): number => (row.warningStock && row.warningStock > 0) ? row.warningStock : 5
+
+// 入库弹窗
+const inView = ref(false)
+const inDrug = ref<Drug | null>(null)
+const inQty = ref(1)
+const inExpire = ref<string | null>(null)
+const inNote = ref('')
+const openIn = (row: Drug): void => {
+  inDrug.value = row
+  inQty.value = 1
+  inExpire.value = null
+  inNote.value = ''
+  inView.value = true
+}
+const submitIn = (): void => {
+  if (!inDrug.value) return
+  reqDrugInbound({
+    drugId: inDrug.value.drugId,
+    quantity: inQty.value,
+    expireDate: inExpire.value || undefined,
+    note: inNote.value || undefined
+  }).then((res: Res) => {
+    if (res.code === 1) {
+      inView.value = false
+      sendQuery()
+    }
+  })
+}
+
+// 出入库台账抽屉
+const ledgerView = ref(false)
+const ledgerTitle = ref('出入库台账')
+const ledger = ref<Page<DrugRecord>>({records: [], total: 0})
+const ledgerDrug = ref<Drug | null>(null)
+const ledgerQp = reactive({numPage: 1, pageSize: 10})
+const openLedger = (row: Drug): void => {
+  ledgerDrug.value = row
+  ledgerQp.numPage = 1
+  ledgerTitle.value = `出入库台账 - ${row.drugName}`
+  ledgerView.value = true
+  loadLedger()
+}
+const loadLedger = (): void => {
+  reqDrugRecordPage({drugId: ledgerDrug.value?.drugId, numPage: ledgerQp.numPage, pageSize: ledgerQp.pageSize})
+      .then((res: Page<DrugRecord>) => { ledger.value = res })
+}
+const ledgerPage = (val: PageQuery): void => {
+  ledgerQp.numPage = val.numPage
+  ledgerQp.pageSize = val.pageSize
+  loadLedger()
 }
 
 /**

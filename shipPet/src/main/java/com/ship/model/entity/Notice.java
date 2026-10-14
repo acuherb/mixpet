@@ -64,6 +64,11 @@ public class Notice implements Serializable {
     private Boolean isDisable;
 
     /**
+     * 公告类型：0顾客公告(主页可见) 1系统提醒(仅员工可见，如疫苗到期提醒)
+     */
+    private Boolean noticeType;
+
+    /**
      * 逻辑删除，默认0，填充删除日期
      */
     private Long isDel;
@@ -130,6 +135,14 @@ public class Notice implements Serializable {
 
     public void setIsDisable(Boolean isDisable) {
         this.isDisable = isDisable;
+    }
+
+    public Boolean getNoticeType() {
+        return noticeType;
+    }
+
+    public void setNoticeType(Boolean noticeType) {
+        this.noticeType = noticeType;
     }
 
     public Long getIsDel() {

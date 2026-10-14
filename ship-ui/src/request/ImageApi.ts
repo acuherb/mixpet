@@ -28,6 +28,9 @@ export const reqCreateImageOrder = (data: { recordId: number; itemId: number; ex
 // 报告录入
 export const reqSaveImageReport = (data: { orderId: number; result: string; reportFile?: string }): Promise<Res> =>
     reqApi.put<string, Res>("imageOrder/report", data)
+// 作废申请单（未出报告）
+export const reqImageCancel = (orderId: number): Promise<Res> =>
+    reqApi.put<string, Res>("imageOrder/cancel/" + orderId)
 // 申请单分页
 export const reqImageOrderPage = (params: { numPage: number; pageSize: number; status?: boolean | null }): Promise<Page<ImageOrder>> =>
     reqApi<string, Page<ImageOrder>>("imageOrder/page", {params})

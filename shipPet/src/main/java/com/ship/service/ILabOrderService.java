@@ -30,4 +30,7 @@ public interface ILabOrderService extends IService<LabOrder> {
 
     /** 检验申请单（国标，可打印）：聚合化验单+病历+宠物+医生 */
     RequisitionVo selectRequisition(Integer orderId);
+
+    /** 作废化验单（未出结果）：冲减未付账单的检验费 */
+    Result cancel(Integer orderId);
 }

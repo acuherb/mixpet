@@ -27,4 +27,7 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 兽医处方笺数据（国标）：聚合病历+宠物+医生+处方 */
     RxSheetVo selectRxSheet(Integer recordId);
+
+    /** 作废单条处方：冲减未付账单的药费 */
+    Result cancelPrescription(Integer prescriptionId);
 }

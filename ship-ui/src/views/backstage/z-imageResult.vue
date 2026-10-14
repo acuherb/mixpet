@@ -32,12 +32,13 @@
         <el-tag v-else size="small" type="warning">待检查</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="170" fixed="right">
+    <el-table-column label="操作" width="220" fixed="right">
       <template #default="scope">
         <el-button size="small" @click="printReq(scope.row)">申请单</el-button>
         <el-button :type="scope.row.status ? 'info' : 'primary'" plain size="small" @click="showDialog(scope.row)">
           {{ scope.row.status ? '查看报告' : '录报告' }}
         </el-button>
+        <el-button v-if="!scope.row.status" size="small" type="danger" @click="cancelOrder(scope.row)">作废</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -76,9 +77,9 @@ import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {Page} from "@/model/DO/Page";
-import {reqImageOrderPage, reqSaveImageReport} from "@/request/ImageApi";
+import {reqImageCancel, reqImageOrderPage, reqSaveImageReport} from "@/request/ImageApi";
 import UpImg from "@/components/UpImg.vue";
-import {ElMessage} from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
 
 const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 15, status: null})
@@ -137,6 +138,20 @@ const formSubmit = (): void => {
       sendQuery()
     }
   })
+}
+
+// 作废申请单（未出报告，冲减未付账单）
+const cancelOrder = (row: ImageOrder): void => {
+  ElMessageBox.confirm(`确认作废申请单 #${row.orderId}？将冲减未付账单的影像费。`, '作废确认', {
+    confirmButtonText: '确认作废', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqImageCancel(row.orderId).then((res: Res) => {
+      if (res.code === 1) {
+        ElMessage.success('已作废')
+        sendQuery()
+      } else ElMessage.error(res.msg || '作废失败')
+    })
+  }).catch(() => ElMessage.info('取消'))
 }
 
 onMounted(() => {

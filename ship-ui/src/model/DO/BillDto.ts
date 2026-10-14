@@ -21,6 +21,8 @@ export interface BillDto {
     dispenseStatus?: boolean;
     /** 发药核对人 */
     dispenseBy?: string | null;
+    /** 退款状态 0未退 1已退 */
+    refundStatus?: boolean;
     createTime: string | null;
     payTime: string | null;
     clientName: string;

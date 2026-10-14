@@ -56,12 +56,13 @@
         <el-tag v-else size="small" type="warning">待检验</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="170" fixed="right">
+    <el-table-column label="操作" width="220" fixed="right">
       <template #default="scope">
         <el-button size="small" @click="printReq(scope.row)">申请单</el-button>
         <el-button :type="scope.row.status ? 'info' : 'primary'" plain size="small" @click="showDialog(scope.row)">
           {{ scope.row.status ? '查看结果' : '录入结果' }}
         </el-button>
+        <el-button v-if="!scope.row.status" size="small" type="danger" @click="cancelOrder(scope.row)">作废</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -118,9 +119,9 @@ import {PageQuery} from "@/model/VO/BackQuery";
 import {LabOrderItem} from "@/model/entiy/LabOrderItem";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
 import {Page} from "@/model/DO/Page";
-import {reqLabByRecord, reqLabOrderPage, reqSaveLabResult} from "@/request/LabApi";
+import {reqLabByRecord, reqLabCancel, reqLabOrderPage, reqSaveLabResult} from "@/request/LabApi";
 import UpImg from "@/components/UpImg.vue";
-import {ElMessage} from "element-plus";
+import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
 
 /**
@@ -216,6 +217,20 @@ const formSubmit = (): void => {
       sendQuery()
     }
   })
+}
+
+// 作废化验单（未出结果，冲减未付账单）
+const cancelOrder = (row: LabOrderDto): void => {
+  ElMessageBox.confirm(`确认作废化验单 #${row.orderId}？将冲减未付账单的检验费。`, '作废确认', {
+    confirmButtonText: '确认作废', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqLabCancel(row.orderId).then((res: Res) => {
+      if (res.code === 1) {
+        ElMessage.success('已作废')
+        sendQuery()
+      } else ElMessage.error(res.msg || '作废失败')
+    })
+  }).catch(() => ElMessage.info('取消'))
 }
 
 /**

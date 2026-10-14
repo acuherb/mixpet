@@ -24,3 +24,12 @@ export const reqDelDrug = (id: number): Promise<Res> =>
 // 批量删除药品
 export const reqDelDrugBatch = (ids: number[]): Promise<Res> =>
     reqApi.delete<string, Res>("drug/batch/" + ids)
+// 低库存预警列表
+export const reqDrugWarning = (): Promise<Drug[]> =>
+    reqApi<string, Drug[]>("drug/warning")
+// 入库（增加库存并记台账）
+export const reqDrugInbound = (data: { drugId: number; quantity: number; expireDate?: string; note?: string }): Promise<Res> =>
+    reqApi.post<string, Res>("drug/inbound", {}, {params: data})
+// 出入库台账分页
+export const reqDrugRecordPage = (params: { drugId?: number; numPage: number; pageSize: number }): Promise<Page<import("@/model/entiy/DrugRecord").DrugRecord>> =>
+    reqApi<string, Page<import("@/model/entiy/DrugRecord").DrugRecord>>("drug/record/page", {params})

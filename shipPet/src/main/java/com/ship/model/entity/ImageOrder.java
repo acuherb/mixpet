@@ -38,6 +38,8 @@ public class ImageOrder implements Serializable {
     private Boolean status;
     /** 报告文件(影像图/PDF)路径，可选 */
     private String reportFile;
+    /** 是否作废 0否 1是 */
+    private Boolean isCancel;
     private String note;
 
     @TableField(fill = FieldFill.INSERT)

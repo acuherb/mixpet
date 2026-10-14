@@ -145,7 +145,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         if (title == null || title.isBlank()) return false;
         String path = UUID.randomUUID() + ".txt";
         writeText(content, path);
-        return baseMapper.addNotice(0, title, path);
+        return baseMapper.addSystemNotice(title, path);
     }
 
     /**

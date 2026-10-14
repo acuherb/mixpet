@@ -64,7 +64,8 @@
       <template #default="scope">
         <el-tag v-if="!scope.row.payStatus" type="warning">待收费</el-tag>
         <el-tag v-else type="success">{{ scope.row.payType ? '已收现金' : '已收余额' }}</el-tag>
-        <el-tag v-if="scope.row.payStatus && scope.row.dispenseStatus" style="margin-left: 4px" type="info">已发药</el-tag>
+        <el-tag v-if="scope.row.refundStatus" style="margin-left: 4px" type="info">已退</el-tag>
+        <el-tag v-else-if="scope.row.payStatus && scope.row.dispenseStatus" style="margin-left: 4px" type="info">已发药</el-tag>
         <el-tag v-else-if="scope.row.payStatus" style="margin-left: 4px" type="danger">待发药</el-tag>
       </template>
     </el-table-column>
@@ -94,6 +95,9 @@
           </el-button>
           <el-button v-if="scope.row.payStatus && !scope.row.dispenseStatus"
                      circle title="发药核对（确认已将药品发给客户）" type="danger" @click="dispenseBill(scope.row)">药
+          </el-button>
+          <el-button v-if="scope.row.payStatus && !scope.row.refundStatus"
+                     circle size="small" title="退款冲正（退还余额/回滚库存）" type="warning" @click="refundBill(scope.row)">退
           </el-button>
           <el-button circle title="查看病历" type="info" @click="showRecord(scope.row)">历</el-button>
         </el-button-group>
@@ -133,7 +137,7 @@ import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
 import {BillDto} from "@/model/DO/BillDto";
-import {reqBillDispense, reqBillPage, reqBillPay} from "@/request/BillApi";
+import {reqBillDispense, reqBillPage, reqBillPay, reqBillRefund} from "@/request/BillApi";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
 import {RecordDetailVo} from "@/model/DO/RecordDto";
@@ -238,6 +242,31 @@ const dispenseBill = (row: BillDto): void => {
       } else ElMessage.error(res.msg || '操作失败')
     })
   }).catch(() => ElMessage.info('取消发药'))
+}
+
+/**
+ ┌───────────────────────────────────┐
+ │=============退款冲正==============│
+ └───────────────────────────────────┘
+ */
+const refundBill = (row: BillDto): void => {
+  ElMessageBox.confirm(
+      `确认对该账单退款冲正？将${row.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存。`,
+      '退款确认',
+      {confirmButtonText: '确认退款', cancelButtonText: '取消', type: 'warning'}
+  ).then(() => {
+    ElMessageBox.prompt('输入退款操作人姓名', '退款', {
+      confirmButtonText: '确认', cancelButtonText: '取消',
+      inputPattern: /^.+$/, inputErrorMessage: '请输入操作人姓名'
+    }).then(({value}) => {
+      reqBillRefund(row.billId, value).then(res => {
+        if (res.code === 1) {
+          sendQuery()
+          ElMessage.success('退款成功')
+        } else ElMessage.error(res.msg || '退款失败')
+      })
+    }).catch(() => ElMessage.info('取消退款'))
+  }).catch(() => ElMessage.info('取消退款'))
 }
 
 const recharge = (row: BillDto): void => {

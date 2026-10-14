@@ -6,6 +6,7 @@ import lombok.Data;
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -28,6 +29,10 @@ public class Drug implements Serializable {
     private String drugType;
     private BigDecimal drugPrice;
     private Integer drugStock;
+    /** 库存预警阈值：stock <= 该值即低库存预警 */
+    private Integer warningStock;
+    /** 有效期至（最近批次） */
+    private LocalDate expireDate;
     private String drugInfo;
     /** 品牌/厂家（疫苗用） */
     private String brand;

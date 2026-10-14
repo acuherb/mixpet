@@ -40,6 +40,9 @@ export const reqDoctorRecords = (): Promise<RecordDto[]> =>
 // 录入化验结果
 export const reqSaveLabResult = (data: LabResultVo): Promise<Res> =>
     reqApi.put<string, Res>("lab/result", data)
+// 作废化验单（未出结果）
+export const reqLabCancel = (orderId: number): Promise<Res> =>
+    reqApi.put<string, Res>("lab/cancel/" + orderId)
 // 检验申请单（国标，可打印）
 export const reqLabRequisition = (orderId: number): Promise<Requisition> =>
     reqApi<string, Requisition>("lab/requisition/" + orderId)

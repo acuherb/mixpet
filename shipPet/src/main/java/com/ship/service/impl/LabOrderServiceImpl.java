@@ -151,6 +151,26 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result cancel(Integer orderId) {
+        LabOrder order = this.getById(orderId);
+        if (order == null) return Result.error("化验单不存在");
+        if (Boolean.TRUE.equals(order.getIsCancel())) return Result.error("该化验单已作废");
+        if (Boolean.TRUE.equals(order.getStatus())) return Result.error("已出结果的化验单不可作废");
+        Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                .eq(Bill::getRecordId, order.getRecordId())
+                .eq(Bill::getPayStatus, false)
+                .last("limit 1"));
+        if (unpaid == null) return Result.error("未找到可冲减的未付账单（可能已收款，请走退款流程）");
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getBillId, unpaid.getBillId())
+                .setSql("fee_lab = fee_lab - " + order.getFee().toPlainString())
+                .setSql("total_money = total_money - " + order.getFee().toPlainString()));
+        this.lambdaUpdate().eq(LabOrder::getOrderId, orderId).set(LabOrder::getIsCancel, true).update();
+        return Result.success("化验单已作废，费用已冲减");
+    }
+
+    @Override
     public List<LabOrderDto> selectByRecord(Integer recordId) {
         List<LabOrder> orders = this.lambdaQuery()
                 .eq(LabOrder::getRecordId, recordId)

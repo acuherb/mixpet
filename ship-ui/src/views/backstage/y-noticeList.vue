@@ -18,12 +18,17 @@
             stripe
             @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="30"/>
-    <el-table-column label="标题" prop="noticeTitle"/>
+    <el-table-column label="标题" prop="noticeTitle">
+      <template #default="scope">
+        <el-tag v-if="scope.row.noticeType" size="small" type="warning" style="margin-right:4px">系统</el-tag>
+        {{ scope.row.noticeTitle }}
+      </template>
+    </el-table-column>
     <el-table-column :formatter="removeT_1" label="修改时间" prop="noticeDate" sortable/>
     <el-table-column label="修改人" prop="updateName"/>
     <el-table-column :formatter="removeT_2" label="创建时间" prop="createTime" sortable/>
     <el-table-column label="创建人" prop="createName"/>
-    <el-table-column label="是否禁用" prop="clientName">
+    <el-table-column label="是否禁用" prop="isDisable">
       <template #default="scope">
         <el-tag v-if="scope.row.isDisable" type="danger">已禁用</el-tag>
         <el-tag v-else>已启用</el-tag>

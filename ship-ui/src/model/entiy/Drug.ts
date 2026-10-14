@@ -6,6 +6,10 @@ export interface Drug {
     drugType: string | null;
     drugPrice: number | null;
     drugStock: number | null;
+    /** 库存预警阈值：stock <= 该值即低库存 */
+    warningStock?: number | null;
+    /** 有效期至 */
+    expireDate?: string | null;
     drugInfo: string | null;
     brand?: string | null;
     prevent?: string | null;
@@ -25,6 +29,8 @@ export const exampleDrug = (): Drug => {
         drugType: "西药",
         drugPrice: 0,
         drugStock: 0,
+        warningStock: 0,
+        expireDate: null,
         drugInfo: "",
         brand: null,
         prevent: null,

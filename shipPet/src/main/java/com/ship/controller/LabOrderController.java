@@ -82,6 +82,13 @@ public class LabOrderController {
         return labService.saveResult(vo, operatorName());
     }
 
+    /** 作废化验单（未出结果）：冲减未付账单检验费 */
+    @PutMapping("/cancel/{orderId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result cancel(@PathVariable Integer orderId) {
+        return labService.cancel(orderId);
+    }
+
     /** 检验申请单（国标，可打印） */
     @GetMapping("/requisition/{orderId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.DOCTOR})

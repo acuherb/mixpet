@@ -30,4 +30,7 @@ public interface IImageOrderService extends IService<ImageOrder> {
 
     /** 影像申请单（国标，可打印）：聚合申请单+病历+宠物+医生 */
     RequisitionVo selectRequisition(Integer orderId);
+
+    /** 作废申请单（未出报告）：冲减未付账单的影像费 */
+    Result cancel(Integer orderId);
 }
