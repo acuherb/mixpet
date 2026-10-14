@@ -107,6 +107,9 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
             bill.setFeeTreat(BigDecimal.ZERO);
             bill.setFeeDrug(BigDecimal.ZERO);
             bill.setFeeLab(fee);
+            bill.setFeeHospital(BigDecimal.ZERO);
+            bill.setFeePackage(BigDecimal.ZERO);
+            bill.setFeeSurgery(BigDecimal.ZERO);
             bill.setTotalMoney(fee);
             bill.setPayStatus(false);
             bill.setPayType(false);

@@ -97,6 +97,8 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
             bill.setFeeTreat(BigDecimal.ZERO);
             bill.setFeeDrug(BigDecimal.ZERO);
             bill.setFeeLab(BigDecimal.ZERO);
+            bill.setFeePackage(BigDecimal.ZERO);
+            bill.setFeeSurgery(BigDecimal.ZERO);
             bill.setFeeHospital(fee);
             bill.setTotalMoney(fee);
             bill.setPayStatus(false);

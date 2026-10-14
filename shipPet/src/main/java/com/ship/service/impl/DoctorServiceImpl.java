@@ -123,13 +123,8 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
             DoctorDto dto = (DoctorDto) doctor;
             syncDepartments(doctor.getDoctorId(), dto.getDepartmentIds());
         } else if (ok && doctor.getDepartmentId() != null) {
-            // 兼容：仅填主科室时也写进关系表
-            List<NameDo> name = doctorDepartMapper.selectDoctorNamesByDepartmentId(doctor.getDepartmentId());
-            if (name == null || name.isEmpty()) {
-                syncDepartments(doctor.getDoctorId(), List.of(doctor.getDepartmentId()));
-            } else {
-                syncDepartments(doctor.getDoctorId(), List.of(doctor.getDepartmentId()));
-            }
+            // 兼容：仅填主科室时也写进关系表（去除无意义的 if/else 死代码）
+            syncDepartments(doctor.getDoctorId(), List.of(doctor.getDepartmentId()));
         }
         return ok;
     }

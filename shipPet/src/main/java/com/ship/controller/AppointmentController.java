@@ -47,6 +47,7 @@ public class AppointmentController {
      * 根据医生查询挂号信息
      */
     @GetMapping("/doctor")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public List<AppointmentDto> getDoctor(Integer doctorId) {
         return appointmentService.getDoctor(doctorId);
     }

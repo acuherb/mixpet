@@ -30,6 +30,7 @@ public class NoticeController {
     }
 
     @GetMapping("/page")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public IPage<NoticeDto> getPage(int numPage, int pageSize, String noticeName) {
         return noticeService.selectByPage(noticeName, numPage, pageSize);
     }

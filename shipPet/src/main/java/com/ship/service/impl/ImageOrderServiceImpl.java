@@ -95,6 +95,8 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
             bill.setFeeDrug(java.math.BigDecimal.ZERO);
             bill.setFeeLab(java.math.BigDecimal.ZERO);
             bill.setFeeHospital(java.math.BigDecimal.ZERO);
+            bill.setFeePackage(java.math.BigDecimal.ZERO);
+            bill.setFeeSurgery(java.math.BigDecimal.ZERO);
             bill.setFeeImage(order.getFee());
             bill.setTotalMoney(order.getFee());
             bill.setPayStatus(false);

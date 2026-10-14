@@ -54,10 +54,13 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
             if (client.getClientBalance() == null
                     || client.getClientBalance().compareTo(bill.getTotalMoney()) < 0)
                 return Result.error("客户余额不足（当前 " + client.getClientBalance() + " 元），请改用现金收款或先充值");
-            clientService.lambdaUpdate()
+            // 用 WHERE 条件保证原子扣减：余额不足时不更新，防并发超扣成负数
+            boolean deducted = clientService.lambdaUpdate()
                     .eq(Client::getClientId, client.getClientId())
+                    .ge(Client::getClientBalance, bill.getTotalMoney())
                     .setSql("client_balance = client_balance - " + bill.getTotalMoney().toPlainString())
                     .update();
+            if (!deducted) return Result.error("客户余额不足，请改用现金收款或先充值");
         }
         // 发药：校验库存并扣减
         List<Prescription> prescriptions = prescriptionMapper.selectByRecord(bill.getRecordId());
@@ -67,11 +70,15 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 return Result.error("「" + p.getDrugName() + "」库存不足（剩余 "
                         + (drug.getDrugStock() == null ? 0 : drug.getDrugStock()) + "），无法发药");
         }
+        // 扣减库存加 WHERE drug_stock >= quantity 原子校验，防并发发药超扣
         for (Prescription p : prescriptions) {
-            drugMapper.update(null,
+            int affected = drugMapper.update(null,
                     new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Drug>()
                             .eq(Drug::getDrugId, p.getDrugId())
+                            .ge(Drug::getDrugStock, p.getQuantity())
                             .setSql("drug_stock = drug_stock - " + p.getQuantity()));
+            if (affected == 0)
+                return Result.error("「" + p.getDrugName() + "」库存不足，无法发药");
         }
         // 账单标记已付
         this.lambdaUpdate()

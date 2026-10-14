@@ -26,6 +26,9 @@ import java.util.UUID;
 @RequestMapping("/common")
 public class ImgController {
     private static final Logger log = LoggerFactory.getLogger(ImgController.class);
+    // 允许上传的图片扩展名白名单
+    private static final java.util.Set<String> ALLOWED_SUFFIX = java.util.Set.of(
+            ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
     private final String basePath, chatImg;
 
     public ImgController(@Value("${pet-ship.images-path}") String basePath, @Value("${pet-ship.chatImg-path}") String chatImg) {
@@ -39,13 +42,15 @@ public class ImgController {
     @PostMapping("/upload")
     public String upload(MultipartFile myFile) {
         String fileName = getFileName(myFile);//使用UUID重新生成文件名
+        if (fileName == null) return null; // 类型不支持或校验失败
         String filePath = basePath + fileName;
         try {
             myFile.transferTo(new File(filePath));//转存临时文件
             boolean resizeSuc = resize(filePath);
             log.info("转化头像尺寸{}", resizeSuc ? "成功" : "失败");
         } catch (IOException e) {
-            log.warn("转存图片失败");
+            log.warn("转存图片失败", e);
+            return null; // 上传失败明确返回 null，前端据此提示
         }
         return fileName;
     }
@@ -56,11 +61,13 @@ public class ImgController {
     @PostMapping("/upChat")
     public String upChat(MultipartFile myFile) {
         String fileName = getFileName(myFile);//使用UUID重新生成文件名
+        if (fileName == null) return null;
         String filePath = chatImg + fileName;
         try {
             myFile.transferTo(new File(filePath));//转存临时文件
         } catch (IOException e) {
-            log.warn("转存图片失败");
+            log.warn("转存图片失败", e);
+            return null;
         }
         return fileName;
     }
@@ -89,10 +96,14 @@ public class ImgController {
      * @return 新的文件名
      */
     private String getFileName(MultipartFile myFile) {
-        if (myFile == null) return "文件上传为空";
+        if (myFile == null || myFile.isEmpty()) return null;
         String originalFilename = myFile.getOriginalFilename();//abc.jpg
-        assert originalFilename != null;
-        String suffix = originalFilename.substring(originalFilename.lastIndexOf("."));
+        if (originalFilename == null) return null; // 生产环境 assert 默认不生效，改用显式判空
+        int dot = originalFilename.lastIndexOf(".");
+        if (dot < 0) return null;
+        String suffix = originalFilename.substring(dot).toLowerCase();
+        // 仅允许常见图片类型，防止上传非图片/可执行文件
+        if (!ALLOWED_SUFFIX.contains(suffix)) return null;
         return UUID.randomUUID() + suffix;
     }
 
@@ -138,7 +149,9 @@ public class ImgController {
      * @param imgPath  图片路径
      */
     private void sendImg(String name, HttpServletResponse response, String imgPath) {
-        if (name == null || "".equals(name)) return;
+        if (name == null || name.isBlank()) return;
+        // 路径遍历防护：禁止使用 ../ 或路径分隔符
+        if (name.contains("..") || name.contains("/") || name.contains("\\")) return;
         try (var fis = new FileInputStream(imgPath + name); var ops = response.getOutputStream()) {
             response.setContentType("image/jpeg");
             int len;

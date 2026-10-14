@@ -38,6 +38,7 @@ public class DoctorController {
      * @return 医生姓名与id
      */
     @GetMapping
+    @Secured({RoleConst.ADMIN, RoleConst.MANAGER, RoleConst.NURSE})
     public List<NameDo> getName() {
         return doctorService.selectName();
     }
@@ -49,6 +50,7 @@ public class DoctorController {
      * @return 医生姓名与id
      */
     @GetMapping("/department")
+    @Secured({RoleConst.ADMIN, RoleConst.MANAGER, RoleConst.NURSE})
     public List<NameDo> getByDepartment(Integer departmentId) {
         return doctorService.selectNameByDepartment(departmentId);
     }
@@ -60,11 +62,13 @@ public class DoctorController {
      * @return 对应科室的所有医生信息
      */
     @GetMapping("/department/detail")
+    @Secured({RoleConst.ADMIN, RoleConst.MANAGER})
     public List<Doctor> getByDepartmentId(Integer departmentId) {
         return doctorService.selectByDepartmentId(departmentId);
     }
 
     @GetMapping("/page")
+    @Secured({RoleConst.ADMIN, RoleConst.MANAGER})
     public IPage<DoctorDto> getPage(int numPage, int pageSize, String doctorName, String departmentName) {
         return doctorService.selectByPage(doctorName, departmentName, numPage, pageSize);
     }

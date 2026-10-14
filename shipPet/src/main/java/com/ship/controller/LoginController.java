@@ -70,13 +70,16 @@ public class LoginController {
      */
     @GetMapping("/regMail")
     public Result sendRegMail(String mail, HttpSession session) {
-        if (session.getAttribute(mail) != null) {
-            if (System.currentTimeMillis() - session.getCreationTime() < 30 * 1000)
-                return Result.error("发送邮件需要间隔30s");
-        }
+        // 用专属 attribute 记录上次发送时间（session.getCreationTime() 是会话创建时间，不能用）
+        String timeKey = mail + "_regmail_time";
+        Object last = session.getAttribute(timeKey);
+        if (last instanceof Long lastTime
+                && System.currentTimeMillis() - lastTime < 30 * 1000)
+            return Result.error("发送邮件需要间隔30s");
         String code = sendMail.sendQQEmail(mail);
         if (code != null) {
             session.setAttribute(mail, code);
+            session.setAttribute(timeKey, System.currentTimeMillis());
             return Result.success("邮件发送成功");
         } else return Result.error("邮件发送失败");
     }

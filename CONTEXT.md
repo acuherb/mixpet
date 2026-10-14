@@ -195,4 +195,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 首判曾误以为只缺 `record_package.update_time` 库列（commit 22a1802 补列，属不完整修复），实际必须补**实体字段**才根治。
 - 修复（commit e2986b2）：① `RecordPackage`/`DoctorDepart` 补 `updateTime` 字段(+getter/setter/@TableField)；② **加固 `FieldFill`：仅当 `metaObject.hasSetter` 存在才赋值**，杜绝今后任何实体再踩坑；③ `doctor_department` 补 `update_time` 列 + 迁移脚本 `fix_entity_update_time_20261013.sql`。
 - 排查：扫描全部实体，`createTime`/`updateTime` 现已齐全；重启后端验证 `Started ShipPetApplication` + `/department/name` 返回 200。
+
+### 安全与质量修复（2026-10-14，BUG 审查）
+- 背景：收到一份 29 项 BUG 审查报告。逐项核对真实代码后，发现**全局 `SecurityConfig` 是 `anyRequest().authenticated()`，仅 `rearEnd` 数组里的接口匿名放行**；报告里多数"无 @Secured 即匿名可访问"属**误判**（本就要求登录）。只有 `rearEnd` 中真正匿名暴露的是 `/doctor/page`（返回医生全字段敏感数据）。按"真实存在才修"处理。
+- 严重(匿名越权)：`/doctor/page` 从 `rearEnd` 移除 + 加 `@Secured({ADMIN,MANAGER})`（commit 本轮）；其余需登录但缺角色约束的接口补 `@Secured`：`/doctor`/`/doctor/department`({ADMIN,MANAGER,NURSE})、`/doctor/department/detail`({ADMIN,MANAGER})、`/pet/page`({MANAGER,ADMIN})、`/pet/noClient`({NURSE,MANAGER,ADMIN})、`/notice/page`({MANAGER,ADMIN})、`/appointment/doctor`({DOCTOR,NURSE,MANAGER,ADMIN})。`/pet/one` 加**顾客归属校验**（CLIENT 仅能看自己宠物，员工看全部）。`/doctor/one` 本就脱敏+需登录，保持。
+- 并发/数据一致性：`BillServiceImpl.pay()` 余额扣减与发药扣库存均加 `WHERE ... >= 金额/数量` 原子条件并校验影响行数，防并发超扣成负数/负库存（BUG-8/10）。充值 `ClientController.recharge` 用 `client_balance = client_balance + x` 原子 SQL，本身安全，未改。
+- 账单缺字段：各模块新建账单补齐全 fee 列（BUG-21/22/23）。`HospitalServiceImpl.discharge` 补 feePackage/feeSurgery；`LabOrderServiceImpl.createOrder` 补 feeHospital/feePackage/feeSurgery；`ImageOrderServiceImpl.createOrder` 补 feePackage/feeSurgery。`SurgeryServiceImpl` 经核已全，未改。
+- 代码缺陷：①`ImgController.getFileName` 去 `assert` 改显式 null 判空 + **图片扩展名白名单**；`upload`/`upChat` 失败时返回 null（不再谎报成功文件名，BUG-13/14/15/26）；`sendImg` 加 **`..`/`/`/`\` 路径遍历防护**（BUG-28）。②`DoctorServiceImpl.addDoctor` 删等价 if/else 死代码（BUG-11）。③`DoctorLogController.update` 未登录返回 `Result.error` 而非 null（BUG-12）。④`ExceptionAdvice` 去 `printStackTrace` 改 `log.error("系统未预期异常", ex)`（BUG-27）。⑤`LoginController.regMail` 验证码 30s 间隔改为用 session attribute 记录发送时间（`getCreationTime()` 是会话创建时间，误判，BUG-18；`sendFindMail` 复用故一并修复）。
+- 经核实**不存在/无需改**：BUG-24（手术单账单已含 feePackage/feeSurgery）、BUG-25（Doctor 实体无 pwdChanged 字段，强制改密未实现，属未来项）、BUG-29（`deleteByIds` 早已正常，报告读的是过期版本）、BUG-7（saveRecord 设计无实际缺陷）。
+- 验证：`mvn clean compile` 通过；重启后端；curl 验证匿名访问 `/doctor/page`、`/pet/page`、`/notice/page`、`/appointment/doctor`、`/doctor/one` 均返回 `{"code":401,"msg":"当前未登录"}`，而 `/doctor/view` 正常返回脱敏列表。注意本系统用**响应体 code** 而非 HTTP 状态码表示鉴权失败。
+- 后续自查可关注：部分顾客/医生端接口在非对应角色时返回 null 而非 `Result.error`（如 `/pet/clientOne`、`/appointment/client`、`/doctorLog/*`、`/login/user`），属一致性小问题，本轮未改以免扩大范围。
 - 教训：本项目约定所有实体含 createTime/updateTime；新实体务必两字段都加，否则相关 insert 必崩。

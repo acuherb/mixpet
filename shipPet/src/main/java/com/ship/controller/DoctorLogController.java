@@ -100,7 +100,7 @@ public class DoctorLogController {
         if (UserUtil.getUser() instanceof Doctor doctorLog) {
             doctor.setDoctorId(doctorLog.getDoctorId());
             return Result.choice("修改", doctorService.updateSelf(doctor));
-        } else return null;
+        } else return Result.error("未登录");
     }
 
     /**

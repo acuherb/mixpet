@@ -31,8 +31,7 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(Exception.class) // 其他异常，没有预计的异常，发送固定消息
     public Result doOtherException(Exception ex) {
-        log.warn("出现了异常" + ex);
-        ex.printStackTrace();
+        log.error("系统未预期异常", ex);
         return Result.error("系统繁忙，请稍后再试！");
     }
 }

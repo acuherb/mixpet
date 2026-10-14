@@ -68,11 +68,13 @@ public class PetController {
      * @return 无主宠物的姓名与ID
      */
     @GetMapping("/noClient")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public List<NameDo> getNoClient() {
         return petService.selectNoClient();
     }
 
     @GetMapping("/page")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public IPage<PetDto> getPage(int numPage, int pageSize, String petName, String clientName) {
         return petService.selectByPage(petName, clientName, numPage, pageSize);
     }
@@ -95,6 +97,13 @@ public class PetController {
      */
     @GetMapping("/one")
     public Pet getOne(Integer petId) {
+        // 顾客只能查看自己名下的宠物，避免跨宠物信息泄露
+        if (UserUtil.getUser() instanceof Client client) {
+            Pet pet = petService.getById(petId);
+            if (pet == null || !client.getClientId().equals(pet.getClientId())) return null;
+            return pet;
+        }
+        // 内部员工(医生/护士/管理员等)可查看任意宠物
         return petService.getById(petId);
     }
 
