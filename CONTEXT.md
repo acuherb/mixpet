@@ -240,3 +240,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **默认口令可配置**：`application.yml` 加 `app.default-password`（默认 123456）；`DoctorServiceImpl`（新建医生）、`ClientServiceImpl`（新建用户）、`ClientController`（管理员重置密码）三处 `@Value` 注入替代硬编码 `123456`。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `/appointment/self/{id}`、`/appointment/self/cancel/{id}` 匿名均 `code:401`，端口 200。
 - 仍待办（未做）：住院每日监护记录、手术知情同意书、复诊关联与随访记录。
+
+### 住院每日监护记录（2026-10-14 夜续）
+- 背景：住院原先只有"入院登记 + 出院结算"两点，中间数日的看护过程无记录。补齐每日监护。
+- 新建 `hospital_monitor` 表 + `HospitalMonitor` 实体/Mapper；`IHospitalMonitorService`/Impl：`addMonitor`（校验住院单存在且"住院中"，自动带 petId、记录人=当前登录医生/顾客名，monitorTime 默认现在）、`listByHospital`（按记录时间倒序）。
+- `HospitalMonitorController` `/hospital/monitor`：`POST`（DOCTOR/NURSE 添加）、`GET /{hospitalId}`（列表；顾客端做归属校验：住院单→病历→clientId 仅本人可见）。
+- 前端 `z-hospital.vue`：住院列表操作列加"监护"按钮 → 抽屉内含**新增表单**（记录时间/体温/心率/呼吸/体重/精神/食欲/排便排尿/当日用药/处置/备注，仅"住院中"显示新增）+ **监护历史时间线**（已出院仅看历史）。`HospitalApi` 加 `reqAddHospitalMonitor`/`reqHospitalMonitorList`；新建前端模型 `HospitalMonitor.ts`。
+- 迁移脚本：`数据库备份/feature_20261014_hospital_monitor.sql`。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处闭包空指针窄化）；DB 表已建；重启后端 `Started`+200，`/hospital/monitor/{id}` 匿名 `code:401`。
+- 仍待办（未做）：手术知情同意书、复诊关联与随访记录。
