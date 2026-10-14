@@ -8,6 +8,7 @@ import com.ship.model.entity.Client;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IPetService;
+import com.ship.service.IScheduleService;
 import com.ship.model.entity.Pet;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
@@ -32,15 +33,18 @@ import java.util.List;
 public class AppointmentController {
     private final IAppointmentService appointmentService;
     private final IPetService petService;
+    private final IScheduleService scheduleService;
 
     /** 每位医生每日号源上限 */
     @Value("${appointment.max-per-day:20}")
     private int maxPerDay;
 
     @Autowired
-    public AppointmentController(IAppointmentService appointmentService, IPetService petService) {
+    public AppointmentController(IAppointmentService appointmentService, IPetService petService,
+                                 IScheduleService scheduleService) {
         this.appointmentService = appointmentService;
         this.petService = petService;
+        this.scheduleService = scheduleService;
     }
 
     @GetMapping("/page")
@@ -179,6 +183,9 @@ public class AppointmentController {
             return Result.error("请选择科室");
         if (appoint.getDoctorId() == null || appoint.getDoctorId() == 0)
             return Result.error("请选择医生");
+        // 排班校验：该医生当日不出诊则不能挂号（未配置排班的医生不限制，向后兼容）
+        if (!scheduleService.isOnDuty(appoint.getDoctorId(), appoint.getAppointmentDate().toLocalDate()))
+            return Result.error("该医生当日未排班（不出诊），请改选其他日期或医生");
         // 号源容量：同一医生同一自然日预约数不得超过上限（改期时排除自身）
         LocalDateTime dayStart = appoint.getAppointmentDate().toLocalDate().atStartOfDay();
         LocalDateTime dayEnd = appoint.getAppointmentDate().toLocalDate().plusDays(1).atStartOfDay();

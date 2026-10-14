@@ -18,153 +18,98 @@
           router
           text-color="#fff"
       >
-        <!-- 管理员：二级菜单 -->
-        <el-sub-menu v-if="isAdmin" index="" :title="isCollapse ? '个人中心' : ''">
+        <!-- 个人中心 -->
+        <el-menu-item index="/backstage" :title="isCollapse ? '个人中心' : ''">
+          <el-icon><IconMenu/></el-icon>
+          <span>个人中心</span>
+        </el-menu-item>
+
+        <!-- 经营看板 -->
+        <el-menu-item index="/backstage/z-dashboard" :title="isCollapse ? '经营看板' : ''">
+          <el-icon><DataAnalysis/></el-icon>
+          <span>经营看板</span>
+        </el-menu-item>
+
+        <!-- 接待管理 -->
+        <el-sub-menu index="g-reception" :title="isCollapse ? '接待管理' : ''">
           <template #title>
-            <el-tooltip content="个人中心" placement="right" :disabled="!isCollapse">
-              <el-icon>
-                <icon-menu/>
-              </el-icon>
-            </el-tooltip>
-            <span>个人中心</span>
+            <el-icon><Tickets/></el-icon>
+            <span>接待管理</span>
+          </template>
+          <el-menu-item index="/backstage/y-appointmentList">挂号列表</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 店面业务 -->
+        <el-sub-menu index="g-biz" :title="isCollapse ? '店面业务' : ''">
+          <template #title>
+            <el-icon><Goods/></el-icon>
+            <span>店面业务</span>
+          </template>
+          <el-menu-item index="/backstage/y-billList">收银台</el-menu-item>
+          <el-menu-item index="/backstage/y-fosterList">寄养管理</el-menu-item>
+          <el-menu-item index="/backstage/z-immune">疫苗驱虫</el-menu-item>
+          <el-menu-item index="/backstage/z-remind">随访提醒</el-menu-item>
+          <el-menu-item index="/backstage/z-follow">随访记录</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 诊疗管理 -->
+        <el-sub-menu index="g-medical" :title="isCollapse ? '诊疗管理' : ''">
+          <template #title>
+            <el-icon><FirstAidKit/></el-icon>
+            <span>诊疗管理</span>
+          </template>
+          <el-menu-item index="/backstage/z-labResult">化验结果录入</el-menu-item>
+          <el-menu-item index="/backstage/z-labTest">检验项字典</el-menu-item>
+          <el-menu-item index="/backstage/z-imageResult">影像报告录入</el-menu-item>
+          <el-menu-item index="/backstage/z-imageTest">影像项字典</el-menu-item>
+          <el-menu-item index="/backstage/z-surgery">手术麻醉</el-menu-item>
+          <el-menu-item index="/backstage/z-hospital">住院管理</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 商品与服务 -->
+        <el-sub-menu index="g-goods" :title="isCollapse ? '商品与服务' : ''">
+          <template #title>
+            <el-icon><Goods/></el-icon>
+            <span>商品与服务</span>
+          </template>
+          <el-menu-item index="/backstage/y-drugList">药品管理</el-menu-item>
+          <el-menu-item index="/backstage/z-package">服务套餐</el-menu-item>
+          <el-menu-item index="/backstage/y-adoptList">活体领养</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 客户中心 -->
+        <el-sub-menu index="g-customer" :title="isCollapse ? '客户中心' : ''">
+          <template #title>
+            <el-icon><User/></el-icon>
+            <span>客户中心</span>
+          </template>
+          <el-menu-item index="/backstage/y-clientList">客户管理</el-menu-item>
+          <el-menu-item index="/backstage/y-petList">宠物管理</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 基础配置 -->
+        <el-sub-menu index="g-config" :title="isCollapse ? '基础配置' : ''">
+          <template #title>
+            <el-icon><Setting/></el-icon>
+            <span>基础配置</span>
+          </template>
+          <el-menu-item index="/backstage/z-setting">系统设置</el-menu-item>
+          <el-menu-item index="/backstage/y-noticeList">公告管理</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 组织管理（仅管理员：科室/职务/医生/排班） -->
+        <el-sub-menu v-if="isAdmin" index="g-org" :title="isCollapse ? '组织管理' : ''">
+          <template #title>
+            <el-icon><IconMenu/></el-icon>
+            <span>组织管理</span>
           </template>
           <el-menu-item-group :title="doctorNow.name">
-            <el-menu-item index="/backstage">个人资料</el-menu-item>
             <el-menu-item index="/backstage/x-departmentList">科室列表</el-menu-item>
             <el-menu-item index="/backstage/z-job">职务/职称</el-menu-item>
             <el-menu-item index="/backstage/x-doctorList">医生列表</el-menu-item>
+            <el-menu-item index="/backstage/z-schedule">医生排班</el-menu-item>
           </el-menu-item-group>
         </el-sub-menu>
-
-        <!-- 医生：一级菜单 -->
-        <el-menu-item v-else index="/backstage" :title="isCollapse ? '个人中心' : ''">
-          <el-tooltip content="个人中心" placement="right" :disabled="!isCollapse">
-            <el-icon>
-              <icon-menu/>
-            </el-icon>
-          </el-tooltip>
-          <span>个人中心</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-dashboard" :title="isCollapse ? '经营看板' : ''">
-          <el-icon>
-              <DataAnalysis/>
-            </el-icon>
-          <span>经营看板</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-remind" :title="isCollapse ? '随访提醒' : ''">
-          <el-icon>
-              <Bell/>
-            </el-icon>
-          <span>随访提醒</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-follow" :title="isCollapse ? '随访记录' : ''">
-          <el-icon>
-              <Phone/>
-            </el-icon>
-          <span>随访记录</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-setting" :title="isCollapse ? '系统设置' : ''">
-          <el-icon>
-              <Setting/>
-            </el-icon>
-          <span>系统设置</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
-          <el-icon>
-              <User/>
-            </el-icon>
-          <span>用户列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-petList" :title="isCollapse ? '宠物列表' : ''">
-          <el-icon>
-              <Football/>
-            </el-icon>
-          <span>宠物列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-appointmentList" :title="isCollapse ? '挂号列表' : ''">
-          <el-icon>
-              <Tickets/>
-            </el-icon>
-          <span>挂号列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-drugList" :title="isCollapse ? '药品列表' : ''">
-          <el-icon>
-              <FirstAidKit/>
-            </el-icon>
-          <span>药品列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-package" :title="isCollapse ? '套餐管理' : ''">
-          <el-icon>
-              <Goods/>
-            </el-icon>
-          <span>套餐管理</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-billList" :title="isCollapse ? '收费列表' : ''">
-          <el-icon>
-              <Money/>
-            </el-icon>
-          <span>收费列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-labTest" :title="isCollapse ? '检验项字典' : ''">
-          <el-icon>
-              <FirstAidKit/>
-            </el-icon>
-          <span>检验项字典</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-labResult" :title="isCollapse ? '化验结果' : ''">
-          <el-icon>
-              <DataLine/>
-            </el-icon>
-          <span>化验结果录入</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-hospital" :title="isCollapse ? '住院管理' : ''">
-          <el-icon>
-              <OfficeBuilding/>
-            </el-icon>
-          <span>住院管理</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-surgery" :title="isCollapse ? '手术麻醉' : ''">
-          <el-icon>
-              <FirstAidKit/>
-            </el-icon>
-          <span>手术麻醉</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-imageTest" :title="isCollapse ? '影像项字典' : ''">
-          <el-icon>
-              <Camera/>
-            </el-icon>
-          <span>影像项字典</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-imageResult" :title="isCollapse ? '影像报告' : ''">
-          <el-icon>
-              <Picture/>
-            </el-icon>
-          <span>影像报告录入</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/z-immune" :title="isCollapse ? '免疫档案' : ''">
-          <el-icon>
-              <CirclePlusFilled/>
-            </el-icon>
-          <span>免疫档案</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-adoptList" :title="isCollapse ? '领养列表' : ''">
-          <el-icon>
-              <School/>
-            </el-icon>
-          <span>领养列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-fosterList" :title="isCollapse ? '寄养列表' : ''">
-          <el-icon>
-              <OfficeBuilding/>
-            </el-icon>
-          <span>寄养列表</span>
-        </el-menu-item>
-        <el-menu-item index="/backstage/y-noticeList" :title="isCollapse ? '公告列表' : ''">
-          <el-icon>
-              <DataBoard/>
-            </el-icon>
-          <span>公告列表</span>
-        </el-menu-item>
       </el-menu>
     </aside>
     <main>
@@ -174,7 +119,7 @@
 </template>
 
 <script lang="ts" setup>
-import {Camera, CirclePlusFilled, DataAnalysis, DataBoard, DataLine, Expand, FirstAidKit, Fold, Football, Menu as IconMenu, Money, OfficeBuilding, Picture, School, Tickets, User, Bell, Goods,} from '@element-plus/icons-vue'
+import {DataAnalysis, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 

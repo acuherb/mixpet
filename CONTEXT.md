@@ -284,3 +284,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **各模块表单改接字典**（去掉 allow-create 自由输入，统一在设置中心维护）：药品页 `y-drugList`（分类/单位）、检验项 `z-labTest`（分组）、影像项 `z-imageTest`（分组）、手术 `z-surgery`（类型/麻醉，含麻醉记录）、接诊 `d-appoint` 手术标签（类型/麻醉）。种子数据已预置常用值。
 - 迁移脚本：`数据库备份/feature_20261014_sys_dict.sql`（sys_dict 表 + 6 类种子）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；DB 6 类种子已入；重启后端 `/dict/type/{type}` 匿名 `code:401`、端口 200。
+
+### 菜单科学化重组 + 医生排班 + 预约就诊提醒（2026-10-14 夜·院长视角）
+- 背景：以"院长"视角参考主流宠物 SaaS 菜单，提出优化菜单排列 + 补齐 医生排班/预约提醒/在线支付/采购供应商/数据备份 等缺口。今天按"高价值+自洽+可验证"推进三项，其余给可行性结论。
+- **菜单科学化重组**（前端 `backstage/index.vue`）：扁平菜单 → 分组子菜单：经营看板 / 接待管理(挂号) / 店面业务(收银台·寄养·疫苗驱虫·随访提醒·随访记录) / 诊疗管理(化验结果+检验项·影像报告+影像项·手术麻醉·住院) / 商品与服务(药品·套餐·活体领养) / 客户中心(客户·宠物) / 基础配置(系统设置·公告) / 组织管理(仅管理员：科室·职务·医生·医生排班)。图标导入随之精简；无死链接（全部指向既有路由）。
+- **医生排班**：新建 `doctor_schedule` 表 + `DoctorSchedule` 实体/Mapper + `IScheduleService`/Impl + `ScheduleController /schedule`（`GET /doctor/{id}` 回显、`GET /all` 总览、`POST` 覆盖式保存）。`isOnDuty(doctorId,date)`：未配置排班的医生不限制（向后兼容，避免影响既有挂号）；已配置则按星期校验。挂号 `AppointmentController.checkAppoint` 加入班校验（新增/改期/员工/顾客端均走此校验），不出诊则拒。前端 `z-schedule.vue`：选医生→周一~周日 × 上午/下午 开关+号源编辑→保存；下方排班总览。路由 `/backstage/z-schedule`，菜单挂在"组织管理"。
+- **预约就诊前提醒**：新增 `AppointmentReminderScheduler`（复用已有 `@EnableScheduling`，每日 08:00）：扫描未来 36 小时内、待就诊(isSuc=false)的挂号，按 宠物/客户/医生/时间/备注 汇总成一条系统公告（`createSystemNotice`，仅员工可见、每日去重），供医护提前准备。
+- 迁移脚本：`数据库备份/feature_20261014_schedule.sql`（doctor_schedule 表）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处图标未用导入）；`doctor_schedule` 表已建；重启后端 `/schedule/all` 匿名 `code:401`、端口 200。
+- **本轮明确暂缓（附原因，非遗忘）**：①在线支付(微信/支付宝)——外部强依赖(商户资质/密钥/异步回调/对账)，今天只能留抽象；②数据备份/恢复界面化——恢复有毁库风险，不做一键恢复，导出可另行排期；③会员卡/次卡/积分闭环、经营财务报表、AI 诊断、电子发票、顾客小程序、多院区、药品批次效期、投诉工单——均为中大型功能，需各排半天~一天。

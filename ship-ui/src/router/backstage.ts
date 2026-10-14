@@ -42,6 +42,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-setting",
         component: () => import('@/views/backstage/z-setting.vue')
     }, {
+        // 医生排班
+        path: "z-schedule",
+        component: () => import('@/views/backstage/z-schedule.vue')
+    }, {
         // 套餐字典
         path: "z-package",
         component: () => import('@/views/backstage/z-package.vue')
