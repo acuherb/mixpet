@@ -42,6 +42,9 @@ public class MedicalRecord implements Serializable {
     /** 复诊日期 */
     private LocalDate revisitDate;
 
+    /** 关联的初诊/上次数病历id（复诊链） */
+    private Integer originRecordId;
+
     /** 分诊级别：1急诊 2普通 3复诊（顾客端walk-in预约） */
     private Integer triageLevel;
     /** 就诊体重(kg) */

@@ -55,6 +55,11 @@ public class Appointment implements Serializable {
     private Integer doctorId;
 
     /**
+     * 关联的初诊病历id（复诊挂号时填；接诊后写入新病历 origin_record_id）
+     */
+    private Integer originRecordId;
+
+    /**
      * 挂号简短信息
      */
     private String appointmentInfo;
@@ -171,6 +176,9 @@ public class Appointment implements Serializable {
 
     public Integer getPetOwnerId() { return petOwnerId; }
     public void setPetOwnerId(Integer petOwnerId) { this.petOwnerId = petOwnerId; }
+
+    public Integer getOriginRecordId() { return originRecordId; }
+    public void setOriginRecordId(Integer originRecordId) { this.originRecordId = originRecordId; }
 
     @Override
     public String toString() {

@@ -44,6 +44,8 @@ export interface MedicalRecord {
     /** 内部备注（仅员工可见） */
     internalNote: string | null;
     revisitDate: string | null;
+    /** 关联的初诊/上次数病历id（复诊链） */
+    originRecordId?: number | null;
     /** 分诊级别：1急诊 2普通 3复诊 */
     triageLevel?: number | null;
     /** 就诊体重(kg) */

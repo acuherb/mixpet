@@ -63,6 +63,16 @@ public class MedicalRecordController {
         return recordService.cancelPrescription(id);
     }
 
+    /** 某病历的复诊链（后续复诊记录）：顾客只能看自己宠物的 */
+    @GetMapping("/revisits/{recordId}")
+    public List<RecordDto> revisits(@PathVariable Integer recordId) {
+        com.ship.model.entity.MedicalRecord record = recordService.getById(recordId);
+        if (record == null) return java.util.List.of();
+        if (UserUtil.getUser() instanceof Client client
+                && !client.getClientId().equals(record.getClientId())) return java.util.List.of();
+        return recordService.selectRevisits(recordId);
+    }
+
     /**
      * 宠物的就诊史：顾客只能查自己名下宠物，员工可查任意
      */

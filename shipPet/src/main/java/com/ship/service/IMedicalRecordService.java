@@ -9,6 +9,8 @@ import com.ship.model.entity.Doctor;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 
+import java.util.List;
+
 /**
  * 电子病历 Service
  */
@@ -21,6 +23,9 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 单份病历详情（联查） */
     RecordDto selectRecordOne(Integer recordId);
+
+    /** 某病历的复诊链（后续复诊记录，按时间正序） */
+    List<RecordDto> selectRevisits(Integer recordId);
 
     /** 按挂号单查已生成的病历（接诊后取 recordId 用） */
     RecordDto selectByAppointment(Integer appointmentId);

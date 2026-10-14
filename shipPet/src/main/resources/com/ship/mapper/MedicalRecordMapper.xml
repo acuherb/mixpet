@@ -5,7 +5,7 @@
     <select id="selectPetRecords" resultType="com.ship.model.dto.RecordDto">
         SELECT
         r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
-        r.chief_complaint, r.diagnosis, r.treatment, r.advice, r.revisit_date,
+        r.chief_complaint, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time,
@@ -25,7 +25,7 @@
     <select id="selectRecordOne" resultType="com.ship.model.dto.RecordDto">
         SELECT
         r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
-        r.chief_complaint, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.internal_note,
+        r.chief_complaint, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time,

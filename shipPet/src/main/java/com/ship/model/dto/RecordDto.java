@@ -21,6 +21,10 @@ public class RecordDto {
     private String treatment;
     private String advice;
     private LocalDate revisitDate;
+    /** 关联的初诊/上次数病历id（复诊链） */
+    private Integer originRecordId;
+    /** 初诊/上次就诊的诊断（详情接口回填，便于追溯） */
+    private String originDiagnosis;
     private BigDecimal feeRegister;
     private BigDecimal feeTreat;
     /** 药费（来自账单） */

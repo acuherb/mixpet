@@ -95,6 +95,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         record.setClientId(appoint.getClientId());
         record.setDoctorId(doctor.getDoctorId());
         record.setDepartmentId(appoint.getDepartmentId());
+        // 复诊链：若挂号单关联了初诊/上次数病历，写入新病历
+        if (appoint.getOriginRecordId() != null) record.setOriginRecordId(appoint.getOriginRecordId());
         if (record.getFeeRegister() == null) record.setFeeRegister(BigDecimal.ZERO);
         if (record.getFeeTreat() == null) record.setFeeTreat(BigDecimal.ZERO);
         if (record.getFeeRegister().compareTo(BigDecimal.ZERO) < 0 || record.getFeeTreat().compareTo(BigDecimal.ZERO) < 0)
@@ -246,7 +248,27 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
 
     @Override
     public RecordDto selectRecordOne(Integer recordId) {
-        return baseMapper.selectRecordOne(recordId);
+        RecordDto dto = baseMapper.selectRecordOne(recordId);
+        // 复诊链：回填初诊/上次就诊的诊断，便于追溯
+        if (dto != null && dto.getOriginRecordId() != null) {
+            MedicalRecord origin = this.getById(dto.getOriginRecordId());
+            if (origin != null) dto.setOriginDiagnosis(origin.getDiagnosis());
+        }
+        return dto;
+    }
+
+    @Override
+    public List<RecordDto> selectRevisits(Integer recordId) {
+        List<MedicalRecord> revisits = this.lambdaQuery()
+                .eq(MedicalRecord::getOriginRecordId, recordId)
+                .orderByAsc(MedicalRecord::getCreateTime)
+                .list();
+        List<RecordDto> result = new ArrayList<>();
+        for (MedicalRecord r : revisits) {
+            RecordDto dto = baseMapper.selectRecordOne(r.getRecordId());
+            if (dto != null) result.add(dto);
+        }
+        return result;
     }
 
     @Override

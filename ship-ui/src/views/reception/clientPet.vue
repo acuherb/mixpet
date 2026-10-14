@@ -83,9 +83,22 @@
           <el-descriptions-item label="接诊医生">{{ detail.record.doctorName }}</el-descriptions-item>
           <el-descriptions-item label="科室">{{ detail.record.departmentName }}</el-descriptions-item>
           <el-descriptions-item label="复诊日期">{{ detail.record.revisitDate || '无需复诊' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.record.originRecordId" :span="2" label="关联就诊">
+            复诊（初诊/上次病历 #{{ detail.record.originRecordId }}{{ detail.record.originDiagnosis ? '，诊断：' + detail.record.originDiagnosis : '' }}）
+          </el-descriptions-item>
           <el-descriptions-item label="费用合计">￥{{ detail.record.totalMoney ?? 0 }}</el-descriptions-item>
         </el-descriptions>
+        <div v-if="revisits.length" style="margin-top:10px">
+          <h4 style="margin: 6px 0">复诊记录</h4>
+          <el-table :data="revisits" border size="small">
+            <el-table-column label="就诊时间" min-width="150">
+              <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 16) }}</template>
+            </el-table-column>
+            <el-table-column label="诊断" min-width="160" prop="diagnosis" show-overflow-tooltip/>
+          </el-table>
+        </div>
         <div class="no-print" style="text-align: right; margin-bottom: 6px">
+          <el-button size="small" plain round type="warning" @click="bookRevisit">预约复诊</el-button>
           <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
         </div>
         <h4 style="margin: 12px 0 6px">处方用药</h4>
@@ -264,7 +277,7 @@ import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import UpImg from "@/components/UpImg.vue";
 import {Plus} from "@element-plus/icons-vue";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
-import {reqPetRecords, reqRecordOne} from "@/request/RecordApi";
+import {reqPetRecords, reqRecordOne, reqRecordRevisits} from "@/request/RecordApi";
 import {reqLabByRecord} from "@/request/LabApi";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
 import {reqImageByRecord} from "@/request/ImageApi";
@@ -299,16 +312,22 @@ const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])
 const hospitals = ref<HospitalDto[]>([])
 const surgeries = ref<Surgery[]>([])
+const revisits = ref<RecordDto[]>([])
 const router = useRouter()
 // 顾客自助打印兽医处方笺（后端 Rx 接口已按归属校验，仅本人宠物）
 const printRx = (): void => {
   if (detail.value) router.push('/doctorPage/d-rx?recordId=' + detail.value.record.recordId)
+}
+// 预约复诊：带初诊病历id跳到挂号页
+const bookRevisit = (): void => {
+  if (detail.value) router.push('/reception/clientCenter/clientAppoint?originRecordId=' + detail.value.record.recordId)
 }
 const openRecordDetail = (recordId: number): void => {
   labs.value = []
   images.value = []
   hospitals.value = []
   surgeries.value = []
+  revisits.value = []
   reqRecordOne(recordId).then(res => {
     if (res) {
       detail.value = res
@@ -316,6 +335,9 @@ const openRecordDetail = (recordId: number): void => {
       // 顾客只能查自己宠物的就诊结果（后端已做归属校验）
       reqLabByRecord(recordId).then(list => {
         labs.value = list || []
+      })
+      reqRecordRevisits(recordId).then(list => {
+        revisits.value = list || []
       })
       reqImageByRecord(recordId).then(list => {
         images.value = list || []

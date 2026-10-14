@@ -258,3 +258,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 迁移脚本：`数据库备份/feature_20261014_surgery_consent.sql`。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；`surgery_consent` 表已建；重启后端 `/surgery/consent/sheet/{id}` 匿名 `code:401`、端口 200。
 - 至此体检清单仅剩最后一项：**复诊关联 + 随访记录**（复诊单关联原病历、术后/出院随访）。
+
+### 复诊关联 + 随访记录（2026-10-14 终）
+- **复诊关联**：`Appointment` 与 `MedicalRecord` 各加 `origin_record_id`（复诊挂号时填初诊病历id）。`saveRecord` 接诊时把挂号单的 `originRecordId` 写入新病历；`selectRecordOne` 回填 `originDiagnosis`（初诊/上次诊断）；新增 `GET /record/revisits/{recordId}` 查某病历的复诊链（顾客端归属校验）。前端：顾客病历详情显示"关联就诊/复诊记录"，加"预约复诊"按钮跳挂号页并带 `originRecordId`；`clientAppoint.vue` 读取 URL `originRecordId` 自动打开预约弹窗并提示"复诊挂号（关联病历 #X）"，提交时一并带上（`saveSelf` 保存到挂号单）。
+- **随访记录**：新建 `follow_up` 表 + `FollowUp` 实体/Mapper + `FollowUpDto`（联查宠物/客户/诊断）+ `FollowUpMapper.xml` 分页。`IFollowUpService`：`add`（自动带宠物/客户、状态待随访、随访人=当前登录人）、`listByRecord`、`selectPage`（待随访/已随访 + 宠物或客户名搜）、`done`（记结果/时间/随访人，已完成拒重）。`FollowUpController /follow`：`POST` 建计划（DOCTOR/NURSE）、`GET /page` 管理分页、`GET /record/{recordId}`（顾客归属校验）、`PUT /done/{id}` 完成。前端新增管理页 `z-follow.vue`（状态筛选/搜索/新建/完成随访弹窗/查看详情）+ 路由 `/backstage/z-follow` + 后台菜单"随访记录"。
+- 迁移脚本：`数据库备份/feature_20261014_revisit_followup.sql`（appointment/medical_record 加 origin_record_id、建 follow_up 表）。
+- 验证：`mvn clean compile` 通过（修过 IMedicalRecordService 缺 List 导入）；`npm run build` 通过（修过 clientPet 重复 useRouter 导入）；DB 列/表已建；重启后端 `/record/revisits/{id}`、`/follow/page` 匿名 `code:401`、端口 200。
+- **至此，全项目体检清单（29 项 BUG + 临床/安全/库存/财务工作流）全部完成。**

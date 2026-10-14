@@ -14,6 +14,8 @@ export interface RecordDto extends MedicalRecord {
     clientName?: string;
     doctorName?: string;
     departmentName?: string;
+    /** 初诊/上次就诊的诊断（详情接口回填） */
+    originDiagnosis?: string | null;
 }
 
 /**

@@ -57,6 +57,12 @@
             </el-icon>
           <span>随访提醒</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-follow" :title="isCollapse ? '随访记录' : ''">
+          <el-icon>
+              <Phone/>
+            </el-icon>
+          <span>随访记录</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
           <el-icon>
               <User/>

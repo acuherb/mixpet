@@ -57,6 +57,7 @@
 
     <!--预约挂号弹窗-->
     <el-dialog v-model="addVisible" title="预约挂号" width="90%" style="max-width: 480px">
+      <el-alert v-if="originRecordId" :title="`复诊挂号（关联病历 #${originRecordId}）`" :closable="false" show-icon type="info" style="margin-bottom:10px"/>
       <el-form ref="addFormRef" :model="addForm" :rules="addRules" label-width="90px">
         <el-form-item label="宠物" prop="petId">
           <el-select v-model="addForm.petId" filterable placeholder="选择就诊宠物" style="width: 100%">
@@ -106,6 +107,7 @@
 import {AppointDto} from "@/model/DO/AppointDto";
 import {moveT} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
+import {useRoute} from "vue-router";
 import {reqAddSelfAppoint, reqCancelSelfAppoint, reqClientAppoint, reqRescheduleSelfAppoint} from "@/request/AppointApi";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {Pet} from "@/model/entiy/Pet";
@@ -137,6 +139,7 @@ const addRules = reactive<FormRules>({
 const openAddDialog = (): void => {
   addForm.value = exampleAppoint()
   addForm.value.appointmentDate = null
+  originRecordId.value = null
   addFormRef.value?.clearValidate()
   addVisible.value = true
 }
@@ -207,6 +210,9 @@ const submitReschedule = (): void => {
   })
 }
 
+const route = useRoute()
+const originRecordId = ref<number | null>(null)
+
 onMounted(() => {
   reqClientAppoint().then(res => {
     appointList.value = res
@@ -218,6 +224,15 @@ onMounted(() => {
   reqDepartNameHaveDoctor(null).then(res => {
     departList.value = res
   })
+  // 从病历详情"预约复诊"跳转过来：带初诊病历id，自动打开预约弹窗
+  const orid = Number(route.query.originRecordId)
+  if (orid) {
+    originRecordId.value = orid
+    addForm.value = exampleAppoint()
+    addForm.value.appointmentDate = null
+    addForm.value.originRecordId = orid
+    addVisible.value = true
+  }
 })
 </script>
 

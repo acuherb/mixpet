@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ship.mapper.FollowUpMapper">
+    <select id="selectFollowPage" resultType="com.ship.model.dto.FollowUpDto">
+        SELECT
+        f.follow_id, f.record_id, f.pet_id, f.client_id,
+        f.follow_type, f.content, f.result, f.plan_time, f.follow_time, f.status, f.follow_by, f.note, f.create_time,
+        p.pet_name, c.client_name, r.diagnosis
+        FROM follow_up f
+        LEFT JOIN pet p ON f.pet_id = p.pet_id
+        LEFT JOIN client c ON f.client_id = c.client_id
+        LEFT JOIN medical_record r ON f.record_id = r.record_id
+        <where>
+            <if test="status != null">
+                AND f.status = #{status}
+            </if>
+            <if test="seaName != null and seaName != ''">
+                AND (p.pet_name LIKE CONCAT('%', #{seaName}, '%') OR c.client_name LIKE CONCAT('%', #{seaName}, '%'))
+            </if>
+        </where>
+        ORDER BY f.status ASC, f.plan_time ASC, f.follow_id DESC
+    </select>
+</mapper>

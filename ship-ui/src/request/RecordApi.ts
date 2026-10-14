@@ -20,3 +20,6 @@ export const reqPetRecords = (petId: number, numPage = 1, pageSize = 20): Promis
 // 病历详情（含处方）
 export const reqRecordOne = (recordId: number): Promise<RecordDetailVo> =>
     reqApi<string, RecordDetailVo>("record/one/" + recordId)
+// 某病历的复诊链（后续复诊记录）
+export const reqRecordRevisits = (recordId: number): Promise<RecordDto[]> =>
+    reqApi<string, RecordDto[]>("record/revisits/" + recordId)

@@ -9,6 +9,8 @@ export interface Appoint {
     doctorId: number | null;
     appointmentInfo: string;
     isSuc: boolean | null;
+    /** 关联的初诊病历id（复诊挂号） */
+    originRecordId?: number | null;
     createTime?: string;
     updateTime?: string | null;
     isDel: string | null;
@@ -24,6 +26,7 @@ export const exampleAppoint = ():Appoint => {
         doctorId: null,
         appointmentInfo: "",
         isSuc: null,
+        originRecordId: null,
         isDel: null
     }
 }
