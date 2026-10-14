@@ -300,6 +300,74 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         return Result.success("处方已作废，费用已冲减");
     }
 
+    /** 某病历的未付款账单（追加处方/套餐用） */
+    private Bill unpaidBill(Integer recordId) {
+        return billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                .eq(Bill::getRecordId, recordId)
+                .eq(Bill::getPayStatus, false)
+                .last("limit 1"));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result addPrescriptions(Integer recordId, List<Prescription> list) {
+        MedicalRecord record = this.getById(recordId);
+        if (record == null) return Result.error("病历不存在");
+        if (list == null || list.isEmpty()) return Result.error("请至少添加一种药品");
+        Bill bill = unpaidBill(recordId);
+        if (bill == null) return Result.error("该病历账单已收款或不存在，无法追加（如需追加请先退款）");
+        BigDecimal add = BigDecimal.ZERO;
+        for (Prescription p : list) {
+            if (p == null || p.getDrugId() == null || p.getQuantity() == null || p.getQuantity() <= 0)
+                return Result.error("药品或数量不合法");
+            Drug drug = drugMapper.selectById(p.getDrugId());
+            if (drug == null || Boolean.FALSE.equals(drug.getActive())) return Result.error("药品不存在或已停用");
+            if (drug.getDrugStock() == null || drug.getDrugStock() < p.getQuantity())
+                return Result.error("「" + drug.getDrugName() + "」库存不足（剩余 " + drug.getDrugStock() + "）");
+            p.setPrescriptionId(null);
+            p.setRecordId(recordId);
+            p.setDrugName(drug.getDrugName());
+            p.setDrugSpec(drug.getDrugSpec());
+            p.setDrugUnit(drug.getDrugUnit());
+            p.setDrugPrice(drug.getDrugPrice());
+            prescriptionMapper.insert(p);
+            add = add.add(drug.getDrugPrice().multiply(BigDecimal.valueOf(p.getQuantity())));
+        }
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getBillId, bill.getBillId())
+                .setSql("fee_drug = fee_drug + " + add.toPlainString())
+                .setSql("total_money = total_money + " + add.toPlainString()));
+        return Result.success("已追加处方，药费 +￥" + add.toPlainString());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result addPackages(Integer recordId, List<Integer> packageIds) {
+        MedicalRecord record = this.getById(recordId);
+        if (record == null) return Result.error("病历不存在");
+        if (packageIds == null || packageIds.isEmpty()) return Result.error("请至少选择一个套餐");
+        Bill bill = unpaidBill(recordId);
+        if (bill == null) return Result.error("该病历账单已收款或不存在，无法追加（如需追加请先退款）");
+        BigDecimal add = BigDecimal.ZERO;
+        for (Integer pid : packageIds) {
+            if (pid == null) continue;
+            ServicePackage real = packageService.getById(pid);
+            if (real == null || !Boolean.TRUE.equals(real.getActive())) return Result.error("套餐不存在或已停用");
+            RecordPackage rp = new RecordPackage();
+            rp.setRecordId(recordId);
+            rp.setPackageId(real.getPackageId());
+            rp.setPackageName(real.getPackageName());
+            rp.setPrice(real.getPrice());
+            recordPackageMapper.insert(rp);
+            if (real.getPrice() != null) add = add.add(real.getPrice());
+        }
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getBillId, bill.getBillId())
+                .setSql("fee_package = fee_package + " + add.toPlainString())
+                .setSql("total_money = total_money + " + add.toPlainString()));
+        return Result.success("已追加套餐，套餐费 +￥" + add.toPlainString());
+    }
+
     @Override
     public RxSheetVo selectRxSheet(Integer recordId) {
         RecordDto record = baseMapper.selectRecordOne(recordId);

@@ -265,3 +265,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 迁移脚本：`数据库备份/feature_20261014_revisit_followup.sql`（appointment/medical_record 加 origin_record_id、建 follow_up 表）。
 - 验证：`mvn clean compile` 通过（修过 IMedicalRecordService 缺 List 导入）；`npm run build` 通过（修过 clientPet 重复 useRouter 导入）；DB 列/表已建；重启后端 `/record/revisits/{id}`、`/follow/page` 匿名 `code:401`、端口 200。
 - **至此，全项目体检清单（29 项 BUG + 临床/安全/库存/财务工作流）全部完成。**
+
+### 接诊流程重构：分门别类 + 分区保存 + 可追加（2026-10-14 夜·体验优化）
+- 背景（用户反馈）：原接诊是一个大弹窗，病历/处方/套餐/检验/影像/手术全在一页需上下滚动，且只有"完成接诊"一次性提交；医生想分门别类逐个填写、分区保存，且提交后还能继续加药/加检查。
+- **前端 `d-appoint.vue` 重写为两阶段**：
+  - 阶段一「病历建档」：只填 主诉/诊断/治疗/医嘱/体征/费用 → "保存病历并开单"（`saveRecord` 仅带病历，生成病历+初始账单）。
+  - 阶段二「开单调」：`el-tabs` 分 处方/检验/影像/手术/套餐 五个标签，**每个标签独立保存/开单**（保存处方、开检验单、开影像单、安排手术、保存套餐），并展示"已开"列表与实时合计；底部"完成接诊"出就诊汇总。已建过病历的挂号再次点接诊会**直接进入开单阶段**（支持继续追加）。
+- **后端补两个"往已有病历追加"端点**（检验/影像/手术本就有各自开单端点，复用之）：
+  - `POST /record/prescription`：`addPrescriptions`（校验药品/库存、快照、插入，未付款账单 `fee_drug/total_money` 累加）。
+  - `POST /record/package`：`addPackages`（快照 RecordPackage、插入，未付款账单 `fee_package/total_money` 累加）。
+  - 两者均要求存在**未付款账单**，已收款则提示先退款（与检验/影像作废策略一致）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `/record/prescription`、`/record/package` 匿名 `code:401`、端口 200。

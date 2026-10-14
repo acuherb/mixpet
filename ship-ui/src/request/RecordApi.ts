@@ -1,7 +1,7 @@
 import {Page} from "@/model/DO/Page";
 import reqApi from "@/request/reqAPI";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
-import {RecordVo} from "@/model/entiy/MedicalRecord";
+import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
@@ -23,3 +23,9 @@ export const reqRecordOne = (recordId: number): Promise<RecordDetailVo> =>
 // 某病历的复诊链（后续复诊记录）
 export const reqRecordRevisits = (recordId: number): Promise<RecordDto[]> =>
     reqApi<string, RecordDto[]>("record/revisits/" + recordId)
+// 往已有病历追加处方（陆续加药）
+export const reqAddRecordPrescription = (data: { recordId: number; prescriptions: Prescription[] }): Promise<Res> =>
+    reqApi.post<string, Res>("record/prescription", data)
+// 往已有病历追加套餐
+export const reqAddRecordPackage = (data: { recordId: number; packageIds: number[] }): Promise<Res> =>
+    reqApi.post<string, Res>("record/package", data)

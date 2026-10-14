@@ -35,4 +35,10 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 作废单条处方：冲减未付账单的药费 */
     Result cancelPrescription(Integer prescriptionId);
+
+    /** 往已有病历追加处方（未付款账单累加药费） */
+    Result addPrescriptions(Integer recordId, java.util.List<com.ship.model.entity.Prescription> list);
+
+    /** 往已有病历追加套餐（未付款账单累加套餐费） */
+    Result addPackages(Integer recordId, java.util.List<Integer> packageIds);
 }

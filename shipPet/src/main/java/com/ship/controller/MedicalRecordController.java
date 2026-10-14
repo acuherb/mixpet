@@ -12,6 +12,8 @@ import com.ship.model.entity.RecordPackage;
 import com.ship.mapper.PrescriptionMapper;
 import com.ship.mapper.RecordPackageMapper;
 import com.ship.model.vo.RecordVo;
+import com.ship.model.vo.RecordPackageVo;
+import com.ship.model.vo.RecordPrescriptionVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IMedicalRecordService;
@@ -71,6 +73,20 @@ public class MedicalRecordController {
         if (UserUtil.getUser() instanceof Client client
                 && !client.getClientId().equals(record.getClientId())) return java.util.List.of();
         return recordService.selectRevisits(recordId);
+    }
+
+    /** 往已有病历追加处方（医生看诊中陆续加药，未付款账单累加药费） */
+    @PostMapping("/prescription")
+    @Secured(RoleConst.DOCTOR)
+    public Result addPrescription(@RequestBody RecordPrescriptionVo vo) {
+        return recordService.addPrescriptions(vo.getRecordId(), vo.getPrescriptions());
+    }
+
+    /** 往已有病历追加套餐（未付款账单累加套餐费） */
+    @PostMapping("/package")
+    @Secured(RoleConst.DOCTOR)
+    public Result addPackage(@RequestBody RecordPackageVo vo) {
+        return recordService.addPackages(vo.getRecordId(), vo.getPackageIds());
     }
 
     /**
