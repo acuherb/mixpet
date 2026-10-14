@@ -7,7 +7,6 @@
     </MyRow>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
-      <!--表单-->
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="简介" prop="appointmentInfo">
           <el-input v-model="form.appointmentInfo" clearable placeholder="无"/>
@@ -35,14 +34,12 @@
       <template #footer>
       <span class="dialog-footer">
         <el-button @click="modalView = false">取消</el-button>
-        <el-button type="primary" @click="formSubmit">
-          确认
-        </el-button>
+        <el-button type="primary" @click="formSubmit">确认</el-button>
       </span>
       </template>
     </el-dialog>
 
-    <!--接诊弹窗：阶段一「病历建档」→ 阶段二「分标签开单（可陆续追加）」-->
+    <!--接诊弹窗：阶段一「病历建档」→ 阶段二「开单调（处方/手术/套餐，检验影像走专用开单页）」-->
     <el-dialog v-model="treatView" :close-on-click-modal="false" top="4vh" width="94%" style="max-width: 800px">
       <template #header>
         <span style="font-weight: bold">{{ treatPhase === 'record' ? '接诊建档' : '开单调' }}</span>
@@ -110,10 +107,10 @@
           <span class="fee-sep">诊疗费(元)</span>
           <el-input-number v-model="recordForm.feeTreat" :max="99999" :min="0" :precision="2" :step="10"/>
         </el-form-item>
-        <p class="phase-tip">保存病历后，即可在下一个界面分门别类开具处方 / 检验 / 影像 / 手术 / 套餐，各自独立保存，后续也可随时追加。</p>
+        <p class="phase-tip">保存病历后进入开单调：可开处方/手术/套餐；检验、影像请点下方"去开检验单/影像单"在专用页面选择项目开单。</p>
       </el-form>
 
-      <!-- 阶段二：分标签开单 -->
+      <!-- 阶段二：开单调（处方 / 手术 / 套餐） -->
       <div v-else>
         <div class="order-summary">
           已建病历 #{{ treatRecordId }} · 挂号+诊疗 ￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }} · 当前合计
@@ -174,62 +171,6 @@
             <p v-if="savedRx.length === 0" style="color:#999">尚未开具处方</p>
           </el-tab-pane>
 
-          <!-- 检验 -->
-          <el-tab-pane label="检验" name="lab">
-            <div class="lab-pick">
-              <el-checkbox-group v-model="labTestIds">
-                <el-checkbox v-for="t in labTests" :key="t.testId" :value="t.testId" :disabled="!t.active">
-                  {{ t.testName }}（{{ t.testGroup }}）￥{{ t.testPrice }}
-                </el-checkbox>
-              </el-checkbox-group>
-              <p v-if="labTests.length === 0" style="color:#999">暂无可选检验项（在"检验项字典"维护）</p>
-            </div>
-            <div style="margin-top: 10px; text-align: right">
-              <el-button size="small" type="primary" :loading="labSaving" @click="createLab">开检验单（￥{{ feeLab() }}）</el-button>
-            </div>
-            <el-divider content-position="left">已开检验单</el-divider>
-            <el-table :data="savedLab" border size="small">
-              <el-table-column label="单号" width="70" prop="orderId"/>
-              <el-table-column label="费用" width="80">
-                <template #default="s">￥{{ s.row.fee }}</template>
-              </el-table-column>
-              <el-table-column label="状态" width="90">
-                <template #default="s">
-                  <el-tag v-if="s.row.status" size="small" type="success">已出结果</el-tag>
-                  <el-tag v-else size="small" type="warning">待检验</el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
-            <p v-if="savedLab.length === 0" style="color:#999">尚未开检验单</p>
-          </el-tab-pane>
-
-          <!-- 影像 -->
-          <el-tab-pane label="影像" name="img">
-            <el-select v-model="imageItemId" clearable filterable placeholder="选择影像项目（可不选）" size="small" style="width: 100%">
-              <el-option v-for="t in imageTests" :key="t.itemId" :label="`${t.itemName}（${t.groupName}）￥${t.price}`" :value="t.itemId"/>
-            </el-select>
-            <el-input v-if="imageItemId" v-model="imageExamPart" clearable size="small" style="margin-top: 6px"
-                      maxlength="128" placeholder="检查部位/目的（如：右后肢X光）"/>
-            <div style="margin-top: 10px; text-align: right">
-              <el-button size="small" type="primary" :loading="imgSaving" @click="createImg">开影像单（￥{{ feeImg() }}）</el-button>
-            </div>
-            <el-divider content-position="left">已开影像单</el-divider>
-            <el-table :data="savedImg" border size="small">
-              <el-table-column label="项目" min-width="140" prop="itemName" show-overflow-tooltip/>
-              <el-table-column label="部位" min-width="120" prop="examPart" show-overflow-tooltip/>
-              <el-table-column label="费用" width="80">
-                <template #default="s">￥{{ s.row.fee }}</template>
-              </el-table-column>
-              <el-table-column label="状态" width="90">
-                <template #default="s">
-                  <el-tag v-if="s.row.status" size="small" type="success">已出报告</el-tag>
-                  <el-tag v-else size="small" type="warning">待检查</el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
-            <p v-if="savedImg.length === 0" style="color:#999">尚未开影像单</p>
-          </el-tab-pane>
-
           <!-- 手术 -->
           <el-tab-pane label="手术" name="surgery">
             <el-form-item label="需要手术">
@@ -240,11 +181,11 @@
                 <el-input v-model="surgeryForm.surgeryName" clearable maxlength="128" placeholder="如：绝育手术（母）"/>
               </el-form-item>
               <el-form-item label="类型/麻醉">
-                <el-select v-model="surgeryForm.surgeryType" clearable allow-create filterable placeholder="类型" size="small" style="width: 48%">
-                  <el-option v-for="t in surgeryTypes" :key="t" :label="t" :value="t"/>
+                <el-select v-model="surgeryForm.surgeryType" clearable filterable placeholder="类型" size="small" style="width: 48%">
+                  <el-option v-for="t in surgeryTypeOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
                 </el-select>
                 <el-select v-model="surgeryForm.anesthesiaType" clearable placeholder="麻醉" size="small" style="width: 48%; margin-left: 4%">
-                  <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+                  <el-option v-for="a in anesthesiaTypeOpts" :key="a.dictId" :label="a.dictKey" :value="a.dictKey"/>
                 </el-select>
               </el-form-item>
               <el-form-item label="手术费(元)">
@@ -322,13 +263,11 @@
 
     <!--就诊汇总（流程连通）-->
     <el-dialog v-model="summaryView" title="接诊完成" width="560px" append-to-body>
-      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。检验/影像/手术/套餐均可随时回到"接诊"继续追加，各科室补录结果即可。</p>
+      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。处方/手术/套餐可在"接诊"继续追加；检验、影像请在专用页面开单。</p>
       <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="套餐费">￥{{ summaryFee.pkg.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item v-if="summaryFee.lab > 0" label="检验费">￥{{ summaryFee.lab.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item v-if="summaryFee.img > 0" label="影像费">￥{{ summaryFee.img.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item v-if="summaryFee.surgery > 0" label="手术费">￥{{ summaryFee.surgery.toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="合计">
           <b style="color: #f56c6c">￥{{ summaryFee.total.toFixed(2) }}</b>
@@ -336,8 +275,8 @@
       </el-descriptions>
       <div class="summary-btns">
         <el-button type="primary" @click="printRx">打印处方笺</el-button>
-        <el-button @click="goOrder('d-lab')">检验结果</el-button>
-        <el-button @click="goOrder('d-image')">影像报告</el-button>
+        <el-button @click="goOrder('d-lab')">去开检验单</el-button>
+        <el-button @click="goOrder('d-image')">去开影像单</el-button>
         <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
         <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
         <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
@@ -357,8 +296,7 @@ import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {onMounted, reactive, ref, watch} from "vue";
 import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
-import {FormInstance, FormRules} from "element-plus";
-import {ElMessage} from "element-plus";
+import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
 import {Delete, Plus} from "@element-plus/icons-vue";
@@ -368,17 +306,19 @@ import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} 
 import {reqAddRecordPackage, reqAddRecordPrescription, reqRecordByAppointment, reqRecordOne, reqSaveRecord} from "@/request/RecordApi";
 import {reqPackageList} from "@/request/PackageApi";
 import {examplePackage, RecordPackage, ServicePackage} from "@/model/entiy/ServicePackage";
-import {reqLabTestList, reqCreateLabOrder, reqLabByRecord} from "@/request/LabApi";
-import {reqImgGroup, reqCreateImageOrder, reqImageByRecord} from "@/request/ImageApi";
-import {LabOrderDto} from "@/model/DO/LabOrderDto";
-import {ImageOrder} from "@/model/entiy/ImageOrder";
-import {ImageTest} from "@/model/entiy/ImageTest";
-import {LabTest} from "@/model/entiy/LabTest";
-import {anesthesiaTypes, surgeryStatusText, surgeryStatusType, surgeryTypes, Surgery, SurgeryVo} from "@/model/entiy/Surgery";
+import {surgeryStatusText, surgeryStatusType, Surgery, SurgeryVo} from "@/model/entiy/Surgery";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
 import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {useRouter} from 'vue-router';
 
 const router = useRouter()
+// 手术类型/麻醉方式字典（来自系统设置）
+const surgeryTypeOpts = ref<SysDict[]>([])
+const anesthesiaTypeOpts = ref<SysDict[]>([])
+reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
+reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
+
 const appoint = ref<AppointDto2[]>([])
 onMounted(() => {
   queryAppoint()
@@ -386,7 +326,6 @@ onMounted(() => {
     clientNameL.value = res;
   })
 })
-// 查询订单
 const queryAppoint = () => {
   reqDoctorAppoint().then(res => {
     appoint.value = res
@@ -400,7 +339,7 @@ const queryAppoint = () => {
  */
 const treatView = ref(false)
 const treatAppoint = ref<AppointDto2 | null>(null)
-const treatPhase = ref<'record' | 'orders'>('record') // 建档 / 开单调
+const treatPhase = ref<'record' | 'orders'>('record')
 const treatRecordId = ref(0)
 const activeTab = ref('rx')
 const treatSubmitting = ref(false)
@@ -408,58 +347,40 @@ const treatSubmitting = ref(false)
 const recordForm = ref<MedicalRecord>(exampleMedicalRecord(0))
 const recordFormRef = ref<FormInstance>()
 
-// 开单：待保存行
+// 开单：待保存行（处方/手术/套餐）
 const prescriptions = ref<Prescription[]>([])
 const packages = ref<ServicePackage[]>([])
-const labTestIds = ref<number[]>([])
-const imageItemId = ref<number | null>(null)
-const imageExamPart = ref('')
 const needSurgery = ref(false)
 const surgeryForm = ref<SurgeryVo>({recordId: null, surgeryName: '', surgeryType: null, anesthesiaType: null, scheduledTime: null, surgeon: null, assistant: null, fee: 0})
 
-// 开单：已保存回显
+// 已保存回显
 const savedRx = ref<Prescription[]>([])
 const savedPkg = ref<RecordPackage[]>([])
-const savedLab = ref<LabOrderDto[]>([])
-const savedImg = ref<ImageOrder[]>([])
 const savedSurgery = ref<Surgery[]>([])
 
 // 保存中
 const rxSaving = ref(false)
 const pkgSaving = ref(false)
-const labSaving = ref(false)
-const imgSaving = ref(false)
 const surgerySaving = ref(false)
 
 // 字典
 const drugList = ref<Drug[]>([])
 const packageList = ref<ServicePackage[]>([])
-const labTests = ref<LabTest[]>([])
-const imageTests = ref<ImageTest[]>([])
-
 const loadDicts = (): void => {
   if (drugList.value.length === 0) reqDrugList().then(res => { drugList.value = res })
   if (packageList.value.length === 0) reqPackageList().then(res => { packageList.value = res })
-  if (labTests.value.length === 0) reqLabTestList().then(res => { labTests.value = res || [] })
-  if (imageTests.value.length === 0) reqImgGroup().then(res => { imageTests.value = res || [] })
 }
 const resetOrderForms = (): void => {
   prescriptions.value = []
   packages.value = []
-  labTestIds.value = []
-  imageItemId.value = null
-  imageExamPart.value = ''
   needSurgery.value = false
   surgeryForm.value = {recordId: null, surgeryName: '', surgeryType: null, anesthesiaType: null, scheduledTime: null, surgeon: null, assistant: null, fee: 0}
   savedRx.value = []
   savedPkg.value = []
-  savedLab.value = []
-  savedImg.value = []
   savedSurgery.value = []
   activeTab.value = 'rx'
 }
 
-// 打开接诊：已建过病历的直接进入开单阶段（支持继续追加），否则先建病历
 const openTreat = (a: AppointDto2): void => {
   treatAppoint.value = a
   recordForm.value = exampleMedicalRecord(a.appointmentId)
@@ -469,6 +390,7 @@ const openTreat = (a: AppointDto2): void => {
   loadDicts()
   treatView.value = true
   treatPhase.value = 'record'
+  // 已建过病历的直接进入开单阶段（支持继续追加）
   reqRecordByAppointment(a.appointmentId).then(rec => {
     if (rec && rec.recordId) {
       treatRecordId.value = rec.recordId
@@ -478,7 +400,6 @@ const openTreat = (a: AppointDto2): void => {
     }
   })
 }
-
 const enterOrders = (): void => {
   treatPhase.value = 'orders'
   activeTab.value = 'rx'
@@ -493,12 +414,10 @@ const loadSaved = (): void => {
       if (res.record.feeTreat != null) recordForm.value.feeTreat = res.record.feeTreat
     }
   })
-  reqLabByRecord(treatRecordId.value).then(r => { savedLab.value = r || [] })
-  reqImageByRecord(treatRecordId.value).then(r => { savedImg.value = r || [] })
   reqSurgeryByRecord(treatRecordId.value).then(r => { savedSurgery.value = r || [] })
 }
 
-// 阶段一：保存病历并开单（只建病历+初始账单，检查/药品随后在开单页追加）
+// 阶段一：保存病历并开单（只建病历+初始账单）
 const submitRecord = (): void => {
   recordFormRef.value?.validate((valid: boolean): void => {
     if (!valid) return
@@ -534,7 +453,7 @@ const pkgOf = (packageId: number): ServicePackage | undefined => packageList.val
 const addPrescription = (): void => { prescriptions.value.push(examplePrescription()) }
 const addPackage = (): void => { packages.value.push(examplePackage()) }
 
-// 各分区保存
+// 分区保存
 const saveRx = (): void => {
   const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
   if (!ps.length) { ElMessage.warning('请先添加药品'); return }
@@ -555,24 +474,6 @@ const savePkg = (): void => {
     else ElMessage.error(res.msg || '保存失败')
   }).catch(() => { pkgSaving.value = false })
 }
-const createLab = (): void => {
-  if (!labTestIds.value.length) { ElMessage.warning('请先勾选检验项'); return }
-  labSaving.value = true
-  reqCreateLabOrder({recordId: treatRecordId.value, orderNote: '', testIds: labTestIds.value}).then(res => {
-    labSaving.value = false
-    if (res.code === 1) { ElMessage.success(res.msg || '检验单已开出'); labTestIds.value = []; loadSaved() }
-    else ElMessage.error(res.msg || '开单失败')
-  }).catch(() => { labSaving.value = false })
-}
-const createImg = (): void => {
-  if (!imageItemId.value) { ElMessage.warning('请先选择影像项目'); return }
-  imgSaving.value = true
-  reqCreateImageOrder({recordId: treatRecordId.value, itemId: imageItemId.value, examPart: imageExamPart.value, note: ''}).then(res => {
-    imgSaving.value = false
-    if (res.code === 1) { ElMessage.success(res.msg || '影像单已开出'); imageItemId.value = null; imageExamPart.value = ''; loadSaved() }
-    else ElMessage.error(res.msg || '开单失败')
-  }).catch(() => { imgSaving.value = false })
-}
 const createSurgery = (): void => {
   if (!surgeryForm.value.surgeryName.trim()) { ElMessage.warning('请填写手术名称'); return }
   surgerySaving.value = true
@@ -587,19 +488,7 @@ const createSurgery = (): void => {
   }).catch(() => { surgerySaving.value = false })
 }
 
-// 费用合计（已保存 + 待保存）
-const feeLab = (): string => {
-  let sum = 0
-  for (const id of labTestIds.value) {
-    const t = labTests.value.find(x => x.testId === id)
-    if (t && t.testPrice != null) sum += t.testPrice
-  }
-  return sum.toFixed(2)
-}
-const feeImg = (): string => {
-  const t = imageTests.value.find(x => x.itemId === imageItemId.value)
-  return (t?.price ?? 0).toFixed(2)
-}
+// 费用合计
 const feeSurgery = (): string => (needSurgery.value ? (surgeryForm.value.fee || 0).toFixed(2) : '0.00')
 const feePackage = (): string => {
   let sum = 0
@@ -619,30 +508,26 @@ const feeDrug = (): string => {
 }
 const savedDrugSum = (): number => savedRx.value.reduce((s, p) => s + (p.drugPrice ?? 0) * (p.quantity ?? 0), 0)
 const savedPkgSum = (): number => savedPkg.value.reduce((s, p) => s + (p.price ?? 0), 0)
-const savedLabSum = (): number => savedLab.value.reduce((s, o) => s + (o.fee ?? 0), 0)
-const savedImgSum = (): number => savedImg.value.reduce((s, o) => s + (o.fee ?? 0), 0)
 const savedSurgerySum = (): number => savedSurgery.value.reduce((s, o) => s + (o.fee ?? 0), 0)
 const treatTotal = (): string => {
   const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0)
-      + savedDrugSum() + savedPkgSum() + savedLabSum() + savedImgSum() + savedSurgerySum()
-      + Number(feeDrug()) + Number(feePackage()) + Number(feeLab()) + Number(feeImg()) + Number(feeSurgery())
+      + savedDrugSum() + savedPkgSum() + savedSurgerySum()
+      + Number(feeDrug()) + Number(feePackage()) + Number(feeSurgery())
   return sum.toFixed(2)
 }
 
 // 完成接诊 → 就诊汇总
 const summaryView = ref(false)
 const summaryRecordId = ref(0)
-const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, lab: 0, img: 0, surgery: 0, total: 0})
+const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, surgery: 0, total: 0})
 const finishTreat = (): void => {
   summaryRecordId.value = treatRecordId.value
   const drug = savedDrugSum() + Number(feeDrug())
   const pkg = savedPkgSum() + Number(feePackage())
-  const lab = savedLabSum() + Number(feeLab())
-  const img = savedImgSum() + Number(feeImg())
   const surgery = savedSurgerySum() + Number(feeSurgery())
   const reg = recordForm.value.feeRegister || 0
   const treat = recordForm.value.feeTreat || 0
-  summaryFee.value = {reg, treat, drug, pkg, lab, img, surgery, total: reg + treat + drug + pkg + lab + img + surgery}
+  summaryFee.value = {reg, treat, drug, pkg, surgery, total: reg + treat + drug + pkg + surgery}
   summaryView.value = true
   queryAppoint()
 }
@@ -696,7 +581,6 @@ const rules = reactive<FormRules>({
   "clientId": [{required: true, message: '请选择用户', trigger: 'change'}],
   "petId": [{required: true, message: '请选择宠物', trigger: 'change'}],
 })
-
 watch(() => form.value.clientId, (newValue): void => {
   if (newValue == 0 || newValue == null) return;
   reqPetNameByClientId(newValue, <number>form.value.petId).then(res => {
@@ -706,40 +590,9 @@ watch(() => form.value.clientId, (newValue): void => {
 </script>
 
 <style lang="scss" scoped>
-.fee-sep {
-  margin: 0 12px 0 24px;
-  color: #909399;
-}
-.phase-tip {
-  margin: 4px 0 0 90px;
-  font-size: 12px;
-  color: #909399;
-}
-.order-summary {
-  padding: 8px 12px;
-  background: #f5f7fa;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-.treat-total {
-  float: left;
-  font-size: 15px;
-}
-.summary-btns {
-  margin-top: 16px;
-  text-align: right;
-}
-.lab-pick {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  padding: 8px 10px;
-}
-.lab-pick .el-checkbox {
-  display: flex;
-  margin-right: 0;
-  line-height: 1.9;
-}
+.fee-sep { margin: 0 12px 0 24px; color: #909399; }
+.phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
+.order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
+.treat-total { float: left; font-size: 15px; }
+.summary-btns { margin-top: 16px; text-align: right; }
 </style>

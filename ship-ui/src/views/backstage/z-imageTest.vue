@@ -3,7 +3,7 @@
   <BackOpCol role="影像项" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.itemName" clearable placeholder="项目名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-select v-model="qp.groupName" clearable placeholder="全部分组" size="large" style="width: 110px" @change="nowQuery">
-      <el-option v-for="g in imageGroups" :key="g" :label="g" :value="g"/>
+      <el-option v-for="g in imgGroupOpts" :key="g.dictId" :label="g.dictKey" :value="g.dictKey"/>
     </el-select>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
@@ -44,8 +44,8 @@
         <el-input v-model="form.itemName" clearable maxlength="64" placeholder="如：胸部X光片"/>
       </el-form-item>
       <el-form-item label="分组" prop="groupName">
-        <el-select v-model="form.groupName" allow-create filterable placeholder="选择或输入分组">
-          <el-option v-for="g in imageGroups" :key="g" :label="g" :value="g"/>
+        <el-select v-model="form.groupName" filterable placeholder="选择分组（在系统设置维护）">
+          <el-option v-for="g in imgGroupOpts" :key="g.dictId" :label="g.dictKey" :value="g.dictKey"/>
         </el-select>
       </el-form-item>
       <el-form-item label="单价(元)" prop="price">
@@ -69,11 +69,17 @@ import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
-import {exampleImageTest, imageGroups, ImageTest} from "@/model/entiy/ImageTest";
+import {exampleImageTest, ImageTest} from "@/model/entiy/ImageTest";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
 import {Page} from "@/model/DO/Page";
 import {reqImageTestPage, reqUpdateImageTest, reqAddImageTest, reqDelImageTest} from "@/request/ImageApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
+
+// 影像分组字典（来自系统设置）
+const imgGroupOpts = ref<SysDict[]>([])
+reqDictByType('img_group').then(r => { imgGroupOpts.value = r || [] })
 
 const qp = reactive({itemName: '', groupName: '', numPage: 1, pageSize: 15})
 const list = ref<Page<ImageTest>>({records: [], total: 0})

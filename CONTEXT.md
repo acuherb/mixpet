@@ -276,3 +276,11 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
   - `POST /record/package`：`addPackages`（快照 RecordPackage、插入，未付款账单 `fee_package/total_money` 累加）。
   - 两者均要求存在**未付款账单**，已收款则提示先退款（与检验/影像作废策略一致）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `/record/prescription`、`/record/package` 匿名 `code:401`、端口 200。
+
+### 化验/影像独立开单 + 统一设置中心（2026-10-14 夜·体验/架构）
+- 背景（用户反馈）：①化验/影像应"单独去开单"，且接诊里"化验不能选择项目"；②建议把化验分类/项目、药品分类/单位等各模块配置**统一放到一个设置中心分门别类**管理。
+- **化验/影像独立开单 + 修复选择bug**：根因是 Element Plus 2.3.6 的 `el-checkbox` 用 `label` 绑定值，而我上轮在接诊里用 `:value`（该版本不识别）→ 选不中。现将**检验/影像从接诊弹窗移除**，接诊只保留 病历/处方/手术/套餐；检验、影像走各自专用开单页 `d-lab`/`d-image`（本就正常，`:label`），从就诊汇总"去开检验单/影像单"进入。
+- **统一设置中心（通用字典 sys_dict）**：新建 `sys_dict` 表 + `SysDict` 实体/Mapper/Service/Controller `/dict`（`GET /dict/type/{type}` 登录可用；增删改/启停 MANAGER）。前端新增设置页 `z-setting.vue`（左侧 6 类菜单 + 右侧字典值增删改/启停/排序）+ 路由 `/backstage/z-setting` + 后台菜单"系统设置"。字典类型：`lab_group` 化验分组 / `img_group` 影像分组 / `drug_type` 药品分类 / `drug_unit` 药品单位 / `surgery_type` 手术类型 / `anesthesia_type` 麻醉方式。
+- **各模块表单改接字典**（去掉 allow-create 自由输入，统一在设置中心维护）：药品页 `y-drugList`（分类/单位）、检验项 `z-labTest`（分组）、影像项 `z-imageTest`（分组）、手术 `z-surgery`（类型/麻醉，含麻醉记录）、接诊 `d-appoint` 手术标签（类型/麻醉）。种子数据已预置常用值。
+- 迁移脚本：`数据库备份/feature_20261014_sys_dict.sql`（sys_dict 表 + 6 类种子）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；DB 6 类种子已入；重启后端 `/dict/type/{type}` 匿名 `code:401`、端口 200。

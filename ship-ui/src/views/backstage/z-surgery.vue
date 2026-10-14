@@ -49,13 +49,13 @@
           <el-input v-model="createForm.surgeryName" clearable maxlength="128" placeholder="如：绝育手术（母）"/>
         </el-form-item>
         <el-form-item label="手术类型" prop="surgeryType">
-          <el-select v-model="createForm.surgeryType" allow-create filterable placeholder="选择或输入">
-            <el-option v-for="t in surgeryTypes" :key="t" :label="t" :value="t"/>
+          <el-select v-model="createForm.surgeryType" filterable placeholder="选择类型（在系统设置维护）">
+            <el-option v-for="t in surgeryTypeOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
           </el-select>
         </el-form-item>
         <el-form-item label="麻醉方式" prop="anesthesiaType">
-          <el-select v-model="createForm.anesthesiaType" placeholder="选择麻醉方式">
-            <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+          <el-select v-model="createForm.anesthesiaType" placeholder="选择麻醉方式（在系统设置维护）">
+            <el-option v-for="a in anesthesiaTypeOpts" :key="a.dictId" :label="a.dictKey" :value="a.dictKey"/>
           </el-select>
         </el-form-item>
         <el-form-item label="预约时间">
@@ -115,8 +115,8 @@
 
           <el-divider content-position="left">麻醉记录</el-divider>
           <el-form-item label="麻醉方式">
-            <el-select v-model="anesthesia.anesthesiaType" allow-create filterable placeholder="选择或输入" style="width: 200px">
-              <el-option v-for="a in anesthesiaTypes" :key="a" :label="a" :value="a"/>
+            <el-select v-model="anesthesia.anesthesiaType" filterable placeholder="选择或输入" style="width: 200px">
+              <el-option v-for="a in anesthesiaTypeOpts" :key="a.dictId" :label="a.dictKey" :value="a.dictKey"/>
             </el-select>
           </el-form-item>
           <el-form-item label="麻醉师">
@@ -178,8 +178,16 @@ import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
-import {anesthesiaTypes, Surgery, surgeryStatusText, surgeryStatusType, surgeryTypes, SurgeryVo} from "@/model/entiy/Surgery";
+import {Surgery, surgeryStatusText, surgeryStatusType, SurgeryVo} from "@/model/entiy/Surgery";
 import {AnesthesiaRecord} from "@/model/entiy/AnesthesiaRecord";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
+
+// 手术类型/麻醉方式字典（来自系统设置）
+const surgeryTypeOpts = ref<SysDict[]>([])
+const anesthesiaTypeOpts = ref<SysDict[]>([])
+reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
+reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
 import {RecordDto} from "@/model/DO/RecordDto";
 import {reqDoctorRecords} from "@/request/LabApi";
 import {reqConsentOne, reqCreateSurgery, reqSaveAnesthesia, reqSignConsent, reqSurgeryOne, reqSurgeryPage, reqUpdateSurgery} from "@/request/SurgeryApi";

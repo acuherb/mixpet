@@ -38,6 +38,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-follow",
         component: () => import('@/views/backstage/z-follow.vue')
     }, {
+        // 系统设置/字典（集中管理各模块枚举）
+        path: "z-setting",
+        component: () => import('@/views/backstage/z-setting.vue')
+    }, {
         // 套餐字典
         path: "z-package",
         component: () => import('@/views/backstage/z-package.vue')

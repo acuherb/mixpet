@@ -3,7 +3,7 @@
   <BackOpCol role="检验项" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.testName" clearable placeholder="检验项名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-select v-model="qp.testGroup" clearable placeholder="全部分组" size="large" style="width: 110px" @change="nowQuery">
-      <el-option v-for="t in labTestGroups" :key="t" :label="t" :value="t"/>
+      <el-option v-for="t in labGroupOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
     </el-select>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
@@ -51,8 +51,8 @@
         <el-input v-model="form.testName" clearable maxlength="64" placeholder="如：白细胞计数"/>
       </el-form-item>
       <el-form-item label="分组" prop="testGroup">
-        <el-select v-model="form.testGroup" allow-create filterable placeholder="选择或输入分组">
-          <el-option v-for="t in labTestGroups" :key="t" :label="t" :value="t"/>
+        <el-select v-model="form.testGroup" filterable placeholder="选择分组（在系统设置维护）">
+          <el-option v-for="t in labGroupOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
         </el-select>
       </el-form-item>
       <el-form-item label="单位" prop="testUnit">
@@ -82,11 +82,17 @@ import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
-import {exampleLabTest, labTestGroups, LabTest} from "@/model/entiy/LabTest";
+import {exampleLabTest, LabTest} from "@/model/entiy/LabTest";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
 import {Page} from "@/model/DO/Page";
 import {reqAddLabTest, reqDelLabTest, reqLabTestPage, reqUpdateLabTest} from "@/request/LabApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
+
+// 化验分组字典（来自系统设置）
+const labGroupOpts = ref<SysDict[]>([])
+reqDictByType('lab_group').then(r => { labGroupOpts.value = r || [] })
 
 /**
  ┌───────────────────────────────────┐

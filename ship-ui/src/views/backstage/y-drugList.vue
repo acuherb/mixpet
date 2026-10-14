@@ -3,7 +3,7 @@
   <BackOpCol role="药品" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.drugName" clearable placeholder="药品名 / 规格" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-select v-model="qp.drugType" clearable placeholder="全部分类" size="large" style="width: 110px" @change="nowQuery">
-      <el-option v-for="t in drugTypes" :key="t" :label="t" :value="t"/>
+      <el-option v-for="t in drugTypeOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
     </el-select>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
@@ -77,15 +77,13 @@
         <el-input v-model="form.drugSpec" clearable maxlength="64" placeholder="如：625mg×7片"/>
       </el-form-item>
       <el-form-item label="分类" prop="drugType">
-        <el-select v-model="form.drugType" allow-create filterable placeholder="选择或输入分类">
-          <el-option v-for="t in drugTypes" :key="t" :label="t" :value="t"/>
+        <el-select v-model="form.drugType" filterable placeholder="选择分类（在系统设置维护）">
+          <el-option v-for="t in drugTypeOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
         </el-select>
       </el-form-item>
       <el-form-item label="单位" prop="drugUnit">
-        <el-select v-model="form.drugUnit" allow-create filterable placeholder="盒/瓶/支">
-          <el-option label="盒" value="盒"/>
-          <el-option label="瓶" value="瓶"/>
-          <el-option label="支" value="支"/>
+        <el-select v-model="form.drugUnit" filterable placeholder="选择单位（在系统设置维护）">
+          <el-option v-for="u in drugUnitOpts" :key="u.dictId" :label="u.dictKey" :value="u.dictKey"/>
         </el-select>
       </el-form-item>
       <el-form-item label="单价(元)" prop="drugPrice">
@@ -171,12 +169,20 @@ import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
-import {drugTypes, exampleDrug, Drug} from "@/model/entiy/Drug";
+import {exampleDrug, Drug} from "@/model/entiy/Drug";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
 import {DrugRecord, changeTypeText} from "@/model/entiy/DrugRecord";
 import {Page} from "@/model/DO/Page";
 import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugInbound, reqDrugPage, reqDrugRecordPage, reqUpdateDrug} from "@/request/DrugApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
+
+// 分类/单位字典（来自系统设置）
+const drugTypeOpts = ref<SysDict[]>([])
+const drugUnitOpts = ref<SysDict[]>([])
+reqDictByType('drug_type').then(r => { drugTypeOpts.value = r || [] })
+reqDictByType('drug_unit').then(r => { drugUnitOpts.value = r || [] })
 
 /**
  ┌───────────────────────────────────┐

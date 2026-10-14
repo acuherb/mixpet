@@ -63,6 +63,12 @@
             </el-icon>
           <span>随访记录</span>
         </el-menu-item>
+        <el-menu-item index="/backstage/z-setting" :title="isCollapse ? '系统设置' : ''">
+          <el-icon>
+              <Setting/>
+            </el-icon>
+          <span>系统设置</span>
+        </el-menu-item>
         <el-menu-item index="/backstage/y-clientList" :title="isCollapse ? '用户列表' : ''">
           <el-icon>
               <User/>
