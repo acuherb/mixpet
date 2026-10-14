@@ -17,6 +17,10 @@ export interface BillDto {
     totalMoney: number;
     payStatus: boolean;
     payType: boolean | null;
+    /** 发药状态 0未发 1已发 */
+    dispenseStatus?: boolean;
+    /** 发药核对人 */
+    dispenseBy?: string | null;
     createTime: string | null;
     payTime: string | null;
     clientName: string;

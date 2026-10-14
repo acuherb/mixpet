@@ -9,3 +9,6 @@ export const reqBillPage = (params: { numPage: number; pageSize: number; seaName
 // 收款（payType: false余额 true现金）
 export const reqBillPay = (billId: number, payType: boolean): Promise<Res> =>
     reqApi.put<string, Res>(`bill/pay/${billId}`, {}, {params: {payType}})
+// 发药核对（护士确认发药）
+export const reqBillDispense = (billId: number, operator: string): Promise<Res> =>
+    reqApi.post<string, Res>(`bill/dispense/${billId}`, {}, {params: {operator}})

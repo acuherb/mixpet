@@ -206,3 +206,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 验证：`mvn clean compile` 通过；重启后端；curl 验证匿名访问 `/doctor/page`、`/pet/page`、`/notice/page`、`/appointment/doctor`、`/doctor/one` 均返回 `{"code":401,"msg":"当前未登录"}`，而 `/doctor/view` 正常返回脱敏列表。注意本系统用**响应体 code** 而非 HTTP 状态码表示鉴权失败。
 - 后续自查可关注：部分顾客/医生端接口在非对应角色时返回 null 而非 `Result.error`（如 `/pet/clientOne`、`/appointment/client`、`/doctorLog/*`、`/login/user`），属一致性小问题，本轮未改以免扩大范围。
 - 教训：本项目约定所有实体含 createTime/updateTime；新实体务必两字段都加，否则相关 insert 必崩。
+
+### 工作流增强（2026-10-14 下午，按科学就诊流程推进）
+- 背景：以"院长/医生"视角按 分诊→挂号→接诊→诊断→结果回写→治疗/发药→收费→离院/出院→随访复诊/免疫提醒 闭环审视，指出四大断点并推进。
+- **T1 接诊分诊结构化**：`MedicalRecord` 补 `triageLevel`(1急诊/2普通/3复诊)、`weight`、`temperature`、`heartRate`、`respiratoryRate`；`RecordVo` 经 `record` 字段自动带入；`d-appoint.vue` 病历区新增"分诊与体征"分组（下拉选分诊级别 + 体重/体温/心率/呼吸数字框）。DB 列见 `数据库备份/feature_20261014_workflow.sql`。
+- **T2 检验/影像结果回写与报告挂接**：后端 `LabOrder`/`ImageOrder` 增 `reportFile` 字段；`LabResultVo`/`ImageReportVo` 增 `reportFile`，`saveResult`/`saveReport` 一并持久化；`LabOrderDto`/`ImageOrderDto` 透传，XML 分页/按病历查询补 `report_file` 列。前端结果录入页 `z-labResult.vue`/`z-imageResult.vue` 用 `UpImg` 组件上传报告附件并随结果保存、已录入可查看/移除。顾客端查询接口原本已存在（`/lab/record/{recordId}`、`/imageOrder/record/{recordId}`，带归属校验），结果+报告现已可回写。
+  - 注：`UpImg` 组件 `photoNm` 为**必填** prop，使用时务必传 `:photo-nm`（本轮回填 `''`）。
+- **T3 发药核对流程**：`Bill` 补 `dispenseStatus`/`dispenseBy`/`dispenseTime`；`IBillService.dispense` + `BillServiceImpl.dispense`（未收款/已发药均拦截，记录核对人与时间）；`BillController.POST /bill/dispense` 加 `@Secured({NURSE,MANAGER,ADMIN})`。前端 `y-billList.vue` 操作列加"药"按钮（仅已收款未发药可见），状态列显示 待发药/已发药，弹窗输核对人姓名后确认。
+- **T4 免疫计划与到期提醒**：项目原本**无任何定时任务基础设施**，新增 `@EnableScheduling`（ShipPetApplication）+ `VaccineReminderScheduler`（`@Scheduled(cron="0 0 8 * * ?")` 每日 08:00）。扫描 `immune_record` 中 `next_time` 落在未来 7 天内的记录（去已删），按 客户/宠物 汇总，调用新增的 `INoticeService.createSystemNotice` 程序化生成系统公告（creatId=0，不经登录校验）。每日仅生成一条（按日期标题去重），异常被 catch 仅记日志不中断。
+- 验证：`mvn clean compile` 通过；前端 `npm run build`（vue-tsc + vite）通过（仅 chunk 体积警告）；后端重启后 `/bill/dispense` 端点注册并正确拦截匿名；新 DB 列已 `ALTER` 生效。四项均后端编译/运行 + 前端类型检查双重验证。
+- 已知边界：①T2 报告附件沿用 `/common/upload`（图片类型校验已在昨日加固），文件服务经 `/api/common/download?name=`；②T4 提醒依赖 `immune_record.next_time` 已被填写，若前台录入免疫时未填下一针时间则不会触发提醒（属前台录入规范问题）；③发药核对与收费解耦——收费即扣库存，发药核对为护士线下发药后的系统确认记录，二者不互斥。

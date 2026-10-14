@@ -23,6 +23,7 @@ public class ImageOrderDto {
     private String result;
     private LocalDateTime reportTime;
     private Boolean status;
+    private String reportFile;
     private String note;
     private LocalDateTime createTime;
 

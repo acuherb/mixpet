@@ -5,7 +5,7 @@
     <select id="selectImageOrderPage" resultType="com.ship.model.dto.ImageOrderDto">
         SELECT
         o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
-        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.create_time,
+        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
         p.pet_name, c.client_name, d.doctor_name, r.diagnosis
         FROM image_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id
@@ -23,7 +23,7 @@
     <select id="selectByRecord" resultType="com.ship.model.dto.ImageOrderDto">
         SELECT
         o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
-        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.create_time,
+        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
         p.pet_name, c.client_name, d.doctor_name
         FROM image_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id

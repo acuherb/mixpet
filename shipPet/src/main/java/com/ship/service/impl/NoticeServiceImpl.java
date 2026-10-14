@@ -140,6 +140,14 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
         return baseMapper.disableNotice(noticeId, !isDis);
     }
 
+    @Override
+    public boolean createSystemNotice(String title, String content) {
+        if (title == null || title.isBlank()) return false;
+        String path = UUID.randomUUID() + ".txt";
+        writeText(content, path);
+        return baseMapper.addNotice(0, title, path);
+    }
+
     /**
      * 获取公告文本
      *

@@ -41,6 +41,18 @@ public class MedicalRecord implements Serializable {
     private String internalNote;
     /** 复诊日期 */
     private LocalDate revisitDate;
+
+    /** 分诊级别：1急诊 2普通 3复诊（顾客端walk-in预约） */
+    private Integer triageLevel;
+    /** 就诊体重(kg) */
+    private BigDecimal weight;
+    /** 体温(℃) */
+    private BigDecimal temperature;
+    /** 心率(次/分) */
+    private Integer heartRate;
+    /** 呼吸(次/分) */
+    private Integer respiratoryRate;
+
     /** 挂号费 */
     private BigDecimal feeRegister;
     /** 诊疗费 */

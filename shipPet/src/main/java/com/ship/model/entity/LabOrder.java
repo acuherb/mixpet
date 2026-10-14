@@ -34,6 +34,8 @@ public class LabOrder implements Serializable {
     private String resultNote;
     /** 结果录入人 */
     private String resultBy;
+    /** 报告文件(图片/PDF)路径，可选 */
+    private String reportFile;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

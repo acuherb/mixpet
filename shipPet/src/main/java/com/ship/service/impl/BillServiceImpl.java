@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -87,5 +88,20 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .set(Bill::getPayType, payType != null && payType)
                 .update();
         return Result.success("收款成功" + (prescriptions.isEmpty() ? "" : "，处方药品已扣减库存"));
+    }
+
+    @Override
+    public Result dispense(Integer billId, String operator) {
+        Bill bill = this.getById(billId);
+        if (bill == null) return Result.error("账单不存在");
+        if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单尚未收款，无法发药");
+        if (Boolean.TRUE.equals(bill.getDispenseStatus())) return Result.error("该账单已发药，请勿重复核对");
+        this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .set(Bill::getDispenseStatus, true)
+                .set(Bill::getDispenseBy, operator)
+                .set(Bill::getDispenseTime, LocalDateTime.now())
+                .update();
+        return Result.success("发药核对完成");
     }
 }

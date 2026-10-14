@@ -22,5 +22,7 @@ export interface LabResultItemVo {
 export interface LabResultVo {
     orderId: number;
     resultNote: string;
+    /** 报告文件(图片/PDF)路径，可选 */
+    reportFile?: string;
     items: LabResultItemVo[];
 }

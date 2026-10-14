@@ -44,6 +44,16 @@ export interface MedicalRecord {
     /** 内部备注（仅员工可见） */
     internalNote: string | null;
     revisitDate: string | null;
+    /** 分诊级别：1急诊 2普通 3复诊 */
+    triageLevel?: number | null;
+    /** 就诊体重(kg) */
+    weight?: number | null;
+    /** 体温(℃) */
+    temperature?: number | null;
+    /** 心率(次/分) */
+    heartRate?: number | null;
+    /** 呼吸(次/分) */
+    respiratoryRate?: number | null;
     feeRegister: number;
     feeTreat: number;
 }

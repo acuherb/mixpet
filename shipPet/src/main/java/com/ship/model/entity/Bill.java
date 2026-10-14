@@ -43,6 +43,12 @@ public class Bill implements Serializable {
     private Boolean payStatus;
     /** 0余额 1现金 */
     private Boolean payType;
+    /** 发药状态：0未发药 1已发药（护士核对后置1） */
+    private Boolean dispenseStatus;
+    /** 发药核对人 */
+    private String dispenseBy;
+    /** 发药核对时间 */
+    private LocalDateTime dispenseTime;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -82,6 +82,27 @@
             />
           </el-form-item>
 
+          <el-divider content-position="left">分诊与体征</el-divider>
+          <el-form-item label="分诊级别">
+            <el-select v-model="recordForm.triageLevel" placeholder="选择分诊级别" style="width: 160px">
+              <el-option :value="1" label="急诊"/>
+              <el-option :value="2" label="普通"/>
+              <el-option :value="3" label="复诊"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="体重(kg)">
+            <el-input-number v-model="recordForm.weight" :max="200" :min="0" :precision="2" :step="0.1" style="width: 150px"/>
+          </el-form-item>
+          <el-form-item label="体温(℃)">
+            <el-input-number v-model="recordForm.temperature" :max="45" :min="30" :precision="1" :step="0.1" style="width: 150px"/>
+          </el-form-item>
+          <el-form-item label="心率(次/分)">
+            <el-input-number v-model="recordForm.heartRate" :max="400" :min="0" :step="5" style="width: 150px"/>
+          </el-form-item>
+          <el-form-item label="呼吸(次/分)">
+            <el-input-number v-model="recordForm.respiratoryRate" :max="200" :min="0" :step="2" style="width: 150px"/>
+          </el-form-item>
+
           <el-divider content-position="left">费用</el-divider>
           <el-form-item label="挂号费(元)">
             <el-input-number v-model="recordForm.feeRegister" :max="9999" :min="0" :precision="2" :step="5"/>

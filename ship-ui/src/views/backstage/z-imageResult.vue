@@ -54,6 +54,13 @@
       <el-form-item label="影像报告">
         <el-input v-model="resultText" :disabled="readonly" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
       </el-form-item>
+      <el-form-item label="报告附件">
+        <UpImg v-if="!current?.reportFile" :photo-nm="''" @upPhoto="onReportUpload"/>
+        <div v-else style="display: flex; align-items: center; gap: 10px">
+          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">查看报告附件</el-link>
+          <el-button v-if="!readonly" link type="danger" @click="removeReport">移除</el-button>
+        </div>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="modalView = false">关闭</el-button>
@@ -70,6 +77,7 @@ import {PageQuery} from "@/model/VO/BackQuery";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {Page} from "@/model/DO/Page";
 import {reqImageOrderPage, reqSaveImageReport} from "@/request/ImageApi";
+import UpImg from "@/components/UpImg.vue";
 import {ElMessage} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -103,6 +111,10 @@ const modalTit = ref('录报告')
 const readonly = ref(false)
 const current = ref<ImageOrder | null>(null)
 const resultText = ref('')
+// 报告附件下载前缀
+const fileBase = window.location.origin + '/api/common/download?name='
+const onReportUpload = (f: string): void => { if (current.value) current.value.reportFile = f }
+const removeReport = (): void => { if (current.value) current.value.reportFile = undefined }
 
 const showDialog = (row: ImageOrder): void => {
   current.value = row
@@ -118,7 +130,7 @@ const formSubmit = (): void => {
     ElMessage.warning('请填写影像报告内容')
     return
   }
-  reqSaveImageReport({orderId: current.value.orderId, result: resultText.value}).then((res: Res) => {
+  reqSaveImageReport({orderId: current.value.orderId, result: resultText.value, reportFile: current.value.reportFile ?? undefined}).then((res: Res) => {
     if (res.code === 1) {
       ElMessage.success('影像报告已提交')
       modalView.value = false

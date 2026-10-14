@@ -23,6 +23,7 @@ public class LabOrderDto {
     private Boolean status;
     private String resultNote;
     private String resultBy;
+    private String reportFile;
     private LocalDateTime createTime;
 
     private String petName;

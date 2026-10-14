@@ -17,6 +17,8 @@ export interface ImageOrder {
     /** false待检查 true已出报告 */
     status: boolean;
     note: string | null;
+    /** 报告文件(影像图/PDF)路径，可选 */
+    reportFile?: string | null;
     createTime?: string | null;
     petName?: string;
     clientName?: string;

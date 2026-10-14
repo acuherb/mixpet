@@ -78,4 +78,13 @@ public interface INoticeService extends IService<Notice> {
      */
     boolean disableNotice(Integer noticeId, boolean isDis);
 
+    /**
+     * 系统自动发布公告（如疫苗到期提醒），无需登录医生
+     *
+     * @param title   公告标题
+     * @param content 公告正文
+     * @return 是否成功
+     */
+    boolean createSystemNotice(String title, String content);
+
 }

@@ -145,6 +145,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
                 .set(LabOrder::getStatus, true)
                 .set(LabOrder::getResultNote, vo.getResultNote())
                 .set(LabOrder::getResultBy, operator)
+                .set(LabOrder::getReportFile, vo.getReportFile())
                 .update();
         return Result.success("检验结果已保存");
     }
@@ -168,6 +169,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
             dto.setStatus(o.getStatus());
             dto.setResultNote(o.getResultNote());
             dto.setResultBy(o.getResultBy());
+            dto.setReportFile(o.getReportFile());
             dto.setCreateTime(o.getCreateTime());
             dto.setItems(labOrderItemMapper.selectList(
                     Wrappers.<LabOrderItem>lambdaQuery().eq(LabOrderItem::getOrderId, o.getOrderId())));

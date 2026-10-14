@@ -13,5 +13,7 @@ export interface LabOrder {
     status: boolean;
     resultNote: string | null;
     resultBy: string | null;
+    /** 报告文件(图片/PDF)路径，可选 */
+    reportFile?: string | null;
     createTime?: string | null;
 }

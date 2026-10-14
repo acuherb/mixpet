@@ -64,6 +64,8 @@
       <template #default="scope">
         <el-tag v-if="!scope.row.payStatus" type="warning">待收费</el-tag>
         <el-tag v-else type="success">{{ scope.row.payType ? '已收现金' : '已收余额' }}</el-tag>
+        <el-tag v-if="scope.row.payStatus && scope.row.dispenseStatus" style="margin-left: 4px" type="info">已发药</el-tag>
+        <el-tag v-else-if="scope.row.payStatus" style="margin-left: 4px" type="danger">待发药</el-tag>
       </template>
     </el-table-column>
     <el-table-column label="余额(元)" prop="clientBalance" width="90"/>
@@ -89,6 +91,9 @@
           </el-button>
           <el-button v-if="scope.row.payStatus"
                      circle title="打印正规发票（A4）" type="warning" @click="printInvoice(scope.row)">发
+          </el-button>
+          <el-button v-if="scope.row.payStatus && !scope.row.dispenseStatus"
+                     circle title="发药核对（确认已将药品发给客户）" type="danger" @click="dispenseBill(scope.row)">药
           </el-button>
           <el-button circle title="查看病历" type="info" @click="showRecord(scope.row)">历</el-button>
         </el-button-group>
@@ -128,7 +133,7 @@ import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
 import {BillDto} from "@/model/DO/BillDto";
-import {reqBillPage, reqBillPay} from "@/request/BillApi";
+import {reqBillDispense, reqBillPage, reqBillPay} from "@/request/BillApi";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
 import {RecordDetailVo} from "@/model/DO/RecordDto";
@@ -214,6 +219,27 @@ const payBill = (row: BillDto, cash: boolean): void => {
  │=============充值相关============│
  └───────────────────────────────────┘
  */
+/**
+ ┌───────────────────────────────────┐
+ │=============发药核对============│
+ └───────────────────────────────────┘
+ */
+const dispenseBill = (row: BillDto): void => {
+  ElMessageBox.prompt('发药核对：请输入核对人姓名', '发药核对', {
+    confirmButtonText: '确认发药',
+    cancelButtonText: '取消',
+    inputPattern: /^.+$/,
+    inputErrorMessage: '请输入核对人姓名'
+  }).then(({value}) => {
+    reqBillDispense(row.billId, value).then(res => {
+      if (res.code === 1) {
+        sendQuery()
+        ElMessage.success('发药核对完成')
+      } else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('取消发药'))
+}
+
 const recharge = (row: BillDto): void => {
   const lack = row.totalMoney - (row.clientBalance ?? 0)
   const tip = lack > 0

@@ -5,7 +5,7 @@
     <select id="selectLabOrderPage" resultType="com.ship.model.dto.LabOrderDto">
         SELECT
         o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id,
-        o.order_note, o.fee, o.status, o.result_note, o.result_by, o.create_time,
+        o.order_note, o.fee, o.status, o.result_note, o.result_by, o.report_file, o.create_time,
         p.pet_name, c.client_name, d.doctor_name, m.diagnosis
         FROM lab_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id

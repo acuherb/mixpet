@@ -117,6 +117,7 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
         this.lambdaUpdate()
                 .eq(ImageOrder::getOrderId, vo.getOrderId())
                 .set(ImageOrder::getResult, vo.getResult())
+                .set(ImageOrder::getReportFile, vo.getReportFile())
                 .set(ImageOrder::getReportTime, LocalDateTime.now())
                 .set(ImageOrder::getStatus, true)
                 .update();

@@ -13,6 +13,8 @@ public class LabResultVo {
     private Integer orderId;
     /** 化验小结/结论 */
     private String resultNote;
+    /** 报告文件(图片/PDF)路径，可选 */
+    private String reportFile;
     /** 各明细结果 */
     private List<LabResultItemVo> items;
 

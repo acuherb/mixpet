@@ -43,4 +43,11 @@ public class BillController {
     public Result pay(@PathVariable Integer billId, Boolean payType) {
         return billService.pay(billId, payType != null && payType);
     }
+
+    /** 发药核对：护士确认发药（需先收款） */
+    @PostMapping("/dispense/{billId}")
+    @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result dispense(@PathVariable Integer billId, String operator) {
+        return billService.dispense(billId, operator);
+    }
 }

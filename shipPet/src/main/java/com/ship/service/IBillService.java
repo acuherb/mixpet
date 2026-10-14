@@ -14,4 +14,7 @@ public interface IBillService extends IService<Bill> {
 
     /** 收款：余额支付则扣客户余额，发药扣库存，账单标记已付（事务） */
     Result pay(Integer billId, Boolean payType);
+
+    /** 发药核对：护士确认发药，记录核对人与时间（需先收款） */
+    Result dispense(Integer billId, String operator);
 }

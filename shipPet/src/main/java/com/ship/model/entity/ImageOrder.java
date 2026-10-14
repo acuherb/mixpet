@@ -36,6 +36,8 @@ public class ImageOrder implements Serializable {
     private LocalDateTime reportTime;
     /** 0待检查 1已出报告 */
     private Boolean status;
+    /** 报告文件(影像图/PDF)路径，可选 */
+    private String reportFile;
     private String note;
 
     @TableField(fill = FieldFill.INSERT)
