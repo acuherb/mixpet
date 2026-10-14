@@ -226,3 +226,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 迁移脚本：`数据库备份/feature_20261014_refund_inventory.sql`（notice_type、drug 两列、drug_record 表、bill 三列、三表 is_cancel）。
 - 验证：`mvn clean compile` 通过；前端 `npm run build` 通过；DB 新列/表已生效；重启后端 `/bill/refund`、`/drug/warning`、`/lab/cancel` 匿名均 `code:401`，`/notice/four` 200，后端无 ERROR。
 - 后续待办（体检发现、未在本轮做）：住院每日监护记录、手术知情同意书、顾客取消/改期预约+号源容量校验、复诊关联与随访记录、remember-me 过期/签名校验、黑名单客户记住我拦截、默认口令可配置、补全顾客端检验/影像报告查看页。
+
+### 顾客报告查看收尾 + 记住我安全加固（2026-10-14 傍晚）
+- **顾客端报告查看（补完 T2）**：顾客端 `clientPet.vue` 的就诊详情弹窗本就展示检验/影像**文字结果**，仅缺报告**附件链接**；为化验单/影像单各补一个"查看报告附件/影像附件"外链（`/api/common/download?name=` + `reportFile`）。至此"顾客端可查报告(含附件)"闭环。
+- **记住我加固**：`RememberService.processAutoLoginCookie` 原本既不验过期也不验签名（TODO 自认）。修复：①解析 cookie 内 `expiryTime`，过期即抛 `InvalidCookieException`；②先 `loadUserByUsername` 加载用户（`ClientDetails`/`DoctorDetails` 均过滤 `active=1`，停用/黑名单账号在此抛 `UsernameNotFoundException` 被拦截）；③用加载到的密码重算 `makeTokenSignature` 与 cookie 签名比对，防伪造/篡改，密码变更后自动失效需重登。
+- 说明：审计里"黑名单客户 remember-me 仍可登录"经核实不准确——自动登录本就调用 `loadUserByUsername`（含 active=1 过滤）；本轮补齐过期+签名后，停用/黑名单/改密均可被正确拦截。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `Started ShipPetApplication` + `/department/name` 200。
+- 仍待办（未做）：住院每日监护、手术知情同意书、顾客取消/改期预约+号源容量、复诊关联与随访、默认口令 `123456` 可配置化（`DoctorServiceImpl`/`ClientServiceImpl`/`ClientController`/`application.yml`）。

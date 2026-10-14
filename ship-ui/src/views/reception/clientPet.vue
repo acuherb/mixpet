@@ -125,6 +125,9 @@
               </template>
             </el-table-column>
           </el-table>
+          <div v-if="lab.reportFile" style="margin-bottom:8px">
+            <el-link type="primary" :href="'/api/common/download?name=' + lab.reportFile" target="_blank">查看报告附件</el-link>
+          </div>
         </template>
         <p v-if="labs.length === 0" style="color:#999">本次无化验项目</p>
         <h4 style="margin: 14px 0 6px">影像检查</h4>
@@ -135,6 +138,9 @@
             <el-tag v-else size="small" type="warning">待检查</el-tag>
           </div>
           <div class="lab-note" style="margin-bottom:8px">报告：{{ img.result || '尚未出报告' }}</div>
+          <div v-if="img.reportFile" style="margin-bottom:8px">
+            <el-link type="primary" :href="'/api/common/download?name=' + img.reportFile" target="_blank">查看影像附件</el-link>
+          </div>
         </template>
         <p v-if="images.length === 0" style="color:#999">本次无影像检查</p>
         <h4 style="margin: 14px 0 6px">住院信息</h4>

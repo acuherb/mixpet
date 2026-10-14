@@ -72,14 +72,32 @@ public class RememberService extends AbstractRememberMeServices {
     @Override
     protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest req, HttpServletResponse resp) throws RememberMeAuthenticationException, UsernameNotFoundException {
         if (cookieTokens.length != 4 && cookieTokens.length != 5) {
-            throw new InvalidCookieException("这Cookie不对啊");
+            throw new InvalidCookieException("Cookie 字段数不符");
         }
         log.info("收到的cookie" + Arrays.toString(cookieTokens));
         String name = cookieTokens[0];
-        // TODO 事实上还要判断当前cookie是否过期
-        if (cookieTokens[2].equals(RoleEnum.DOCTOR.name())) {
-            return doctorDetails.loadUserByUsername(name);
-        } else return clientDetails.loadUserByUsername(name);
+        long expiryTime;
+        try {
+            expiryTime = Long.parseLong(cookieTokens[1]);
+        } catch (NumberFormatException e) {
+            throw new InvalidCookieException("Cookie 时间格式错误");
+        }
+        // 1) 校验是否过期
+        if (expiryTime < System.currentTimeMillis()) {
+            throw new InvalidCookieException("Cookie 已过期");
+        }
+        String role = cookieTokens[2];
+        // 2) 先加载用户：active=0（停用/黑名单）会在此抛 UsernameNotFoundException，从而被拦截
+        UserDetails user = role.equals(RoleEnum.DOCTOR.name())
+                ? doctorDetails.loadUserByUsername(name)
+                : clientDetails.loadUserByUsername(name);
+        // 3) 校验签名，防止伪造/篡改（签名含密码与 key，密码变更后自动失效，需重新登录）
+        String presentedSignature = cookieTokens[cookieTokens.length - 1];
+        String expectedSignature = makeTokenSignature(expiryTime, name, user.getPassword(), role);
+        if (!expectedSignature.equals(presentedSignature)) {
+            throw new InvalidCookieException("Cookie 签名不符");
+        }
+        return user;
     }
 
     /***
