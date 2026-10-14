@@ -13,6 +13,7 @@ import com.ship.model.dto.NameDo;
 import com.ship.service.IDoctorService;
 import com.ship.util.StrUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,10 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
     public DoctorServiceImpl(DoctorDepartMapper doctorDepartMapper) {
         this.doctorDepartMapper = doctorDepartMapper;
     }
+
+    /** 新建医生/重置密码默认口令 */
+    @Value("${app.default-password:123456}")
+    private String defaultPwd;
 
     @Override
     public boolean deleteById(Integer doctorId) {
@@ -116,7 +121,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
         if (doctor.getAuthLv() == null) doctor.setAuthLv(0);
         if (StrUtil.isWhite(doctor.getDoctorInfo())) doctor.setDoctorInfo("暂时没有简介");
         if (StrUtil.isWhite(doctor.getDoctorPhoto())) doctor.setDoctorPhoto(PhotoEnum.DOCTOR.getPhotoName());
-        if (StrUtil.isWhite(doctor.getDoctorPassword())) doctor.setDoctorPassword("123456");
+        if (StrUtil.isWhite(doctor.getDoctorPassword())) doctor.setDoctorPassword(defaultPwd);
         doctor.setDoctorPassword(StrUtil.tranPwd(doctor.getDoctorPassword()));
         boolean ok = save(doctor);
         if (ok && doctor instanceof DoctorDto) {

@@ -233,3 +233,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 说明：审计里"黑名单客户 remember-me 仍可登录"经核实不准确——自动登录本就调用 `loadUserByUsername`（含 active=1 过滤）；本轮补齐过期+签名后，停用/黑名单/改密均可被正确拦截。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `Started ShipPetApplication` + `/department/name` 200。
 - 仍待办（未做）：住院每日监护、手术知情同意书、顾客取消/改期预约+号源容量、复诊关联与随访、默认口令 `123456` 可配置化（`DoctorServiceImpl`/`ClientServiceImpl`/`ClientController`/`application.yml`）。
+
+### 号源容量 + 顾客取消/改期预约 + 默认口令可配置（2026-10-14 夜）
+- **号源容量校验**：`AppointmentController.checkAppoint`（私有，新增/改期都会走）末尾加"同一医生同一自然日预约数 ≤ 上限"校验，超限返回"当日号源已满"。上限走配置 `appointment.max-per-day`（默认 20）。改期排除自身（`.ne(appointmentId)`）；`mybatis-plus` 全局 `logic-delete-field: isDel` 已自动排除已删除/已取消。
+- **顾客取消/改期**：`AppointmentController` 新增 `PUT /appointment/self/{id}`（改期：锁定客户/宠物/科室/医生/描述等不可改字段，仅采纳新就诊时间，再跑容量校验）与 `PUT /appointment/self/cancel/{id}`（取消：归属校验 + 仅待就诊 + 逻辑删除 `isDel`）。均需登录顾客且只能操作自己的预约、已完成不可操作。前端 `clientAppoint.vue` 每张待就诊卡片加"改期/取消预约"按钮 + 改期弹窗（datetime 选择）；`AppointApi` 加 `reqRescheduleSelfAppoint`/`reqCancelSelfAppoint`。
+- **默认口令可配置**：`application.yml` 加 `app.default-password`（默认 123456）；`DoctorServiceImpl`（新建医生）、`ClientServiceImpl`（新建用户）、`ClientController`（管理员重置密码）三处 `@Value` 注入替代硬编码 `123456`。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `/appointment/self/{id}`、`/appointment/self/cancel/{id}` 匿名均 `code:401`，端口 200。
+- 仍待办（未做）：住院每日监护记录、手术知情同意书、复诊关联与随访记录。

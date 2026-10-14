@@ -9,6 +9,7 @@ import com.ship.model.entity.Client;
 import com.ship.model.dto.NameDo;
 import com.ship.service.IClientService;
 import com.ship.util.StrUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,6 +24,10 @@ import java.util.List;
  */
 @Service
 public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> implements IClientService {
+
+    /** 新建用户/重置密码默认口令 */
+    @Value("${app.default-password:123456}")
+    private String defaultPwd;
 
     @Override
     public boolean deleteById(Integer clientId) {
@@ -67,7 +72,7 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
         client.setClientUsername(client.getClientTel());
         if (StrUtil.isWhite(client.getClientPhoto())) client.setClientPhoto(PhotoEnum.CLIENT.getPhotoName());
         if (StrUtil.isWhite(client.getClientInfo())) client.setClientInfo("该用户暂无简介");
-        if (StrUtil.isWhite(client.getClientPassword())) client.setClientPassword("123456");
+        if (StrUtil.isWhite(client.getClientPassword())) client.setClientPassword(defaultPwd);
         client.setClientPassword(StrUtil.tranPwd(client.getClientPassword()));
         if (client.getClientPwdChanged() == null) client.setClientPwdChanged(false);
         return save(client);

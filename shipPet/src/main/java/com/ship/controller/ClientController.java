@@ -13,6 +13,7 @@ import com.ship.service.IClientService;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,10 @@ public class ClientController {
     public ClientController(IClientService clientService) {
         this.clientService = clientService;
     }
+
+    /** 管理员重置密码默认口令 */
+    @Value("${app.default-password:123456}")
+    private String defaultPwd;
 
     /**
      * 查询用户的名字与id
@@ -181,7 +186,7 @@ public class ClientController {
     public Result resetPassword(@PathVariable Integer id) {
         Client dbClient = clientService.getById(id);
         if (dbClient == null) return Result.error("用户不存在");
-        dbClient.setClientPassword(StrUtil.tranPwd("123456"));
+        dbClient.setClientPassword(StrUtil.tranPwd(defaultPwd));
         dbClient.setClientPwdChanged(false);
         return Result.choice("重置密码", clientService.updateById(dbClient));
     }

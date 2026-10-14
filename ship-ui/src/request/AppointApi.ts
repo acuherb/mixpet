@@ -19,6 +19,12 @@ export const reqAddAppoint = (data: Appoint): Promise<Res> =>
 // 顾客自己预约挂号
 export const reqAddSelfAppoint = (data: Appoint): Promise<Res> =>
     reqApi.post<string, Res>("appointment/self", data)
+// 顾客改期自己的待就诊预约（仅改就诊时间）
+export const reqRescheduleSelfAppoint = (id: number, appointmentDate: string): Promise<Res> =>
+    reqApi.put<string, Res>("appointment/self/" + id, {appointmentDate})
+// 顾客取消自己的待就诊预约
+export const reqCancelSelfAppoint = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("appointment/self/cancel/" + id)
 // 管理员修改挂号
 export const reqUpdateAppoint = (data: Appoint): Promise<Res> =>
     reqApi.put<string, Res>("appointment", data)

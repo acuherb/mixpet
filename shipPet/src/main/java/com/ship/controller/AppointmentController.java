@@ -12,9 +12,11 @@ import com.ship.model.entity.Pet;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,6 +32,10 @@ import java.util.List;
 public class AppointmentController {
     private final IAppointmentService appointmentService;
     private final IPetService petService;
+
+    /** 每位医生每日号源上限 */
+    @Value("${appointment.max-per-day:20}")
+    private int maxPerDay;
 
     @Autowired
     public AppointmentController(IAppointmentService appointmentService, IPetService petService) {
@@ -94,6 +100,46 @@ public class AppointmentController {
         return Result.choice("预约", appointmentService.save(appointment));
     }
 
+    /**
+     * 顾客改期自己的待就诊预约（仅可改就诊时间，其余以原单为准，防越权）
+     */
+    @PutMapping("/self/{id}")
+    public Result updateSelf(@PathVariable Integer id, @RequestBody Appointment appointment) {
+        if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
+        Appointment db = appointmentService.getById(id);
+        if (db == null) return Result.error("预约不存在");
+        if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
+        if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，不能改期");
+        // 锁定不可改字段，仅采纳新的就诊时间
+        appointment.setAppointmentId(id);
+        appointment.setClientId(db.getClientId());
+        appointment.setPetId(db.getPetId());
+        appointment.setPetOwnerId(db.getPetOwnerId());
+        appointment.setDepartmentId(db.getDepartmentId());
+        appointment.setDoctorId(db.getDoctorId());
+        appointment.setAppointmentInfo(db.getAppointmentInfo());
+        appointment.setIsSuc(db.getIsSuc());
+        Result check = checkAppoint(appointment);
+        if (check.code() == 0) return check;
+        return Result.choice("改期", appointmentService.updateById(appointment));
+    }
+
+    /**
+     * 顾客取消自己的待就诊预约
+     */
+    @PutMapping("/self/cancel/{id}")
+    public Result cancelSelf(@PathVariable Integer id) {
+        if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
+        Appointment db = appointmentService.getById(id);
+        if (db == null) return Result.error("预约不存在");
+        if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
+        if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，无法取消");
+        return Result.choice("取消", appointmentService.lambdaUpdate()
+                .eq(Appointment::getAppointmentId, id)
+                .set(Appointment::getIsDel, System.currentTimeMillis())
+                .update());
+    }
+
     @DeleteMapping("/{id}")
     @Secured(RoleConst.DOCTOR)
     public Result delete(@PathVariable Integer id) {
@@ -133,6 +179,18 @@ public class AppointmentController {
             return Result.error("请选择科室");
         if (appoint.getDoctorId() == null || appoint.getDoctorId() == 0)
             return Result.error("请选择医生");
-        else return Result.success("数据合法");
+        // 号源容量：同一医生同一自然日预约数不得超过上限（改期时排除自身）
+        LocalDateTime dayStart = appoint.getAppointmentDate().toLocalDate().atStartOfDay();
+        LocalDateTime dayEnd = appoint.getAppointmentDate().toLocalDate().plusDays(1).atStartOfDay();
+        long sameDay = appointmentService.lambdaQuery()
+                .eq(Appointment::getDoctorId, appoint.getDoctorId())
+                .ge(Appointment::getAppointmentDate, dayStart)
+                .lt(Appointment::getAppointmentDate, dayEnd)
+                .ne(appoint.getAppointmentId() != null, Appointment::getAppointmentId, appoint.getAppointmentId())
+                .and(w -> w.eq(Appointment::getIsDel, 0).or().isNull(Appointment::getIsDel))
+                .count();
+        if (sameDay >= maxPerDay)
+            return Result.error("该医生当日号源已满（每日最多 " + maxPerDay + " 个），请改选其他日期或医生");
+        return Result.success("数据合法");
     }
 }

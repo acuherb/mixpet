@@ -28,8 +28,32 @@
           {{ moveT(a.createTime || "") }}
         </el-descriptions-item>
       </el-descriptions>
+      <div v-if="!a.isSuc" class="card-ops">
+        <el-button size="small" plain round type="primary" @click="openReschedule(a)">改期</el-button>
+        <el-button size="small" plain round type="danger" @click="cancelAppoint(a)">取消预约</el-button>
+      </div>
     </div>
     <el-empty v-if="appointList.length===0" description="暂无挂号，点上方「预约挂号」预约就诊"/>
+
+    <!--改期弹窗-->
+    <el-dialog v-model="rsVisible" title="改期" width="90%" style="max-width: 420px">
+      <el-form label-width="90px">
+        <el-form-item label="新的时间">
+          <el-date-picker
+              v-model="rsDate"
+              format="YYYY-MM-DD HH:mm"
+              placeholder="选择新的就诊时间"
+              style="width: 100%"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm:ss"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="rsVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitReschedule">确定改期</el-button>
+      </template>
+    </el-dialog>
 
     <!--预约挂号弹窗-->
     <el-dialog v-model="addVisible" title="预约挂号" width="90%" style="max-width: 480px">
@@ -82,14 +106,14 @@
 import {AppointDto} from "@/model/DO/AppointDto";
 import {moveT} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
-import {reqAddSelfAppoint, reqClientAppoint} from "@/request/AppointApi";
+import {reqAddSelfAppoint, reqCancelSelfAppoint, reqClientAppoint, reqRescheduleSelfAppoint} from "@/request/AppointApi";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {Pet} from "@/model/entiy/Pet";
 import {NameDo} from "@/model/DO/NameDo";
 import {reqClientPet} from "@/request/PetApi";
 import {reqDepartNameHaveDoctor} from "@/request/DepartApi";
 import {reqDoctorNameByDepartId} from "@/request/DoctorApi";
-import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Plus} from "@element-plus/icons-vue";
 
 const appointList = ref<AppointDto[]>([])
@@ -141,6 +165,48 @@ const submitAdd = (): void => {
   })
 }
 
+/*=====取消/改期=====*/
+const refresh = (): void => {
+  reqClientAppoint().then(r => {
+    appointList.value = r
+  })
+}
+// 取消待就诊预约
+const cancelAppoint = (a: AppointDto): void => {
+  ElMessageBox.confirm(`确定取消单号 #${a.appointmentId} 的预约吗？`, '取消预约', {
+    confirmButtonText: '确认取消', cancelButtonText: '再想想', type: 'warning'
+  }).then(() => {
+    reqCancelSelfAppoint(a.appointmentId).then(res => {
+      if (res.code === 1) {
+        ElMessage.success('已取消')
+        refresh()
+      } else ElMessage.error(res.msg || '取消失败')
+    })
+  }).catch(() => ElMessage.info('已保留该预约'))
+}
+// 改期待就诊预约
+const rsVisible = ref(false)
+const rsDate = ref<string | null>(null)
+const rsTarget = ref<AppointDto | null>(null)
+const openReschedule = (a: AppointDto): void => {
+  rsTarget.value = a
+  rsDate.value = a.appointmentDate || null
+  rsVisible.value = true
+}
+const submitReschedule = (): void => {
+  if (!rsTarget.value || !rsDate.value) {
+    ElMessage.warning('请选择新的就诊时间')
+    return
+  }
+  reqRescheduleSelfAppoint(rsTarget.value.appointmentId, rsDate.value).then(res => {
+    if (res.code === 1) {
+      ElMessage.success('改期成功')
+      rsVisible.value = false
+      refresh()
+    } else ElMessage.error(res.msg || '改期失败')
+  })
+}
+
 onMounted(() => {
   reqClientAppoint().then(res => {
     appointList.value = res
@@ -162,5 +228,12 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+.card-ops {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
 }
 </style>
