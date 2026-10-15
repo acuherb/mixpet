@@ -5,6 +5,7 @@ import {PageQuery, YPetList} from "@/model/VO/BackQuery";
 import {PetDto} from "@/model/DO/PetDto";
 import {Res} from "@/request/Res";
 import {NameDo} from "@/model/DO/NameDo";
+import {PetHealth} from "@/model/entiy/PetHealth";
 
 // 主页查询宠物
 export const reqFourPet = (): Promise<Page<Pet>> =>
@@ -15,6 +16,9 @@ export const reqPetSee = (page: PageQuery): Promise<Page<Pet>> =>
 // 查看宠物详情
 export const reqPetOne = (petId: number): Promise<Pet> =>
     reqApi<string, Pet>("pet/one?petId=" + petId)
+// 一页式宠物健康档案
+export const reqPetHealth = (petId: number): Promise<PetHealth> =>
+    reqApi<string, PetHealth>("pet/health/" + petId)
 // 查看用户的宠物
 export const reqClientPet = (): Promise<Pet[]> =>
     reqApi<string, Pet[]>("pet/clientOne")

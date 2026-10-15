@@ -24,11 +24,15 @@
           <span>个人中心</span>
         </el-menu-item>
 
-        <!-- 经营看板 -->
-        <el-menu-item index="/backstage/z-dashboard" :title="isCollapse ? '经营看板' : ''">
-          <el-icon><DataAnalysis/></el-icon>
-          <span>经营看板</span>
-        </el-menu-item>
+        <!-- 数据统计 -->
+        <el-sub-menu index="g-stat" :title="isCollapse ? '数据统计' : ''">
+          <template #title>
+            <el-icon><DataAnalysis/></el-icon>
+            <span>数据统计</span>
+          </template>
+          <el-menu-item index="/backstage/z-dashboard">经营看板</el-menu-item>
+          <el-menu-item index="/backstage/z-report">财务报表</el-menu-item>
+        </el-sub-menu>
 
         <!-- 接待管理 -->
         <el-sub-menu index="g-reception" :title="isCollapse ? '接待管理' : ''">

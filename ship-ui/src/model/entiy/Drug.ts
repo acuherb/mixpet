@@ -5,6 +5,8 @@ export interface Drug {
     drugUnit: string | null;
     drugType: string | null;
     drugPrice: number | null;
+    /** 进货价(成本价)，用于药品毛利核算 */
+    costPrice?: number | null;
     drugStock: number | null;
     /** 库存预警阈值：stock <= 该值即低库存 */
     warningStock?: number | null;
@@ -28,6 +30,7 @@ export const exampleDrug = (): Drug => {
         drugUnit: "盒",
         drugType: "西药",
         drugPrice: 0,
+        costPrice: null,
         drugStock: 0,
         warningStock: 0,
         expireDate: null,

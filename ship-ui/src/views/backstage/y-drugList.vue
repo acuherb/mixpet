@@ -92,6 +92,9 @@
       <el-form-item label="单价(元)" prop="drugPrice">
         <el-input-number v-model="form.drugPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
       </el-form-item>
+      <el-form-item label="进货价(元)">
+        <el-input-number v-model="form.costPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+      </el-form-item>
       <el-form-item label="库存" prop="drugStock">
         <el-input-number v-model="form.drugStock" :max="99999" :min="0" :step="10" style="width: 100%"/>
       </el-form-item>

@@ -302,3 +302,11 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 菜单：后台新增"库存管理"分组（药品库存 + 供应商管理），从"商品与服务"移出药品。
 - 迁移脚本：`数据库备份/feature_20261015_supplier_inventory.sql`（supplier 表 + drug_record 加 supplier_id/supplier_name/batch_no）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；supplier 表与 drug_record 新列已建；重启后端 `/supplier`、`/drug/expiring` 匿名 `code:401`、端口 200。
+
+### 经营财务报表 + 一页式宠物健康档案（2026-10-15）
+- 背景：接"院长视角"待办，按用户指定顺序先做经营财务报表、后做一页式宠物健康档案。
+- **经营财务报表**：`Drug` 加 `costPrice`(进货价，用于药品毛利)；新建 `FinanceReport` VO + `IReportService`/Impl + `ReportController GET /report/finance?start=&end=`（MANAGER/ADMIN）。按**接诊日期(createTime)**统计已收款、未退款账单：总收入/订单数/客单价/退款额、按 8 个收费项目(挂号/诊疗/药/化验/影像/套餐/手术/住院)构成、每日收入趋势、按科室/按医生(关联病历)、药品成本/毛利。前端 `z-report.vue`：日期区间+近7天/本月/上月快捷、指标卡、收入构成条、每日趋势 CSS 柱状、按科室/医生表、药品毛利卡；路由 `/backstage/z-report`；菜单"经营看板"升级为"数据统计"分组(经营看板+财务报表)；药品表单加"进货价"。
+  - 边界：账单无 payTime，按接诊日期统计；药品成本按**当前进货价估算**(未快照历史进货价)；服务类(检验/影像/手术/住院/套餐)不计成本，故毛利仅覆盖药品。
+- **一页式宠物健康档案**：新建 `PetHealth` VO + `IPetHealthService`/Impl + `PetHealthController GET /pet/health/{petId}`（顾客仅本人宠物，员工任意）。聚合：宠物基本信息(过敏史/既往病史/绝育/芯片)、概要(就诊次数/最近就诊/最近诊断/下次免疫)、体重曲线(取自理诊体重)、就诊史(近50)、免疫记录、住院记录。前端可复用组件 `PetHealthDialog.vue`，接入后台宠物列表(`y-petList` 操作列"康"按钮)与顾客端(`clientPet` 宠物卡片"健康档案"按钮)。
+- 迁移脚本：`数据库备份/feature_20261015_finance_report.sql`（drug 加 cost_price）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过（修过 PetHealthDialog 一处 update:modelValue 参数类型）；cost_price 列已建；重启后端 `/report/finance`、`/pet/health/{id}` 匿名 `code:401`、端口 200。

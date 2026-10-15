@@ -28,6 +28,8 @@ public class Drug implements Serializable {
     /** 分类：西药/中成药/外用/疫苗/驱虫/保健 */
     private String drugType;
     private BigDecimal drugPrice;
+    /** 进货价(成本价)，用于药品毛利核算 */
+    private BigDecimal costPrice;
     private Integer drugStock;
     /** 库存预警阈值：stock <= 该值即低库存预警 */
     private Integer warningStock;

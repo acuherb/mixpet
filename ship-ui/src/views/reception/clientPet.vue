@@ -34,6 +34,7 @@
               <el-button type="success" @click="$router.push('/reception/petOne/'+pet.petId)">详情
               </el-button>
               <el-button type="primary" @click="openRecords(pet)">就诊记录</el-button>
+              <el-button type="warning" @click="openHealth(pet)">健康档案</el-button>
               <el-button type="danger" @click="returnPet(pet)">退养</el-button>
             </el-descriptions-item>
           </el-descriptions>
@@ -68,6 +69,9 @@
         </div>
       </div>
     </el-dialog>
+
+    <!--一页式健康档案-->
+    <PetHealthDialog v-model="healthView" :pet-id="healthPetId"/>
 
     <!--病历详情弹窗（顾客视角，脱敏）-->
     <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 560px">
@@ -287,6 +291,7 @@ import {HospitalDto} from "@/model/DO/HospitalDto";
 import {reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {Surgery, surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
 import {useRouter} from 'vue-router';
+import PetHealthDialog from "@/components/PetHealthDialog.vue";
 
 const petList = ref<Pet[]>([]);
 
@@ -305,6 +310,13 @@ const openRecords = (pet: Pet): void => {
   reqPetRecords(pet.petId).then(res => {
     records.value = res?.records || []
   })
+}
+// 一页式健康档案
+const healthView = ref(false)
+const healthPetId = ref<number | null>(null)
+const openHealth = (pet: Pet): void => {
+  healthPetId.value = pet.petId
+  healthView.value = true
 }
 const detailVisible = ref(false)
 const detail = ref<RecordDetailVo | null>(null)
