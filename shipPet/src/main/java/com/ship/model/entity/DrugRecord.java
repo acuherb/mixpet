@@ -34,6 +34,12 @@ public class DrugRecord implements Serializable {
     private Integer afterStock;
     /** 操作人 */
     private String operator;
+    /** 供应商id（入库时记） */
+    private Integer supplierId;
+    /** 冗余供应商名 */
+    private String supplierName;
+    /** 批号 */
+    private String batchNo;
     /** 备注 */
     private String note;
 

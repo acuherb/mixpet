@@ -72,9 +72,18 @@
             <el-icon><Goods/></el-icon>
             <span>商品与服务</span>
           </template>
-          <el-menu-item index="/backstage/y-drugList">药品管理</el-menu-item>
           <el-menu-item index="/backstage/z-package">服务套餐</el-menu-item>
           <el-menu-item index="/backstage/y-adoptList">活体领养</el-menu-item>
+        </el-sub-menu>
+
+        <!-- 库存管理 -->
+        <el-sub-menu index="g-stock" :title="isCollapse ? '库存管理' : ''">
+          <template #title>
+            <el-icon><FirstAidKit/></el-icon>
+            <span>库存管理</span>
+          </template>
+          <el-menu-item index="/backstage/y-drugList">药品库存</el-menu-item>
+          <el-menu-item index="/backstage/z-supplier">供应商管理</el-menu-item>
         </el-sub-menu>
 
         <!-- 客户中心 -->

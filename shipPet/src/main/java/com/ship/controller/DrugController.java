@@ -89,11 +89,18 @@ public class DrugController {
         return drugService.listWarning();
     }
 
-    /** 入库：增加库存并记台账，可同时更新有效期 */
+    /** 入库：增加库存并记台账（可带供应商/批号），可同时更新有效期 */
     @PostMapping("/inbound")
     @Secured(RoleConst.MANAGER)
-    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note) {
-        return drugService.inbound(drugId, quantity, expireDate, note);
+    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
+        return drugService.inbound(drugId, quantity, expireDate, note, supplierId, batchNo);
+    }
+
+    /** 近效期预警列表（expireDate 在未来 days 天内，含当天） */
+    @GetMapping("/expiring")
+    @Secured(RoleConst.MANAGER)
+    public List<Drug> expiring(int days) {
+        return drugService.listExpiring(days);
     }
 
     /** 出入库台账分页 */

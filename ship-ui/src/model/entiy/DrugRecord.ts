@@ -11,6 +11,8 @@ export interface DrugRecord {
     beforeStock: number | null;
     afterStock: number | null;
     operator: string | null;
+    supplierName: string | null;
+    batchNo: string | null;
     note: string | null;
     createTime?: string | null;
 }

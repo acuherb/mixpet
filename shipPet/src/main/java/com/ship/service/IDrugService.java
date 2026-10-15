@@ -28,8 +28,11 @@ public interface IDrugService extends IService<Drug> {
     /** 低库存预警列表（stock <= warningStock） */
     List<Drug> listWarning();
 
-    /** 入库：增加库存并记台账，可同时更新有效期 */
-    Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note);
+    /** 近效期预警列表（expireDate 在未来 days 天内，含当天，未过期） */
+    List<Drug> listExpiring(int days);
+
+    /** 入库：增加库存并记台账（可带供应商/批号），可同时更新有效期 */
+    Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo);
 
     /** 出入库台账分页 */
     IPage<DrugRecord> stockRecordPage(Integer drugId, int numPage, int pageSize);

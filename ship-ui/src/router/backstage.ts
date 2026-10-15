@@ -46,6 +46,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-schedule",
         component: () => import('@/views/backstage/z-schedule.vue')
     }, {
+        // 供应商管理
+        path: "z-supplier",
+        component: () => import('@/views/backstage/z-supplier.vue')
+    }, {
         // 套餐字典
         path: "z-package",
         component: () => import('@/views/backstage/z-package.vue')

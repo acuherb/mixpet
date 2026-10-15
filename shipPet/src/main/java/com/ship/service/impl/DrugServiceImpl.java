@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ship.common.Result;
 import com.ship.mapper.DrugMapper;
 import com.ship.mapper.DrugRecordMapper;
+import com.ship.mapper.SupplierMapper;
 import com.ship.model.entity.Client;
 import com.ship.model.entity.Doctor;
 import com.ship.model.entity.Drug;
 import com.ship.model.entity.DrugRecord;
+import com.ship.model.entity.Supplier;
 import com.ship.service.IDrugService;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +29,9 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
 
     @Autowired
     private DrugRecordMapper drugRecordMapper;
+
+    @Autowired
+    private SupplierMapper supplierMapper;
 
     private String currentOperator() {
         Object u = UserUtil.getUser();
@@ -89,7 +94,7 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
     }
 
     @Override
-    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note) {
+    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
         if (drugId == null || quantity == null || quantity <= 0) return Result.error("入库数量必须大于0");
         Drug drug = this.getById(drugId);
         if (drug == null) return Result.error("药品不存在");
@@ -98,8 +103,39 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getDrugStock, after).update();
         if (expireDate != null)
             this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getExpireDate, expireDate).update();
-        logStockChange(drugId, drug.getDrugName(), 1, quantity, before, after, note);
+        // 记台账（含供应商/批号，便于追溯采购来源）
+        String supplierName = null;
+        if (supplierId != null) {
+            Supplier s = supplierMapper.selectById(supplierId);
+            if (s != null) supplierName = s.getSupplierName();
+        }
+        DrugRecord r = new DrugRecord();
+        r.setDrugId(drugId);
+        r.setDrugName(drug.getDrugName());
+        r.setChangeType(1);
+        r.setQuantity(quantity);
+        r.setBeforeStock(before);
+        r.setAfterStock(after);
+        r.setOperator(currentOperator());
+        r.setSupplierId(supplierId);
+        r.setSupplierName(supplierName);
+        r.setBatchNo(batchNo);
+        r.setNote(note);
+        drugRecordMapper.insert(r);
         return Result.success("入库成功，当前库存 " + after);
+    }
+
+    @Override
+    public List<Drug> listExpiring(int days) {
+        LocalDate today = LocalDate.now();
+        LocalDate horizon = today.plusDays(Math.max(days, 0));
+        return this.lambdaQuery()
+                .eq(Drug::getActive, true)
+                .isNotNull(Drug::getExpireDate)
+                .ge(Drug::getExpireDate, today)
+                .le(Drug::getExpireDate, horizon)
+                .orderByAsc(Drug::getExpireDate)
+                .list();
     }
 
     @Override

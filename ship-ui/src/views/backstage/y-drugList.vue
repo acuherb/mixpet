@@ -9,6 +9,9 @@
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
       </span>
+      <el-badge :hidden="warnCount === 0" :value="warnCount" style="margin-left: 12px" type="warning">
+        <el-button size="large" plain type="warning" @click="openWarn">库存预警</el-button>
+      </el-badge>
     </template>
   </BackOpCol>
   <!--列表展示-->
@@ -134,6 +137,14 @@
       <el-form-item label="有效期至">
         <el-date-picker v-model="inExpire" placeholder="可留空" style="width: 100%" type="date" value-format="YYYY-MM-DD"/>
       </el-form-item>
+      <el-form-item label="供应商">
+        <el-select v-model="inSupplierId" clearable filterable placeholder="选择供应商（可不选）" style="width: 100%">
+          <el-option v-for="s in suppliers" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="批号">
+        <el-input v-model="inBatchNo" clearable maxlength="64" placeholder="药品批号（可不填）"/>
+      </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="inNote" maxlength="128" placeholder="如：采购入库"/>
       </el-form-item>
@@ -156,14 +167,41 @@
       <el-table-column label="数量" prop="quantity" width="60"/>
       <el-table-column label="变动后" prop="afterStock" width="70"/>
       <el-table-column label="操作人" prop="operator" show-overflow-tooltip/>
+      <el-table-column label="供应商" min-width="110" prop="supplierName" show-overflow-tooltip>
+        <template #default="s">{{ s.row.supplierName || '—' }}</template>
+      </el-table-column>
+      <el-table-column label="批号" min-width="100" prop="batchNo" show-overflow-tooltip>
+        <template #default="s">{{ s.row.batchNo || '—' }}</template>
+      </el-table-column>
       <el-table-column label="备注" prop="note" show-overflow-tooltip/>
     </el-table>
     <BackPage :total="ledger.total" @changePu="ledgerPage"/>
   </el-drawer>
+
+  <!--库存预警抽屉：低库存(建议补货) + 近效期-->
+  <el-drawer v-model="warnView" size="600px" title="库存预警">
+    <el-divider content-position="left">低库存（建议补货）</el-divider>
+    <el-table :data="lowStock" border size="small">
+      <el-table-column label="药品" min-width="150" prop="drugName" show-overflow-tooltip/>
+      <el-table-column label="当前" prop="drugStock" width="70"/>
+      <el-table-column label="阈值" prop="warningStock" width="70"/>
+      <el-table-column label="建议补货" width="90">
+        <template #default="s">{{ suggestRestock(s.row) }}</template>
+      </el-table-column>
+    </el-table>
+    <el-empty v-if="!lowStock.length" :image-size="40" description="暂无低库存"/>
+    <el-divider content-position="left">近效期（{{ expDays }} 天内）</el-divider>
+    <el-table :data="expiring" border size="small">
+      <el-table-column label="药品" min-width="150" prop="drugName" show-overflow-tooltip/>
+      <el-table-column label="有效期至" prop="expireDate" width="120"/>
+      <el-table-column label="库存" prop="drugStock" width="70"/>
+    </el-table>
+    <el-empty v-if="!expiring.length" :image-size="40" description="暂无近效期"/>
+  </el-drawer>
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
@@ -173,8 +211,10 @@ import {exampleDrug, Drug} from "@/model/entiy/Drug";
 import {reqDictByType} from "@/request/DictApi";
 import {SysDict} from "@/model/entiy/SysDict";
 import {DrugRecord, changeTypeText} from "@/model/entiy/DrugRecord";
+import {Supplier} from "@/model/entiy/Supplier";
 import {Page} from "@/model/DO/Page";
-import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugInbound, reqDrugPage, reqDrugRecordPage, reqUpdateDrug} from "@/request/DrugApi";
+import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugExpiring, reqDrugInbound, reqDrugPage, reqDrugRecordPage, reqDrugWarning, reqUpdateDrug} from "@/request/DrugApi";
+import {reqSupplierList} from "@/request/SupplierApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -289,15 +329,21 @@ const showDialog = (row: Drug) => {
 const warnOf = (row: Drug): number => (row.warningStock && row.warningStock > 0) ? row.warningStock : 5
 
 // 入库弹窗
+const suppliers = ref<Supplier[]>([])
+reqSupplierList().then(r => { suppliers.value = r || [] })
 const inView = ref(false)
 const inDrug = ref<Drug | null>(null)
 const inQty = ref(1)
 const inExpire = ref<string | null>(null)
+const inSupplierId = ref<number | null>(null)
+const inBatchNo = ref('')
 const inNote = ref('')
 const openIn = (row: Drug): void => {
   inDrug.value = row
   inQty.value = 1
   inExpire.value = null
+  inSupplierId.value = null
+  inBatchNo.value = ''
   inNote.value = ''
   inView.value = true
 }
@@ -307,13 +353,32 @@ const submitIn = (): void => {
     drugId: inDrug.value.drugId,
     quantity: inQty.value,
     expireDate: inExpire.value || undefined,
-    note: inNote.value || undefined
+    note: inNote.value || undefined,
+    supplierId: inSupplierId.value || undefined,
+    batchNo: inBatchNo.value || undefined
   }).then((res: Res) => {
     if (res.code === 1) {
       inView.value = false
       sendQuery()
     }
   })
+}
+
+// 库存预警：低库存(建议补货) + 近效期
+const warnView = ref(false)
+const lowStock = ref<Drug[]>([])
+const expiring = ref<Drug[]>([])
+const expDays = ref(90)
+const warnCount = computed(() => lowStock.value.length + expiring.value.length)
+const suggestRestock = (row: Drug): number => {
+  const threshold = (row.warningStock && row.warningStock > 0) ? row.warningStock : 5
+  const stock = row.drugStock ?? 0
+  return Math.max(threshold * 2 - stock, 10)
+}
+const openWarn = (): void => {
+  warnView.value = true
+  reqDrugWarning().then(r => { lowStock.value = r || [] })
+  reqDrugExpiring(expDays.value).then(r => { expiring.value = r || [] })
 }
 
 // 出入库台账抽屉

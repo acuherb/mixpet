@@ -27,8 +27,11 @@ export const reqDelDrugBatch = (ids: number[]): Promise<Res> =>
 // 低库存预警列表
 export const reqDrugWarning = (): Promise<Drug[]> =>
     reqApi<string, Drug[]>("drug/warning")
-// 入库（增加库存并记台账）
-export const reqDrugInbound = (data: { drugId: number; quantity: number; expireDate?: string; note?: string }): Promise<Res> =>
+// 近效期预警列表（未来 days 天内）
+export const reqDrugExpiring = (days: number): Promise<Drug[]> =>
+    reqApi<string, Drug[]>("drug/expiring", {params: {days}})
+// 入库（增加库存并记台账，可带供应商/批号）
+export const reqDrugInbound = (data: { drugId: number; quantity: number; expireDate?: string; note?: string; supplierId?: number; batchNo?: string }): Promise<Res> =>
     reqApi.post<string, Res>("drug/inbound", {}, {params: data})
 // 出入库台账分页
 export const reqDrugRecordPage = (params: { drugId?: number; numPage: number; pageSize: number }): Promise<Page<import("@/model/entiy/DrugRecord").DrugRecord>> =>

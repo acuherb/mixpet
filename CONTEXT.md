@@ -293,3 +293,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 迁移脚本：`数据库备份/feature_20261014_schedule.sql`（doctor_schedule 表）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处图标未用导入）；`doctor_schedule` 表已建；重启后端 `/schedule/all` 匿名 `code:401`、端口 200。
 - **本轮明确暂缓（附原因，非遗忘）**：①在线支付(微信/支付宝)——外部强依赖(商户资质/密钥/异步回调/对账)，今天只能留抽象；②数据备份/恢复界面化——恢复有毁库风险，不做一键恢复，导出可另行排期；③会员卡/次卡/积分闭环、经营财务报表、AI 诊断、电子发票、顾客小程序、多院区、药品批次效期、投诉工单——均为中大型功能，需各排半天~一天。
+
+### 供应商管理 + 采购入库(供应商/批号) + 近效期预警/补货建议（2026-10-15）
+- 背景：接上轮"院长视角"待办，推进库存采购/供应商缺口（在已有 `drug_record` 台账上扩展，自洽、无外部依赖）。
+- **供应商管理**：新建 `supplier` 表 + `Supplier` 实体/Mapper + `ISupplierService`/Impl + `SupplierController /supplier`（`GET /` 启用列表、`GET /page` 分页、增/改/删 MANAGER）。前端新增 `z-supplier.vue`（名称/联系人/电话/地址/备注 CRUD）+ 路由 `/backstage/z-supplier`。
+- **采购入库带供应商/批号**：`DrugRecord` 加 `supplierId`/`supplierName`(冗余)/`batchNo`；`IDrugService.inbound` 增 supplierId/batchNo 参数，入库时查供应商名一并写入台账；`DrugController /drug/inbound` 同步扩参。前端 `y-drugList.vue` 入库弹窗加"供应商下拉 + 批号输入"，出入库台账抽屉加"供应商/批号"列。
+- **近效期预警 + 补货建议**：`IDrugService.listExpiring(days)`（expireDate 在 [今天, 今天+days] 的启用药品，按效期升序）+ `GET /drug/expiring`。前端药品页加"库存预警"按钮（带角标计数）→ 抽屉分两区：**低库存（含"建议补货量"=阈值×2−当前，下限10）** + **近效期（默认90天）**。
+- 菜单：后台新增"库存管理"分组（药品库存 + 供应商管理），从"商品与服务"移出药品。
+- 迁移脚本：`数据库备份/feature_20261015_supplier_inventory.sql`（supplier 表 + drug_record 加 supplier_id/supplier_name/batch_no）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；supplier 表与 drug_record 新列已建；重启后端 `/supplier`、`/drug/expiring` 匿名 `code:401`、端口 200。
