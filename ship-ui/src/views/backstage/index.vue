@@ -111,6 +111,11 @@
           </el-menu-item-group>
         </el-sub-menu>
       </el-menu>
+      <!-- 退出登录（sticky 固定在侧栏底部） -->
+      <div class="logout-bar" :class="{collapsed: isCollapse}" title="退出登录" @click="doLogout">
+        <el-icon><SwitchButton/></el-icon>
+        <span v-show="!isCollapse">退出登录</span>
+      </div>
     </aside>
     <main>
       <router-view></router-view>
@@ -119,9 +124,12 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
+import {DataBoard, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu, SwitchButton} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
+import {useRouter} from "vue-router";
 import {reqGetLoginD} from "@/request/DoctorApi";
+import {reqLogout} from "@/request/PowerApi";
+import {ElMessage, ElMessageBox} from "element-plus";
 
 const doctorNow = reactive({
   name: "",
@@ -156,6 +164,18 @@ reqGetLoginD().then(res => {
   doctorNow.name = res.doctorName
   doctorNow.authLv = res.authLv
 })
+
+// 退出登录
+const router = useRouter()
+const doLogout = (): void => {
+  ElMessageBox.confirm('确定退出登录吗？', '退出登录', {
+    confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqLogout().then(res => {
+      if (res.code === 204) router.push('/login')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
 </script>
 
 <style lang="scss" scoped>
@@ -210,6 +230,26 @@ reqGetLoginD().then(res => {
       top: 16px;
       border-right: none;
     }
+
+    /* 退出登录：sticky 固定在侧栏底部 */
+    .logout-bar {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 14px;
+      background: #4b5259;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+    }
+    .logout-bar:hover { background: #f56c6c; }
+    .logout-bar.collapsed { justify-content: center; padding: 10px 0; }
 
     /* 折叠状态 */
     &.collapsed {

@@ -11,6 +11,10 @@
             <el-icon><User/></el-icon>
             个人中心
           </router-link></li>
+          <li><a class="nav-logout" title="退出登录" @click="doLogout">
+            <el-icon><SwitchButton/></el-icon>
+            退出登录
+          </a></li>
         </ul>
       </div>
     </header>
@@ -166,6 +170,10 @@ import {ArrowRight, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, Ho
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorGetNearClient} from "@/request/MsgApi";
+import {reqLogout} from "@/request/PowerApi";
+import {useRouter} from "vue-router";
+import {ElMessage, ElMessageBox} from "element-plus";
+import {SwitchButton} from "@element-plus/icons-vue";
 import {NameDo} from "@/model/DO/NameDo";
 import {moveT} from "@/utils/TimeUtil";
 
@@ -201,6 +209,18 @@ const loadData = () => {
   reqGetLoginD().then(d => {
     if (d?.doctorName) doctorName.value = d.doctorName
   })
+}
+
+// 退出登录
+const router = useRouter()
+const doLogout = (): void => {
+  ElMessageBox.confirm('确定退出登录吗？', '退出登录', {
+    confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqLogout().then(res => {
+      if (res.code === 204) router.push('/login')
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 
 onBeforeUnmount(() => {
@@ -277,6 +297,15 @@ onBeforeUnmount(() => {
       &:hover {
         background: #EAF3FA;
         color: #1E6FA8;
+      }
+
+      &.nav-logout {
+        cursor: pointer;
+
+        &:hover {
+          background: #fef0f0;
+          color: #f56c6c;
+        }
       }
     }
   }

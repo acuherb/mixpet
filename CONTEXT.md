@@ -369,3 +369,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **看板视觉升级**（`z-dashboard.vue` 重写）：8 张指标卡（渐变彩色图标 + hover 上浮），分"营收/运营"两行；待办卡与库存预警卡都加图标，低库存/近效期卡加左侧色条并可点击跳药品页；趋势图与医生 Top 的卡片头加图标，Top1/2/3 名次用金/银/铜渐变圆标。
 - **报表视觉升级**（`z-report.vue` 重写）：筛选栏/指标卡/各分区头全部加渐变图标；**新增"环比"**——自动取等长且紧邻当前区间之前的周期再查一次 `/report/finance`，在"总收入"卡下显示 `el-tag` 涨跌幅（绿涨红跌，上期无数据则不显示）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；SQL 复核新指标查询正确（待发药 2、客户总数 12 等）；重启后端 `Started`+200、`/statistics/overview` 匿名 `code:401`、无 ERROR。
+### 未登录可浏览主页 + 全局登出入口（2026-10-15）
+- 背景（用户反馈）：①admin 登录后找不到登出按钮；②访问站点根路径直接是登录页，只有登录后才能看到主页——希望未登录先看到主页（医院/医生/领养介绍），点"个人中心"再引导登录。
+- **根路径改主页**：`router/index.ts` 中 `/` 由 `login.vue` 改为 `reception/Index.vue`（该主页本就有 公告/待领养/医生/寄养 四大板块，且 `isLogin=false` 时顶导航显示"前往登录"）；登录页迁到 `/login`。
+  - 后端**无需改动**：`/login/**`、`/doctor/view`、`/pet/four`、`/foster/pet`、`/notice/four` 本就已在 `SecurityConfig` 放行列表；匿名访问 `/login/user` 返回空体（HTTP 200），不会触发 401。
+- **登录拦截器**：`reqAPI.ts` 401 跳转由 `/#/` 改为 `/#/login`；并加空响应体保护（`data && typeof data === 'object'`），避免匿名空体触发 `resp.data["code"]` 报错。
+- **个人中心需登录**：`router.beforeEach` 增加判定——访问 `/reception/clientCenter`(含子路径) 或 `/reception/chat` 时，若 `reqGetLogin()` 角色不是 CLIENT 则重定向到 `/login`（已登录的医生账号点顾客端个人中心也会被引导去登录页）。主页品牌链接按登录态分流（未登录回主页）。
+- **登出入口补齐**：`backstage/index.vue`（管理端）侧栏底部加"退出登录"（`position: sticky; bottom: 0` 固定，hover 变红，二次确认后 `reqLogout` 跳 `/login`）；`doctorPage/index.vue`（医生端）导航加"退出登录"（hover 红色）。顾客端主页本就有登出。
+- **登录页**：新增左上角"返回首页"链接；"游客登录"按钮改文案为"游客浏览"并指向 `/`。
+- 验证：`npm run build` 通过；匿名 curl 验证 `/login/user`（空体 200）、`/doctor/view`、`/pet/four`、`/foster/pet?pageSize=6`、`/notice/four` 均正常返回数据、无 401。

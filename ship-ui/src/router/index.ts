@@ -7,7 +7,12 @@ import {RoleEnum} from "@/model/VO/LoginVo";
 
 const routes: RouteRecordRaw[] = [
     {
+        // 网站主页（未登录也可浏览：公告/医生/领养/寄养）
         path: '/',
+        component: () => import('@/views/reception/Index.vue')
+    }, {
+        // 登录页
+        path: '/login',
         component: () => import('@/views/login.vue')
     }, {
         path: '/findPwd',
@@ -45,6 +50,17 @@ export const router = createRouter({
  */
 let pwdCheckDone = false
 router.beforeEach(async (to) => {
+    // 顾客端"个人中心 / 聊天"需登录：未登录（或非顾客账号）引导到登录页
+    if (to.path === "/reception/clientCenter"
+        || to.path.startsWith("/reception/clientCenter/")
+        || to.path.startsWith("/reception/chat")) {
+        try {
+            const role = await reqGetLogin()
+            if (role !== RoleEnum.CLIENT) return "/login"
+        } catch (e) {
+            return "/login"
+        }
+    }
     if (pwdCheckDone) return true
     // 只管顾客端；登录/注册/改密等页面和后台/医生端不拦截（后台医生端各自有登录检查）
     if (!to.path.startsWith("/reception")) return true

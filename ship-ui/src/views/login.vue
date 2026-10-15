@@ -16,12 +16,16 @@
     </svg>
     <!--登陆卡片-->
     <h2 class="my-h2">轻触牌间喵，进入影中境</h2>
+    <router-link class="back-home" to="/">
+      <el-icon><HomeFilled/></el-icon>
+      返回首页
+    </router-link>
     <!-- 用户登录 -->
     <div :style="{ transform: pairClient }" class="mixJade">
       <img alt="管理员入口" height="48" src="/mia.svg" width="64" @click="clientToAdmin">
       <LoginForm :role="RoleEnum.CLIENT" @loginSuc="getLoginRole"/>
       <div>
-        <el-button round type="success" @click="$router.push('/reception')">游客登录</el-button>
+        <el-button round type="success" @click="$router.push('/')">游客浏览</el-button>
         <el-button round type="warning" @click="$router.push('/register')">账号注册</el-button>
         <el-button round type="danger" @click="$router.push('/findPwd')">找回密码</el-button>
       </div>
@@ -41,6 +45,7 @@ import {onMounted, reactive, ref} from "vue";
 import {reqGetLogin, reqLoginUser} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
 import {RoleEnum} from "@/model/VO/LoginVo";
+import {HomeFilled} from "@element-plus/icons-vue";
 
 // 登陆的初始化
 onMounted(() => {
@@ -102,6 +107,25 @@ const adminToClient = () => {
   }
 
   /* 欢迎文字 */
+  .back-home {
+    position: fixed;
+    top: 18px;
+    left: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background 0.2s;
+    z-index: 10;
+  }
+  .back-home:hover { background: rgba(255, 255, 255, 0.35); }
+
   .my-h2 {
     position: fixed;
     top: 12vh;

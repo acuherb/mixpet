@@ -15,19 +15,21 @@ reqApi.interceptors.request.use(config => {
 });
 //响应拦截器
 reqApi.interceptors.response.use(resp => {
-    if (resp.data["code"] != undefined && resp.data["code"] != null) {
-        const code = resp.data["code"]
+    const data = resp?.data
+    if (data && typeof data === "object" && data["code"] != undefined && data["code"] != null) {
+        const code = data["code"]
         if (code === 401) {
-            location.href = "/#/"
+            // 未登录：去登录页（主页为公开页，其接口均已放行，不会触发这里）
+            location.href = "/#/login"
         } else if (code === 403) {
             ElMessage.warning("未持有操作权限")
         } else if (code === 1) {
-            ElMessage.success(resp.data["msg"])
+            ElMessage.success(data["msg"])
         } else if (code === 0) {
-            ElMessage.error(resp.data["msg"])
+            ElMessage.error(data["msg"])
         }
     }
-    return resp.data;
+    return data;
 }, error => {
     ElMessage.error("发生未知错误")
     return Promise.reject(error);

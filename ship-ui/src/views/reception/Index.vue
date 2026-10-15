@@ -2,7 +2,7 @@
   <div class="reception-home">
     <header class="topbar">
       <div class="topbar-inner">
-        <router-link to="/reception/clientCenter" class="brand">
+        <router-link :to="isLogin ? '/reception/clientCenter' : '/'" class="brand">
           <span class="brand-mark">PET</span>
           <span class="brand-name">pet-hms</span>
         </router-link>
@@ -24,7 +24,7 @@
             </ul>
           </li>
           <li v-else>
-            <router-link class="nav-cta" to="/">前往登录</router-link>
+            <router-link class="nav-cta" to="/login">前往登录</router-link>
           </li>
         </ul>
       </div>
@@ -162,8 +162,9 @@ onBeforeMount(() => {
     notices.value = res
   })
   reqLoginUser().then(res => {
-    isLogin.value = (res.clientId != null)
-    if (res.clientId != null && res.clientPwdChanged === false) {
+    // 未登录时后端返回空，需做空值保护
+    isLogin.value = !!(res && res.clientId != null)
+    if (res && res.clientId != null && res.clientPwdChanged === false) {
       router.push("/changePwd")
     }
   })
