@@ -24,17 +24,15 @@
           <span>个人中心</span>
         </el-menu-item>
 
-        <!-- 经营看板 -->
-        <el-menu-item index="/backstage/z-dashboard" :title="isCollapse ? '经营看板' : ''">
-          <el-icon><DataAnalysis/></el-icon>
-          <span>经营看板</span>
-        </el-menu-item>
-
-        <!-- 财务报表 -->
-        <el-menu-item index="/backstage/z-report" :title="isCollapse ? '财务报表' : ''">
-          <el-icon><Money/></el-icon>
-          <span>财务报表</span>
-        </el-menu-item>
+        <!-- 数据中心 -->
+        <el-sub-menu index="g-stat" :title="isCollapse ? '数据中心' : ''">
+          <template #title>
+            <el-icon><DataBoard/></el-icon>
+            <span>数据中心</span>
+          </template>
+          <el-menu-item index="/backstage/z-dashboard">经营看板</el-menu-item>
+          <el-menu-item index="/backstage/z-report">财务报表</el-menu-item>
+        </el-sub-menu>
 
         <!-- 接待管理（前台作业线：挂号 → 收费 → 寄养接待） -->
         <el-sub-menu index="g-reception" :title="isCollapse ? '接待管理' : ''">
@@ -121,7 +119,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataAnalysis, Money, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
+import {DataBoard, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 

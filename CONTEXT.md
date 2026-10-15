@@ -362,3 +362,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
   - **系统管理**：系统设置 · 检验项字典 · 影像项字典 · 病历模板 · 公告管理（原"系统配置"改名——"配置"容不下公告，"管理"可容纳设置+字典+模板+公告）
   - **组织管理**（仅管理员）：科室列表 · 医生列表 · 医生排班 · 职务/职称
 - 验证：`npm run build` 通过（移除了不再使用的 ShoppingBag 图标导入）；菜单项全部指向已注册路由，无死链接。
+
+### 数据中心合并 + 看板/报表视觉升级（2026-10-15）
+- **菜单**：经营看板 + 财务报表 两个顶层项合并为「**数据中心**」子菜单（一级项 8 → 7）；分组图标用 `DataBoard`。
+- **看板指标扩充**（`StatOverviewVo` + `StatisticsServiceImpl`，注入 AppointmentMapper/MedicalRecordMapper/ClientMapper/DrugMapper）：新增 今日挂号数、今日接诊数、客户总数、待发药账单数、低库存药品数（`warning_stock>0 AND drug_stock<=warning_stock`）、近效期药品数（90 天内）。
+- **看板视觉升级**（`z-dashboard.vue` 重写）：8 张指标卡（渐变彩色图标 + hover 上浮），分"营收/运营"两行；待办卡与库存预警卡都加图标，低库存/近效期卡加左侧色条并可点击跳药品页；趋势图与医生 Top 的卡片头加图标，Top1/2/3 名次用金/银/铜渐变圆标。
+- **报表视觉升级**（`z-report.vue` 重写）：筛选栏/指标卡/各分区头全部加渐变图标；**新增"环比"**——自动取等长且紧邻当前区间之前的周期再查一次 `/report/finance`，在"总收入"卡下显示 `el-tag` 涨跌幅（绿涨红跌，上期无数据则不显示）。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；SQL 复核新指标查询正确（待发药 2、客户总数 12 等）；重启后端 `Started`+200、`/statistics/overview` 匿名 `code:401`、无 ERROR。

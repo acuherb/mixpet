@@ -17,6 +17,18 @@ export interface StatOverview {
     pendingLab: number;
     pendingImage: number;
     dueVaccine: number;
+    /** 今日挂号数 */
+    todayAppoint: number;
+    /** 今日接诊(新建病历)数 */
+    todayRecord: number;
+    /** 客户总数 */
+    clientTotal: number;
+    /** 待发药账单数 */
+    pendingDispense: number;
+    /** 低库存药品数 */
+    lowStock: number;
+    /** 近效期药品数(90天内) */
+    expiringDrug: number;
     revenueTrend: RevenueTrend[];
     doctorTop: NameCount[];
 }
