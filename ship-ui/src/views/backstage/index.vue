@@ -36,30 +36,22 @@
           <span>财务报表</span>
         </el-menu-item>
 
-        <!-- 接待与收费 -->
-        <el-sub-menu index="g-reception" :title="isCollapse ? '接待与收费' : ''">
+        <!-- 接待管理（前台作业线：挂号 → 收费 → 寄养接待） -->
+        <el-sub-menu index="g-reception" :title="isCollapse ? '接待管理' : ''">
           <template #title>
             <el-icon><Tickets/></el-icon>
-            <span>接待与收费</span>
+            <span>接待管理</span>
           </template>
           <el-menu-item index="/backstage/y-appointmentList">挂号列表</el-menu-item>
           <el-menu-item index="/backstage/y-billList">收银台</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 店面服务（预留洗护/美容等） -->
-        <el-sub-menu index="g-store" :title="isCollapse ? '店面服务' : ''">
-          <template #title>
-            <el-icon><ShoppingBag/></el-icon>
-            <span>店面服务</span>
-          </template>
           <el-menu-item index="/backstage/y-fosterList">寄养管理</el-menu-item>
         </el-sub-menu>
 
-        <!-- 诊疗中心 -->
-        <el-sub-menu index="g-medical" :title="isCollapse ? '诊疗中心' : ''">
+        <!-- 诊疗管理 -->
+        <el-sub-menu index="g-medical" :title="isCollapse ? '诊疗管理' : ''">
           <template #title>
             <el-icon><FirstAidKit/></el-icon>
-            <span>诊疗中心</span>
+            <span>诊疗管理</span>
           </template>
           <el-menu-item index="/backstage/z-labResult">化验结果录入</el-menu-item>
           <el-menu-item index="/backstage/z-imageResult">影像报告录入</el-menu-item>
@@ -81,11 +73,11 @@
           <el-menu-item index="/backstage/z-supplier">供应商管理</el-menu-item>
         </el-sub-menu>
 
-        <!-- 客户中心 -->
-        <el-sub-menu index="g-customer" :title="isCollapse ? '客户中心' : ''">
+        <!-- 客户运营（客户资产与会员体系） -->
+        <el-sub-menu index="g-customer" :title="isCollapse ? '客户运营' : ''">
           <template #title>
             <el-icon><User/></el-icon>
-            <span>客户中心</span>
+            <span>客户运营</span>
           </template>
           <el-menu-item index="/backstage/y-clientList">客户管理</el-menu-item>
           <el-menu-item index="/backstage/y-petList">宠物管理</el-menu-item>
@@ -94,11 +86,11 @@
           <el-menu-item index="/backstage/z-countCard">次卡模板</el-menu-item>
         </el-sub-menu>
 
-        <!-- 系统配置（所有"定义/字典"类集中于此） -->
-        <el-sub-menu index="g-config" :title="isCollapse ? '系统配置' : ''">
+        <!-- 系统管理（设置 + 各类字典/模板 + 公告） -->
+        <el-sub-menu index="g-config" :title="isCollapse ? '系统管理' : ''">
           <template #title>
             <el-icon><Setting/></el-icon>
-            <span>系统配置</span>
+            <span>系统管理</span>
           </template>
           <el-menu-item index="/backstage/z-setting">系统设置</el-menu-item>
           <el-menu-item index="/backstage/z-labTest">检验项字典</el-menu-item>
@@ -129,7 +121,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataAnalysis, Money, Tickets, Goods, ShoppingBag, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
+import {DataAnalysis, Money, Tickets, Goods, FirstAidKit, User, Setting, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
