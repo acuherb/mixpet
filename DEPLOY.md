@@ -59,8 +59,8 @@ sudo systemctl enable --now mariadb
 
 ```bash
 cd ~/公共
-git clone git@github.com:acuherb/pet-hms.git
-cd pet-hms
+git clone git@github.com:acuherb/mixpet.git
+cd mixpet
 ```
 
 目录结构：
@@ -91,7 +91,7 @@ EOF
 ### 3.2 导入数据
 
 ```bash
-mysql -u mixpet -p pet_ship < ~/公共/pet-hms/数据库备份/pet_ship.sql
+mysql -u mixpet -p pet_ship < ~/公共/mixpet/数据库备份/pet_ship.sql
 ```
 
 ### 3.3 验证
@@ -153,7 +153,7 @@ export PET_CHATIMG=/你的/路径/chat/
 ### 4.3 启动后端
 
 ```bash
-cd ~/公共/pet-hms/shipPet
+cd ~/公共/mixpet/shipPet
 mvn spring-boot:run
 ```
 
@@ -182,7 +182,7 @@ npm config set registry https://registry.npmmirror.com
 新开一个终端（后端终端保持运行）：
 
 ```bash
-cd ~/公共/pet-hms/ship-ui
+cd ~/公共/mixpet/ship-ui
 npm install
 ```
 
@@ -241,10 +241,10 @@ ip addr | grep "inet "
 ### 启动
 ```bash
 # 终端 1：后端
-cd ~/公共/pet-hms/shipPet && mvn spring-boot:run
+cd ~/公共/mixpet/shipPet && mvn spring-boot:run
 
 # 终端 2：前端
-cd ~/公共/pet-hms/ship-ui && npm run dev
+cd ~/公共/mixpet/ship-ui && npm run dev
 ```
 
 ### 停止
@@ -345,5 +345,5 @@ mysqldump -u mixpet -p pet_ship > ~/backup/pet_ship_$(date +%Y%m%d).sql
 ---
 
 **项目来源**：https://github.com/MixJade/MixPet
-**当前仓库**：https://github.com/acuherb/pet-hms
+**当前仓库**：https://github.com/acuherb/mixpet
 **部署状态**：本地局域网部署成功，前后端已跑通

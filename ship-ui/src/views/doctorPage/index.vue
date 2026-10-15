@@ -4,7 +4,7 @@
       <div class="topbar-inner">
         <div class="brand">
           <span class="brand-mark">DR</span>
-          <span class="brand-name">pet-hms 医生工作台</span>
+          <span class="brand-name">mixpet 医生工作台</span>
         </div>
         <ul class="nav">
           <li><router-link to="/backstage">

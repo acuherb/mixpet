@@ -20,7 +20,7 @@
 5. petMapper.updateById(pet) 默认跳过 null 字段——清 client_id 用 LambdaUpdateWrapper.set(xxx, null)。
 
 ## 1. 项目一页纸
-- 名称：MixPet（MixJade 毕设的重置版二次开发，私有仓库 acuherb/pet-hms）
+- 名称：MixPet（MixJade 毕设的重置版二次开发，私有仓库 acuherb/mixpet）
 - 用途：面向小型宠物医院日常经营落地的全流程管理系统，本地 Debian 13 + MariaDB 11 自建，局域网访问
 - 技术栈：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 | Vue 3 + Vite 4 + TS + Element Plus | WebSocket | WebP
 - 端口：后端 8085 / 前端 3120

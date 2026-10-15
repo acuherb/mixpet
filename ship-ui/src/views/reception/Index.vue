@@ -4,7 +4,7 @@
       <div class="topbar-inner">
         <router-link :to="isLogin ? '/reception/clientCenter' : '/'" class="brand">
           <span class="brand-mark">PET</span>
-          <span class="brand-name">pet-hms</span>
+          <span class="brand-name">mixpet</span>
         </router-link>
         <ul class="nav">
           <li v-if="isLogin" class="drop">

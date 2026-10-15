@@ -24,7 +24,7 @@
         <div class="foot-col foot-brand">
           <div class="brand-line">
             <span class="brand-mark">PET</span>
-            <span class="brand-name">pet-hms</span>
+            <span class="brand-name">mixpet</span>
           </div>
           <p class="brand-desc">宠物医院管理系统</p>
         </div>
@@ -51,7 +51,7 @@
       </div>
 
       <div class="foot-bottom">
-        <span>© 2026 pet-hms</span>
+        <span>© 2026 mixpet</span>
         <span class="dot">·</span>
         <span>基于 <a href="https://github.com/MixJade/MixPet" target="_blank" rel="noopener">MixPet</a> 二次开发</span>
       </div>

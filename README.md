@@ -63,7 +63,7 @@
 ## 目录结构
 
 ```text
-pet-hms/
+mixpet/
 ├── shipPet/              # 后端（Spring Boot 3 + Java 17）
 │   └── src/main/
 │       ├── java/com/ship/    # 代码
@@ -133,9 +133,9 @@ npm run dev                # 访问 http://localhost:3120
 | `DB_PASSWORD` | `MixPet2024` | 数据库密码 |
 | `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱 |
 | `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码 |
-| `PET_IMAGES` | `~/公共/pet-hms/images/` | 头像 / 报告附件存储路径 |
-| `PET_NOTICE` | `~/公共/pet-hms/notice/` | 公告配图存储路径 |
-| `PET_CHATIMG` | `~/公共/pet-hms/chat/` | 聊天文件存储路径 |
+| `PET_IMAGES` | `~/公共/mixpet/images/` | 头像 / 报告附件存储路径 |
+| `PET_NOTICE` | `~/公共/mixpet/notice/` | 公告配图存储路径 |
+| `PET_CHATIMG` | `~/公共/mixpet/chat/` | 聊天文件存储路径 |
 
 ---
 

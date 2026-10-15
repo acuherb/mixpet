@@ -10,7 +10,7 @@ import java.io.Serial;
 /**
  * 医生 ⇄ 科室 多对多关系表
  *
- * @author pet-hms
+ * @author mixpet
  */
 @TableName("doctor_department")
 public class DoctorDepart implements Serializable {

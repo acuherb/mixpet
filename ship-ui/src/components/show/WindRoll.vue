@@ -8,7 +8,7 @@
     <div class="grid"/>
     <!-- 主内容 -->
     <div class="hero-inner">
-      <div class="hero-tag">pet-hms · 宠物医疗</div>
+      <div class="hero-tag">mixpet · 宠物医疗</div>
       <h1 class="hero-title">守护每一只毛孩子</h1>
       <p class="hero-subtitle">
         预约挂号 · 在线咨询 · 宠物档案 · 全程陪伴
