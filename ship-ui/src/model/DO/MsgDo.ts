@@ -6,6 +6,8 @@ export interface MsgDo {
     isMine: boolean;
     msgContent: string;
     isImg: boolean;
+    msgType?: string;
+    msgName?: string;
     createTime: string;
     roleName: string;
     rolePhoto: string;

@@ -2,6 +2,7 @@
   <ChatPanel :groupList="groupList" :msg-list="msgList" :role-name="client.clientName" opType="用户"
              @cutOther="cutClient "
              @sendImgMsg="sendImgMsg"
+             @sendFileMsg="sendFileMsg"
              @sendTxtMsg="sendTextMsg"
   />
 </template>
@@ -57,6 +58,8 @@ ws.onmessage = (ev) => {
     const msgDo: MsgDo = {
       createTime: getNowISO(),
       isImg: dataMsg.isImg,
+      msgType: dataMsg.msgType,
+      msgName: dataMsg.msgName,
       isMine: false,
       msgContent: dataMsg.msgContent,
       roleName: client.clientName,
@@ -105,7 +108,26 @@ const sendImgMsg = (imgName: string): void => {
   const msg: Msg = {
     clientId: client.clientId,
     isImg: true,
+    msgType: 'IMAGE',
     msgContent: imgName
+  }
+  reqSendDoctorMsg(msg).then(res => {
+    if (res.code === 1) {
+      reqDoctorMsgList(client.clientId).then(res1 => {
+        msgList.value = res1
+      })
+    }
+  })
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
+}
+// 发送文件消息
+const sendFileMsg = (fileMeta: {name: string, origin: string}): void => {
+  const msg: Msg = {
+    clientId: client.clientId,
+    isImg: false,
+    msgType: 'FILE',
+    msgName: fileMeta.origin,
+    msgContent: fileMeta.name
   }
   reqSendDoctorMsg(msg).then(res => {
     if (res.code === 1) {

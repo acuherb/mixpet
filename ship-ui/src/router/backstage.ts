@@ -133,5 +133,9 @@ export const backstage: RouteRecordRaw[] = [
         // 免疫档案
         path: "z-immune",
         component: () => import('@/views/backstage/z-immune.vue')
+    }, {
+        // 聊天数据清理
+        path: "z-chatClean",
+        component: () => import('@/views/backstage/z-chatClean.vue')
     }
 ]

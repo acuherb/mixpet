@@ -1,15 +1,28 @@
 <template>
   <div>
     <PageHead>查看挂号</PageHead>
-    <ShakeBtn style="margin-left: 80px" @click="addRoleB">添加挂号</ShakeBtn>
+    <div class="appoint-tabbar">
+      <button
+          class="appoint-tab"
+          :class="{active: appointTab === 'pending'}"
+          @click="appointTab = 'pending'">待处理 ({{ pendingAppoint.length }})</button>
+      <button
+          class="appoint-tab"
+          :class="{active: appointTab === 'done'}"
+          @click="appointTab = 'done'">已处理 ({{ doneAppoint.length }})</button>
+      <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
+    </div>
     <MyRow>
-      <AppointCard v-for="a in appoint" :key="a.appointmentId" :a="a" @toSuc="openTreat(a)"/>
+      <AppointCard
+          v-for="a in (appointTab === 'pending' ? pendingAppoint : doneAppoint)"
+          :key="a.appointmentId"
+          :a="a" @toSuc="openTreat(a)"/>
     </MyRow>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
         <el-form-item label="简介" prop="appointmentInfo">
-          <el-input v-model="form.appointmentInfo" clearable placeholder="无"/>
+          <el-input v-model="form.appointmentInfo" clearable maxlength="64" show-word-limit placeholder="无"/>
         </el-form-item>
         <el-form-item label="就诊时间" prop="appointmentDate">
           <el-date-picker
@@ -298,7 +311,7 @@ import {AppointDto2} from "@/model/DO/AppointDto2";
 import AppointCard from "@/components/card/AppointCard.vue";
 import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
-import {onMounted, reactive, ref, watch} from "vue";
+import {computed, onMounted, reactive, ref, watch} from "vue";
 import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
@@ -327,6 +340,10 @@ reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
 reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
 
 const appoint = ref<AppointDto2[]>([])
+// 待处理/已处理 分类选项卡
+const appointTab = ref<'pending' | 'done'>('pending')
+const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc))
+const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc))
 onMounted(() => {
   queryAppoint()
   reqClientNameHavePet(null).then(res => {
@@ -612,6 +629,20 @@ watch(() => form.value.clientId, (newValue): void => {
 </script>
 
 <style lang="scss" scoped>
+.appoint-tabbar { margin: 0 80px 12px; }
+.appoint-tab {
+  margin-right: 10px;
+  padding: 8px 22px;
+  border: 1px solid #dcdfe6;
+  border-radius: 18px;
+  background-color: #fff;
+  color: #606266;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  &:hover { border-color: #409eff; color: #409eff; }
+  &.active { background-color: #409eff; border-color: #409eff; color: #fff; }
+}
 .fee-sep { margin: 0 12px 0 24px; color: #909399; }
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
 .order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }

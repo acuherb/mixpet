@@ -12,6 +12,8 @@ public record MsgDo(
         boolean isMine,
         String msgContent,
         boolean isImg,
+        String msgType,
+        String msgName,
         LocalDateTime createTime
 ) {
 }

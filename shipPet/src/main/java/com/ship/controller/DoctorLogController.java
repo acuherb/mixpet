@@ -6,11 +6,13 @@ import com.ship.model.dto.AppointmentDto2;
 import com.ship.model.dto.DoctorDto;
 import com.ship.model.entity.Appointment;
 import com.ship.model.entity.Doctor;
+import com.ship.model.entity.Pet;
 import com.ship.model.vo.DealAppointVo;
 import com.ship.model.vo.DoctorResetPwdVo;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IDoctorService;
+import com.ship.service.IPetService;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import jakarta.servlet.http.HttpSession;
@@ -30,12 +32,15 @@ public class DoctorLogController {
     private final IDoctorService doctorService;
     private final IAppointmentService appointService;
     private final SendMail sendMail;
+    private final IPetService petService;
 
     @Autowired
-    public DoctorLogController(IDoctorService doctorService, IAppointmentService appointService, SendMail sendMail) {
+    public DoctorLogController(IDoctorService doctorService, IAppointmentService appointService, SendMail sendMail,
+                               IPetService petService) {
         this.doctorService = doctorService;
         this.appointService = appointService;
         this.sendMail = sendMail;
+        this.petService = petService;
     }
 
     /**
@@ -119,8 +124,24 @@ public class DoctorLogController {
     @PostMapping("/appoint")
     public Result addAppoint(@RequestBody Appointment appointment) {
         if (UserUtil.getUser() instanceof Doctor doctorLog) {
+            // 给医生端新增补全必填校验，避免直接插入触发数据完整性违约
+            if (appointment.getPetId() == null || appointment.getPetId() == 0)
+                return Result.error("请选择宠物");
+            if (appointment.getClientId() == null || appointment.getClientId() == 0)
+                return Result.error("请选择用户");
+            if (appointment.getAppointmentDate() == null)
+                return Result.error("请选择就诊时间");
+            String info = appointment.getAppointmentInfo();
+            if (info != null && info.getBytes().length > 64)
+                return Result.error("挂号描述不能超过64个字符");
             appointment.setDoctorId(doctorLog.getDoctorId());
+            if (doctorLog.getDepartmentId() == null)
+                return Result.error("您尚未配置所属科室，无法挂号，请联系管理员");
             appointment.setDepartmentId(doctorLog.getDepartmentId());
+            // 自动记录就诊时的宠物主人，避免主键关联字段为空触发数据完整性违约
+            Pet pet = petService.getById(appointment.getPetId());
+            appointment.setPetOwnerId(pet != null ? pet.getClientId() : appointment.getClientId());
+            if (appointment.getIsSuc() == null) appointment.setIsSuc(false);
             return Result.choice("添加", appointService.save(appointment));
         } else return Result.error("未获取登录信息");
     }

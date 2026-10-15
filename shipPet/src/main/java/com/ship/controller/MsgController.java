@@ -10,8 +10,12 @@ import com.ship.model.entity.Msg;
 import com.ship.service.IMsgService;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,10 +30,65 @@ import java.util.List;
 @RequestMapping("/msg")
 public class MsgController {
     private final IMsgService msgService;
+    private final String chatPath;
 
     @Autowired
-    public MsgController(IMsgService msgService) {
+    public MsgController(IMsgService msgService,
+                         @Value("${pet-ship.chatImg-path}") String chatPath) {
         this.msgService = msgService;
+        this.chatPath = chatPath;
+    }
+
+    /**
+     * 查询超过指定天数的历史聊天记录数量（用于提醒手动清理）
+     *
+     * @param days 保留天数，默认90
+     */
+    @GetMapping("/expiredMsgNum")
+    public long expiredMsgNum(Integer days) {
+        if (days == null || days <= 0) days = 90;
+        return msgService.lambdaQuery()
+                .lt(Msg::getCreateTime, LocalDateTime.now().minusDays(days))
+                .count();
+    }
+
+    /**
+     * 手动删除超过指定天数的历史聊天记录及其文件
+     *
+     * @param days 保留天数，默认90
+     */
+    @PostMapping("/cleanExpiredMsg")
+    public Result cleanExpiredMsg(Integer days) {
+        if (days == null || days <= 0) days = 90;
+        List<Msg> expired = msgService.lambdaQuery()
+                .lt(Msg::getCreateTime, LocalDateTime.now().minusDays(days))
+                .list();
+        if (expired.isEmpty()) return Result.choice("清理聊天记录", true);
+        // 删除磁盘上的图片/文件（纯文字消息 msgContent 不用删）
+        List<Integer> ids = new ArrayList<>();
+        for (Msg m : expired) {
+            ids.add(m.getMsgId());
+            if (m.getIsImg() != null && m.getIsImg() && m.getMsgContent() != null) {
+                deleteIfExists(new File(chatPath + "image/" + m.getMsgContent()));
+            }
+            if ("FILE".equalsIgnoreCase(m.getMsgType()) && m.getMsgContent() != null) {
+                deleteIfExists(new File(chatPath + "file/" + m.getMsgContent()));
+            }
+        }
+        // 逻辑删除记录
+        msgService.lambdaUpdate().in(Msg::getMsgId, ids)
+                .set(Msg::getIsDel, System.currentTimeMillis())
+                .update();
+        return Result.choice("清理聊天记录", true);
+    }
+
+    private void deleteIfExists(File f) {
+        if (f.exists()) {
+            boolean del = f.delete();
+            if (!del) {
+                f.deleteOnExit();
+            }
+        }
     }
 
     /**

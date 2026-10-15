@@ -72,14 +72,15 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
                         if (new File(noticePath + fileName).delete()) delNum[1]++;
                     });
         }
-        // 三：删除冗余聊天图片
-        String[] list03 = new File(chatImg).list(); // 文件夹下文件名
+        // 三：删除冗余聊天图片（存储在 chat/image 子目录）
+        String imageDir = chatImg + "image/";
+        String[] list03 = new File(imageDir).list(); // 文件夹下文件名
         List<String> dbChat = baseMapper.selectImgChat(); // 数据库文件名
         if (list03 != null) {
             Arrays.stream(list03)
                     .filter(i -> !dbChat.contains(i))
                     .forEach(fileName -> {
-                        if (new File(chatImg + fileName).delete()) delNum[0]++;
+                        if (new File(imageDir + fileName).delete()) delNum[0]++;
                     });
         }
         log.info("删除冗余图片{}张，冗余公告{}条", delNum[0], delNum[1]);

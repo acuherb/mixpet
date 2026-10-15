@@ -8,9 +8,9 @@
 </script>
 
 <style scoped>
+.img-row.my-row,
 .my-row {
-  --card-wid: 360px;
-  /* 卡片专属的行布局 */
+  --card-wid: 350px;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(var(--card-wid), 1fr));
   justify-items: center;

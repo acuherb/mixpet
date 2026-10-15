@@ -52,6 +52,16 @@ public class Msg implements Serializable {
     private Boolean isImg;
 
     /**
+     * 消息类型：TEXT 文字，IMAGE 图片，FILE 文件
+     */
+    private String msgType;
+
+    /**
+     * 文件消息的原始文件名
+     */
+    private String msgName;
+
+    /**
      * 修改时间
      */
     @TableField(fill = FieldFill.INSERT_UPDATE)
@@ -116,6 +126,22 @@ public class Msg implements Serializable {
         this.isImg = isImg;
     }
 
+    public String getMsgType() {
+        return msgType;
+    }
+
+    public void setMsgType(String msgType) {
+        this.msgType = msgType;
+    }
+
+    public String getMsgName() {
+        return msgName;
+    }
+
+    public void setMsgName(String msgName) {
+        this.msgName = msgName;
+    }
+
     public LocalDateTime getUpdateTime() {
         return updateTime;
     }
@@ -149,6 +175,8 @@ public class Msg implements Serializable {
                 ", isClient = " + isClient +
                 ", msgContent = " + msgContent +
                 ", isImg = " + isImg +
+                ", msgType = " + msgType +
+                ", msgName = " + msgName +
                 ", updateTime = " + updateTime +
                 ", createTime = " + createTime +
                 ", isDel = " + isDel +

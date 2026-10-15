@@ -20,6 +20,8 @@
                is_client                                                           AS is_mine,
                msg_content,
                is_img,
+               msg_type,
+               msg_name,
                m.create_time
         FROM msg m,
              client c,
@@ -67,6 +69,8 @@
                NOT is_client                                                       AS is_mine,
                msg_content,
                is_img,
+               msg_type,
+               msg_name,
                m.create_time
         FROM msg m,
              client c,

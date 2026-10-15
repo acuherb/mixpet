@@ -28,3 +28,9 @@ export const reqDoctorMsgGroup = (clientId: number): Promise<ChatGroup[]> =>
 // 医生：发送消息
 export const reqSendDoctorMsg = (msg: Msg): Promise<Res> =>
     reqApi.post<string, Res>("msg/doctor", msg)
+// 查询超过保留天数的历史聊天记录数量（用于提醒手动清理）
+export const reqExpiredMsgNum = (days: number): Promise<number> =>
+    reqApi<string, number>("msg/expiredMsgNum?days=" + days)
+// 手动清理超过保留天数的历史聊天记录
+export const reqCleanExpiredMsg = (days: number): Promise<Res> =>
+    reqApi.post<string, Res>("msg/cleanExpiredMsg?days=" + days)

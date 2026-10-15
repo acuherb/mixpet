@@ -37,11 +37,20 @@
               :before-upload="beforeImgUpload"
               :http-request="doImgUpload"
               :show-file-list="false"
-              accept="image/jpeg,image/png"
+              accept="image/*"
               name="myFile"
           >
             <el-icon size="26">
               <PictureRounded/>
+            </el-icon>
+          </el-upload>
+          <el-upload
+              :http-request="doFileUpload"
+              :show-file-list="false"
+              name="myFile"
+          >
+            <el-icon size="26" title="发送文件">
+              <Document/>
             </el-icon>
           </el-upload>
           <el-input
@@ -60,7 +69,7 @@
 
 <script lang="ts" setup>
 /*=====封装的聊天页面，医生与用户只是传递的参数不同=====*/
-import {PictureRounded, Position, User} from "@element-plus/icons-vue"
+import {Document, PictureRounded, Position, User} from "@element-plus/icons-vue"
 import PageHead from "@/components/row/PageHead.vue";
 import {ref} from "vue";
 import {ChatGroup} from "@/model/DO/ChatGroup";
@@ -85,6 +94,7 @@ const showContacts = ref(false)
 const emit = defineEmits<{
   (e: "sendTxtMsg", value: string): void,
   (e: "sendImgMsg", value: string): void,
+  (e: "sendFileMsg", value: {name: string, origin: string}): void,
   (e: "cutOther", value: number): void
 }>()
 const sendMsgB = (): void => {
@@ -114,8 +124,8 @@ const handleAvatarSuccess = (response: string): void => {
  * @param rawFile 上传的聊天图片
  */
 const beforeImgUpload = (rawFile: UploadRawFile) => {
-  if (rawFile.type !== 'image/png' && rawFile.type !== 'image/jpeg') {
-    ElMessage.error('请上传JPG、PNG图片')
+  if (!rawFile.type.startsWith('image/')) {
+    ElMessage.error('请上传图片')
     return false
   }
   return true
@@ -134,6 +144,39 @@ const doImgUpload = async (options: UploadRequestOptions): Promise<void> => {
     } else ElMessage.error('图片发送失败，请重试')
   } catch (e) {
     ElMessage.error('图片发送失败，请重试')
+  }
+}
+/**
+ * 文件上传前的校验：限制 30MB、常见文档/压缩包
+ */
+const beforeFileUpload = (rawFile: UploadRawFile): boolean => {
+  if (rawFile.size > 30 * 1024 * 1024) {
+    ElMessage.error('文件不能超过 30MB')
+    return false
+  }
+  return true
+}
+/**
+ * 自定义文件上传：POST 到 /api/common/upChatFile（返回 {name, origin}）
+ */
+const doFileUpload = async (options: UploadRequestOptions): Promise<void> => {
+  if (!beforeFileUpload(options.file as UploadRawFile)) return
+  const fd = new FormData()
+  fd.append('myFile', options.file)
+  try {
+    const resp = await axios.post<string>('/api/common/upChatFile', fd)
+    if (typeof resp.data === 'string' && resp.data) {
+      let parsed: {name: string, origin: string}
+      try {
+        parsed = JSON.parse(resp.data)
+      } catch {
+        ElMessage.error('文件发送失败，请重试')
+        return
+      }
+      emit("sendFileMsg", {name: parsed.name, origin: decodeURIComponent(parsed.origin)})
+    } else ElMessage.error('文件发送失败，请重试')
+  } catch (e) {
+    ElMessage.error('文件发送失败，请重试')
   }
 }
 </script>
@@ -259,6 +302,10 @@ const doImgUpload = async (options: UploadRequestOptions): Promise<void> => {
           line-height: 1;
           cursor: pointer;
           color: #67c23a;
+
+          &:nth-of-type(2) {
+            color: #409eff;
+          }
         }
 
         .el-textarea {

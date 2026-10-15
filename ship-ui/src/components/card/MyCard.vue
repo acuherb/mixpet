@@ -40,9 +40,10 @@ export interface CardData {
 <style lang="scss" scoped>
 .img-card {
   --accent: #1E6FA8;
+  --card-w: 350px;
 
-  width: 350px;
-  max-width: 92vw;
+  width: var(--card-w);
+  max-width: 100%;
   background: #fff;
   border: 1px solid #E4E7ED;
   border-radius: 12px;

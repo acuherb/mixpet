@@ -1,4 +1,4 @@
-# pet-hms 宠物医院管理系统 - 本地部署完整教程
+# MixPet 智慧宠物医疗管理系统 - 本地部署完整教程
 
 > 基于 [MixPet](https://github.com/MixJade/MixPet) 重置版二次开发
 > 环境：Debian 13 (Trixie) / 局域网部署 / 2026-10 实测通过
@@ -66,8 +66,10 @@ cd pet-hms
 目录结构：
 - `shipPet/` — 后端（Spring Boot 3 + Java 17）
 - `ship-ui/` — 前端（Vue 3 + Vite）
-- `数据库备份/pet_ship.sql` — 数据库脚本
-- `images/`、`notice/`、`chatImg/` — 上传文件存储目录
+- `数据库备份/pet_ship.sql` — 数据库初始化脚本
+- `images/` — 头像/报告附件图片（WebP）
+- `notice/` — 公告配图
+- `chat/` — 聊天文件（其下分 `image/` 图片、`file/` 文件两子目录）
 
 ---
 
@@ -127,7 +129,7 @@ spring:
 pet-ship:
   images-path: ${PET_IMAGES:/home/debian/公共/pet-hms/images/}
   notice-path: ${PET_NOTICE:/home/debian/公共/pet-hms/notice/}
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/pet-hms/chatImg/}
+  chatImg-path: ${PET_CHATIMG:/home/debian/公共/pet-hms/chat/}
 ```
 
 ### 4.2 换机器时怎么配
@@ -141,7 +143,7 @@ export MAIL_USER=你的QQ邮箱
 export MAIL_PASS=你的QQ邮箱授权码
 export PET_IMAGES=/你的/路径/images/
 export PET_NOTICE=/你的/路径/notice/
-export PET_CHATIMG=/你的/路径/chatImg/
+export PET_CHATIMG=/你的/路径/chat/
 ```
 
 写进 `~/.bashrc` 可永久生效。
@@ -345,4 +347,3 @@ mysqldump -u mixpet -p pet_ship > ~/backup/pet_ship_$(date +%Y%m%d).sql
 **项目来源**：https://github.com/MixJade/MixPet
 **当前仓库**：https://github.com/acuherb/pet-hms
 **部署状态**：本地局域网部署成功，前后端已跑通
-

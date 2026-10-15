@@ -19,13 +19,14 @@
 4. 不要给 el-table 用动态 :max-height——路由切换触发 parentNode is null。改法：固定 max-height="calc(100vh - Npx)"。
 5. petMapper.updateById(pet) 默认跳过 null 字段——清 client_id 用 LambdaUpdateWrapper.set(xxx, null)。
 
-## 2. 项目一页纸
-- 名称：pet-hms（原名 MixPet，MixJade 的毕设重置版二次开发，私有仓库 acuherb/pet-hms）
-- 用途：宠物医院管理系统，本地 Debian 13 + MariaDB 11 自建，局域网访问
-- 技术栈：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 | Vue 3 + Vite 4 + TS + Element Plus | WebSocket
+## 1. 项目一页纸
+- 名称：MixPet（MixJade 毕设的重置版二次开发，私有仓库 acuherb/pet-hms）
+- 用途：面向小型宠物医院日常经营落地的全流程管理系统，本地 Debian 13 + MariaDB 11 自建，局域网访问
+- 技术栈：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 | Vue 3 + Vite 4 + TS + Element Plus | WebSocket | WebP
 - 端口：后端 8085 / 前端 3120
-- 目录：shipPet/ 后端、ship-ui/ 前端、数据库备份/pet_ship.sql、images/ notice/ chatImg/ 上传文件
+- 目录：shipPet/ 后端、ship-ui/ 前端、images/ 头像附件、notice/ 公告、chat/ 聊天文件（下设 image/ 与 file/）、数据库备份/（含增量迁移脚本）
 - 部署：见 DEPLOY.md；开发流程见 dev-tools/WORKFLOW.md
+- **本项目已从毕设演进为生产系统**：一切按"宠物医院能落地使用"标准开发，不允许占位/TODO/偷懒实现
 
 ## 3. 功能总览
 
@@ -33,20 +34,24 @@
 - 预约挂号、病历（medical_record）、药品字典（drug）+ 处方（prescription）+ 账单（bill）收费发药、医生接诊
 - 医疗扩展（2026-10-13）：化验/检验、住院、影像检查、免疫接种、经营统计看板（均开单/录入并计费入 bill，见「## 医疗扩展模块」）
 - 顾客：资料/自建宠物/挂号/余额充值/就诊记录/退养/在线咨询
-- 领养（adopt）、寄养（foster）、公告（notice）、图片上传（Img）
-- 后台：客户/宠物/医生/科室/药品/账单/领养/寄养/公告/挂号列表管理
-- 收银小票 + A4 发票打印（前端 window.print）
-- 安全基线：账号=手机号、越权收口、密码哈希不返回、停用客户不能登录、接口被拦业务码 401/403
+- 寄养（foster）、公告（notice）、图片上传（Img）
+- 在线咨询（WebSocket）：文字 + 图片（自动转 WebP 高分辨率）+ 文件发送/在线预览
+- 聊天数据：超期记录（默认 90 天）查询 + 手动清理（连带删除磁盘文件），存 `chat/image`、`chat/file`
+- 后台：客户/宠物/医生/科室/药品/账单/领养/公告/挂号列表管理
 
-### ❌ 缺口（宠物医院常有、本项目尚未做）
+> 说明：领养（adopt）已于 2026-10-12 迭代为"领养审核链路"，见下方日志；聊天文件/WebP/清理见 2026-10-15 日志。
+
+### ✅ 已实现模块盘点（详见各节日志）
+预约挂号、病历/处方/账单收费发药、医生接诊、化验检验、住院监护、影像检查、免疫接种、手术麻醉+知情同意书、套餐、随访提醒、经营看板+财务报表、库存进销存+供应商+预警、会员卡/次卡/积分、电子病历模板、CSV 导出、医生排班、字典设置中心、聊天文件/WebP
+
+### ❌ 尚未覆盖（可后续规划）
 | 项目 | 说明 |
 |---|---|
-| 手术管理 | 有外科/骨科科室，缺手术排程、麻醉记录 |
-| 驱虫/体检套餐 | 常见项目，未覆盖 |
-| 随访/复诊提醒 | 病历有"复诊日期"字段，缺提醒机制 |
-| 科室项目缺口 | 暂无神经科/消化内科等细分；如要可后续扩 |
-
-（住院/化验/影像/免疫/统计已于 2026-10-13 上线，见「## 医疗扩展模块」）
+| 在线支付（微信/支付宝） | 外部强依赖（商户资质/密钥/异步回调/对账），当前仅余额/现金，已留抽象 |
+| 数据一键恢复界面化 | 恢复有毁库风险，不做网页一键恢复 |
+| 宠物洗护/美容业务 | 寄养独立成前台模块，洗护美容尚未展开 |
+| 多院区 / 连锁 | 面向单院落地 |
+| AI 辅助诊断 / 电子发票 / 顾客小程序 | 中型功能，需逐步排期 |
 
 ## 4. 医疗主链路（挂号→接诊→开方→收费→发药）
 数据表：medical_record（appointment_id 唯一）、drug（10 条演示）、prescription、bill。金额 DECIMAL(10,2)/BigDecimal（ALTER 的，不在旧备份 SQL）。
@@ -378,3 +383,19 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **登出入口补齐**：`backstage/index.vue`（管理端）侧栏底部加"退出登录"（`position: sticky; bottom: 0` 固定，hover 变红，二次确认后 `reqLogout` 跳 `/login`）；`doctorPage/index.vue`（医生端）导航加"退出登录"（hover 红色）。顾客端主页本就有登出。
 - **登录页**：新增左上角"返回首页"链接；"游客登录"按钮改文案为"游客浏览"并指向 `/`。
 - 验证：`npm run build` 通过；匿名 curl 验证 `/login/user`（空体 200）、`/doctor/view`、`/pet/four`、`/foster/pet?pageSize=6`、`/notice/four` 均正常返回数据、无 401。
+
+### 聊天增强：发文件 + 图片转 WebP + 目录重构 + 手动清理（2026-10-15）
+- 背景（用户）：「医生登出放个人中心更顺手；系统管理/设置字典乱码待修（见下一节）；聊天只能发图不能发文件；发图变模糊；聊天数据要能定期清理」。
+- **目录重构**：`chatImg/` → `chat/`，下设 `image/`（图片）与 `file/`（文件）两子目录。配置 `pet-ship.chatImg-path` 默认值改 `chat/`；`ImgController` 构造确保两子目录存在，`/downChat?type=image|file` 按类型选子目录读取；历史 `chatImg` 已手动迁入 `chat/image`。
+- **图片转 WebP 高分辨率**：前端 `ImageUtil.compressImage` 最长边 512→1280、输出 `image/webp`（质量 0.85），解决以往发图模糊；后端 `getChatImgName` 保留前端扩展名（webp 存 .webp、降级原图存原扩展名），避免内容/扩展名不符。聊天图片、头像上传（`UpImg`）均走此压缩。
+- **头像裁剪兼容 WebP**：JDK 内置 ImageIO 不识别 WebP，此前 `/common/upload` 的 `resize()`（裁 128×128 方形）对 WebP 头像直接跳过。引入 `org.sejda.imageio:webp-imageio:0.1.6`（内置原生库，跨平台），`ImageIO.read/write` 即可处理 WebP，头像统一裁剪生效。
+- **发送文件**：`ImgController` 新增 `POST /common/upChatFile`（存 `chat/file`，返回 `{name: UUID+.ext, origin: 原文件名}`）与 `GET /common/downChat?type=file`（按扩展名返回 MIME，pdf/word/excel/txt 浏览器可在线预览，带 Content-Disposition）。上传大小上限 3MB→30MB（`application.yml`）。前端 `ChatPanel.vue` 加"发文件"上传按钮（doc/pdf/xlsx 常见格式），`chat.vue`/`d-chat.vue` 绑定 `sendFileMsg` 发送与 WebSocket 接收（携带 `msgType`/`msgName`）；`ChatMain.vue` 渲染文件卡片（图标+名+预览/下载）。
+- **消息类型化**：`Msg`/`MsgDo` 加 `msgType`（TEXT/IMAGE/FILE）与 `msgName`（文件原始名）；`MsgMapper.xml` 两个查询补 `msg_type`/`msg_name`；历史图片消息经迁移脚本回填为 `IMAGE`。
+- **手动清理超期记录**：`MsgController` 新增 `GET /msg/expiredMsgNum?days=`（默认90）统计超期条数、`POST /msg/cleanExpiredMsg?days=` 手动删除（连带删 `image/`、`file/` 磁盘文件，文字消息只删记录）。管理后台新增 `z-chatClean.vue` 清理页（路由 `/backstage/z-chatClean`，菜单"系统管理→聊天数据清理"，保留天数+查询+二次确认清理）。
+- **数据库**：`数据库备份/feature_20261015_chat_file_webp.sql`（msg 加两列 + 历史图片回填 IMAGE）。
+- 验证：数据库两列/回填值已执行生效；后端编译+启动正常（WebP 原生库加载无异常）；前端 `vue-tsc` 通过。
+
+### 系统设置字典乱码修复（2026-10-15）
+- 背景：系统管理/系统设置里各种字典值显示为 `Xå…‰` 之类乱码。
+- 根因：`sys_dict` 表历史数据在导入时被 latin1 连接双重编码（"X光"的 `E5 85 89` 逐字节转成 `C3A5 E280A6 E280B0`→`Xå…‰`）；JDBC 连接串缺 `characterEncoding=utf8`。
+- 修复：`application.yml` url 补 `characterEncoding=utf8`（防新数据再乱码）；存量 26 条用 `CONVERT(CAST(CONVERT(dict_key USING latin1) AS BINARY) USING utf8mb4)` 逆向还原。科室/职称等其他表中文正常，未受影响。

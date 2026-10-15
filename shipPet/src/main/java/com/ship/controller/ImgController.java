@@ -1,10 +1,10 @@
 package com.ship.controller;
 
-
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,23 +17,39 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
+ * <p>
  * 文件上传和下载
+ * </p>
  */
 @RestController
 @RequestMapping("/common")
 public class ImgController {
     private static final Logger log = LoggerFactory.getLogger(ImgController.class);
     // 允许上传的图片扩展名白名单
-    private static final java.util.Set<String> ALLOWED_SUFFIX = java.util.Set.of(
+    private static final java.util.Set<String> ALLOWED_IMG_SUFFIX = java.util.Set.of(
             ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
-    private final String basePath, chatImg;
+    // 修复微信/支付宝图片因 MIME 缺失（无扩展名）导致上传失败：识别出图片才走图片流程
+    private final String basePath, chatPath;
 
-    public ImgController(@Value("${pet-ship.images-path}") String basePath, @Value("${pet-ship.chatImg-path}") String chatImg) {
+    public ImgController(@Value("${pet-ship.images-path}") String basePath, @Value("${pet-ship.chatImg-path}") String chatPath) {
         this.basePath = basePath;
-        this.chatImg = chatImg;
+        this.chatPath = chatPath;
+        // 确保聊天目录下的 image 与 file 子目录存在
+        new File(chatImageDir()).mkdirs();
+        new File(chatFileDir()).mkdirs();
+    }
+
+    private String chatImageDir() {
+        return chatPath + "image/";
+    }
+
+    private String chatFileDir() {
+        return chatPath + "file/";
     }
 
     /**
@@ -41,28 +57,28 @@ public class ImgController {
      */
     @PostMapping("/upload")
     public String upload(MultipartFile myFile) {
-        String fileName = getFileName(myFile);//使用UUID重新生成文件名
-        if (fileName == null) return null; // 类型不支持或校验失败
+        String fileName = getFileName(myFile);
+        if (fileName == null) return null;
         String filePath = basePath + fileName;
         try {
-            myFile.transferTo(new File(filePath));//转存临时文件
+            myFile.transferTo(new File(filePath));
             boolean resizeSuc = resize(filePath);
             log.info("转化头像尺寸{}", resizeSuc ? "成功" : "失败");
         } catch (IOException e) {
             log.warn("转存图片失败", e);
-            return null; // 上传失败明确返回 null，前端据此提示
+            return null;
         }
         return fileName;
     }
 
     /**
-     * 文件上传，聊天图片消息
+     * 文件上传，聊天图片消息（存 image 子目录）
      */
     @PostMapping("/upChat")
     public String upChat(MultipartFile myFile) {
-        String fileName = getFileName(myFile);//使用UUID重新生成文件名
+        String fileName = getChatImgName(myFile);
         if (fileName == null) return null;
-        String filePath = chatImg + fileName;
+        String filePath = chatImageDir() + fileName;
         try {
             myFile.transferTo(new File(filePath));//转存临时文件
         } catch (IOException e) {
@@ -73,95 +89,133 @@ public class ImgController {
     }
 
     /**
+     * 文件上传，聊天文件消息（存 file 子目录）
+     * 返回 JSON：{name: UUID新文件名, origin: 原始文件名}
+     */
+    @PostMapping("/upChatFile")
+    public String upChatFile(MultipartFile myFile) throws IOException {
+        if (myFile == null || myFile.isEmpty()) return null;
+        String originalFilename = myFile.getOriginalFilename();
+        if (originalFilename == null) return null;
+        // 生成 UUID 存储名，保留扩展名用于正确返回 MIME
+        String suffix = "";
+        int dot = originalFilename.lastIndexOf(".");
+        if (dot >= 0 && dot < originalFilename.length() - 1) suffix = originalFilename.substring(dot).toLowerCase();
+        String name = UUID.randomUUID() + suffix;
+        String filePath = chatFileDir() + name;
+        try {
+            myFile.transferTo(new File(filePath));
+        } catch (IOException e) {
+            log.warn("转存文件失败", e);
+            return null;
+        }
+        return "{\"name\":\"" + name + "\",\"origin\":\"" +
+                URLEncoder.encode(originalFilename, StandardCharsets.UTF_8) + "\"}";
+    }
+
+    /**
      * 文件下载，头像图片
      */
     @GetMapping("/download")
     public void download(String name, HttpServletResponse response) {
-        sendImg(name, response, basePath);
+        sendFile(name, response, basePath, false);
     }
 
     /**
-     * 文件下载，聊天图片
+     * 文件下载，聊天图片/文件
+     *
+     * @param type image 或 file，决定去哪个子目录找
      */
     @GetMapping("/downChat")
-    public void downChat(String name, HttpServletResponse response) {
-        sendImg(name, response, chatImg);
+    public void downChat(String type, String name, HttpServletResponse response) {
+        String dir = "file".equals(type) ? chatFileDir() : chatImageDir();
+        sendFile(name, response, dir, "file".equals(type) && name != null);
     }
 
+    private void sendFile(String name, HttpServletResponse response, String imgPath, boolean asAttachment) {
+        if (name == null || name.isBlank()) return;
+        // 路径遍历防护：禁止使用 ../ 或路径分隔符
+        if (name.contains("..") || name.contains("/") || name.contains("\\")) return;
+        File file = new File(imgPath + name);
+        if (!file.exists()) {
+            log.warn("未找到相应文件" + name);
+            return;
+        }
+        // 根据扩展名返回正确的 MIME 类型，浏览器可在线预览（pdf、txt、图片等）
+        String mime = MediaTypeFactory.getMediaType(name)
+                .map(Object::toString)
+                .orElse("application/octet-stream");
+        try (var fis = new FileInputStream(file); var ops = response.getOutputStream()) {
+            response.setContentType(mime);
+            if (asAttachment) {
+                response.setHeader("Content-Disposition", "attachment; filename=\"" +
+                        URLEncoder.encode(name, StandardCharsets.UTF_8) + "\"");
+            }
+            int len;
+            byte[] bytes = new byte[8192];
+            while ((len = fis.read(bytes)) != -1) {
+                ops.write(bytes, 0, len);
+                ops.flush();
+            }
+        } catch (Exception e) {
+            log.warn("文件输出失败" + name, e);
+        }
+    }
 
     /**
-     * 文件上传：使用UUID重新生成文件名
-     *
-     * @param myFile 上传的图片
-     * @return 新的文件名
+     * 文件上传：使用UUID重新生成文件名（头像，仅限图片）
      */
     private String getFileName(MultipartFile myFile) {
         if (myFile == null || myFile.isEmpty()) return null;
-        String originalFilename = myFile.getOriginalFilename();//abc.jpg
-        if (originalFilename == null) return null; // 生产环境 assert 默认不生效，改用显式判空
+        String originalFilename = myFile.getOriginalFilename();
+        if (originalFilename == null) return null;
         int dot = originalFilename.lastIndexOf(".");
         if (dot < 0) return null;
         String suffix = originalFilename.substring(dot).toLowerCase();
-        // 仅允许常见图片类型，防止上传非图片/可执行文件
-        if (!ALLOWED_SUFFIX.contains(suffix)) return null;
+        if (!ALLOWED_IMG_SUFFIX.contains(suffix)) return null;
+        return UUID.randomUUID() + suffix;
+    }
+
+    /**
+     * 聊天图片上传：保留前端传来的扩展名（前端 compressImage 已转成 WebP）
+     * 前端转码成功会以 .webp 扩展名上传；转码失败降级为原图时保留其原扩展名，
+     * 这样存储扩展名与文件真实内容始终一致，避免内容/扩展名不符导致显示异常
+     */
+    private String getChatImgName(MultipartFile myFile) {
+        if (myFile == null || myFile.isEmpty()) return null;
+        String originalFilename = myFile.getOriginalFilename();
+        if (originalFilename == null) return null;
+        int dot = originalFilename.lastIndexOf(".");
+        String suffix = (dot < 0 ? "" : originalFilename.substring(dot).toLowerCase());
+        if (!ALLOWED_IMG_SUFFIX.contains(suffix)) suffix = ".webp";
         return UUID.randomUUID() + suffix;
     }
 
     /**
      * 重写头像图片的尺寸
-     *
-     * @param path 图片路径
-     * @return 是否转化成功
      */
     private boolean resize(String path) {
         String formatName = path.substring(path.lastIndexOf(".") + 1);
         File input = new File(path);
         try {
             BufferedImage img = ImageIO.read(input);
-            if (img == null) { // 非图片或格式不支持（如 webp），保留原文件不处理
+            if (img == null) {
                 log.warn("图片读取失败（格式不支持？）：{}", path);
                 return false;
             }
-            // 裁剪图片
             int size = Math.min(img.getWidth(), img.getHeight());
             BufferedImage subImage = img.getSubimage(0, 0, size, size);
-            // 开始转化图片
             Image tmp = subImage.getScaledInstance(128, 128, Image.SCALE_SMOOTH);
             BufferedImage resized = new BufferedImage(128, 128, subImage.getType());
             Graphics2D g2d = resized.createGraphics();
             boolean drawImage = g2d.drawImage(tmp, 0, 0, null);
             log.info("转化{}图片{}", formatName, drawImage ? "成功" : "失败");
             g2d.dispose();
-            // 转化完成，将图片转存回去
             ImageIO.write(resized, formatName, input);
             return true;
         } catch (IOException e) {
             log.warn("图片读取失败");
             return false;
-        }
-    }
-
-    /**
-     * 图片发送到前端
-     *
-     * @param name     图片名
-     * @param response 响应流
-     * @param imgPath  图片路径
-     */
-    private void sendImg(String name, HttpServletResponse response, String imgPath) {
-        if (name == null || name.isBlank()) return;
-        // 路径遍历防护：禁止使用 ../ 或路径分隔符
-        if (name.contains("..") || name.contains("/") || name.contains("\\")) return;
-        try (var fis = new FileInputStream(imgPath + name); var ops = response.getOutputStream()) {
-            response.setContentType("image/jpeg");
-            int len;
-            byte[] bytes = new byte[1024];
-            while ((len = fis.read(bytes)) != -1) {
-                ops.write(bytes, 0, len);
-                ops.flush();
-            }
-        } catch (Exception e) {
-            log.warn("未找到相应图片" + name);
         }
     }
 }

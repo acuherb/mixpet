@@ -6,7 +6,20 @@
       <div class="msg">
         <span class="msg-meta">{{ m.roleName }}&nbsp;{{ getDisplayTime(m.createTime) }}</span>
         <div :class="m.isMine?'bg-mine':'bg-other'" class="msgText">
-          <img v-if="m.isImg" :src="'/api/common/downChat?name='+m.msgContent" alt="聊天图片"/>
+          <template v-if="m.msgType === 'FILE'">
+            <div class="file-msg">
+              <el-icon size="26"><Document/></el-icon>
+              <div class="file-info">
+                <span class="file-name" :title="m.msgName || m.msgContent">{{ m.msgName || m.msgContent }}</span>
+                <a class="file-link"
+                   :href="'/api/common/downChat?type=file&name='+m.msgContent"
+                   :download="m.msgName || m.msgContent">下载</a>
+                <a class="file-link" target="_blank" rel="noopener"
+                   :href="'/api/common/downChat?type=file&name='+m.msgContent">预览</a>
+              </div>
+            </div>
+          </template>
+          <img v-else-if="m.isImg" :src="'/api/common/downChat?type=image&name='+m.msgContent" alt="聊天图片"/>
           <div v-else class="msg-txt">{{ m.msgContent }}</div>
         </div>
       </div>
@@ -20,6 +33,7 @@ import {MsgDo} from "@/model/DO/MsgDo";
 import {onBeforeUpdate, onMounted, ref} from "vue";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import MyAvatar from "@/components/show/MyAvatar.vue";
+import {Document} from "@element-plus/icons-vue";
 
 defineProps<{
   msgList: MsgDo[]
@@ -87,6 +101,37 @@ onMounted(() => {
         max-height: 240px;
         border-radius: 8px;
         object-fit: contain;
+      }
+
+      /*文件消息卡片*/
+      .file-msg {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 140px;
+        max-width: 240px;
+
+        .file-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+
+          .file-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+          }
+
+          .file-link {
+            font-size: 12px;
+            color: #409eff;
+            text-decoration: none;
+            margin-right: 8px;
+            &:hover { text-decoration: underline; }
+          }
+        }
       }
     }
 

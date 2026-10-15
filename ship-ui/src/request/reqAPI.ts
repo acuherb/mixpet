@@ -31,7 +31,14 @@ reqApi.interceptors.response.use(resp => {
     }
     return data;
 }, error => {
-    ElMessage.error("发生未知错误")
+    if (error.response) {
+        const {status, data} = error.response
+        ElMessage.error(`请求失败 (${status}): ${data?.msg || data?.message || '服务器内部错误'}`)
+    } else if (error.code === 'ECONNABORTED') {
+        ElMessage.error('请求超时，请检查后端服务')
+    } else {
+        ElMessage.error('无法连接后端服务，请确认服务已启动')
+    }
     return Promise.reject(error);
 });
 

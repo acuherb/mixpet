@@ -7,7 +7,7 @@ spring:
 pet-ship:
   images-path: ${PET_IMAGES:/home/debian/公共/pet-hms/images/} # 照片存储路径
   notice-path: ${PET_NOTICE:/home/debian/公共/pet-hms/notice/} # 公告存储路径
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/pet-hms/chatImg/} # 聊天图片存储路径
+  chatImg-path: ${PET_CHATIMG:/home/debian/公共/pet-hms/chat/} # 聊天图片与文件存储路径，其下分 image 与 file 子目录
 ---
 #mybatis-plus:
 #  configuration:

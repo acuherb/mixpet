@@ -1,19 +1,5 @@
 <template>
-  <div class="login-page">
-    <!-- 定义背景图片 -->
-    <svg preserveAspectRatio="none" viewBox="0 0 1000 200" xmlns="http://www.w3.org/2000/svg">
-      <!-- 定义填充色-->
-      <defs>
-        <linearGradient id="Gradient" x1="0" x2="1" y1="0" y2="0">
-          <stop :stop-color="backColor.begin" offset="0%"/>
-          <stop :stop-color="backColor.end" offset="100%"/>
-        </linearGradient>
-      </defs>
-      <!-- 长方形区域，宽1000，高30，淡蓝色  -->
-      <rect fill="url(#Gradient)" height="80" width="1000"/>
-      <!-- 弧形区域，从(0,30)出发，低谷点为(500,130)，到(1000,30)结束 -->
-      <path d="M0 80 Q500 280 ,1000 80" fill="url(#Gradient)" stroke="transparent"/>
-    </svg>
+  <div class="login-page" :style="{ background: `linear-gradient(135deg, ${backColor.begin} 0%, ${backColor.end} 100%)` }">
     <!--登陆卡片-->
     <h2 class="my-h2">轻触牌间喵，进入影中境</h2>
     <router-link class="back-home" to="/">
@@ -41,24 +27,22 @@
 
 <script lang="ts" setup>
 import LoginForm from "@/components/zoneView/LoginForm.vue";
-import {onMounted, reactive, ref} from "vue";
+import {reactive, ref} from "vue";
 import {reqGetLogin, reqLoginUser} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
 import {RoleEnum} from "@/model/VO/LoginVo";
 import {HomeFilled} from "@element-plus/icons-vue";
 
-// 登陆的初始化
-onMounted(() => {
-  getLoginRole()
-})
-// 判断当前登陆角色
+// 登录成功后按角色跳转。
+// 注意：不要在此处 onMounted 自动跳转——已登录用户点"前往登录"或退出登录后落到本页时，
+// 会被立刻弹回工作台，导致登录页无法停留（表现为"登录页出问题/登不出"）。
 const router = useRouter()
 const getLoginRole = () => {
   reqGetLogin().then(resp => {
     if (resp === RoleEnum.CLIENT) {
       reqLoginUser().then(user => {
         if (user && user.clientPwdChanged === false) router.push("/changePwd")
-        else router.push("/reception")
+        else router.push("/")
       })
     } else if (resp === RoleEnum.DOCTOR) {
       router.push("/backstage")
@@ -94,17 +78,6 @@ const adminToClient = () => {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-
-  /* 背景的svg */
-  svg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
-    width: 100vw;
-    z-index: 0;
-  }
 
   /* 欢迎文字 */
   .back-home {
@@ -135,7 +108,7 @@ const adminToClient = () => {
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1;
+    z-index: 20;
   }
 }
 
@@ -158,7 +131,7 @@ const adminToClient = () => {
   user-select: none;
   padding: 40px 36px 32px;
   box-sizing: border-box;
-  z-index: 1;
+  z-index: 20;
 
   /* 底部两个辅助按钮的容器 */
   > div:last-child {

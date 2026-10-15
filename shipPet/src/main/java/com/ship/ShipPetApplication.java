@@ -13,7 +13,7 @@ public class ShipPetApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(ShipPetApplication.class, args);
-        log.info("宠物医院管理系统2.0启动");
-        log.info("http://localhost:8085");
+        log.info(":: MixPet ::  智慧宠物医疗管理系统启动");
+        log.info(":: http://localhost:8085");
     }
 }

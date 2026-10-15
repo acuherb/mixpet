@@ -41,6 +41,9 @@
             <el-button type="warning" plain round @click="updatePwd">
               <el-icon><Key/></el-icon>&nbsp;重置密码
             </el-button>
+            <el-button type="danger" plain round @click="doLogout">
+              <el-icon><SwitchButton/></el-icon>&nbsp;退出登录
+            </el-button>
           </div>
         </div>
       </div>
@@ -174,17 +177,19 @@
 import {permName, permDesc, PERMISSIONS} from "@/utils/PermissionUtil";
 import {getAge} from "@/utils/TimeUtil";
 import {computed, onMounted, reactive, ref} from "vue";
+import {useRouter} from "vue-router";
 import {DoctorDto, exampleDoctorOne} from "@/model/DO/DoctorDto";
 import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD, reqUpdateDoctor} from "@/request/DoctorApi";
 import {reqDepartName} from "@/request/DepartApi";
 import {reqJobName} from "@/request/JobApi";
 import {NameDo} from "@/model/DO/NameDo";
 import {Doctor, exampleDoctor} from "@/model/entiy/Doctor";
-import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 import UpImg from "@/components/UpImg.vue";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
-import {Edit, Key, Document} from "@element-plus/icons-vue";
+import {reqLogout} from "@/request/PowerApi";
+import {Edit, Key, Document, SwitchButton} from "@element-plus/icons-vue";
 // 手机号只保留数字，最多 11 位
 const sanitizeTel = () => {
   if (form.value.doctorTel) {
@@ -389,6 +394,18 @@ const rules2 = ref<FormRules>({
     {required: true, message: '请输入新密码', trigger: 'blur'},
   ],
 })
+
+// 退出登录
+const router = useRouter()
+const doLogout = (): void => {
+  ElMessageBox.confirm('确定退出登录吗？', '退出登录', {
+    confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqLogout().then(res => {
+      if (res.code === 204) router.push('/login')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
 </script>
 
 <style scoped>

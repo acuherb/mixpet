@@ -97,14 +97,16 @@ public class PetController {
      */
     @GetMapping("/one")
     public Pet getOne(Integer petId) {
-        // 顾客只能查看自己名下的宠物，避免跨宠物信息泄露
+        Pet pet = petService.getById(petId);
+        if (pet == null || (pet.getIsDel() != null && pet.getIsDel() == 1)) return null;
+        // 顾客只可查看两种宠物：自己名下的，或院内公开的待领养宠物(clientId 为空)
         if (UserUtil.getUser() instanceof Client client) {
-            Pet pet = petService.getById(petId);
-            if (pet == null || !client.getClientId().equals(pet.getClientId())) return null;
-            return pet;
+            boolean own = client.getClientId() != null && client.getClientId().equals(pet.getClientId());
+            boolean adoptable = pet.getClientId() == null;
+            if (!own && !adoptable) return null;
         }
         // 内部员工(医生/护士/管理员等)可查看任意宠物
-        return petService.getById(petId);
+        return pet;
     }
 
     @PostMapping
