@@ -1,6 +1,6 @@
 -- =============================================
 -- 医生 ⇄ 科室 多对多关系表（替代医生单选主科室）
--- 执行方式：mysql -u mixpet -p pet_ship < 数据库备份/doctor_department.sql
+-- 执行方式：mysql -u mixpet -p pet_ship < db-backup/doctor_department.sql
 -- =============================================
 
 -- 1. 建表：一个医生可挂多个科室，一个科室可有多个医生
