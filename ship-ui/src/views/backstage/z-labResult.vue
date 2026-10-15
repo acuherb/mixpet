@@ -97,7 +97,7 @@
         <el-input v-model="resultNote" :rows="2" maxlength="255" :disabled="readonly" placeholder="化验结论，可留空" type="textarea"/>
       </el-form-item>
       <el-form-item label="报告附件">
-        <UpImg v-if="!current?.reportFile" :photo-nm="''" @upPhoto="onReportUpload"/>
+        <UpImg v-if="!current?.reportFile" :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
         <div v-else style="display: flex; align-items: center; gap: 10px">
           <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">查看报告附件</el-link>
           <el-button v-if="!readonly" link type="danger" @click="removeReport">移除</el-button>
@@ -178,8 +178,8 @@ const current = ref<LabOrderDto | null>(null)
 // 明细编辑表单（带响应性，避免直接改列表行）
 const itemForms = ref<LabOrderItem[]>([])
 const resultNote = ref('')
-// 报告附件下载前缀
-const fileBase = window.location.origin + '/api/common/download?name='
+// 报告附件下载前缀（走独立的报告接口，与头像分离）
+const fileBase = window.location.origin + '/api/common/downReport?name='
 const onReportUpload = (f: string): void => { if (current.value) current.value.reportFile = f }
 const removeReport = (): void => { if (current.value) current.value.reportFile = undefined }
 

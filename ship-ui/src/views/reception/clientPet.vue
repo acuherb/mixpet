@@ -143,7 +143,7 @@
             </el-table-column>
           </el-table>
           <div v-if="lab.reportFile" style="margin-bottom:8px">
-            <el-link type="primary" :href="'/api/common/download?name=' + lab.reportFile" target="_blank">查看报告附件</el-link>
+            <el-link type="primary" :href="'/api/common/downReport?name=' + lab.reportFile" target="_blank">查看检查报告附件</el-link>
           </div>
         </template>
         <p v-if="labs.length === 0" style="color:#999">本次无化验项目</p>
@@ -156,7 +156,7 @@
           </div>
           <div class="lab-note" style="margin-bottom:8px">报告：{{ img.result || '尚未出报告' }}</div>
           <div v-if="img.reportFile" style="margin-bottom:8px">
-            <el-link type="primary" :href="'/api/common/download?name=' + img.reportFile" target="_blank">查看影像附件</el-link>
+            <el-link type="primary" :href="'/api/common/downReport?name=' + img.reportFile" target="_blank">查看影像报告附件</el-link>
           </div>
         </template>
         <p v-if="images.length === 0" style="color:#999">本次无影像检查</p>

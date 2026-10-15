@@ -56,7 +56,7 @@
         <el-input v-model="resultText" :disabled="readonly" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
       </el-form-item>
       <el-form-item label="报告附件">
-        <UpImg v-if="!current?.reportFile" :photo-nm="''" @upPhoto="onReportUpload"/>
+        <UpImg v-if="!current?.reportFile" :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
         <div v-else style="display: flex; align-items: center; gap: 10px">
           <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">查看报告附件</el-link>
           <el-button v-if="!readonly" link type="danger" @click="removeReport">移除</el-button>
@@ -112,8 +112,8 @@ const modalTit = ref('录报告')
 const readonly = ref(false)
 const current = ref<ImageOrder | null>(null)
 const resultText = ref('')
-// 报告附件下载前缀
-const fileBase = window.location.origin + '/api/common/download?name='
+// 报告附件下载前缀（走独立的报告接口，与头像分离）
+const fileBase = window.location.origin + '/api/common/downReport?name='
 const onReportUpload = (f: string): void => { if (current.value) current.value.reportFile = f }
 const removeReport = (): void => { if (current.value) current.value.reportFile = undefined }
 

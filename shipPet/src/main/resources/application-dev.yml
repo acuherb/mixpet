@@ -5,9 +5,10 @@ spring:
     password: ${MAIL_PASS:your_auth_code} # 发送者邮箱的授权码，我将这个服务关闭了
 ---
 pet-ship:
-  images-path: ${PET_IMAGES:/home/debian/公共/MixPet/images/} # 照片存储路径
-  notice-path: ${PET_NOTICE:/home/debian/公共/MixPet/notice/} # 公告存储路径
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/MixPet/chat/} # 聊天图片与文件存储路径，其下分 image 与 file 子目录
+  images-path: ${PET_AVATAR:/home/debian/公共/mixpet/avatar/} # 头像存储路径
+  notice-path: ${PET_NOTICE:/home/debian/公共/mixpet/notice/} # 公告存储路径
+  chatImg-path: ${PET_CHATIMG:/home/debian/公共/mixpet/chat/} # 聊天图片与文件存储路径，其下分 image 与 file 子目录
+  report-path: ${PET_REPORT:/home/debian/公共/mixpet/report/} # 报告附件存储路径，其下分 image 与 file 子目录
 ---
 #mybatis-plus:
 #  configuration:

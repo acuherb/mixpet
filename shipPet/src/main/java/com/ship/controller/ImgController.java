@@ -34,14 +34,20 @@ public class ImgController {
     private static final java.util.Set<String> ALLOWED_IMG_SUFFIX = java.util.Set.of(
             ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
     // 修复微信/支付宝图片因 MIME 缺失（无扩展名）导致上传失败：识别出图片才走图片流程
-    private final String basePath, chatPath;
+    private final String basePath, chatPath, reportPath;
 
-    public ImgController(@Value("${pet-ship.images-path}") String basePath, @Value("${pet-ship.chatImg-path}") String chatPath) {
+    public ImgController(@Value("${pet-ship.images-path}") String basePath,
+                         @Value("${pet-ship.chatImg-path}") String chatPath,
+                         @Value("${pet-ship.report-path}") String reportPath) {
         this.basePath = basePath;
         this.chatPath = chatPath;
+        this.reportPath = reportPath;
         // 确保聊天目录下的 image 与 file 子目录存在
         new File(chatImageDir()).mkdirs();
         new File(chatFileDir()).mkdirs();
+        // 确保报告目录下的 image 与 file 子目录存在
+        new File(reportImageDir()).mkdirs();
+        new File(reportFileDir()).mkdirs();
     }
 
     private String chatImageDir() {
@@ -50,6 +56,14 @@ public class ImgController {
 
     private String chatFileDir() {
         return chatPath + "file/";
+    }
+
+    private String reportImageDir() {
+        return reportPath + "image/";
+    }
+
+    private String reportFileDir() {
+        return reportPath + "file/";
     }
 
     /**
@@ -130,6 +144,65 @@ public class ImgController {
     public void downChat(String type, String name, HttpServletResponse response) {
         String dir = "file".equals(type) ? chatFileDir() : chatImageDir();
         sendFile(name, response, dir, "file".equals(type) && name != null);
+    }
+
+    /**
+     * 报告图片上传（存 report/image 子目录，仅限图片）
+     */
+    @PostMapping("/upImgReport")
+    public String upImgReport(MultipartFile myFile) {
+        String fileName = getFileName(myFile);
+        if (fileName == null) return null;
+        try {
+            myFile.transferTo(new File(reportImageDir() + fileName));
+        } catch (IOException e) {
+            log.warn("报告图片转存失败", e);
+            return null;
+        }
+        return fileName;
+    }
+
+    /**
+     * 报告文件上传（含 PDF 等非图片，存 report/file 子目录，保留原始文件名）
+     * 返回 JSON：{name: UUID新文件名, origin: 原始文件名, asImg: 是否图片}
+     */
+    @PostMapping("/upReportFile")
+    public String upReportFile(MultipartFile myFile) throws IOException {
+        if (myFile == null || myFile.isEmpty()) return null;
+        String originalFilename = myFile.getOriginalFilename();
+        if (originalFilename == null) return null;
+        String suffix = "";
+        int dot = originalFilename.lastIndexOf(".");
+        if (dot >= 0 && dot < originalFilename.length() - 1) suffix = originalFilename.substring(dot).toLowerCase();
+        String name = UUID.randomUUID() + suffix;
+        boolean asImg = ALLOWED_IMG_SUFFIX.contains(suffix);
+        String dir = asImg ? reportImageDir() : reportFileDir();
+        try {
+            myFile.transferTo(new File(dir + name));
+        } catch (IOException e) {
+            log.warn("报告文件转存失败", e);
+            return null;
+        }
+        return "{\"name\":\"" + name + "\",\"origin\":\"" +
+                URLEncoder.encode(originalFilename, StandardCharsets.UTF_8) + "\",\"asImg\":" + asImg + "}";
+    }
+
+    /**
+     * 文件下载，报告图片/文件
+     * 由于只保存了文件名，无法判断其属于 image 还是 file 子目录，
+     * 因此在两个子目录中依次查找，命中即输出；PDF 等文件以附件形式下载
+     */
+    @GetMapping("/downReport")
+    public void downReport(String name, HttpServletResponse response) {
+        if (name == null || name.isBlank()) return;
+        if (name.contains("..") || name.contains("/") || name.contains("\\")) return;
+        File image = new File(reportImageDir() + name);
+        File file = new File(reportFileDir() + name);
+        String dir = null;
+        if (image.exists()) dir = reportImageDir();
+        else if (file.exists()) dir = reportFileDir();
+        if (dir == null) return;
+        sendFile(name, response, dir, file.exists());
     }
 
     private void sendFile(String name, HttpServletResponse response, String imgPath, boolean asAttachment) {

@@ -4,17 +4,24 @@
         :before-upload="beforeAvatarUpload"
         :http-request="doUpload"
         :show-file-list="false"
-        accept="image/jpeg,image/png"
+        :accept="acceptType"
         class="avatar-uploader"
         name="myFile"
     >
-      <img v-if="imageUrl" :src="'/api/common/download?name='+imageUrl" alt="头像" class="avatar"/>
+      <img v-if="imageUrl && !isReport" :src="'/api/common/download?name='+imageUrl" alt="头像" class="avatar"/>
+      <div v-else-if="isReport && imageUrl" class="report-item">
+        <div class="report-name" :title="imageUrl">{{ displayName(imageUrl) }}</div>
+        <div class="report-ops">
+          <a :href="reportBase + encodeURIComponent(imageUrl)" target="_blank" class="report-link" @click.stop>查看</a>
+          <span class="report-del" @click.stop="emit('remove')">移除</span>
+        </div>
+      </div>
       <el-icon v-else>
         <Plus/>
       </el-icon>
     </el-upload>
-    <!-- 随机头像候选：点选即用，不用上传真实照片 -->
-    <div v-if="showRandom" class="random-row">
+    <!-- 随机头像候选：点选即用，不用上传真实照片（仅头像模式） -->
+    <div v-if="showRandom && !isReport" class="random-row">
       <img
           v-for="(c, i) in candidates"
           :key="i"
@@ -43,28 +50,51 @@ const props = withDefaults(defineProps<{
   name?: string
   // 是否显示随机头像候选行
   showRandom?: boolean
+  // 模式：avatar=头像（默认，仅图片+压缩）；report=报告附件（图片/PDF等文件，不压缩）
+  mode?: 'avatar' | 'report'
 }>(), {
   name: "",
-  showRandom: false
+  showRandom: false,
+  mode: 'avatar'
 })
 const emit = defineEmits<{
   (e: "upPhoto", val: string): void
+  (e: "remove"): void
 }>()
+const isReport = props.mode === 'report'
+// 报告附件下载：/api/common/downReport?name=，与头像下载分离
+const reportBase = window.location.origin + '/api/common/downReport?name='
+// 报告模式显示文件名
+const displayName = (n: string): string => {
+  const dot = n.lastIndexOf('.')
+  return dot > 0 ? n.slice(0, dot).slice(0, 12) + '…' + n.slice(dot) : n
+}
 watch(() => props.photoNm, (newValue) => {
   imageUrl.value = newValue
 })
-// 头像上传框
+// 上传框回显
 const imageUrl = ref<string>('')
 imageUrl.value = props.photoNm
 
+// accept：头像只收图片；报告收图片 + PDF + 常用文档
+const acceptType = isReport ? 'image/*,.pdf,.doc,.docx,.xls,.xlsx' : 'image/jpeg,image/png'
+
 /**
- * 自定义上传：压缩后 POST 到 /api/common/upload（返回新文件名）
+ * 自定义上传：头像压缩后 POST /api/common/upload；报告直接 POST /api/common/upReportFile（自动分图/文件）
  */
 const doUpload = async (options: UploadRequestOptions): Promise<void> => {
   try {
-    const file = await compressImage(options.file as File)
+    const file = isReport ? (options.file as File) : await compressImage(options.file as File)
     const fd = new FormData()
     fd.append('myFile', file)
+    if (isReport) {
+      const resp = await axios.post<{ name: string; origin: string; asImg: boolean }>('/api/common/upReportFile', fd)
+      if (resp.data && resp.data.name) {
+        imageUrl.value = resp.data.name
+        emit('upPhoto', resp.data.name)
+      } else ElMessage.error('上传失败，请重试')
+      return
+    }
     const resp = await axios.post<string>('/api/common/upload', fd)
     if (typeof resp.data === 'string' && resp.data && !resp.data.includes(' ')) {
       imageUrl.value = resp.data
@@ -76,9 +106,20 @@ const doUpload = async (options: UploadRequestOptions): Promise<void> => {
 }
 
 /**
- * 上传前的校验：只收 JPG/PNG（大小不限制，反正会压缩）
+ * 上传前的校验：头像只收 JPG/PNG；报告收图片 + PDF + 常用文档
  */
 const beforeAvatarUpload = (rawFile: File) => {
+  if (isReport) {
+    if (!rawFile.type || (!rawFile.type.startsWith('image/') && rawFile.type !== 'application/pdf' &&
+        rawFile.type !== 'application/msword' &&
+        rawFile.type !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' &&
+        rawFile.type !== 'application/vnd.ms-excel' &&
+        rawFile.type !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')) {
+      ElMessage.error('请上传图片、PDF 或 Office 文档')
+      return false
+    }
+    return true
+  }
   if (rawFile.type !== 'image/png' && rawFile.type !== 'image/jpeg') {
     ElMessage.error('请上传JPG、PNG图片')
     return false
@@ -226,6 +267,55 @@ $info: #6c757d;
     &:hover {
       border-color: $primary;
       color: $primary;
+    }
+  }
+}
+
+/*报告附件回显*/
+.report-item {
+  width: 128px;
+  height: 128px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  box-sizing: border-box;
+
+  .report-name {
+    max-width: 112px;
+    word-break: break-all;
+    text-align: center;
+    font-size: 12px;
+    color: #606266;
+    line-height: 1.4;
+  }
+
+  .report-ops {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .report-link {
+      color: $primary;
+      font-size: 14px;
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
+    .report-del {
+      color: $danger;
+      font-size: 14px;
+      cursor: pointer;
+
+      &:hover {
+        opacity: 0.8;
+      }
     }
   }
 }
