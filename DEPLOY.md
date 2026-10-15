@@ -127,9 +127,9 @@ spring:
     password: ${MAIL_PASS:your_auth_code}
 ---
 pet-ship:
-  images-path: ${PET_IMAGES:/home/debian/公共/pet-hms/images/}
-  notice-path: ${PET_NOTICE:/home/debian/公共/pet-hms/notice/}
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/pet-hms/chat/}
+  images-path: ${PET_IMAGES:/home/debian/公共/MixPet/images/}
+  notice-path: ${PET_NOTICE:/home/debian/公共/MixPet/notice/}
+  chatImg-path: ${PET_CHATIMG:/home/debian/公共/MixPet/chat/}
 ```
 
 ### 4.2 换机器时怎么配
