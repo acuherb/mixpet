@@ -24,7 +24,7 @@
 - 用途：面向小型宠物医院日常经营落地的全流程管理系统，本地 Debian 13 + MariaDB 11 自建，局域网访问
 - 技术栈：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 | Vue 3 + Vite 4 + TS + Element Plus | WebSocket | WebP
 - 端口：后端 8085 / 前端 3120
-- 目录：shipPet/ 后端、ship-ui/ 前端、images/ 头像附件、notice/ 公告、chat/ 聊天文件（下设 image/ 与 file/）、数据库备份/（含增量迁移脚本）
+- 目录：shipPet/ 后端、ship-ui/ 前端、avatar/ 头像附件、notice/ 公告、chat/ 聊天文件（下设 image/ 与 file/）、db-backup/（含增量迁移脚本）
 - 部署：见 DEPLOY.md；开发流程见 dev-tools/WORKFLOW.md
 - **本项目已从毕设演进为生产系统**：一切按"宠物医院能落地使用"标准开发，不允许占位/TODO/偷懒实现
 
@@ -105,14 +105,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 改法：权限轴仍是固定 auth_lv(0/2/4/6/8→ADMIN/MANAGER/DOCTOR/NURSE/LOSER，DoctorDetails 贯穿 switch 不动)；新增职称轴 job 字典(job_id)，doctor 加 job_id，可增删改、纯展示，与权限解耦。
 - 新增：job 表 + 实体/Mapper/Service/Controller（MANAGER 增删改，删前校验名下是否有医生）、后台「职务/职称」页 z-job（路由 /backstage/z-job，菜单在个人中心组）。
 - 前端：PermissionUtil.ts 定义 5 档权限名 + "能干什么"说明(permName/permDesc)，医生/个人页权限下拉带说明；医生列表拆「职称 + 权限」两列；表单拆「权限(仅院长可改，保留 isAdmin 守卫) + 职称(全员可改，自助 updateSelf 已加 job_id)」；顾客端医生卡/详情由 getJob(authLv) 改显真实 jobName。TagJob.vue 现显示权限名；科室详情"职位"列改名"权限"。
-- SQL：`数据库备份/job_module.sql`（建 job 表 + doctor 加 job_id + 预置 10 职称 + 按 auth_lv 给老医生播种），已应用。
+- SQL：`db-backup/job_module.sql`（建 job 表 + doctor 加 job_id + 预置 10 职称 + 按 auth_lv 给老医生播种），已应用。
 
 ### 疫苗字典合并进药品字典（2026-10-13）
 - 背景：疫苗与药品概念重叠（药品表本就预留 drug_type=疫苗 分类），且疫苗 price 是死字段（接种不计费）、疫苗无库存，单独一套字典重复维护。
 - 改法：疫苗 = 药品分类 `drug_type=疫苗`。drug 加 `brand/prevent/interval_days`（可空，仅疫苗用）；删除独立 vaccine 字典（表+实体+Mapper+Service+Controller+前端 z-vaccine 页/模型/API/菜单/路由）。
 - 免疫模块：`immune_record` 外键 `vaccine_id→drug_id`、`vaccine_name→drug_name`；登记时按 drug_id 取药、校验 drug_type=疫苗+启用+未删，按 interval_days 算下一针；下拉用 `GET /drug/vaccine`（启用中的疫苗类药品）。
 - 药品表单：选"疫苗"分类时才显示 品牌/预防疾病/接种间隔；列表加"接种间隔"列。开方下拉 `GET /drug` 改为**排除疫苗**（疫苗不走处方，走免疫登记）。
-- SQL：`数据库备份/vaccine_merge_into_drug.sql`（drug 加 3 字段 → vaccine 数据迁入 drug（临时列记来源 id）→ immune_record 改列名并回填 drug_id → 删临时列和 vaccine 表），已应用。迁移后 drug_type=疫苗 共 8 条（6 个原疫苗 + 2 个演示数据）。
+- SQL：`db-backup/vaccine_merge_into_drug.sql`（drug 加 3 字段 → vaccine 数据迁入 drug（临时列记来源 id）→ immune_record 改列名并回填 drug_id → 删临时列和 vaccine 表），已应用。迁移后 drug_type=疫苗 共 8 条（6 个原疫苗 + 2 个演示数据）。
 - 后续可优化药品列表：疫苗库存/批号/保质期、统一计费（接种也收钱）等。
 
 ### 就诊流程连通 + 国标兽医处方笺（2026-10-13）
@@ -121,7 +121,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 国标兽医处方笺：`GET /record/rx/{recordId}` 聚合 病历+宠物+主人+医生+处方（`RxSheetVo`）；前端 `d-rx.vue` 可打印页（标题/编号/畜主/宠物(种名·品种·性别·年龄·体重·芯片)/临床诊断/Rp 药品表/金额大小写/开方兽医+资格证号/兽药房调配/日期），`@media print` 打印样式；路由 `/doctorPage/d-rx?recordId=`。
 - 流程连通（轻量，未重写）：接诊成功后按挂号单取 recordId（`GET /record/appointment/{appointmentId}`）弹"就诊汇总"，可 打印处方笺 / 开检验单 / 开影像单（跳医生端 d-lab/d-image）/ 入院登记 / 免疫接种（跳后台 z-hospital/z-immune），均带 recordId 预填本次病历。
 - 顾客端闭环：病历详情(clientPet)在处方/化验外，补显 影像检查报告、住院信息（后端接口原有，前端接上）。
-- SQL：`数据库备份/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
+- SQL：`db-backup/rx_prescription_module.sql`（doctor 加 doctor_cert），已应用。
 - 后续可做：随访复诊提醒（已完成，见下）。
 
 ### 随访/复诊提醒（2026-10-13）
@@ -137,14 +137,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 
 ## 8. 待办
 ### 手术/麻醉模块（2026-10-13，③）
-- 表：`surgery`(手术单：名称/类型/麻醉方式/预约与实际时间/主刀助手/状态0待1中2完成3取消/术前术中术后记录/手术费)、`anesthesia_record`(麻醉记录：方式/麻醉师/时间/用药/生命体征/备注，一手术一条)、bill 加 `fee_surgery`。脚本 `数据库备份/surgery_module.sql`，已应用。
+- 表：`surgery`(手术单：名称/类型/麻醉方式/预约与实际时间/主刀助手/状态0待1中2完成3取消/术前术中术后记录/手术费)、`anesthesia_record`(麻醉记录：方式/麻醉师/时间/用药/生命体征/备注，一手术一条)、bill 加 `fee_surgery`。脚本 `db-backup/surgery_module.sql`，已应用。
 - 后端 `/surgery`：POST 新建排程(DOCTOR/NURSE/MANAGER，含计费累加 fee_surgery 进未付账单或新建)、GET /page、GET /record/{id}(顾客归属校验)、GET /{id} 详情(含麻醉)、PUT 更新术前/术中/术后/状态、PUT /anesthesia 保存麻醉记录(upsert)。
 - 前端 `z-surgery.vue`：手术列表(状态筛选)+新建排程弹窗(病历下拉/名称/类型/麻醉/预约时间/主刀助手/费用)+手术·麻醉记录弹窗(状态/实际时间/术前术中术后/麻醉全套)，路由 /backstage/z-surgery，菜单「手术麻醉」，支持路由 recordId 预填。
 - 连通：接诊成功"就诊汇总"加「手术安排」(带 recordId 跳 z-surgery)；顾客端病历详情加"手术/麻醉"展示；账单三处(列表/小票/A4)加"手术费"。
 
 ## 8. 待办
 ### 服务套餐（2026-10-13，②-a 字典已建）
-- 表：`service_package`(套餐字典：名称/分类/价格/包含内容/启停)、`record_package`(就诊选购记录)、bill 加 `fee_package` 分项。脚本 `数据库备份/package_module.sql`，预置 5 个套餐（体检/驱虫/免疫）。
+- 表：`service_package`(套餐字典：名称/分类/价格/包含内容/启停)、`record_package`(就诊选购记录)、bill 加 `fee_package` 分项。脚本 `db-backup/package_module.sql`，预置 5 个套餐（体检/驱虫/免疫）。
 - 计费决策：套餐走固定分项 `fee_package`（与 fee_lab/hospital/image 一致，不做通用费用明细重构）。
 - 后端 `/package`：GET(启用列表，接诊下拉)、GET /page、POST/PUT/DELETE/{id}（MANAGER）。
 - 前端 `z-package.vue` 套餐字典管理页（CRUD+分类筛选+搜索），路由 /backstage/z-package，菜单「套餐管理」。
@@ -168,7 +168,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 
 ## 医疗扩展模块（2026-10-13 上线：化验/住院/影像/免疫/统计）
 
-**通用套路（5 个模块一致）**：医生/医护开单 → 费用按"字典价"计入 bill（优先累加进该病历未付账单的分项 `fee_*`+`total_money`，否则新建一张只含该费用的未付账单）→ 后台/化验室录入结果或报告 → 顾客端按 client_id 归属校验查看。归属以病历为准、价格以字典为准（前端传值不作数）；均 `@Transactional` 回滚。bill 分项：`fee_register/fee_treat/fee_drug/fee_lab/fee_hospital/fee_image`。建表脚本 `数据库备份/{lab,hospital,image,immune}_module.sql`（DROP+CREATE+预置+ALTER，已对线上库执行；image 的 ALTER 依赖 hospital 先建 fee_hospital，故应用顺序 hospital→image→immune）。
+**通用套路（5 个模块一致）**：医生/医护开单 → 费用按"字典价"计入 bill（优先累加进该病历未付账单的分项 `fee_*`+`total_money`，否则新建一张只含该费用的未付账单）→ 后台/化验室录入结果或报告 → 顾客端按 client_id 归属校验查看。归属以病历为准、价格以字典为准（前端传值不作数）；均 `@Transactional` 回滚。bill 分项：`fee_register/fee_treat/fee_drug/fee_lab/fee_hospital/fee_image`。建表脚本 `db-backup/{lab,hospital,image,immune}_module.sql`（DROP+CREATE+预置+ALTER，已对线上库执行；image 的 ALTER 依赖 hospital 先建 fee_hospital，故应用顺序 hospital→image→immune）。
 
 1. **化验/检验**：`lab_test`(字典,10条,有 active 标志)/`lab_order`/`lab_order_item`。d-lab 开单 `POST /lab/order`(DOCTOR)、z-labResult 录结果 `PUT /lab/result`(NURSE/MANAGER)、z-labTest 字典(MANAGER，被引用则停用不删)。顾客端 clientPet 展示 `GET /lab/record/{id}`。
 2. **住院**：`hospital_record`。z-hospital 入院登记 `POST /hospital`(DOCTOR/NURSE，防重复未出院)、出院结算 `PUT /hospital/discharge/{id}`(DOCTOR/NURSE/MANAGER，按 天数×日均费 计 fee_hospital，至少1天)。
@@ -214,7 +214,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 
 ### 工作流增强（2026-10-14 下午，按科学就诊流程推进）
 - 背景：以"院长/医生"视角按 分诊→挂号→接诊→诊断→结果回写→治疗/发药→收费→离院/出院→随访复诊/免疫提醒 闭环审视，指出四大断点并推进。
-- **T1 接诊分诊结构化**：`MedicalRecord` 补 `triageLevel`(1急诊/2普通/3复诊)、`weight`、`temperature`、`heartRate`、`respiratoryRate`；`RecordVo` 经 `record` 字段自动带入；`d-appoint.vue` 病历区新增"分诊与体征"分组（下拉选分诊级别 + 体重/体温/心率/呼吸数字框）。DB 列见 `数据库备份/feature_20261014_workflow.sql`。
+- **T1 接诊分诊结构化**：`MedicalRecord` 补 `triageLevel`(1急诊/2普通/3复诊)、`weight`、`temperature`、`heartRate`、`respiratoryRate`；`RecordVo` 经 `record` 字段自动带入；`d-appoint.vue` 病历区新增"分诊与体征"分组（下拉选分诊级别 + 体重/体温/心率/呼吸数字框）。DB 列见 `db-backup/feature_20261014_workflow.sql`。
 - **T2 检验/影像结果回写与报告挂接**：后端 `LabOrder`/`ImageOrder` 增 `reportFile` 字段；`LabResultVo`/`ImageReportVo` 增 `reportFile`，`saveResult`/`saveReport` 一并持久化；`LabOrderDto`/`ImageOrderDto` 透传，XML 分页/按病历查询补 `report_file` 列。前端结果录入页 `z-labResult.vue`/`z-imageResult.vue` 用 `UpImg` 组件上传报告附件并随结果保存、已录入可查看/移除。顾客端查询接口原本已存在（`/lab/record/{recordId}`、`/imageOrder/record/{recordId}`，带归属校验），结果+报告现已可回写。
   - 注：`UpImg` 组件 `photoNm` 为**必填** prop，使用时务必传 `:photo-nm`（本轮回填 `''`）。
 - **T3 发药核对流程**：`Bill` 补 `dispenseStatus`/`dispenseBy`/`dispenseTime`；`IBillService.dispense` + `BillServiceImpl.dispense`（未收款/已发药均拦截，记录核对人与时间）；`BillController.POST /bill/dispense` 加 `@Secured({NURSE,MANAGER,ADMIN})`。前端 `y-billList.vue` 操作列加"药"按钮（仅已收款未发药可见），状态列显示 待发药/已发药，弹窗输核对人姓名后确认。
@@ -228,7 +228,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **库存台账**：`Drug` 加 `warning_stock`（预警阈值）+ `expire_date`（有效期）；新建 `drug_record` 出入库台账表（change_type 1入库/2发药出库/3退款回库/4盘亏）。`IDrugService` 增 `inbound`（入库+记台账）、`stockRecordPage`、`listWarning`、`logStockChange`；`DrugController` 增 `POST /drug/inbound`、`GET /drug/warning`、`GET /drug/record/page`（均 MANAGER）。`BillServiceImpl.pay()` 发药扣减后记"出库"台账。前端 `y-drugList`：低库存改用 `warningStock`（未设默认5，取代硬编码）、加有效期列、加"入库"弹窗（数量/有效期/备注）与"出入库台账"抽屉，表单补预警阈值/有效期。
 - **退款冲正**：`Bill` 加 `refund_status/refund_by/refund_time`；`IBillService.refund` + 实现（需已收款且未退：回滚库存并记"退款回库"台账、余额支付则退还余额、现金支付提示线下退现金、标记已退）；`BillController PUT /bill/refund/{id}`（NURSE/MANAGER/ADMIN）。前端 `y-billList` 加"退"按钮+`已退`状态+退款二次确认（输操作人）。
 - **单据作废**：`Prescription/LabOrder/ImageOrder` 加 `is_cancel`；`PrescriptionMapper.selectByRecord` 加 `AND is_cancel=0`（作废处方不再参与发药/计费）。作废接口均**冲减未付账单**对应费用列（处方→feeDrug=价×量；化验→feeLab；影像→feeImage）与 total，已收款则拒绝并提示走退款：`PUT /lab/cancel/{id}`、`PUT /imageOrder/cancel/{id}`、`PUT /record/prescription/cancel/{id}`。前端 `z-labResult`/`z-imageResult` 加"作废"按钮（仅未出结果/报告可见）。
-- 迁移脚本：`数据库备份/feature_20261014_refund_inventory.sql`（notice_type、drug 两列、drug_record 表、bill 三列、三表 is_cancel）。
+- 迁移脚本：`db-backup/feature_20261014_refund_inventory.sql`（notice_type、drug 两列、drug_record 表、bill 三列、三表 is_cancel）。
 - 验证：`mvn clean compile` 通过；前端 `npm run build` 通过；DB 新列/表已生效；重启后端 `/bill/refund`、`/drug/warning`、`/lab/cancel` 匿名均 `code:401`，`/notice/four` 200，后端无 ERROR。
 - 后续待办（体检发现、未在本轮做）：住院每日监护记录、手术知情同意书、顾客取消/改期预约+号源容量校验、复诊关联与随访记录、remember-me 过期/签名校验、黑名单客户记住我拦截、默认口令可配置、补全顾客端检验/影像报告查看页。
 
@@ -251,7 +251,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 新建 `hospital_monitor` 表 + `HospitalMonitor` 实体/Mapper；`IHospitalMonitorService`/Impl：`addMonitor`（校验住院单存在且"住院中"，自动带 petId、记录人=当前登录医生/顾客名，monitorTime 默认现在）、`listByHospital`（按记录时间倒序）。
 - `HospitalMonitorController` `/hospital/monitor`：`POST`（DOCTOR/NURSE 添加）、`GET /{hospitalId}`（列表；顾客端做归属校验：住院单→病历→clientId 仅本人可见）。
 - 前端 `z-hospital.vue`：住院列表操作列加"监护"按钮 → 抽屉内含**新增表单**（记录时间/体温/心率/呼吸/体重/精神/食欲/排便排尿/当日用药/处置/备注，仅"住院中"显示新增）+ **监护历史时间线**（已出院仅看历史）。`HospitalApi` 加 `reqAddHospitalMonitor`/`reqHospitalMonitorList`；新建前端模型 `HospitalMonitor.ts`。
-- 迁移脚本：`数据库备份/feature_20261014_hospital_monitor.sql`。
+- 迁移脚本：`db-backup/feature_20261014_hospital_monitor.sql`。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处闭包空指针窄化）；DB 表已建；重启后端 `Started`+200，`/hospital/monitor/{id}` 匿名 `code:401`。
 - 仍待办（未做）：手术知情同意书、复诊关联与随访记录。
 
@@ -260,14 +260,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 新建 `surgery_consent` 表 + `SurgeryConsent` 实体/Mapper；`ISurgeryConsentService`：`sign`（一手术一条 upsert，需"同意+签字人"，已取消手术拒签）、`getBySurgery`、`consentSheet`（聚合 手术+宠物+主人+主刀兽医+病历诊断+同意书，供打印）。
 - `SurgeryConsentController` `/surgery/consent`：`POST`（DOCTOR/NURSE 签署）、`GET /{surgeryId}`（同意书）、`GET /sheet/{surgeryId}`（可打印数据）；后两者顾客端做归属校验（仅本人宠物）。
 - 前端 `z-surgery.vue`：操作列加"同意书"按钮 → 弹窗（风险告知预置模板可改、畜主同意开关、签字人、备注；已签自动回显；可重复签署更新）+ "打印同意书"跳转。新增打印页 `z-consent.vue`（对齐 z-requisition 打印风格，`@media print` 隐藏工具栏）并注册路由 `/backstage/z-consent`。`SurgeryApi` 加 `reqSignConsent`/`reqConsentOne`/`reqConsentSheet`。
-- 迁移脚本：`数据库备份/feature_20261014_surgery_consent.sql`。
+- 迁移脚本：`db-backup/feature_20261014_surgery_consent.sql`。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；`surgery_consent` 表已建；重启后端 `/surgery/consent/sheet/{id}` 匿名 `code:401`、端口 200。
 - 至此体检清单仅剩最后一项：**复诊关联 + 随访记录**（复诊单关联原病历、术后/出院随访）。
 
 ### 复诊关联 + 随访记录（2026-10-14 终）
 - **复诊关联**：`Appointment` 与 `MedicalRecord` 各加 `origin_record_id`（复诊挂号时填初诊病历id）。`saveRecord` 接诊时把挂号单的 `originRecordId` 写入新病历；`selectRecordOne` 回填 `originDiagnosis`（初诊/上次诊断）；新增 `GET /record/revisits/{recordId}` 查某病历的复诊链（顾客端归属校验）。前端：顾客病历详情显示"关联就诊/复诊记录"，加"预约复诊"按钮跳挂号页并带 `originRecordId`；`clientAppoint.vue` 读取 URL `originRecordId` 自动打开预约弹窗并提示"复诊挂号（关联病历 #X）"，提交时一并带上（`saveSelf` 保存到挂号单）。
 - **随访记录**：新建 `follow_up` 表 + `FollowUp` 实体/Mapper + `FollowUpDto`（联查宠物/客户/诊断）+ `FollowUpMapper.xml` 分页。`IFollowUpService`：`add`（自动带宠物/客户、状态待随访、随访人=当前登录人）、`listByRecord`、`selectPage`（待随访/已随访 + 宠物或客户名搜）、`done`（记结果/时间/随访人，已完成拒重）。`FollowUpController /follow`：`POST` 建计划（DOCTOR/NURSE）、`GET /page` 管理分页、`GET /record/{recordId}`（顾客归属校验）、`PUT /done/{id}` 完成。前端新增管理页 `z-follow.vue`（状态筛选/搜索/新建/完成随访弹窗/查看详情）+ 路由 `/backstage/z-follow` + 后台菜单"随访记录"。
-- 迁移脚本：`数据库备份/feature_20261014_revisit_followup.sql`（appointment/medical_record 加 origin_record_id、建 follow_up 表）。
+- 迁移脚本：`db-backup/feature_20261014_revisit_followup.sql`（appointment/medical_record 加 origin_record_id、建 follow_up 表）。
 - 验证：`mvn clean compile` 通过（修过 IMedicalRecordService 缺 List 导入）；`npm run build` 通过（修过 clientPet 重复 useRouter 导入）；DB 列/表已建；重启后端 `/record/revisits/{id}`、`/follow/page` 匿名 `code:401`、端口 200。
 - **至此，全项目体检清单（29 项 BUG + 临床/安全/库存/财务工作流）全部完成。**
 
@@ -287,7 +287,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **化验/影像独立开单 + 修复选择bug**：根因是 Element Plus 2.3.6 的 `el-checkbox` 用 `label` 绑定值，而我上轮在接诊里用 `:value`（该版本不识别）→ 选不中。现将**检验/影像从接诊弹窗移除**，接诊只保留 病历/处方/手术/套餐；检验、影像走各自专用开单页 `d-lab`/`d-image`（本就正常，`:label`），从就诊汇总"去开检验单/影像单"进入。
 - **统一设置中心（通用字典 sys_dict）**：新建 `sys_dict` 表 + `SysDict` 实体/Mapper/Service/Controller `/dict`（`GET /dict/type/{type}` 登录可用；增删改/启停 MANAGER）。前端新增设置页 `z-setting.vue`（左侧 6 类菜单 + 右侧字典值增删改/启停/排序）+ 路由 `/backstage/z-setting` + 后台菜单"系统设置"。字典类型：`lab_group` 化验分组 / `img_group` 影像分组 / `drug_type` 药品分类 / `drug_unit` 药品单位 / `surgery_type` 手术类型 / `anesthesia_type` 麻醉方式。
 - **各模块表单改接字典**（去掉 allow-create 自由输入，统一在设置中心维护）：药品页 `y-drugList`（分类/单位）、检验项 `z-labTest`（分组）、影像项 `z-imageTest`（分组）、手术 `z-surgery`（类型/麻醉，含麻醉记录）、接诊 `d-appoint` 手术标签（类型/麻醉）。种子数据已预置常用值。
-- 迁移脚本：`数据库备份/feature_20261014_sys_dict.sql`（sys_dict 表 + 6 类种子）。
+- 迁移脚本：`db-backup/feature_20261014_sys_dict.sql`（sys_dict 表 + 6 类种子）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；DB 6 类种子已入；重启后端 `/dict/type/{type}` 匿名 `code:401`、端口 200。
 
 ### 菜单科学化重组 + 医生排班 + 预约就诊提醒（2026-10-14 夜·院长视角）
@@ -295,7 +295,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **菜单科学化重组**（前端 `backstage/index.vue`）：扁平菜单 → 分组子菜单：经营看板 / 接待管理(挂号) / 店面业务(收银台·寄养·疫苗驱虫·随访提醒·随访记录) / 诊疗管理(化验结果+检验项·影像报告+影像项·手术麻醉·住院) / 商品与服务(药品·套餐·活体领养) / 客户中心(客户·宠物) / 基础配置(系统设置·公告) / 组织管理(仅管理员：科室·职务·医生·医生排班)。图标导入随之精简；无死链接（全部指向既有路由）。
 - **医生排班**：新建 `doctor_schedule` 表 + `DoctorSchedule` 实体/Mapper + `IScheduleService`/Impl + `ScheduleController /schedule`（`GET /doctor/{id}` 回显、`GET /all` 总览、`POST` 覆盖式保存）。`isOnDuty(doctorId,date)`：未配置排班的医生不限制（向后兼容，避免影响既有挂号）；已配置则按星期校验。挂号 `AppointmentController.checkAppoint` 加入班校验（新增/改期/员工/顾客端均走此校验），不出诊则拒。前端 `z-schedule.vue`：选医生→周一~周日 × 上午/下午 开关+号源编辑→保存；下方排班总览。路由 `/backstage/z-schedule`，菜单挂在"组织管理"。
 - **预约就诊前提醒**：新增 `AppointmentReminderScheduler`（复用已有 `@EnableScheduling`，每日 08:00）：扫描未来 36 小时内、待就诊(isSuc=false)的挂号，按 宠物/客户/医生/时间/备注 汇总成一条系统公告（`createSystemNotice`，仅员工可见、每日去重），供医护提前准备。
-- 迁移脚本：`数据库备份/feature_20261014_schedule.sql`（doctor_schedule 表）。
+- 迁移脚本：`db-backup/feature_20261014_schedule.sql`（doctor_schedule 表）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过一处图标未用导入）；`doctor_schedule` 表已建；重启后端 `/schedule/all` 匿名 `code:401`、端口 200。
 - **本轮明确暂缓（附原因，非遗忘）**：①在线支付(微信/支付宝)——外部强依赖(商户资质/密钥/异步回调/对账)，今天只能留抽象；②数据备份/恢复界面化——恢复有毁库风险，不做一键恢复，导出可另行排期；③会员卡/次卡/积分闭环、经营财务报表、AI 诊断、电子发票、顾客小程序、多院区、药品批次效期、投诉工单——均为中大型功能，需各排半天~一天。
 
@@ -305,7 +305,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **采购入库带供应商/批号**：`DrugRecord` 加 `supplierId`/`supplierName`(冗余)/`batchNo`；`IDrugService.inbound` 增 supplierId/batchNo 参数，入库时查供应商名一并写入台账；`DrugController /drug/inbound` 同步扩参。前端 `y-drugList.vue` 入库弹窗加"供应商下拉 + 批号输入"，出入库台账抽屉加"供应商/批号"列。
 - **近效期预警 + 补货建议**：`IDrugService.listExpiring(days)`（expireDate 在 [今天, 今天+days] 的启用药品，按效期升序）+ `GET /drug/expiring`。前端药品页加"库存预警"按钮（带角标计数）→ 抽屉分两区：**低库存（含"建议补货量"=阈值×2−当前，下限10）** + **近效期（默认90天）**。
 - 菜单：后台新增"库存管理"分组（药品库存 + 供应商管理），从"商品与服务"移出药品。
-- 迁移脚本：`数据库备份/feature_20261015_supplier_inventory.sql`（supplier 表 + drug_record 加 supplier_id/supplier_name/batch_no）。
+- 迁移脚本：`db-backup/feature_20261015_supplier_inventory.sql`（supplier 表 + drug_record 加 supplier_id/supplier_name/batch_no）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过；supplier 表与 drug_record 新列已建；重启后端 `/supplier`、`/drug/expiring` 匿名 `code:401`、端口 200。
 
 ### 经营财务报表 + 一页式宠物健康档案（2026-10-15）
@@ -313,7 +313,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **经营财务报表**：`Drug` 加 `costPrice`(进货价，用于药品毛利)；新建 `FinanceReport` VO + `IReportService`/Impl + `ReportController GET /report/finance?start=&end=`（MANAGER/ADMIN）。按**接诊日期(createTime)**统计已收款、未退款账单：总收入/订单数/客单价/退款额、按 8 个收费项目(挂号/诊疗/药/化验/影像/套餐/手术/住院)构成、每日收入趋势、按科室/按医生(关联病历)、药品成本/毛利。前端 `z-report.vue`：日期区间+近7天/本月/上月快捷、指标卡、收入构成条、每日趋势 CSS 柱状、按科室/医生表、药品毛利卡；路由 `/backstage/z-report`；菜单"经营看板"升级为"数据统计"分组(经营看板+财务报表)；药品表单加"进货价"。
   - 边界：账单无 payTime，按接诊日期统计；药品成本按**当前进货价估算**(未快照历史进货价)；服务类(检验/影像/手术/住院/套餐)不计成本，故毛利仅覆盖药品。
 - **一页式宠物健康档案**：新建 `PetHealth` VO + `IPetHealthService`/Impl + `PetHealthController GET /pet/health/{petId}`（顾客仅本人宠物，员工任意）。聚合：宠物基本信息(过敏史/既往病史/绝育/芯片)、概要(就诊次数/最近就诊/最近诊断/下次免疫)、体重曲线(取自理诊体重)、就诊史(近50)、免疫记录、住院记录。前端可复用组件 `PetHealthDialog.vue`，接入后台宠物列表(`y-petList` 操作列"康"按钮)与顾客端(`clientPet` 宠物卡片"健康档案"按钮)。
-- 迁移脚本：`数据库备份/feature_20261015_finance_report.sql`（drug 加 cost_price）。
+- 迁移脚本：`db-backup/feature_20261015_finance_report.sql`（drug 加 cost_price）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过 PetHealthDialog 一处 update:modelValue 参数类型）；cost_price 列已建；重启后端 `/report/finance`、`/pet/health/{id}` 匿名 `code:401`、端口 200。
 
 ### 电子病历模板化 + 数据导出(CSV) + 会员卡/次卡/积分闭环（2026-10-15）
@@ -325,7 +325,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
   - **闭环接入**：`ClientController.recharge` 充值按等级返赠（到账=本金+返赠）；`BillServiceImpl.pay` 收款后按等级积分率累积积分。
   - 前端：`z-memberLevel.vue`、`z-countCard.vue` + 路由 + 菜单（客户中心）；客户列表 `y-clientList` 操作列加"员"按钮 → 会员中心弹窗（余额/积分/等级 + 积分兑换 + 购卡 + 持有次卡核销）。
   - 边界：折扣率字段已预留但**尚未接入收费抵扣**（避免改动收款主流程，留待后续）；积分率默认1元=1分；次卡核销为独立动作，未与具体服务单联动。
-- 迁移脚本：`数据库备份/feature_20261015_member_card.sql`（member_level/count_card_template/client_count_card + 等级种子）；record_template 表见 `数据库备份/feature_20261015_record_template.sql`。
+- 迁移脚本：`db-backup/feature_20261015_member_card.sql`（member_level/count_card_template/client_count_card + 等级种子）；record_template 表见 `db-backup/feature_20261015_record_template.sql`。
 - 验证：`mvn clean compile` 通过（修过 MemberServiceImpl 两处 `BaseMapper.updateById/deleteById` 返回 int 需 `>0` 转 boolean）；`npm run build` 通过（修过 y-drugList `drugList.value.records`）；三表已建；重启后端 `/member/level`、`/recordTemplate` 匿名 `code:401`、端口 200。
 
 ### 会员折扣接入收费（2026-10-15）
@@ -337,7 +337,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
   - `BillServiceImpl` 加 `payable(bill)` 助手（`realMoney ?: totalMoney`，兼容旧单）；`pay` 余额扣减、`refund` 退还、`earnPoints` 积分累积**全部改按折后实收**。
   - `ReportServiceImpl.finance` 收入/趋势改按 `real_money` 汇总，新增"优惠合计 `discountMoney`"。
 - 前端：`BillDto` 补 `discount/discountMoney/realMoney`；`y-billList` 把"合计"列拆为**原价 / 优惠 / 应付**三列（`realMoneyOf` 助手）；`FinanceReport`/`z-report` 补"优惠合计"展示。
-- 迁移脚本：`数据库备份/feature_20261015_bill_discount.sql`（discount 普通列 + 两生成列 + 存量 `discount=1` 回填）。
+- 迁移脚本：`db-backup/feature_20261015_bill_discount.sql`（discount 普通列 + 两生成列 + 存量 `discount=1` 回填）。
 - 验证：`mvn clean compile` 通过（修过 BillServiceImpl 缺 BigDecimal 导入）；`npm run build` 通过；DB 生成列实测：total 300 × 0.9 → 优惠 30、应付 270，且 `total_money+100` 后自动重算为 300/30/270（追加联动正确，测试行已清理）；存量账单实收=原价（不变）；重启后端 `Started`+200、`/member/level`、`/bill/page` 匿名响应体 `code:401`、无 ERROR。
 - 说明：项目鉴权统一以**响应体 `code:401`** 返回（HTTP 状态为 200），排查时要看响应体而非状态码。
 
@@ -392,7 +392,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **发送文件**：`ImgController` 新增 `POST /common/upChatFile`（存 `chat/file`，返回 `{name: UUID+.ext, origin: 原文件名}`）与 `GET /common/downChat?type=file`（按扩展名返回 MIME，pdf/word/excel/txt 浏览器可在线预览，带 Content-Disposition）。上传大小上限 3MB→30MB（`application.yml`）。前端 `ChatPanel.vue` 加"发文件"上传按钮（doc/pdf/xlsx 常见格式），`chat.vue`/`d-chat.vue` 绑定 `sendFileMsg` 发送与 WebSocket 接收（携带 `msgType`/`msgName`）；`ChatMain.vue` 渲染文件卡片（图标+名+预览/下载）。
 - **消息类型化**：`Msg`/`MsgDo` 加 `msgType`（TEXT/IMAGE/FILE）与 `msgName`（文件原始名）；`MsgMapper.xml` 两个查询补 `msg_type`/`msg_name`；历史图片消息经迁移脚本回填为 `IMAGE`。
 - **手动清理超期记录**：`MsgController` 新增 `GET /msg/expiredMsgNum?days=`（默认90）统计超期条数、`POST /msg/cleanExpiredMsg?days=` 手动删除（连带删 `image/`、`file/` 磁盘文件，文字消息只删记录）。管理后台新增 `z-chatClean.vue` 清理页（路由 `/backstage/z-chatClean`，菜单"系统管理→聊天数据清理"，保留天数+查询+二次确认清理）。
-- **数据库**：`数据库备份/feature_20261015_chat_file_webp.sql`（msg 加两列 + 历史图片回填 IMAGE）。
+- **数据库**：`db-backup/feature_20261015_chat_file_webp.sql`（msg 加两列 + 历史图片回填 IMAGE）。
 - 验证：数据库两列/回填值已执行生效；后端编译+启动正常（WebP 原生库加载无异常）；前端 `vue-tsc` 通过。
 
 ### 系统设置字典乱码修复（2026-10-15）

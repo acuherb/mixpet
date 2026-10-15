@@ -65,8 +65,8 @@ if (props.doctorId == null || props.doctorId == '') {
   cutDoctor(doctor.doctorId)
 }
 
-// WebSocket开始连接（用当前访问的主机名连接，手机局域网访问也能连上）
-const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.hostname + ":8085/chat"
+// WebSocket 连接：走同源 /chat，由 nginx（生产）或 vite（开发）反代到后端 8085，避免 HTTPS 页混合内容拦截
+const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
 const ws = new WebSocket(wsUrl);  // 建立WebSocket对象
 // 是否成功连接过（区分「离开页面」和「连接失败」）
 let wsOpened = false

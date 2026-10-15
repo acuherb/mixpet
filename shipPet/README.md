@@ -15,7 +15,7 @@
 ## 运行教程
 
 1. 请确保MySQL已安装并处于运行状态，且MySQL的用户名与密码都是`root`，如果不是，请在`application.yml`中改成自己的。
-2. 在MySQL中新建数据库`pet_ship`，然后在`pet_ship`数据库中运行`数据库备份`下`pet_ship.sql`文件。
+2. 在MySQL中新建数据库`pet_ship`，然后在`pet_ship`数据库中运行`db-backup`下`pet_ship.sql`文件。
 3. 修改`application-dev.yml`中`pet-ship`选项下的文件夹路径，为本项目(MixPet)下的那三个资源文件夹的路径。
     比如改成下面这样(注意这是自己电脑上的路径)
     ```yaml

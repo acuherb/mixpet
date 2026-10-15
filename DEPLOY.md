@@ -66,10 +66,12 @@ cd mixpet
 目录结构：
 - `shipPet/` — 后端（Spring Boot 3 + Java 17）
 - `ship-ui/` — 前端（Vue 3 + Vite）
-- `数据库备份/pet_ship.sql` — 数据库初始化脚本
-- `images/` — 头像/报告附件图片（WebP）
+- `db-backup/` — SQL 脚本（基线 `pet_ship.sql` + 24 个增量迁移脚本）
+- `avatar/` — 头像图片（WebP）
 - `notice/` — 公告配图
 - `chat/` — 聊天文件（其下分 `image/` 图片、`file/` 文件两子目录）
+- `report/` — 报告附件（其下分 `image/` 与 `file/` 两子目录）
+- `deploy.sh` — 一键部署脚本（构建 + nginx 反代 + 启动）
 
 ---
 
@@ -91,7 +93,7 @@ EOF
 ### 3.2 导入数据
 
 ```bash
-mysql -u mixpet -p pet_ship < ~/公共/mixpet/数据库备份/pet_ship.sql
+mysql -u mixpet -p pet_ship < ~/公共/mixpet/db-backup/pet_ship.sql
 ```
 
 ### 3.3 验证
@@ -127,9 +129,9 @@ spring:
     password: ${MAIL_PASS:your_auth_code}
 ---
 pet-ship:
-  images-path: ${PET_IMAGES:/home/debian/公共/MixPet/images/}
-  notice-path: ${PET_NOTICE:/home/debian/公共/MixPet/notice/}
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/MixPet/chat/}
+  images-path: ${PET_AVATAR:/home/debian/公共/mixpet/avatar/}
+  notice-path: ${PET_NOTICE:/home/debian/公共/mixpet/notice/}
+  chatImg-path: ${PET_CHATIMG:/home/debian/公共/mixpet/chat/}
 ```
 
 ### 4.2 换机器时怎么配
@@ -141,7 +143,7 @@ export DB_USER=mixpet
 export DB_PASSWORD=你的数据库密码
 export MAIL_USER=你的QQ邮箱
 export MAIL_PASS=你的QQ邮箱授权码
-export PET_IMAGES=/你的/路径/images/
+export PET_AVATAR=/你的/路径/avatar/
 export PET_NOTICE=/你的/路径/notice/
 export PET_CHATIMG=/你的/路径/chat/
 ```
@@ -305,13 +307,85 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
 - 前端路由：`ship-ui/src/router/`
 - 前端 API 封装：`ship-ui/src/request/`
 
-### 10.2 安全提醒（正式上线前必改）
-- [ ] 数据库密码改成强密码
-- [ ] 默认账号密码 `123456` 全部改掉
-- [ ] 邮件授权码改为自己的
-- [ ] 关闭顾客自主注册（建议改为后台录入）
-- [ ] 配置 HTTPS 和域名
-- [ ] 定期备份数据库
+### 10.2 上线前安全加固清单（必改）
+> 以下任一项未做，都不要正式对外提供服务。本项目账号=手机号、由前台录入，**不开放自主注册**；黑名单/停用账号（`active=0`）在直接登录与 remember-me 两端均已被拦截，无需额外处理。
+
+1. **数据库强密码**：创建 `mixpet` 账号时用强口令，部署时 `export DB_PASSWORD=你的强口令`（已支持环境变量，不必改代码）。
+2. **改掉所有默认口令 `123456`**：
+   - 代码侧 `app.default-password` 已改为环境变量 `${APP_DEFAULT_PASSWORD:...}`，生产务必 `export APP_DEFAULT_PASSWORD=你的强口令`（见 4.1）。
+   - 存量演示账号 `admin` / `yun` / `ying` 等的密码仍是 `123456`，必须登录后到「用户管理 / 医生管理」逐个**重置密码**，或让对应用户自行改密。
+3. **邮件授权码**：`application-dev.yml` 的 `MAIL_USER` / `MAIL_PASS` 改成自己的 QQ 邮箱与 16 位授权码（或用环境变量 `MAIL_USER` / `MAIL_PASS`）。
+4. **配置 HTTPS + WSS**：见下方「nginx 反代配置」。上线后前端 WebSocket 必须走 `wss`（见「前端改动」）。
+5. **定期备份**：见 10.4。
+
+**当前已知安全项状态**（生产评估用）：
+- CSRF：当前全局关闭（前后端分离 + 自定义登录过滤器，重开需前端配合 XSRF-TOKEN，暂保持；后续如要启用再单独评估）。
+- 文件下载 `/common/download`、`/common/downChat`：文件名走 UUID 不可枚举，且已做 `..` / `/` / `\` 路径遍历防护，风险低。
+- 越权：业务接口除登录/公开展示类外均要求认证，敏感接口已加 `@Secured` 角色约束（详见 CONTEXT.md 安全基线）。
+
+#### nginx 反代配置（HTTPS + WSS）
+前端 `npm run build` 产物 `dist/` 由 nginx 托管，后端 8085 与 WebSocket 经 nginx 反代。证书用 Let's Encrypt：
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d pet.你的诊所域名.com
+```
+
+`/etc/nginx/sites-available/mixpet`：
+```nginx
+server {
+    listen 443 ssl;
+    server_name pet.你的诊所域名.com;
+
+    ssl_certificate     /etc/letsencrypt/live/pet.你的诊所域名.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/pet.你的诊所域名.com/privkey.pem;
+
+    # 前端静态资源（npm run build 产物）
+    location / {
+        root /home/debian/mixpet/ship-ui/dist;
+        try_files $uri $uri/ /index.html;
+    }
+    # 后端 API（与 vite 代理一致的 /api 前缀）
+    location /api/ {
+        proxy_pass http://127.0.0.1:8085/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    # 在线咨询 WebSocket：走 wss，反代到后端 8085 的 /chat
+    location /chat {
+        proxy_pass http://127.0.0.1:8085/chat;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600s;
+    }
+}
+# HTTP 80 全跳 443
+server { listen 80; server_name pet.你的诊所域名.com; return 301 https://$host$request_uri; }
+```
+
+**前端已改为同源 `/chat`（已落地）**：`chat.vue` / `d-chat.vue` 的 `wsUrl` 已去掉 `:8085`，改连同源 `location.host + "/chat"`；`vite.config.ts` 已加 `/chat` 的 `ws` 代理。生产由下方 nginx 的 `location /chat` 反代到后端 8085 即可，HTTPS 页不再有混合内容拦截。
+
+#### 清理测试数据（上线前）
+演示数据集中在业务表，正式接诊前清空（字典/配置类表按需保留）：
+```sql
+-- 先备份（见 10.4）再执行；TRUNCATE 不可回滚
+TRUNCATE TABLE msg, notice, follow_up, surgery_consent, surgery, record_package, prescription,
+  medical_record, appointment, immune_record, hospital_monitor, hospital_record,
+  image_order, lab_order_item, lab_order, adopt, pet, client, foster, doctor, department;
+-- 药品/库存/供应商/会员等如需重置：
+-- TRUNCATE TABLE drug_record, supplier, client_count_card, count_card_template, member_level, sys_dict, job, doctor_department;
+```
+
+#### 关闭公网暴露
+数据库默认 `bind-address = 127.0.0.1`（仅本机），切勿改为 `0.0.0.0`；防火墙只放行 443（与 22）：
+```bash
+sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw enable
+```
 
 ### 10.3 部署到云端
 - **前端**：`npm run build` 后上传 `dist/` 到 Cloudflare Pages

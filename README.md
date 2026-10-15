@@ -75,10 +75,12 @@ mixpet/
 │       ├── request/          # API 封装
 │       ├── router/           # 路由
 │       └── model/            # 数据模型
-├── images/               # 头像 / 报告附件（WebP）
+├── avatar/               # 头像存储（WebP）
 ├── notice/               # 公告配图
 ├── chat/                 # 聊天文件（image/ 图片、file/ 文件）
-├── 数据库备份/             # SQL 脚本（含各功能增量迁移脚本）
+├── report/               # 报告附件存储（image/ 与 file/ 子目录）
+├── db-backup/             # SQL 脚本（含各功能增量迁移脚本）
+├── deploy.sh             # 一键部署脚本（构建 + nginx 反代 + 启动）
 └── DEPLOY.md             # 完整本地部署教程
 ```
 
@@ -103,7 +105,7 @@ GRANT ALL PRIVILEGES ON pet_ship.* TO 'mixpet'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-mysql -u mixpet -p pet_ship < 数据库备份/pet_ship.sql
+mysql -u mixpet -p pet_ship < db-backup/pet_ship.sql
 ```
 
 ### 2. 后端
@@ -121,6 +123,25 @@ npm install
 npm run dev                # 访问 http://localhost:3120
 ```
 
+### 4. 一键部署（生产环境）
+
+仓库根目录提供 `deploy.sh`，自动完成**前端构建 → 后端打包 → 生成 nginx 反代配置 → 启动后端**：
+
+```bash
+# 先按 DEPLOY.md 建库并导入基线，再补齐 24 个增量迁移脚本
+# 设置必要环境变量（至少 DB_PASSWORD / APP_DEFAULT_PASSWORD）
+export MIXPET_DIR=/opt/mixpet                 # 项目目录（建议纯英文路径）
+export MIXPET_DOMAIN=pet.你的诊所域名.com
+export DB_PASSWORD=你的强口令
+export APP_DEFAULT_PASSWORD=你的强口令
+
+bash deploy.sh            # 构建 + 生成 nginx 配置 + 启动后端
+bash deploy.sh --tls      # 额外申请 Let's Encrypt 证书并启用 HTTPS/WSS
+bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
+```
+
+> 上线前仍须：① 改默认口令 ② 清测试数据（见 [DEPLOY.md](./DEPLOY.md) 10.2）。脚本不执行数据库迁移与清数据。
+
 ---
 
 ## 配置说明
@@ -133,9 +154,10 @@ npm run dev                # 访问 http://localhost:3120
 | `DB_PASSWORD` | `MixPet2024` | 数据库密码 |
 | `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱 |
 | `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码 |
-| `PET_IMAGES` | `~/公共/mixpet/images/` | 头像 / 报告附件存储路径 |
+| `PET_AVATAR` | `~/公共/mixpet/avatar/` | 头像 / 报告附件存储路径 |
 | `PET_NOTICE` | `~/公共/mixpet/notice/` | 公告配图存储路径 |
 | `PET_CHATIMG` | `~/公共/mixpet/chat/` | 聊天文件存储路径 |
+| `APP_DEFAULT_PASSWORD` | `MixPet@Prod2026!` | 新建/重置账号默认口令，**生产务必用环境变量覆盖** |
 
 ---
 
@@ -148,15 +170,15 @@ npm run dev                # 访问 http://localhost:3120
 | 管理员 | `admin` | `123456` | 登录时点击**猫猫头**切换 |
 
 > ⚠️ 正式投入使用前，务必：
-> - 修改所有默认密码（默认口令可在 `application.yml` 的 `app.default-password` 配置）
+> - 修改所有默认密码：代码侧默认口令已改为环境变量 `APP_DEFAULT_PASSWORD`（部署时 `export APP_DEFAULT_PASSWORD=你的强口令`）；存量演示账号 `admin`/`yun`/`ying` 须到后台「用户管理 / 医生管理」逐个重置
 > - 清除测试数据
-> - 配置 HTTPS / 为 WebSocket（8085）配反向代理
+> - 配置 HTTPS / 为 WebSocket 配 `wss` 反向代理（完整步骤见 [DEPLOY.md](./DEPLOY.md) 10.2）
 
 ---
 
 ## 数据库迁移说明
 
-`数据库备份/` 下除原始基线 `pet_ship.sql` 外，还有按功能/日期命名的**增量迁移脚本**（如 `feature_20261015_chat_file_webp.sql`）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。重导全新环境时，请按脚本补齐各项增量。
+`db-backup/` 下除原始基线 `pet_ship.sql` 外，还有按功能/日期命名的**增量迁移脚本**（如 `feature_20261015_chat_file_webp.sql`）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。重导全新环境时，请按脚本补齐各项增量。运行 `deploy.sh` 前也须先按 DEPLOY.md 建库并补齐全部增量脚本——脚本本身不执行数据库迁移。
 
 ---
 

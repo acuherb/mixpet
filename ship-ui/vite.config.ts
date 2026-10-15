@@ -25,6 +25,13 @@ export default defineConfig({
                 target: "http://localhost:8085",
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/api/, '')
+            },
+            // 在线咨询 WebSocket：开发时由 vite 反代到后端 8085 的 /chat 端点
+            '/chat': {
+                target: 'ws://localhost:8085',
+                ws: true,
+                changeOrigin: true,
+                rewrite: (path) => path
             }
         }
     },

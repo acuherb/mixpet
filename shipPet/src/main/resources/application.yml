@@ -42,4 +42,4 @@ mybatis-plus:
 appointment:
   max-per-day: 20 # 每位医生每日号源上限（同一医生同一自然日预约数）
 app:
-  default-password: 123456 # 新建用户/管理员重置密码的默认口令
+  default-password: ${APP_DEFAULT_PASSWORD:MixPet@Prod2026!} # 新建用户/管理员重置密码的默认口令；生产必须通过环境变量 APP_DEFAULT_PASSWORD 覆盖此默认值
