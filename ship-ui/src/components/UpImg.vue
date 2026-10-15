@@ -173,6 +173,7 @@ const pickRandom = async (dataURL: string): Promise<void> => {
 /*整个上传框*/
 $primary: #0d6efd;
 $info: #6c757d;
+$danger: #f56c6c;
 .avatar-box {
   display: inline-block;
 }

@@ -6,9 +6,9 @@ import {RegisterVo} from "@/model/VO/RegisterVo";
 //登录接口
 export const reqLogin = (data: LoginVo): Promise<Res> =>
     reqApi.post<string, Res>("cao/toLogin", data)
-// 退出登陆
+// 退出登陆（Spring Security 的 logout 端点仅接受 POST，需用 post 而非默认 GET）
 export const reqLogout = (): Promise<Res> =>
-    reqApi<string, Res>("cao/logout")
+    reqApi.post<string, Res>("cao/logout")
 // 判断当前登陆角色
 export const reqGetLogin = (): Promise<RoleEnum> =>
     reqApi<string, RoleEnum>("login")

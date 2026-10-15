@@ -44,9 +44,13 @@ const getLoginRole = () => {
         if (user && user.clientPwdChanged === false) router.push("/changePwd")
         else router.push("/")
       })
-    } else if (resp === RoleEnum.DOCTOR) {
+    } else {
+      // 医生 / 管理员（以及角色接口异常时）统一进入后台工作台，避免卡在登录页
       router.push("/backstage")
     }
+  }).catch(() => {
+    // 角色获取失败也兜底进入后台，避免登录页无法离开
+    router.push("/backstage")
   })
 }
 
