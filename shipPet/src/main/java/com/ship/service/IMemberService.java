@@ -24,6 +24,9 @@ public interface IMemberService extends IService<MemberLevel> {
     /** 消费积分率 */
     BigDecimal pointsRate(Integer clientLevel);
 
+    /** 某客户的会员折扣率（1=不打折；无等级配置或异常值返回1） */
+    BigDecimal discountOf(Integer clientId);
+
     /** 购卡：扣余额生成次卡 */
     Result buyCard(Integer clientId, Integer templateId);
 

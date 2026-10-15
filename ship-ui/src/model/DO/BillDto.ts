@@ -15,6 +15,12 @@ export interface BillDto {
     feePackage: number;
     feeSurgery: number;
     totalMoney: number;
+    /** 会员折扣率快照（1=不打折） */
+    discount?: number | null;
+    /** 优惠金额 */
+    discountMoney?: number | null;
+    /** 折后应付/实收（旧单为空时按原价） */
+    realMoney?: number | null;
     payStatus: boolean;
     payType: boolean | null;
     /** 发药状态 0未发 1已发 */

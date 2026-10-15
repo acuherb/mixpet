@@ -14,8 +14,10 @@ public class FinanceReport {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    /** 总收入（已收款未退款） */
+    /** 总收入（已收款未退款，折后实收） */
     private BigDecimal totalRevenue;
+    /** 优惠合计（会员折扣让利） */
+    private BigDecimal discountMoney;
     /** 订单数（已收款未退款） */
     private Integer orderCount;
     /** 客单价 */

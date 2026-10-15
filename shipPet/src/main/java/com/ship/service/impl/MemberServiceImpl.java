@@ -65,6 +65,19 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     }
 
     @Override
+    public BigDecimal discountOf(Integer clientId) {
+        if (clientId == null) return BigDecimal.ONE;
+        Client c = clientService.getById(clientId);
+        if (c == null) return BigDecimal.ONE;
+        MemberLevel lv = levelOf(c.getClientLevel());
+        if (lv == null || lv.getDiscount() == null) return BigDecimal.ONE;
+        BigDecimal d = lv.getDiscount();
+        // 防御：折扣率需在 (0,1] 区间，否则按不打折
+        if (d.compareTo(BigDecimal.ZERO) <= 0 || d.compareTo(BigDecimal.ONE) > 0) return BigDecimal.ONE;
+        return d;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Result buyCard(Integer clientId, Integer templateId) {
         if (clientId == null || templateId == null) return Result.error("缺少参数");

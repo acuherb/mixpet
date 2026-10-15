@@ -322,3 +322,16 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
   - 边界：折扣率字段已预留但**尚未接入收费抵扣**（避免改动收款主流程，留待后续）；积分率默认1元=1分；次卡核销为独立动作，未与具体服务单联动。
 - 迁移脚本：`数据库备份/feature_20261015_member_card.sql`（member_level/count_card_template/client_count_card + 等级种子）；record_template 表见 `数据库备份/feature_20261015_record_template.sql`。
 - 验证：`mvn clean compile` 通过（修过 MemberServiceImpl 两处 `BaseMapper.updateById/deleteById` 返回 int 需 `>0` 转 boolean）；`npm run build` 通过（修过 y-drugList `drugList.value.records`）；三表已建；重启后端 `/member/level`、`/recordTemplate` 匿名 `code:401`、端口 200。
+
+### 会员折扣接入收费（2026-10-15）
+- 背景：上轮会员/次卡/积分闭环预留了"等级折扣率"字段但未接入收费。本轮打通，让折扣真正影响应收。
+- **设计取舍（关键）**：`bill` 加 `discount`（普通列，**建单时按客户等级快照**，此后不随等级变动而变）；`discount_money`/`real_money` 设为 **MariaDB 生成列**（`PERSISTENT`，由 `total_money × discount` 自动算）。
+  - 好处：全项目有 **7 处**会改账单金额（追加处方/套餐、开化验单/影像单/手术、住院、作废冲减），生成列方案下这些地方**只需照旧改 `total_money`，折后应付与优惠永远自动一致**，杜绝"追加了费用但实收没算进去"的账实不符。
+- **接入点**：
+  - `MedicalRecordServiceImpl.saveRecord` 建单时 `bill.setDiscount(memberService.discountOf(clientId))`（新增 `IMemberService.discountOf`，带 (0,1] 区间防御）。
+  - `BillServiceImpl` 加 `payable(bill)` 助手（`realMoney ?: totalMoney`，兼容旧单）；`pay` 余额扣减、`refund` 退还、`earnPoints` 积分累积**全部改按折后实收**。
+  - `ReportServiceImpl.finance` 收入/趋势改按 `real_money` 汇总，新增"优惠合计 `discountMoney`"。
+- 前端：`BillDto` 补 `discount/discountMoney/realMoney`；`y-billList` 把"合计"列拆为**原价 / 优惠 / 应付**三列（`realMoneyOf` 助手）；`FinanceReport`/`z-report` 补"优惠合计"展示。
+- 迁移脚本：`数据库备份/feature_20261015_bill_discount.sql`（discount 普通列 + 两生成列 + 存量 `discount=1` 回填）。
+- 验证：`mvn clean compile` 通过（修过 BillServiceImpl 缺 BigDecimal 导入）；`npm run build` 通过；DB 生成列实测：total 300 × 0.9 → 优惠 30、应付 270，且 `total_money+100` 后自动重算为 300/30/270（追加联动正确，测试行已清理）；存量账单实收=原价（不变）；重启后端 `Started`+200、`/member/level`、`/bill/page` 匿名响应体 `code:401`、无 ERROR。
+- 说明：项目鉴权统一以**响应体 `code:401`** 返回（HTTP 状态为 200），排查时要看响应体而非状态码。

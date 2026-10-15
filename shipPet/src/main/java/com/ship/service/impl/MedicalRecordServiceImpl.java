@@ -25,12 +25,14 @@ import com.ship.model.vo.RxSheetVo;
 import com.ship.model.vo.SurgeryVo;
 import com.ship.service.IAppointmentService;
 import com.ship.service.IMedicalRecordService;
+import com.ship.service.IMemberService;
 import com.ship.service.IServicePackageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,6 +55,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final ImageTestMapper imageTestMapper;
     private final ImageOrderMapper imageOrderMapper;
     private final SurgeryMapper surgeryMapper;
+    private final IMemberService memberService;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
@@ -61,7 +64,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                                     IServicePackageService packageService, RecordPackageMapper recordPackageMapper,
                                     LabTestMapper labTestMapper, LabOrderMapper labOrderMapper,
                                     LabOrderItemMapper labOrderItemMapper, ImageTestMapper imageTestMapper,
-                                    ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper) {
+                                    ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper,
+                                    IMemberService memberService) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -76,6 +80,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.imageTestMapper = imageTestMapper;
         this.imageOrderMapper = imageOrderMapper;
         this.surgeryMapper = surgeryMapper;
+        this.memberService = memberService;
     }
 
     @Override
@@ -230,6 +235,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         bill.setFeeSurgery(feeSurgery);
         bill.setTotalMoney(record.getFeeRegister().add(record.getFeeTreat())
                 .add(feeDrug).add(feePackage).add(feeLab).add(feeImage).add(feeSurgery));
+        // 会员折扣：按客户等级快照折扣率（discount_money/real_money 为数据库生成列，随 total_money 自动折算）
+        bill.setDiscount(memberService.discountOf(record.getClientId()));
         bill.setPayStatus(false);
         bill.setPayType(false);
         billMapper.insert(bill);
@@ -333,6 +340,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             prescriptionMapper.insert(p);
             add = add.add(drug.getDrugPrice().multiply(BigDecimal.valueOf(p.getQuantity())));
         }
+        // 生成列 real_money/discount_money 会随 total_money 自动折算，无需手工维护
         billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
                 .eq(Bill::getBillId, bill.getBillId())
                 .setSql("fee_drug = fee_drug + " + add.toPlainString())
@@ -361,6 +369,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             recordPackageMapper.insert(rp);
             if (real.getPrice() != null) add = add.add(real.getPrice());
         }
+        // 生成列 real_money/discount_money 会随 total_money 自动折算，无需手工维护
         billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
                 .eq(Bill::getBillId, bill.getBillId())
                 .setSql("fee_package = fee_package + " + add.toPlainString())

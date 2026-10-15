@@ -56,9 +56,20 @@
         <span v-else>-</span>
       </template>
     </el-table-column>
-    <el-table-column label="合计(元)" prop="totalMoney" sortable width="100">
+    <el-table-column label="原价(元)" prop="totalMoney" sortable width="100">
       <template #default="scope">
-        <b style="color: #f56c6c">￥{{ scope.row.totalMoney }}</b>
+        ￥{{ scope.row.totalMoney }}
+      </template>
+    </el-table-column>
+    <el-table-column label="优惠" width="80">
+      <template #default="scope">
+        <span v-if="scope.row.discountMoney > 0" style="color: #e6a23c">-￥{{ scope.row.discountMoney }}</span>
+        <span v-else>-</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="应付(元)" width="100">
+      <template #default="scope">
+        <b style="color: #f56c6c">￥{{ realMoneyOf(scope.row) }}</b>
       </template>
     </el-table-column>
     <el-table-column label="状态" width="86">
@@ -187,6 +198,9 @@ const exportBills = (): void => exportCsv('收费账单', [
   payStatus: !b.payStatus ? '待收费' : (b.refundStatus ? '已退' : '已收费'),
   payType: b.payType ? '现金' : '余额'
 })))
+
+// 折后应付（旧账单无 realMoney 时按原价）
+const realMoneyOf = (row: BillDto): number => row.realMoney ?? row.totalMoney
 // 待收费行高亮
 const rowClass = ({row}: { row: BillDto }): string => row.payStatus ? '' : 'unpaid-row'
 // 分页条

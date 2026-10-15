@@ -39,6 +39,12 @@ public class Bill implements Serializable {
     /** 手术费 */
     private BigDecimal feeSurgery;
     private BigDecimal totalMoney;
+    /** 会员折扣率快照（建单时按客户等级，1=不打折） */
+    private BigDecimal discount;
+    /** 优惠金额 = totalMoney × (1 - discount) */
+    private BigDecimal discountMoney;
+    /** 折后应付/实收 = totalMoney - discountMoney */
+    private BigDecimal realMoney;
     /** 0未付 1已付 */
     private Boolean payStatus;
     /** 0余额 1现金 */

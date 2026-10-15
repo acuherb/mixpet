@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -50,24 +51,30 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
         return baseMapper.selectBillPage(new Page<>(numPage, pageSize), seaName, payStatus);
     }
 
+    /** 折后应付（旧账单无折扣快照时按原价，保证兼容） */
+    private BigDecimal payable(Bill bill) {
+        return bill.getRealMoney() != null ? bill.getRealMoney() : bill.getTotalMoney();
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result pay(Integer billId, Boolean payType) {
         Bill bill = this.getById(billId);
         if (bill == null) return Result.error("账单不存在");
         if (Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单已收款，请勿重复操作");
-        // 余额支付：校验并扣减客户余额
+        // 余额支付：校验并扣减客户余额（按折后应付）
         if (payType == null || !payType) { // false=余额（默认）
             Client client = clientService.getById(bill.getClientId());
             if (client == null) return Result.error("客户不存在");
+            BigDecimal due = payable(bill);
             if (client.getClientBalance() == null
-                    || client.getClientBalance().compareTo(bill.getTotalMoney()) < 0)
+                    || client.getClientBalance().compareTo(due) < 0)
                 return Result.error("客户余额不足（当前 " + client.getClientBalance() + " 元），请改用现金收款或先充值");
             // 用 WHERE 条件保证原子扣减：余额不足时不更新，防并发超扣成负数
             boolean deducted = clientService.lambdaUpdate()
                     .eq(Client::getClientId, client.getClientId())
-                    .ge(Client::getClientBalance, bill.getTotalMoney())
-                    .setSql("client_balance = client_balance - " + bill.getTotalMoney().toPlainString())
+                    .ge(Client::getClientBalance, due)
+                    .setSql("client_balance = client_balance - " + due.toPlainString())
                     .update();
             if (!deducted) return Result.error("客户余额不足，请改用现金收款或先充值");
         }
@@ -99,8 +106,8 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .set(Bill::getPayStatus, true)
                 .set(Bill::getPayType, payType != null && payType)
                 .update();
-        // 会员积分累积（按等级积分率）
-        memberService.earnPoints(bill.getClientId(), bill.getTotalMoney());
+        // 会员积分累积（按折后实收 × 等级积分率）
+        memberService.earnPoints(bill.getClientId(), payable(bill));
         return Result.success("收款成功" + (prescriptions.isEmpty() ? "" : "，处方药品已扣减库存"));
     }
 
@@ -138,13 +145,13 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
             drugService.logStockChange(p.getDrugId(), p.getDrugName(), 3, p.getQuantity(),
                     before, before + p.getQuantity(), "退款回库");
         }
-        // 余额支付才退还余额（现金收款无余额变动）
+        // 余额支付才退还余额（现金收款无余额变动）；退还金额=折后实收
         if (wasBalance) {
             Client client = clientService.getById(bill.getClientId());
             if (client != null) {
                 clientService.lambdaUpdate()
                         .eq(Client::getClientId, client.getClientId())
-                        .setSql("client_balance = client_balance + " + bill.getTotalMoney().toPlainString())
+                        .setSql("client_balance = client_balance + " + payable(bill).toPlainString())
                         .update();
             }
         }

@@ -5,6 +5,8 @@ export interface FinanceReport {
     startDate: string | null;
     endDate: string | null;
     totalRevenue: number;
+    /** 优惠合计（会员折扣让利） */
+    discountMoney: number;
     orderCount: number;
     avgOrder: number;
     refundCount: number;

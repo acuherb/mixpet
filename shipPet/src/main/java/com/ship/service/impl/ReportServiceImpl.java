@@ -77,12 +77,15 @@ public class ReportServiceImpl implements IReportService {
                 .ge(Bill::getCreateTime, startDt).lt(Bill::getCreateTime, endDt));
 
         BigDecimal total = BigDecimal.ZERO;
+        BigDecimal discountTotal = BigDecimal.ZERO;
         BigDecimal fReg = BigDecimal.ZERO, fTreat = BigDecimal.ZERO, fDrug = BigDecimal.ZERO, fLab = BigDecimal.ZERO;
         BigDecimal fImg = BigDecimal.ZERO, fPkg = BigDecimal.ZERO, fSur = BigDecimal.ZERO, fHos = BigDecimal.ZERO;
         Map<LocalDate, BigDecimal> trend = new TreeMap<>();
         List<Integer> recordIds = new ArrayList<>();
         for (Bill b : paid) {
-            total = total.add(nz(b.getTotalMoney()));
+            BigDecimal real = b.getRealMoney() != null ? b.getRealMoney() : nz(b.getTotalMoney());
+            total = total.add(real);
+            discountTotal = discountTotal.add(nz(b.getDiscountMoney()));
             fReg = fReg.add(nz(b.getFeeRegister()));
             fTreat = fTreat.add(nz(b.getFeeTreat()));
             fDrug = fDrug.add(nz(b.getFeeDrug()));
@@ -92,10 +95,11 @@ public class ReportServiceImpl implements IReportService {
             fSur = fSur.add(nz(b.getFeeSurgery()));
             fHos = fHos.add(nz(b.getFeeHospital()));
             if (b.getCreateTime() != null)
-                trend.merge(b.getCreateTime().toLocalDate(), nz(b.getTotalMoney()), BigDecimal::add);
+                trend.merge(b.getCreateTime().toLocalDate(), real, BigDecimal::add);
             if (b.getRecordId() != null) recordIds.add(b.getRecordId());
         }
         r.setTotalRevenue(total);
+        r.setDiscountMoney(discountTotal);
         r.setOrderCount(paid.size());
         r.setAvgOrder(paid.isEmpty() ? BigDecimal.ZERO
                 : total.divide(BigDecimal.valueOf(paid.size()), 2, RoundingMode.HALF_UP));

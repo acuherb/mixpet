@@ -20,7 +20,8 @@
         </el-button-group>
         <el-button style="margin-left: 12px" size="large" type="primary" @click="load">查询</el-button>
       </div>
-      <p class="tip">按"接诊日期"统计已收款、未退款账单；退款单单独统计。药品成本按当前进货价估算。</p>
+      <p class="tip">按"接诊日期"统计已收款、未退款账单（折后实收）；本区间会员优惠合计
+        <b style="color:#e6a23c">￥{{ money(r.discountMoney) }}</b>。药品成本按当前进货价估算。</p>
     </el-card>
 
     <!--核心指标-->
@@ -116,7 +117,7 @@ import {FinanceReport} from "@/model/entiy/FinanceReport";
 import {reqFinanceReport} from "@/request/StatisticsApi";
 
 const empty = (): FinanceReport => ({
-  startDate: null, endDate: null, totalRevenue: 0, orderCount: 0, avgOrder: 0,
+  startDate: null, endDate: null, totalRevenue: 0, discountMoney: 0, orderCount: 0, avgOrder: 0,
   refundCount: 0, refundAmount: 0, feeRegister: 0, feeTreat: 0, feeDrug: 0, feeLab: 0,
   feeImage: 0, feePackage: 0, feeSurgery: 0, feeHospital: 0, drugCost: 0, drugProfit: 0,
   trend: [], byDepartment: [], byDoctor: []
