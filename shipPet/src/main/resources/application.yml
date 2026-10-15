@@ -32,7 +32,7 @@ logging:
 ---
 mybatis-plus:
   global-config:
-    banner: false
+    banner: true
     db-config:
       logic-delete-field: isDel
       logic-not-delete-value: 0
