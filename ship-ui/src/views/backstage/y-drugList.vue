@@ -12,6 +12,7 @@
       <el-badge :hidden="warnCount === 0" :value="warnCount" style="margin-left: 12px" type="warning">
         <el-button size="large" plain type="warning" @click="openWarn">库存预警</el-button>
       </el-badge>
+      <el-button size="large" plain round type="success" style="margin-left: 12px" @click="exportDrugs">导出</el-button>
     </template>
   </BackOpCol>
   <!--列表展示-->
@@ -218,6 +219,7 @@ import {Supplier} from "@/model/entiy/Supplier";
 import {Page} from "@/model/DO/Page";
 import {reqAddDrug, reqDelDrug, reqDelDrugBatch, reqDrugExpiring, reqDrugInbound, reqDrugPage, reqDrugRecordPage, reqDrugWarning, reqUpdateDrug} from "@/request/DrugApi";
 import {reqSupplierList} from "@/request/SupplierApi";
+import {exportCsv} from "@/utils/ExportUtil";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -235,6 +237,19 @@ reqDictByType('drug_unit').then(r => { drugUnitOpts.value = r || [] })
 onMounted(() => {
   sendQuery()
 })
+
+// 导出药品清单（当前筛选结果）
+const exportDrugs = (): void => exportCsv('药品清单', [
+  {label: '药品名', prop: 'drugName'},
+  {label: '规格', prop: 'drugSpec'},
+  {label: '分类', prop: 'drugType'},
+  {label: '单位', prop: 'drugUnit'},
+  {label: '单价', prop: 'drugPrice'},
+  {label: '进货价', prop: 'costPrice'},
+  {label: '库存', prop: 'drugStock'},
+  {label: '有效期至', prop: 'expireDate'},
+  {label: '状态', prop: 'active'}
+], drugList.value.records.map(r => ({...r, active: r.active ? '启用' : '停用'})))
 
 /**
  ┌───────────────────────────────────┐

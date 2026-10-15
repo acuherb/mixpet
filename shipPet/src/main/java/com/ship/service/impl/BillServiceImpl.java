@@ -15,6 +15,7 @@ import com.ship.model.entity.Prescription;
 import com.ship.service.IBillService;
 import com.ship.service.IClientService;
 import com.ship.service.IDrugService;
+import com.ship.service.IMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,14 +32,17 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
     private final DrugMapper drugMapper;
     private final PrescriptionMapper prescriptionMapper;
     private final IDrugService drugService;
+    private final IMemberService memberService;
 
     @Autowired
     public BillServiceImpl(IClientService clientService, DrugMapper drugMapper,
-                           PrescriptionMapper prescriptionMapper, IDrugService drugService) {
+                           PrescriptionMapper prescriptionMapper, IDrugService drugService,
+                           IMemberService memberService) {
         this.clientService = clientService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
         this.drugService = drugService;
+        this.memberService = memberService;
     }
 
     @Override
@@ -95,6 +99,8 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .set(Bill::getPayStatus, true)
                 .set(Bill::getPayType, payType != null && payType)
                 .update();
+        // 会员积分累积（按等级积分率）
+        memberService.earnPoints(bill.getClientId(), bill.getTotalMoney());
         return Result.success("收款成功" + (prescriptions.isEmpty() ? "" : "，处方药品已扣减库存"));
     }
 

@@ -310,3 +310,15 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **一页式宠物健康档案**：新建 `PetHealth` VO + `IPetHealthService`/Impl + `PetHealthController GET /pet/health/{petId}`（顾客仅本人宠物，员工任意）。聚合：宠物基本信息(过敏史/既往病史/绝育/芯片)、概要(就诊次数/最近就诊/最近诊断/下次免疫)、体重曲线(取自理诊体重)、就诊史(近50)、免疫记录、住院记录。前端可复用组件 `PetHealthDialog.vue`，接入后台宠物列表(`y-petList` 操作列"康"按钮)与顾客端(`clientPet` 宠物卡片"健康档案"按钮)。
 - 迁移脚本：`数据库备份/feature_20261015_finance_report.sql`（drug 加 cost_price）。
 - 验证：`mvn clean compile` 通过；`npm run build` 通过（修过 PetHealthDialog 一处 update:modelValue 参数类型）；cost_price 列已建；重启后端 `/report/finance`、`/pet/health/{id}` 匿名 `code:401`、端口 200。
+
+### 电子病历模板化 + 数据导出(CSV) + 会员卡/次卡/积分闭环（2026-10-15）
+- **电子病历模板化**：新建 `record_template` 表 + 实体/Mapper + `IRecordTemplateService`/Impl + `RecordTemplateController /recordTemplate`（`GET /` 启用列表供医生、`/page` 增改删 MANAGER/ADMIN）。预置主诉/体格检查/诊断/治疗/医嘱/内部备注。前端模板管理页 `z-template.vue` + 路由 + 菜单（诊疗管理）；接诊 `d-appoint.vue` 病历区加"病历模板"下拉，选中即一键填充表单（可再改）。
+- **数据导出(CSV)**：前端工具 `utils/ExportUtil.ts`（`exportCsv(文件名, 列, 数据)`，BOM+转义，Excel 中文不乱码，Blob 下载，无需后端/无新依赖）。接入关键列表页"导出"按钮：药品 `y-drugList`、账单 `y-billList`、客户 `y-clientList`（导出当前筛选/分页数据）。
+- **会员卡/次卡/积分闭环(MVP)**：
+  - `member_level`（等级键0-3对应 clientLevel、折扣率、充值返赠比例、消费积分率）+ 种子(普通/银卡/金卡/钻石)；`count_card_template`（次卡模板）；`client_count_card`（客户次卡）。三表 + 实体/Mapper。
+  - `IMemberService`/Impl + `MemberController /member`：等级 CRUD、次卡模板 CRUD、`POST /buyCard`(扣余额生成次卡)、`POST /useCard/{id}`(核销扣次)、`GET /cards/{clientId}`、`POST /exchange`(积分兑余额 100分=1元)。
+  - **闭环接入**：`ClientController.recharge` 充值按等级返赠（到账=本金+返赠）；`BillServiceImpl.pay` 收款后按等级积分率累积积分。
+  - 前端：`z-memberLevel.vue`、`z-countCard.vue` + 路由 + 菜单（客户中心）；客户列表 `y-clientList` 操作列加"员"按钮 → 会员中心弹窗（余额/积分/等级 + 积分兑换 + 购卡 + 持有次卡核销）。
+  - 边界：折扣率字段已预留但**尚未接入收费抵扣**（避免改动收款主流程，留待后续）；积分率默认1元=1分；次卡核销为独立动作，未与具体服务单联动。
+- 迁移脚本：`数据库备份/feature_20261015_member_card.sql`（member_level/count_card_template/client_count_card + 等级种子）；record_template 表见 `数据库备份/feature_20261015_record_template.sql`。
+- 验证：`mvn clean compile` 通过（修过 MemberServiceImpl 两处 `BaseMapper.updateById/deleteById` 返回 int 需 `>0` 转 boolean）；`npm run build` 通过（修过 y-drugList `drugList.value.records`）；三表已建；重启后端 `/member/level`、`/recordTemplate` 匿名 `code:401`、端口 200。

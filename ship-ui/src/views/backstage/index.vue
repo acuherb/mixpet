@@ -68,6 +68,7 @@
           <el-menu-item index="/backstage/z-imageTest">影像项字典</el-menu-item>
           <el-menu-item index="/backstage/z-surgery">手术麻醉</el-menu-item>
           <el-menu-item index="/backstage/z-hospital">住院管理</el-menu-item>
+          <el-menu-item index="/backstage/z-template">病历模板</el-menu-item>
         </el-sub-menu>
 
         <!-- 商品与服务 -->
@@ -98,6 +99,8 @@
           </template>
           <el-menu-item index="/backstage/y-clientList">客户管理</el-menu-item>
           <el-menu-item index="/backstage/y-petList">宠物管理</el-menu-item>
+          <el-menu-item index="/backstage/z-memberLevel">会员等级</el-menu-item>
+          <el-menu-item index="/backstage/z-countCard">次卡模板</el-menu-item>
         </el-sub-menu>
 
         <!-- 基础配置 -->

@@ -7,6 +7,7 @@
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
       </span>
+      <el-button size="large" plain round type="success" style="margin-left: 12px" @click="exportClients">导出</el-button>
     </template>
   </BackOpCol>
   <!--列表展示-->
@@ -60,6 +61,7 @@
         <el-button-group>
           <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
           <el-button :icon="Coin" circle type="primary" title="充值余额" @click="recharge(scope.row)"/>
+          <el-button circle type="success" title="会员/次卡/积分" @click="openMember(scope.row)">员</el-button>
           <el-button v-if="scope.row.active" circle type="warning" title="停用账号" @click="toggleActive(scope.row)">停</el-button>
           <el-button v-else circle type="success" title="启用账号" @click="toggleActive(scope.row)">启</el-button>
           <el-button :icon="Key" circle type="info" title="重置密码" @click="resetPwd(scope.row)"/>
@@ -70,6 +72,51 @@
   </el-table>
   <!--分页条-->
   <BackPage :total="clientList.total" @changePu="changePuB"/>
+
+  <!--会员中心弹窗：积分兑换 / 购卡 / 次卡核销-->
+  <el-dialog v-model="memberView" :title="memberTitle" draggable width="580px">
+    <el-descriptions :column="3" border size="small">
+      <el-descriptions-item label="余额">￥{{ memberClient?.clientBalance ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="积分">{{ memberClient?.clientPoints ?? 0 }}</el-descriptions-item>
+      <el-descriptions-item label="等级">{{ levelName(memberClient?.clientLevel) }}</el-descriptions-item>
+    </el-descriptions>
+
+    <el-divider content-position="left">积分兑换余额（100分=1元）</el-divider>
+    <div class="mem-row">
+      <el-input-number v-model="exchangePts" :min="100" :step="100" style="width: 160px"/>
+      <el-button type="primary" @click="doExchange">兑换</el-button>
+    </div>
+
+    <el-divider content-position="left">购买次卡</el-divider>
+    <div class="mem-row">
+      <el-select v-model="buyTplId" filterable placeholder="选择次卡" style="width: 280px">
+        <el-option v-for="t in cardTemplates" :key="t.templateId" :label="`${t.name}（${t.times}次 ￥${t.price}）`" :value="t.templateId"/>
+      </el-select>
+      <el-button type="primary" @click="doBuy">购卡</el-button>
+    </div>
+
+    <el-divider content-position="left">持有次卡</el-divider>
+    <el-table :data="memberCards" border size="small">
+      <el-table-column label="次卡" min-width="140" prop="name" show-overflow-tooltip/>
+      <el-table-column label="剩余" width="80">
+        <template #default="s">{{ s.row.remainTimes }}/{{ s.row.totalTimes }}</template>
+      </el-table-column>
+      <el-table-column label="有效期至" width="120">
+        <template #default="s">{{ s.row.expireDate || '—' }}</template>
+      </el-table-column>
+      <el-table-column label="状态" width="80">
+        <template #default="s">
+          <el-tag :type="s.row.status ? 'success' : 'info'" size="small">{{ s.row.status ? '有效' : '用完' }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="80">
+        <template #default="s">
+          <el-button v-if="s.row.status" size="small" type="primary" @click="doUse(s.row.cardId)">核销</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-empty v-if="!memberCards.length" :image-size="40" description="暂无次卡"/>
+  </el-dialog>
   <!--修改、新增时的模态框-->
   <el-dialog v-model="modalView" :title="modalTit" draggable width="60%"
                :close-on-click-modal="false" :close-on-press-escape="false"
@@ -207,6 +254,9 @@ import {reqAddClient, reqActivateClient, reqCheckClientRef, reqClientList, reqDe
 import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
+import {exportCsv} from "@/utils/ExportUtil";
+import {reqBuyCard, reqCardTemplates, reqClientCards, reqExchangePoints, reqUseCard} from "@/request/MemberApi";
+import {ClientCountCard, CountCardTemplate} from "@/model/entiy/Member";
 import UpImg from "@/components/UpImg.vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 
@@ -233,6 +283,66 @@ const qp: YClientList = reactive({
 })
 // 列表展示
 const clientList = ref<Page<Client>>({records: [], total: 0})
+
+// 导出客户列表（当前筛选结果）
+const exportClients = (): void => exportCsv('客户列表', [
+  {label: '姓名', prop: 'clientName'},
+  {label: '手机号', prop: 'clientTel'},
+  {label: '性别', prop: 'clientGender'},
+  {label: '等级', prop: 'clientLevel'},
+  {label: '积分', prop: 'clientPoints'},
+  {label: '余额', prop: 'clientBalance'},
+  {label: '状态', prop: 'active'}
+], clientList.value.records.map(c => ({
+  ...c,
+  clientGender: c.clientGender ? '男' : '女',
+  clientLevel: ['普通', '银卡', '金卡', '钻石'][c.clientLevel ?? 0] || '普通',
+  active: c.active ? '正常' : '停用'
+})))
+
+// ============ 会员中心 ============
+const memberView = ref(false)
+const memberClient = ref<Client | null>(null)
+const memberTitle = ref('会员中心')
+const memberCards = ref<ClientCountCard[]>([])
+const cardTemplates = ref<CountCardTemplate[]>([])
+const exchangePts = ref(100)
+const buyTplId = ref<number | null>(null)
+const levelName = (lv?: number | null): string => ['普通', '银卡', '金卡', '钻石'][lv ?? 0] || '普通'
+const openMember = (row: Client): void => {
+  memberClient.value = row
+  memberTitle.value = `会员中心 - ${row.clientName}`
+  exchangePts.value = 100
+  buyTplId.value = null
+  memberView.value = true
+  reqClientCards(row.clientId).then(r => { memberCards.value = r || [] })
+  if (cardTemplates.value.length === 0)
+    reqCardTemplates().then(r => { cardTemplates.value = (r || []).filter(t => t.active) })
+}
+const refreshMember = (): void => {
+  if (memberClient.value) reqClientCards(memberClient.value.clientId).then(r => { memberCards.value = r || [] })
+  sendQuery()
+}
+const doExchange = (): void => {
+  if (!memberClient.value) return
+  reqExchangePoints(memberClient.value.clientId, exchangePts.value).then(res => {
+    if (res.code === 1) { ElMessage.success(res.msg || '兑换成功'); refreshMember() }
+    else ElMessage.error(res.msg || '兑换失败')
+  })
+}
+const doBuy = (): void => {
+  if (!memberClient.value || !buyTplId.value) { ElMessage.warning('请选择次卡'); return }
+  reqBuyCard(memberClient.value.clientId, buyTplId.value).then(res => {
+    if (res.code === 1) { ElMessage.success(res.msg || '购卡成功'); refreshMember() }
+    else ElMessage.error(res.msg || '购卡失败')
+  })
+}
+const doUse = (cardId: number): void => {
+  reqUseCard(cardId).then(res => {
+    if (res.code === 1) { ElMessage.success(res.msg || '核销成功'); refreshMember() }
+    else ElMessage.error(res.msg || '核销失败')
+  })
+}
 // 分页条
 const changePuB = (val: PageQuery) => {
   qp.numPage = val.numPage
@@ -480,6 +590,11 @@ const changePhoto = (val: string): void => {
   flex: 1;
   min-height: 0;
 }
-
+.mem-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
 
 </style>

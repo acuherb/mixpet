@@ -9,6 +9,7 @@
     </el-select>
     <template #left>
       <span class="sel-tip">待收 <b>{{ unpaidCount }}</b> 笔</span>
+      <el-button size="large" plain round type="success" style="margin-left: 12px" @click="exportBills">导出</el-button>
     </template>
   </BackOpCol>
   <!--列表展示-->
@@ -138,6 +139,7 @@ import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
 import {BillDto} from "@/model/DO/BillDto";
 import {reqBillDispense, reqBillPage, reqBillPay, reqBillRefund} from "@/request/BillApi";
+import {exportCsv} from "@/utils/ExportUtil";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
 import {RecordDetailVo} from "@/model/DO/RecordDto";
@@ -169,6 +171,22 @@ const qp = reactive({
 const billList = ref<Page<BillDto>>({records: [], total: 0})
 // 待收笔数（当前筛选下）
 const unpaidCount = computed(() => billList.value.records.filter(b => !b.payStatus).length)
+
+// 导出账单（当前筛选结果）
+const exportBills = (): void => exportCsv('收费账单', [
+  {label: '账单号', prop: 'billId'},
+  {label: '客户', prop: 'clientName'},
+  {label: '宠物', prop: 'petName'},
+  {label: '合计(元)', prop: 'totalMoney'},
+  {label: '状态', prop: 'payStatus'},
+  {label: '支付方式', prop: 'payType'},
+  {label: '接诊时间', prop: 'createTime'},
+  {label: '收款时间', prop: 'payTime'}
+], billList.value.records.map(b => ({
+  ...b,
+  payStatus: !b.payStatus ? '待收费' : (b.refundStatus ? '已退' : '已收费'),
+  payType: b.payType ? '现金' : '余额'
+})))
 // 待收费行高亮
 const rowClass = ({row}: { row: BillDto }): string => row.payStatus ? '' : 'unpaid-row'
 // 分页条

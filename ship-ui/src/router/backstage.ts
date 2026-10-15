@@ -54,6 +54,14 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-report",
         component: () => import('@/views/backstage/z-report.vue')
     }, {
+        // 会员等级/会员卡模板
+        path: "z-memberLevel",
+        component: () => import('@/views/backstage/z-memberLevel.vue')
+    }, {
+        // 次卡模板
+        path: "z-countCard",
+        component: () => import('@/views/backstage/z-countCard.vue')
+    }, {
         // 套餐字典
         path: "z-package",
         component: () => import('@/views/backstage/z-package.vue')
@@ -61,6 +69,10 @@ export const backstage: RouteRecordRaw[] = [
         // 手术/麻醉管理
         path: "z-surgery",
         component: () => import('@/views/backstage/z-surgery.vue')
+    }, {
+        // 电子病历模板
+        path: "z-template",
+        component: () => import('@/views/backstage/z-template.vue')
     }, {
         // 手术/麻醉知情同意书（可打印）
         path: "z-consent",

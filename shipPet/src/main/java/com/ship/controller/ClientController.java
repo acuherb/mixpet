@@ -10,6 +10,7 @@ import com.ship.common.SendMail;
 import jakarta.servlet.http.HttpSession;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IClientService;
+import com.ship.service.IMemberService;
 import com.ship.util.StrUtil;
 import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +33,12 @@ import java.util.List;
 @RequestMapping("/client")
 public class ClientController {
     private final IClientService clientService;
+    private final IMemberService memberService;
 
     @Autowired
-    public ClientController(IClientService clientService) {
+    public ClientController(IClientService clientService, IMemberService memberService) {
         this.clientService = clientService;
+        this.memberService = memberService;
     }
 
     /** 管理员重置密码默认口令 */
@@ -113,10 +116,15 @@ public class ClientController {
         if (money.compareTo(new BigDecimal("100000")) > 0) return Result.error("单次充值不可超过10万元");
         Client client = clientService.getById(clientId);
         if (client == null) return Result.error("客户不存在");
+        // 会员等级充值返赠
+        BigDecimal bonus = memberService.rechargeBonus(client.getClientLevel(), money);
+        BigDecimal total = money.add(bonus);
         boolean ok = clientService.lambdaUpdate()
                 .eq(Client::getClientId, clientId)
-                .setSql("client_balance = client_balance + " + money.toPlainString())
+                .setSql("client_balance = client_balance + " + total.toPlainString())
                 .update();
+        if (ok && bonus.compareTo(BigDecimal.ZERO) > 0)
+            return Result.success("充值成功，返赠 ￥" + bonus.toPlainString() + "，到账 ￥" + total.toPlainString());
         return Result.choice("充值", ok);
     }
 

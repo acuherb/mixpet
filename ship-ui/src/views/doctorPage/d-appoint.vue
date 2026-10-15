@@ -51,6 +51,11 @@
       <!-- 阶段一：病历建档 -->
       <el-form v-if="treatPhase === 'record'" ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
         <el-divider content-position="left">病历</el-divider>
+        <el-form-item label="病历模板">
+          <el-select v-model="tplId" clearable filterable placeholder="选择模板一键填充（可再修改）" style="width: 100%" @change="applyTpl">
+            <el-option v-for="t in templates" :key="t.templateId" :label="`${t.name}${t.category ? '（' + t.category + '）' : ''}`" :value="t.templateId"/>
+          </el-select>
+        </el-form-item>
         <el-form-item label="主诉" prop="chiefComplaint">
           <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="宠物主人描述的症状，已自动带入挂号描述" type="textarea"/>
         </el-form-item>
@@ -304,6 +309,8 @@ import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
 import {reqAddRecordPackage, reqAddRecordPrescription, reqRecordByAppointment, reqRecordOne, reqSaveRecord} from "@/request/RecordApi";
+import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
+import {RecordTemplate} from "@/model/entiy/RecordTemplate";
 import {reqPackageList} from "@/request/PackageApi";
 import {examplePackage, RecordPackage, ServicePackage} from "@/model/entiy/ServicePackage";
 import {surgeryStatusText, surgeryStatusType, Surgery, SurgeryVo} from "@/model/entiy/Surgery";
@@ -366,9 +373,23 @@ const surgerySaving = ref(false)
 // 字典
 const drugList = ref<Drug[]>([])
 const packageList = ref<ServicePackage[]>([])
+const templates = ref<RecordTemplate[]>([])
+const tplId = ref<number | null>(null)
 const loadDicts = (): void => {
   if (drugList.value.length === 0) reqDrugList().then(res => { drugList.value = res })
   if (packageList.value.length === 0) reqPackageList().then(res => { packageList.value = res })
+  if (templates.value.length === 0) reqRecordTemplateList().then(res => { templates.value = res || [] })
+}
+// 套用病历模板
+const applyTpl = (id: number): void => {
+  const t = templates.value.find(x => x.templateId === id)
+  if (!t) return
+  if (t.chiefComplaint != null) recordForm.value.chiefComplaint = t.chiefComplaint
+  if (t.physicalExam != null) recordForm.value.physicalExam = t.physicalExam
+  if (t.diagnosis != null) recordForm.value.diagnosis = t.diagnosis
+  if (t.treatment != null) recordForm.value.treatment = t.treatment
+  if (t.advice != null) recordForm.value.advice = t.advice
+  if (t.internalNote != null) recordForm.value.internalNote = t.internalNote
 }
 const resetOrderForms = (): void => {
   prescriptions.value = []
@@ -385,6 +406,7 @@ const openTreat = (a: AppointDto2): void => {
   treatAppoint.value = a
   recordForm.value = exampleMedicalRecord(a.appointmentId)
   recordForm.value.chiefComplaint = a.appointmentInfo || ''
+  tplId.value = null
   resetOrderForms()
   recordFormRef.value?.clearValidate()
   loadDicts()
