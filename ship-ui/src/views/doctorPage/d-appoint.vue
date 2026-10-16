@@ -349,6 +349,7 @@
         <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
         <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
         <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
+        <el-button @click="goBackstage('z-follow')">写随访</el-button>
         <el-button @click="summaryView = false">完成</el-button>
       </div>
     </el-dialog>

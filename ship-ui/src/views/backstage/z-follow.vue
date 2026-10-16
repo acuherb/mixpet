@@ -39,7 +39,10 @@
     <el-dialog v-model="modalView" title="新建随访计划" width="520px" draggable>
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="96px">
         <el-form-item label="病历号" prop="recordId">
-          <el-input-number v-model="form.recordId" :min="1" placeholder="输入本次就诊病历id" style="width: 100%"/>
+          <el-select v-model="form.recordId" filterable clearable placeholder="选择本次就诊病历" style="width: 100%">
+            <el-option v-for="r in recordOptions" :key="r.recordId"
+                       :label="`#${r.recordId} ${r.petName}（${r.clientName}）`" :value="r.recordId"/>
+          </el-select>
         </el-form-item>
         <el-form-item label="随访方式" prop="followType">
           <el-select v-model="form.followType" placeholder="选择方式" style="width: 100%">
@@ -107,6 +110,8 @@ import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
 import {followTypes, FollowUp, FollowUpDto} from "@/model/entiy/FollowUp";
 import {reqAddFollow, reqFollowDone, reqFollowPage} from "@/request/FollowApi";
+import {reqRecordPage} from "@/request/RecordApi";
+import {RecordDto} from "@/model/DO/RecordDto";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -132,7 +137,19 @@ const rules = reactive<FormRules>({
   recordId: [{required: true, type: 'number', message: '请输入病历号', trigger: 'blur'}],
   followType: [{required: true, message: '请选择随访方式', trigger: 'change'}]
 })
-const addRoleB = (): void => { form.value = emptyForm(); myFormRef.value?.resetFields(); modalView.value = true }
+// 病历下拉（复用病例检索接口取最近病历，避免手填填错）
+const recordOptions = ref<RecordDto[]>([])
+const loadRecordOptions = (): void => {
+  if (recordOptions.value.length) return
+  reqRecordPage({numPage: 1, pageSize: 100, petName: '', clientName: '', doctorName: '', diagnosis: '', startTime: '', endTime: ''})
+      .then(res => { recordOptions.value = res?.records || [] })
+}
+const addRoleB = (): void => {
+  form.value = emptyForm()
+  myFormRef.value?.resetFields()
+  loadRecordOptions()
+  modalView.value = true
+}
 const formSubmit = (): void => {
   myFormRef.value?.validate((valid: boolean) => {
     if (!valid) return

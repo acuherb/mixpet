@@ -44,7 +44,10 @@
   <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="病历号" prop="recordId">
-        <el-input-number v-model="form.recordId" :min="1" style="width: 100%" placeholder="输入本次就诊病历id"/>
+        <el-select v-model="form.recordId" filterable clearable placeholder="选择本次就诊病历" style="width: 100%">
+          <el-option v-for="r in recordOptions" :key="r.recordId"
+                     :label="`#${r.recordId} ${r.petName}（${r.clientName}）`" :value="r.recordId"/>
+        </el-select>
       </el-form-item>
       <el-form-item label="床位号">
         <el-input v-model="form.roomNo" clearable maxlength="32" placeholder="如：住院部A-01"/>
@@ -129,6 +132,8 @@ import {HospitalDto} from "@/model/DO/HospitalDto";
 import {HospitalVo} from "@/model/VO/HospitalVo";
 import {Page} from "@/model/DO/Page";
 import {reqAddHospitalMonitor, reqDischargeHospital, reqHospitalMonitorList, reqHospitalPage, reqSaveHospital} from "@/request/HospitalApi";
+import {reqRecordPage} from "@/request/RecordApi";
+import {RecordDto} from "@/model/DO/RecordDto";
 import {HospitalMonitor} from "@/model/entiy/HospitalMonitor";
 import {moveT} from "@/utils/TimeUtil";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
@@ -169,9 +174,17 @@ const modalTit = ref('入院登记')
 const form = ref<HospitalVo>({recordId: 0, roomNo: '', dailyFee: 50, note: ''})
 const myFormRef = ref<FormInstance>()
 
+// 病历下拉（复用病例检索接口，避免手填填错串档）
+const recordOptions = ref<RecordDto[]>([])
+const loadRecordOptions = (): void => {
+  if (recordOptions.value.length) return
+  reqRecordPage({numPage: 1, pageSize: 100, petName: '', clientName: '', doctorName: '', diagnosis: '', startTime: '', endTime: ''})
+      .then(res => { recordOptions.value = res?.records || [] })
+}
 const addRoleB = (): void => {
   form.value = {recordId: 0, roomNo: '', dailyFee: 50, note: ''}
   myFormRef.value?.resetFields()
+  loadRecordOptions()
   modalView.value = true
 }
 const formSubmit = (): void => {

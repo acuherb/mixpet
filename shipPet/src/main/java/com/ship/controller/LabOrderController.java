@@ -77,7 +77,7 @@ public class LabOrderController {
 
     /** 录入化验结果 */
     @PutMapping("/result")
-    @Secured({RoleConst.NURSE, RoleConst.MANAGER})
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
     public Result saveResult(@RequestBody LabResultVo vo) {
         return labService.saveResult(vo, operatorName());
     }

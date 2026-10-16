@@ -44,7 +44,7 @@ public class ImageOrderController {
 
     /** 影像报告录入 */
     @PutMapping("/report")
-    @Secured({RoleConst.NURSE, RoleConst.MANAGER})
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
     public Result saveReport(@RequestBody ImageReportVo vo) {
         return orderService.saveReport(vo);
     }
