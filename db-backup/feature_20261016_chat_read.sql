@@ -12,3 +12,6 @@ ALTER TABLE `msg`
 
 -- 历史数据默认已读（只影响本次升级前的存量消息）
 UPDATE `msg` SET `is_read` = 1 WHERE `is_read` = 0;
+
+-- 消息内容列放宽：原 varchar(64) 过长文本插入会报“数据完整性违约”，扩大到 1000
+ALTER TABLE `msg` MODIFY COLUMN `msg_content` varchar(1000) DEFAULT NULL COMMENT '消息内容';
