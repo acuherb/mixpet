@@ -104,3 +104,17 @@ export interface RecordQuery {
     numPage: number;
     pageSize: number;
 }
+
+/** 诊疗待办统计 */
+export interface RecordTodo {
+    /** 接诊中的病历数（未完结） */
+    treating: number;
+    /** 待出结果的化验单数 */
+    labPending: number;
+    /** 待出报告的影像单数 */
+    imagePending: number;
+    /** 待进行/待记录的手术数 */
+    surgeryPending: number;
+    /** 待随访数 */
+    followPending: number;
+}

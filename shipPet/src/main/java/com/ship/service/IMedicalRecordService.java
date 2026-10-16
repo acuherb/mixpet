@@ -9,6 +9,7 @@ import com.ship.model.entity.Doctor;
 import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordFullVo;
 import com.ship.model.vo.RecordQueryVo;
+import com.ship.model.vo.RecordTodoVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 
@@ -62,4 +63,7 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 病历多条件检索（管理端/医生端病例中心） */
     IPage<RecordDto> selectRecordPage(int numPage, int pageSize, RecordQueryVo query);
+
+    /** 诊疗待办统计（工作台/看板）：接诊中/待出结果/待报告/待手术/待随访 */
+    RecordTodoVo selectRecordTodo();
 }

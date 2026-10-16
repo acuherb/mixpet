@@ -26,6 +26,7 @@ import com.ship.model.entity.*;
 import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordFullVo;
 import com.ship.model.vo.RecordQueryVo;
+import com.ship.model.vo.RecordTodoVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.model.vo.SurgeryVo;
@@ -564,5 +565,19 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     @Override
     public IPage<RecordDto> selectRecordPage(int numPage, int pageSize, RecordQueryVo query) {
         return baseMapper.selectRecordPage(new Page<>(numPage, pageSize), query);
+    }
+
+    @Override
+    public RecordTodoVo selectRecordTodo() {
+        // 接诊中的病历
+        long treating = this.lambdaQuery().eq(MedicalRecord::getStatus, 0).count();
+        // 待出结果的化验单 / 待出报告的影像单
+        long lab = labOrderMapper.selectCount(Wrappers.<LabOrder>lambdaQuery().eq(LabOrder::getStatus, false));
+        long image = imageOrderMapper.selectCount(Wrappers.<ImageOrder>lambdaQuery().eq(ImageOrder::getStatus, false));
+        // 待进行/待记录的手术（status=0 待手术）
+        long surgery = surgeryMapper.selectCount(Wrappers.<Surgery>lambdaQuery().eq(Surgery::getStatus, 0));
+        // 待随访
+        long follow = followUpMapper.selectCount(Wrappers.<FollowUp>lambdaQuery().eq(FollowUp::getStatus, false));
+        return new RecordTodoVo(treating, lab, image, surgery, follow);
     }
 }

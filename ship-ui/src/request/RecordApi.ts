@@ -5,6 +5,7 @@ import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
 import {MedicalRecord} from "@/model/entiy/MedicalRecord";
 import {PetHistory} from "@/model/VO/PetHistory";
 import {RecordFull, RecordQuery} from "@/model/VO/RecordFull";
+import {RecordTodo} from "@/model/VO/RecordFull";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
@@ -50,3 +51,6 @@ export const reqRecordFull = (recordId: number): Promise<RecordFull> =>
 // 病历多条件检索（病例中心）
 export const reqRecordPage = (query: RecordQuery): Promise<Page<RecordDto>> =>
     reqApi<string, Page<RecordDto>>("record/page", {params: query})
+// 诊疗待办统计（工作台/看板）
+export const reqRecordTodo = (): Promise<RecordTodo> =>
+    reqApi<string, RecordTodo>("record/todo")

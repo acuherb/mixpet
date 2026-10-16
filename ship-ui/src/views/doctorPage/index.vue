@@ -128,6 +128,46 @@
             </router-link>
           </div>
         </div>
+
+        <!--诊疗待办卡片：接诊后卡在中间环节的事项-->
+        <div class="panel todo-panel">
+          <div class="panel-head">
+            <div class="ph-tit">
+              <span class="ph-ico ico-todo"><el-icon><Bell/></el-icon></span>
+              <div>
+                <h3>诊疗待办</h3>
+                <p>接诊后卡在中间环节的事项，点击去处理</p>
+              </div>
+            </div>
+            <router-link to="/doctorPage/d-record">
+              <el-button type="warning" round>病例中心</el-button>
+            </router-link>
+          </div>
+          <div class="panel-body">
+            <div class="todo-grid">
+              <div class="todo-item" @click="$router.push('/doctorPage/d-lab')">
+                <span class="todo-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
+                <span class="todo-lbl">待出结果化验</span>
+              </div>
+              <div class="todo-item" @click="$router.push('/doctorPage/d-image')">
+                <span class="todo-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
+                <span class="todo-lbl">待出报告影像</span>
+              </div>
+              <div class="todo-item" @click="$router.push('/backstage/z-surgery')">
+                <span class="todo-num" :class="{warn: todo.surgeryPending > 0}">{{ todo.surgeryPending }}</span>
+                <span class="todo-lbl">待手术/待记录</span>
+              </div>
+              <div class="todo-item" @click="$router.push('/backstage/z-follow')">
+                <span class="todo-num" :class="{warn: todo.followPending > 0}">{{ todo.followPending }}</span>
+                <span class="todo-lbl">待随访</span>
+              </div>
+              <div class="todo-item" @click="$router.push('/doctorPage/d-record')">
+                <span class="todo-num" :class="{warn: todo.treating > 0}">{{ todo.treating }}</span>
+                <span class="todo-lbl">接诊中病历</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!--预留功能位-->
@@ -169,11 +209,13 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorMsgGroup} from "@/request/MsgApi";
+import {reqRecordTodo} from "@/request/RecordApi";
+import {RecordTodo} from "@/model/VO/RecordFull";
 import {reqLogout} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
@@ -201,6 +243,8 @@ const router = useRouter()
 
 // 在线咨询客户列表（医生谈过话的所有客户，含各自的未读数）
 const groupList = ref<ChatGroup[]>([])
+// 诊疗待办：接诊后卡在中间环节的事项
+const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
 // 有未读的客户置顶
 const sortedClients = computed<ChatGroup[]>(() =>
     [...groupList.value].sort((a, b) => (b.unread || 0) - (a.unread || 0))
@@ -252,6 +296,7 @@ onMounted(() => {
   timeTimer = setInterval(tick, 1000)
   loadData()
   loadClients()
+  reqRecordTodo().then(res => { if (res) todo.value = res })
   ws = new WebSocket(wsUrl)
   ws.onmessage = (ev) => {
     try {
@@ -686,6 +731,41 @@ onBeforeUnmount(() => {
     text-align: center;
     box-sizing: border-box;
   }
+}
+
+/* 诊疗待办面板 */
+.todo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 10px;
+}
+
+.todo-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 6px;
+  background: #f7f9fb;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: box-shadow .2s, transform .15s;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(30, 111, 168, .12);
+    transform: translateY(-1px);
+  }
+
+  .todo-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1F2D3D;
+
+    &.warn { color: #E6A23C; }
+  }
+
+  .todo-lbl { font-size: 12px; color: #909399; }
 }
 
 /* 标题上的未读角标 */

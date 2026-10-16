@@ -100,6 +100,24 @@
               </tr>
             </table>
           </div>
+
+          <!-- 就诊记录（仅自己名下的宠物展示） -->
+          <div v-if="pet.clientId" class="info-card">
+            <div class="card-title">就诊记录</div>
+            <table class="myTable">
+              <tr v-if="!records.length">
+                <td colspan="3" style="color:#909399">暂无就诊记录</td>
+              </tr>
+              <tr v-for="r in records" :key="r.recordId">
+                <td class="bold" style="width:110px">{{ moveT(r.createTime || '').slice(0, 10) }}</td>
+                <td>{{ r.diagnosis || '—' }}</td>
+                <td style="width:90px">{{ r.doctorName }}</td>
+              </tr>
+            </table>
+            <el-button size="small" style="margin-top:6px" type="primary" link
+                       @click="$router.push('/reception/clientCenter/clientPet')">查看全部 →
+            </el-button>
+          </div>
           <el-button v-if="inAdopt===0 && pet.clientId==null" style="width: 50%" type="primary"
                      @click="dialogVisible = true">
             申请领养
@@ -141,10 +159,12 @@
 <script lang="ts" setup>
 import PageHead from "@/components/row/PageHead.vue";
 import {examplePet, Pet} from "@/model/entiy/Pet";
-import {getAge} from "@/utils/TimeUtil";
+import {getAge, moveT} from "@/utils/TimeUtil";
 import {onMounted, reactive, ref} from "vue";
 import {PetAskOne} from "@/model/VO/PetAskOne";
 import {reqPetOne} from "@/request/PetApi";
+import {reqPetRecords} from "@/request/RecordApi";
+import {RecordDto} from "@/model/DO/RecordDto";
 import {reqAdoptPet, reqInAdopt} from "@/request/AdoptApi";
 import MyRow2 from "@/components/row/MyRow2.vue";
 
@@ -156,6 +176,8 @@ const props = defineProps<{
 const pet = ref<Pet>(examplePet())
 // 是否领养
 const inAdopt = ref<number>(0)
+// 就诊记录简表（仅自己名下的宠物）
+const records = ref<RecordDto[]>([])
 
 // 弹出框设置
 const dialogVisible = ref(false)
@@ -173,6 +195,8 @@ const adoptPet = () => {
 onMounted(() => {
   reqPetOne(parseInt(props.petId)).then(res => {
     pet.value = res
+    // 自己名下的宠物才加载就诊记录
+    if (res && res.clientId) reqPetRecords(res.petId, 1, 5).then(r => { records.value = r?.records || [] })
   })
   reqInAdopt(parseInt(props.petId)).then(res => {
     inAdopt.value = res

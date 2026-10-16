@@ -7,6 +7,7 @@ import com.ship.model.dto.RecordDto;
 import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordFullVo;
 import com.ship.model.vo.RecordQueryVo;
+import com.ship.model.vo.RecordTodoVo;
 import com.ship.model.entity.Client;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
@@ -114,6 +115,15 @@ public class MedicalRecordController {
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public IPage<RecordDto> page(int numPage, int pageSize, RecordQueryVo query) {
         return recordService.selectRecordPage(numPage, pageSize, query);
+    }
+
+    /**
+     * 诊疗待办统计（工作台/看板）：接诊中/待出结果/待报告/待手术/待随访
+     */
+    @GetMapping("/todo")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public RecordTodoVo todo() {
+        return recordService.selectRecordTodo();
     }
 
     /** 作废单条处方：冲减未付账单药费 */
