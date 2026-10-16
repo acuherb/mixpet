@@ -7,6 +7,8 @@ import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
 import com.ship.model.vo.PetHistoryVo;
+import com.ship.model.vo.RecordFullVo;
+import com.ship.model.vo.RecordQueryVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 
@@ -54,4 +56,10 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 宠物病史速览（接诊侧栏）：档案+过敏/既往史+最近就诊+近期用药+检验异常 */
     PetHistoryVo selectPetHistory(Integer petId);
+
+    /** 病例全量档案（一个接口拿全：病历+处方+套餐+化验含明细+影像+住院+手术+免疫+随访+复诊链） */
+    RecordFullVo selectRecordFull(Integer recordId);
+
+    /** 病历多条件检索（管理端/医生端病例中心） */
+    IPage<RecordDto> selectRecordPage(int numPage, int pageSize, RecordQueryVo query);
 }

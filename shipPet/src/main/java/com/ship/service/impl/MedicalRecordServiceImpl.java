@@ -9,6 +9,8 @@ import com.ship.mapper.BillMapper;
 import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.DrugMapper;
 import com.ship.mapper.FollowUpMapper;
+import com.ship.mapper.HospitalMapper;
+import com.ship.mapper.ImmuneRecordMapper;
 import com.ship.mapper.ImageOrderMapper;
 import com.ship.mapper.ImageTestMapper;
 import com.ship.mapper.LabOrderItemMapper;
@@ -22,6 +24,8 @@ import com.ship.mapper.SurgeryMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
 import com.ship.model.vo.PetHistoryVo;
+import com.ship.model.vo.RecordFullVo;
+import com.ship.model.vo.RecordQueryVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.model.vo.SurgeryVo;
@@ -60,6 +64,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final SurgeryMapper surgeryMapper;
     private final IMemberService memberService;
     private final FollowUpMapper followUpMapper;
+    private final HospitalMapper hospitalMapper;
+    private final ImmuneRecordMapper immuneRecordMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
@@ -69,7 +75,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                                     LabTestMapper labTestMapper, LabOrderMapper labOrderMapper,
                                     LabOrderItemMapper labOrderItemMapper, ImageTestMapper imageTestMapper,
                                     ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper,
-                                    IMemberService memberService, FollowUpMapper followUpMapper) {
+                                    IMemberService memberService, FollowUpMapper followUpMapper,
+                                    HospitalMapper hospitalMapper, ImmuneRecordMapper immuneRecordMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -86,6 +93,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.surgeryMapper = surgeryMapper;
         this.memberService = memberService;
         this.followUpMapper = followUpMapper;
+        this.hospitalMapper = hospitalMapper;
+        this.immuneRecordMapper = immuneRecordMapper;
     }
 
     @Override
@@ -513,5 +522,47 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 briefs,
                 baseMapper.selectRecentRxByPet(petId),
                 baseMapper.selectAbnormalLabByPet(petId));
+    }
+
+    @Override
+    public RecordFullVo selectRecordFull(Integer recordId) {
+        RecordDto record = baseMapper.selectRecordOne(recordId);
+        if (record == null) return null;
+        // 复诊链：回填初诊/上次就诊的诊断
+        if (record.getOriginRecordId() != null) {
+            MedicalRecord origin = this.getById(record.getOriginRecordId());
+            if (origin != null) record.setOriginDiagnosis(origin.getDiagnosis());
+        }
+        // 化验单（主表 + 明细）
+        List<RecordFullVo.LabOrderFull> labFull = new ArrayList<>();
+        List<LabOrder> labOrders = labOrderMapper.selectList(Wrappers.<LabOrder>lambdaQuery()
+                .eq(LabOrder::getRecordId, recordId).orderByDesc(LabOrder::getCreateTime));
+        for (LabOrder o : labOrders) {
+            List<LabOrderItem> items = labOrderItemMapper.selectList(Wrappers.<LabOrderItem>lambdaQuery()
+                    .eq(LabOrderItem::getOrderId, o.getOrderId()).orderByAsc(LabOrderItem::getItemId));
+            labFull.add(new RecordFullVo.LabOrderFull(o, items));
+        }
+        return new RecordFullVo(
+                record,
+                prescriptionMapper.selectByRecord(recordId),
+                recordPackageMapper.selectList(Wrappers.<RecordPackage>lambdaQuery()
+                        .eq(RecordPackage::getRecordId, recordId).orderByAsc(RecordPackage::getId)),
+                labFull,
+                imageOrderMapper.selectList(Wrappers.<ImageOrder>lambdaQuery()
+                        .eq(ImageOrder::getRecordId, recordId).orderByDesc(ImageOrder::getCreateTime)),
+                hospitalMapper.selectList(Wrappers.<HospitalRecord>lambdaQuery()
+                        .eq(HospitalRecord::getRecordId, recordId).orderByDesc(HospitalRecord::getCreateTime)),
+                surgeryMapper.selectList(Wrappers.<Surgery>lambdaQuery()
+                        .eq(Surgery::getRecordId, recordId).orderByAsc(Surgery::getSurgeryId)),
+                immuneRecordMapper.selectList(Wrappers.<ImmuneRecord>lambdaQuery()
+                        .eq(ImmuneRecord::getRecordId, recordId).orderByDesc(ImmuneRecord::getCreateTime)),
+                followUpMapper.selectList(Wrappers.<FollowUp>lambdaQuery()
+                        .eq(FollowUp::getRecordId, recordId).orderByAsc(FollowUp::getPlanTime)),
+                this.selectRevisits(recordId));
+    }
+
+    @Override
+    public IPage<RecordDto> selectRecordPage(int numPage, int pageSize, RecordQueryVo query) {
+        return baseMapper.selectRecordPage(new Page<>(numPage, pageSize), query);
     }
 }

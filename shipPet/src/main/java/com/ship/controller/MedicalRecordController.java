@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ship.common.Result;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.vo.PetHistoryVo;
+import com.ship.model.vo.RecordFullVo;
+import com.ship.model.vo.RecordQueryVo;
 import com.ship.model.entity.Client;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
@@ -91,6 +93,27 @@ public class MedicalRecordController {
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public PetHistoryVo petHistory(@PathVariable Integer petId) {
         return recordService.selectPetHistory(petId);
+    }
+
+    /**
+     * 病例全量档案（一个接口拿全）：员工可查任意；顾客只能看自己宠物的
+     */
+    @GetMapping("/detail/{recordId}")
+    public RecordFullVo detail(@PathVariable Integer recordId) {
+        RecordFullVo full = recordService.selectRecordFull(recordId);
+        if (full == null) return null;
+        if (UserUtil.getUser() instanceof Client client
+                && !client.getClientId().equals(full.record().getClientId())) return null;
+        return full;
+    }
+
+    /**
+     * 病历多条件检索（管理端/医生端病例中心）
+     */
+    @GetMapping("/page")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public IPage<RecordDto> page(int numPage, int pageSize, RecordQueryVo query) {
+        return recordService.selectRecordPage(numPage, pageSize, query);
     }
 
     /** 作废单条处方：冲减未付账单药费 */
