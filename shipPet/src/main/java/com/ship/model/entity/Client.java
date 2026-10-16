@@ -95,6 +95,9 @@ public class Client implements Serializable {
     /** 是否启用 0停用 1正常 */
     private Boolean active;
 
+    /** 审核状态：0待审核 1通过 2拒绝 */
+    private Integer auditStatus;
+
     public Integer getClientId() { return clientId; }
     public void setClientId(Integer clientId) { this.clientId = clientId; }
 
@@ -167,6 +170,9 @@ public class Client implements Serializable {
     public Boolean getActive() { return active; }
     public void setActive(Boolean active) { this.active = active; }
 
+    public Integer getAuditStatus() { return auditStatus; }
+    public void setAuditStatus(Integer auditStatus) { this.auditStatus = auditStatus; }
+
     @Override
     public String toString() {
         return "Client{" +
@@ -187,6 +193,7 @@ public class Client implements Serializable {
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 ", isDel=" + isDel +
+                ", auditStatus=" + auditStatus +
                 '}';
     }
 }

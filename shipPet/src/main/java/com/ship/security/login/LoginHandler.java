@@ -41,7 +41,8 @@ public class LoginHandler implements AuthenticationSuccessHandler, Authenticatio
     public void onAuthenticationFailure(HttpServletRequest req, HttpServletResponse resp, AuthenticationException ae) {
         log.info("这是报错的信息，但一般不用：\n" + ae.getMessage());
         if (ae instanceof UsernameNotFoundException) {
-            JsonUtil.write(Result.error("用户名未找到"), resp);
+            // 返回具体原因（用户名不存在 / 审核中 / 未通过审核）
+            JsonUtil.write(Result.error(ae.getMessage()), resp);
         } else if (ae instanceof BadCredentialsException) {
             JsonUtil.write(Result.error("密码错误"), resp);
         } else {

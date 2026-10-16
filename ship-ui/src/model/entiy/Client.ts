@@ -23,6 +23,7 @@ export interface Client {
     clientBlacklist: boolean;
     clientInfo: string;
     clientPhoto: string;
+    auditStatus?: number;
 }
 
 /**

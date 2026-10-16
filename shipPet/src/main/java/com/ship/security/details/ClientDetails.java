@@ -40,6 +40,14 @@ public class ClientDetails implements UserDetailsService {
             log.warn("没有这个用户");
             throw new UsernameNotFoundException("用户名不存在");
         }
+        // 审核状态校验：仅"通过(1)"可登录；待审核/拒绝均拦截并给出原因
+        Integer audit = client.getAuditStatus();
+        if (audit == null || audit != 1) {
+            if (audit != null && audit == 2)
+                throw new UsernameNotFoundException("账号未通过审核，请联系管理员");
+            else
+                throw new UsernameNotFoundException("账号审核中，请等待管理员通过");
+        }
         // 校验所需要的密码
         String password = client.getClientPassword();
         // 授予角色

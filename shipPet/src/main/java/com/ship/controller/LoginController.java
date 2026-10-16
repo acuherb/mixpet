@@ -107,24 +107,43 @@ public class LoginController {
      */
     @PostMapping("/register")
     public Result register(@RequestBody RegisterVo registerVo, HttpSession session) {
-        if (StrUtil.isWhite(registerVo.username())) return Result.error("用户名不能为空");
+        // 手机号即账号
+        if (StrUtil.isWhite(registerVo.tel())) return Result.error("手机号不能为空");
+        if (!registerVo.tel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
+        if (clientMapper.isExist(registerVo.tel()) > 0) return Result.error("该手机号已注册");
         String checkCode = registerVo.code();
         String sessionCode = (String) session.getAttribute(registerVo.mail());
         if (StrUtil.isWhite(checkCode)) return Result.error("验证码不能为空");
         else if (sessionCode == null) return Result.error("未发送验证码");
         else if (sessionCode.equals(checkCode.toUpperCase())) {
             session.invalidate();//销毁验证码
-            // 设置部分默认信息
+            // 组装顾客完整信息（参照顾客列表字段）
             Client client = new Client();
-            client.setClientUsername(registerVo.username());
+            client.setClientUsername(registerVo.tel());
             client.setClientPassword(registerVo.getReallyPwd());
             client.setClientName(registerVo.name());
             client.setClientGender(registerVo.sex());
             client.setClientEmail(registerVo.mail());
-            client.setClientBirthday(null);
+            // 生日（选填，格式 YYYY-MM-DD，非法则置空）
+            if (!StrUtil.isWhite(registerVo.birthday())) {
+                try {
+                    client.setClientBirthday(LocalDate.parse(registerVo.birthday()));
+                } catch (Exception e) {
+                    client.setClientBirthday(null);
+                }
+            } else client.setClientBirthday(null);
+            client.setClientTel(registerVo.tel());
+            client.setClientTel2(registerVo.tel2());
+            client.setClientAddress(registerVo.address());
+            client.setClientIdCard(registerVo.idCard());
             // 注册时密码是用户自己设置的，不算初始密码，无需首次登录强制改密
             client.setClientPwdChanged(true);
-            return Result.choice("注册", clientMapper.insert(client) > 0);
+            client.setActive(true);
+            // 自助注册需管理员审核通过后才能登录
+            client.setAuditStatus(0);
+            if (clientMapper.insert(client) > 0)
+                return Result.success("注册成功，请等待管理员审核通过后登录");
+            return Result.error("注册失败");
         } else return Result.error("验证码不正确");
     }
 
@@ -153,9 +172,12 @@ public class LoginController {
      */
     @PostMapping("/find")
     public Result find(@RequestBody RegisterVo regVo, HttpSession session) {
+        String username = regVo.username();
         String checkCode = regVo.code();
         String mail = regVo.mail();
+        if (StrUtil.isWhite(username)) return Result.error("账号不能为空");
         if (StrUtil.isWhite(mail)) return Result.error("未获取到邮箱");
+        if (StrUtil.isWhite(regVo.password()) || regVo.password().length() < 6) return Result.error("新密码至少6位");
         String sessionCode = (String) session.getAttribute(mail);
         if (StrUtil.isWhite(checkCode)) return Result.error("验证码不能为空");
         else if (sessionCode == null) return Result.error("未发送验证码");

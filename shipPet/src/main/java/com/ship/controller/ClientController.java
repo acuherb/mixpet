@@ -90,6 +90,7 @@ public class ClientController {
         if (clientService.existsByTel(client.getClientTel(), null))
             return Result.error("手机号已被使用");
         client.setClientUsername(client.getClientTel());
+        client.setAuditStatus(1); // 后台手动新增默认审核通过
         return Result.choice("添加", clientService.addClient(client));
     }
 
@@ -256,5 +257,20 @@ public class ClientController {
         if (db == null) return Result.error("客户不存在");
         db.setActive(true);
         return Result.choice("启用", clientService.updateById(db));
+    }
+
+    /**
+     * 审核自助注册顾客：1通过 2拒绝
+     */
+    @PutMapping("/audit/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result audit(@PathVariable Integer id, Integer status) {
+        if (status == null || (status != 1 && status != 2)) return Result.error("审核状态不正确");
+        Client db = clientService.getById(id);
+        if (db == null) return Result.error("客户不存在");
+        db.setAuditStatus(status);
+        // 审核通过时同时启用账号，确保可登录
+        if (status == 1) db.setActive(true);
+        return Result.choice("审核", clientService.updateById(db));
     }
 }

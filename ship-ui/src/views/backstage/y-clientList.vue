@@ -40,6 +40,17 @@
         <el-tag v-else type="info" size="small">停用</el-tag>
       </template>
     </el-table-column>
+    <el-table-column label="审核" width="120">
+      <template #default="scope">
+        <el-tag v-if="scope.row.auditStatus === 0" type="warning" size="small">待审核</el-tag>
+        <el-tag v-else-if="scope.row.auditStatus === 2" type="danger" size="small">已拒绝</el-tag>
+        <el-tag v-else type="success" size="small">已通过</el-tag>
+        <div v-if="scope.row.auditStatus === 0" style="margin-top:4px">
+          <el-button size="small" type="success" link @click="auditClient(scope.row, 1)">通过</el-button>
+          <el-button size="small" type="danger" link @click="auditClient(scope.row, 2)">拒绝</el-button>
+        </div>
+      </template>
+    </el-table-column>
     <el-table-column label="密码状态" width="90">
       <template #default="scope">
         <el-tag v-if="scope.row.clientPwdChanged" type="success" size="small">已修改</el-tag>
@@ -250,7 +261,7 @@ import {PageQuery, YClientList} from "@/model/VO/BackQuery";
 import {getAge, parseAgeToBirthday} from "@/utils/TimeUtil";
 import {Client, exampleClient} from "@/model/entiy/Client";
 import TagSex from "@/components/show/TagSex.vue";
-import {reqAddClient, reqActivateClient, reqCheckClientRef, reqClientList, reqDeactivateClient, reqDelClient, reqDelClientBatch, reqRechargeClient, reqResetPwd, reqUpdateClient} from "@/request/ClientApi";
+import {reqAddClient, reqActivateClient, reqAuditClient, reqCheckClientRef, reqClientList, reqDeactivateClient, reqDelClient, reqDelClientBatch, reqRechargeClient, reqResetPwd, reqUpdateClient} from "@/request/ClientApi";
 import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
@@ -456,6 +467,19 @@ const toggleActive = (row: Client): void => {
         ElMessage.success(action + '成功')
         sendQuery()
       } else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+// 审核自助注册顾客：1通过 2拒绝
+const auditClient = (row: Client, status: number): void => {
+  const action = status === 1 ? '通过' : '拒绝'
+  ElMessageBox.confirm(`确认${action}顾客【${row.clientName}】的注册吗？`, '审核确认', {
+    confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning',
+  }).then(() => {
+    reqAuditClient(row.clientId, status).then(res => {
+      if (res.code === 1) { ElMessage.success(action + '成功'); sendQuery() }
+      else ElMessage.error(res.msg || '操作失败')
     })
   }).catch(() => ElMessage.info('已取消'))
 }

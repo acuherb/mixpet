@@ -1,70 +1,77 @@
 <template>
-  <div class="register">
-    <svg preserveAspectRatio="none" viewBox="0 0 400 300">
-      <!-- 定义填充色-->
-      <defs>
-        <linearGradient id="Gradient" x1="0" x2="100%" y1="100%" y2="0%">
-          <stop offset="0%" stop-color="#FF82BB"/>
-          <stop offset="100%" stop-color="#F9F871"/>
-        </linearGradient>
-        <linearGradient id="Gradient2" x1="0" x2="100%" y1="100%" y2="0%">
-          <stop offset="0%" stop-color="#007DCC"/>
-          <stop offset="100%" stop-color="#90E9FF"/>
-        </linearGradient>
-      </defs>
-      <!--大三角形的三个点-->
-      <polygon fill="url(#Gradient)" points="0,0 400,0 0,300"/>
-      <!--小三角形的三个点-->
-      <polygon fill="url(#Gradient2)" points="100,100 300,100 100,250"/>
-      <!--小小三角形的三个点-->
-      <polygon fill="url(#Gradient)" points="150,150 250,150 150,225"/>
-    </svg>
-    <PageHead>注册账号</PageHead>
-    <div class="register-card">
-      <h2 style="color: #3c91ff">注册账号</h2>
-      <label>
-        账号：
-        <input v-model="regVo.username" autocomplete="off" class="input" name="username" placeholder="username"
-               type="text" @change="isExist">
-      </label>
-      <label>
-        密码：
-        <input v-model="regVo.password" class="input" name="password" placeholder="password" type="password">
-      </label>
-      <label>
-        姓名：
-        <input v-model="regVo.name" autocomplete="off" class="input" name="clientName" placeholder="name"
-               type="text">
-      </label>
-      <label>
-        性别：
-        <label style="padding: 0 24px"><input v-model="regVo.sex" name="sex" type="radio" value="true"/>男</label>
-        <label style="padding: 0 24px"><input v-model="regVo.sex" name="sex" type="radio" value="false"/>女</label>
-      </label>
-      <label>
-        邮箱：
-        <input v-model="regVo.mail" autocomplete="off" class="input" name="email" placeholder="email@qq.com"
-               type="email">
-      </label>
-      <label>
-        验证码：
-        <input v-model="regVo.code" autocomplete="off" class="code-input" name="check-code" placeholder="code"
-               type="text">
-        <button type="button" v-bind:disabled="mailBtn.dis" @click="sendMail">{{ mailBtn.btnTxt }}</button>
-      </label>
-      <button type="button" @click="toReg">进行注册</button>
+  <div class="register-page">
+    <!-- 背景装饰 -->
+    <div class="reg-bg" aria-hidden="true">
+      <span class="blob b1"></span>
+      <span class="blob b2"></span>
+      <span class="blob b3"></span>
+    </div>
+
+    <div class="reg-card">
+      <div class="reg-head">
+        <h2>注册账号</h2>
+        <p>带 <em>*</em> 为必填项；选填项注册后可在「个人资料」中补充修改</p>
+      </div>
+
+      <el-form ref="formRef" :model="regVo" :rules="rules" label-width="76px" class="reg-form">
+        <el-form-item label="手机号" prop="tel">
+          <el-input v-model="regVo.tel" clearable maxlength="11" placeholder="手机号即登录账号" @input="sanitizeTel"/>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="regVo.password" show-password placeholder="至少 5 位"/>
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="regVo.name" clearable placeholder="真实姓名"/>
+        </el-form-item>
+        <el-form-item label="性别" prop="sex">
+          <el-radio-group v-model="regVo.sex">
+            <el-radio :label="true">男</el-radio>
+            <el-radio :label="false">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="mail">
+          <el-input v-model="regVo.mail" clearable placeholder="email@qq.com"/>
+        </el-form-item>
+        <el-form-item label="验证码" prop="code">
+          <div class="code-row">
+            <el-input v-model="regVo.code" clearable maxlength="6" placeholder="邮箱验证码"/>
+            <el-button :disabled="mailBtn.dis" @click="sendMail">{{ mailBtn.btnTxt }}</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="生日">
+          <el-date-picker v-model="regVo.birthday" type="date" value-format="YYYY-MM-DD" placeholder="选填"
+                          style="width:100%"/>
+        </el-form-item>
+        <el-form-item label="备用电话">
+          <el-input v-model="regVo.tel2" clearable maxlength="11" placeholder="选填" @input="sanitizeTel2"/>
+        </el-form-item>
+        <el-form-item label="地址" class="full">
+          <el-input v-model="regVo.address" clearable placeholder="选填"/>
+        </el-form-item>
+        <el-form-item label="身份证" class="full">
+          <el-input v-model="regVo.idCard" clearable maxlength="18" placeholder="选填，18 位"/>
+        </el-form-item>
+      </el-form>
+
+      <div class="reg-actions">
+        <el-button :loading="submitting" size="large" type="primary" @click="toReg">提交注册</el-button>
+        <div class="reg-foot">已有账号？<router-link to="/login">直接登录</router-link></div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import PageHead from "@/components/row/PageHead.vue";
-import {reactive} from "vue";
-import {ElMessage} from "element-plus";
-import {reqLogin, reqRegisExist, reqRegister, reqSendRegMail} from "@/request/PowerApi";
+import {reactive, ref} from "vue";
+import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {useRouter} from "vue-router";
+import {reqRegister, reqSendRegMail} from "@/request/PowerApi";
 import {RegisterVo} from "@/model/VO/RegisterVo";
-import {LoginVo, RoleEnum} from "@/model/VO/LoginVo";
 import {noMail} from "@/utils/MailUtil";
+
+const router = useRouter()
+const formRef = ref<FormInstance>()
+const submitting = ref(false)
 
 const regVo = reactive<RegisterVo>({
   username: "",
@@ -72,8 +79,34 @@ const regVo = reactive<RegisterVo>({
   name: "",
   sex: true,
   mail: "",
-  code: ""
+  code: "",
+  birthday: "",
+  tel: "",
+  tel2: "",
+  address: "",
+  idCard: ""
 })
+
+const sanitizeTel = (): void => { regVo.tel = regVo.tel.replace(/\D/g, '').slice(0, 11) }
+const sanitizeTel2 = (): void => { regVo.tel2 = (regVo.tel2 || '').replace(/\D/g, '').slice(0, 11) }
+
+const rules: FormRules = {
+  tel: [
+    {required: true, message: '请输入手机号', trigger: 'blur'},
+    {pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur'}
+  ],
+  password: [
+    {required: true, message: '请输入密码', trigger: 'blur'},
+    {min: 5, message: '密码至少 5 位', trigger: 'blur'}
+  ],
+  name: [{required: true, message: '请输入姓名', trigger: 'blur'}],
+  mail: [
+    {required: true, message: '请输入邮箱', trigger: 'blur'},
+    {type: 'email', message: '邮箱格式不正确', trigger: 'blur'}
+  ],
+  code: [{required: true, message: '请输入验证码', trigger: 'blur'}]
+}
+
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
 const sendMail = (): void => {
   if (noMail(regVo.mail)) return;
@@ -92,139 +125,147 @@ const sendMail = (): void => {
   reqSendRegMail(regVo.mail)
 }
 
-// 用户名是否存在
-const isExist = () => {
-  reqRegisExist(regVo.username)
-}
-
-// 进行注册
-const toReg = (): void => {
-  if (regVo.username == '') {
-    ElMessage.warning("用户名不能为空")
-    return;
+const toReg = async (): Promise<void> => {
+  try {
+    await formRef.value?.validate()
+  } catch {
+    return
   }
-  if (regVo.password.length < 5) {
-    ElMessage.warning("密码长度不能低于5位")
-    return;
-  }
-  if (regVo.name == '') {
-    ElMessage.warning("请填写姓名")
-    return;
-  }
+  submitting.value = true
+  regVo.username = regVo.tel  // 手机号即账号
   reqRegister(regVo).then(res => {
+    submitting.value = false
     if (res.code === 1) {
-      const loginVo: LoginVo = {
-        username: regVo.username,
-        password: regVo.password,
-        remember: false,
-        role: RoleEnum.CLIENT,
-      }
-      reqLogin(loginVo).then(res => {
-        if (res.code === 1) location.href = "/#/reception"
-      })
+      // 自助注册需管理员审核通过，不再自动登录
+      ElMessage.success(res.msg || "注册成功，请等待管理员审核通过后登录")
+      setTimeout(() => router.push("/login"), 1200)
+    } else {
+      ElMessage.error(res.msg || "注册失败")
     }
-  })
+  }).catch(() => { submitting.value = false })
 }
 </script>
+
 <style lang="scss" scoped>
-/*整个登录组件*/
-.register {
-  width: 94vw;
-  height: 94vh;
+.register-page {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #1E6FA8 0%, #4aa3df 45%, #6fc9b0 100%);
+  overflow: hidden;
+}
 
-  svg {
-    z-index: -1;
+/* 背景光斑 */
+.reg-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  .blob {
     position: absolute;
-    width: 94%;
-    height: 94%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .14);
   }
 
-  .register-card {
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 320px;
-    max-width: 90vw;
-    margin-top: -220px;
-    margin-left: -196px;
-    text-align: center;
-    -webkit-user-select: none;
-    user-select: none;
-    padding: 12px 36px;
-    border-radius: 24px;
-    background-color: rgba(0, 0, 0, 0.1); /* 子元素的背景颜色，含半透明 */
-    backdrop-filter: blur(10px);
+  .b1 { width: 460px; height: 460px; top: -140px; left: -120px; }
+  .b2 { width: 380px; height: 380px; bottom: -140px; right: -90px; background: rgba(255, 255, 255, .10); }
+  .b3 { width: 240px; height: 240px; top: 38%; right: 16%; background: rgba(255, 255, 255, .08); }
+}
 
-    & > label {
-      display: flex;
-      align-items: center;
-      background: #fafafa;
-      box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.3);
-      width: 280px;
-      border-radius: 16px;
-      box-sizing: border-box;
-      padding: 4px 12px;
-      margin-bottom: 8px;
-      margin-left: 20px;
-      /* 输入框 */
-      & > input {
-        box-shadow: inset 13px 13px 10px #dcdcdc,
-        inset -13px -13px 10px #f4f4f4;
-        background: #e8e8e8;
-        box-sizing: border-box;
-        padding: 12px;
-        border: none;
-        border-left: 2px solid #4998FF;
-        color: #5e5e5e;
-        transition: all 0.2s ease-in-out;
+/* 注册卡片 */
+.reg-card {
+  position: relative;
+  width: 760px;
+  max-width: 96vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 32px 44px 28px;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, .97);
+  border-radius: 20px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .25);
+}
 
-        &:focus {
-          border-left: 2px solid #4998FF;
-          outline: none;
-          box-shadow: inset 13px 13px 10px #BFF0FA, inset -13px -13px 10px #f4f4f4;
-        }
-      }
+.reg-head {
+  text-align: center;
+  margin-bottom: 22px;
 
-      .input {
-        border-radius: 12px;
-        width: 200px;
-      }
+  h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1F2D3D;
+    letter-spacing: 1px;
+  }
 
-      .code-input {
-        border-radius: 12px 0 0 12px;
-        width: 80px;
+  p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #909399;
 
-        & + button {
-          margin-left: 4px;
-          font-weight: 700;
-          width: 100px;
-          border-radius: 0 12px 12px 0;
-        }
-      }
-    }
-
-    /* 按钮样式 */
-    button {
-      padding: 12px;
-      background: linear-gradient(135deg, #3c91ff, #7fd4e7);
-      color: white;
-      border: none;
-
-      &:hover {
-        background: linear-gradient(135deg, #1f6bcc, #7fd4e7);
-      }
-
-      &:disabled {
-        background: #cccccc;
-      }
-    }
-
-    /* 发送按钮 */
-    & > button {
-      width: 50%;
-      border-radius: 1rem;
-      font-weight: 900;
+    em {
+      color: #F56C6C;
+      font-style: normal;
+      padding: 0 2px;
     }
   }
+}
+
+/* 表单：响应式两列 */
+.reg-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 22px;
+  max-width: 640px;
+  margin: 0 auto;
+
+  .full { grid-column: 1 / -1; }
+}
+
+/* 验证码 + 按钮 同一行 */
+.code-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+
+  .el-input { flex: 1; }
+  .el-button { flex-shrink: 0; }
+}
+
+/* 提交区 */
+.reg-actions {
+  max-width: 640px;
+  margin: 6px auto 0;
+
+  .el-button {
+    width: 100%;
+    height: 44px;
+    font-size: 16px;
+    border-radius: 10px;
+  }
+}
+
+.reg-foot {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #606266;
+
+  a {
+    color: #1E6FA8;
+    text-decoration: none;
+
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* 手机端：单列 */
+@media (max-width: 600px) {
+  .reg-card { padding: 24px 20px 20px; }
+  .reg-form { grid-template-columns: 1fr; }
 }
 </style>

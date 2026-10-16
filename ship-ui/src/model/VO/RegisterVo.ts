@@ -8,4 +8,9 @@ export interface RegisterVo {
     sex: boolean;
     mail: string;
     code: string;
+    birthday: string;
+    tel: string;
+    tel2: string;
+    address: string;
+    idCard: string;
 }
