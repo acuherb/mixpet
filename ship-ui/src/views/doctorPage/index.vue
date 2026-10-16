@@ -30,13 +30,83 @@
           </p>
         </div>
         <div class="ph-right">
-          <div class="stat-badge">
-            <span class="stat-num">{{ pendingCount }}</span>
-            <span class="stat-lbl">待办挂号</span>
+          <div class="stat-badge" :class="{hot: todayPending.length > 0}">
+            <span class="stat-num">{{ todayPending.length }}</span>
+            <span class="stat-lbl">今日待接诊</span>
           </div>
-          <div class="stat-badge">
-            <span class="stat-num">{{ doneCount }}</span>
-            <span class="stat-lbl">已处理</span>
+          <div class="stat-badge" :class="{hot: todo.treating > 0}">
+            <span class="stat-num">{{ todo.treating }}</span>
+            <span class="stat-lbl">接诊中</span>
+          </div>
+          <div class="stat-badge" :class="{hot: todoTotal > 0}">
+            <span class="stat-num">{{ todoTotal }}</span>
+            <span class="stat-lbl">待办事项</span>
+          </div>
+        </div>
+      </div>
+
+      <!--今日待办：医生打开工作台第一眼看到今天要处理的事-->
+      <div class="panel today-panel">
+        <div class="panel-head">
+          <div class="ph-tit">
+            <span class="ph-ico ico-today"><el-icon><Sunny/></el-icon></span>
+            <div>
+              <h3>今日待办</h3>
+              <p>今天要看诊的病人，与尚未完结的就诊</p>
+            </div>
+          </div>
+          <router-link to="/doctorPage/d-appoint">
+            <el-button type="primary" round>
+              全部挂号<el-icon style="margin-left:4px"><ArrowRight/></el-icon>
+            </el-button>
+          </router-link>
+        </div>
+
+        <div class="panel-body">
+          <!-- 待接诊挂号（今天） -->
+          <div class="todo-sec">
+            <div class="todo-sec-tit">
+              <el-icon><Calendar/></el-icon>
+              <span>待接诊挂号</span>
+              <el-tag size="small" round effect="plain" type="warning">{{ todayPending.length }}</el-tag>
+            </div>
+            <div v-if="todayPending.length" class="todo-rows">
+              <div v-for="a in todayPending" :key="a.appointmentId" class="todo-row"
+                   @click="$router.push('/doctorPage/d-appoint')">
+                <span class="tr-time">{{ moveT(a.appointmentDate) }}</span>
+                <span class="tr-pet">{{ a.petName }}</span>
+                <span class="tr-owner">{{ a.clientName }}</span>
+                <span class="tr-info" :title="a.appointmentInfo || ''">{{ a.appointmentInfo || '—' }}</span>
+                <el-button size="small" round type="primary" @click.stop="$router.push('/doctorPage/d-appoint')">去接诊</el-button>
+              </div>
+            </div>
+            <p v-else class="todo-empty">
+              <el-icon><CircleCheck/></el-icon>
+              今天没有待接诊的挂号
+            </p>
+          </div>
+
+          <!-- 接诊中的病历（未完结） -->
+          <div class="todo-sec">
+            <div class="todo-sec-tit">
+              <el-icon><Document/></el-icon>
+              <span>接诊中病历（未完结）</span>
+              <el-tag size="small" round effect="plain" type="danger">{{ treatingRecords.length }}</el-tag>
+            </div>
+            <div v-if="treatingRecords.length" class="todo-rows">
+              <div v-for="r in treatingRecords" :key="r.recordId" class="todo-row"
+                   @click="$router.push('/doctorPage/d-record')">
+                <span class="tr-pet">{{ r.petName }}</span>
+                <span class="tr-owner">{{ r.clientName }}</span>
+                <span class="tr-info" :title="r.diagnosis || ''">{{ r.diagnosis || '（未写诊断）' }}</span>
+                <span class="tr-time">{{ moveT(r.createTime || '') }}</span>
+                <el-button size="small" round type="warning" @click.stop="$router.push('/doctorPage/d-record')">去查看</el-button>
+              </div>
+            </div>
+            <p v-else class="todo-empty">
+              <el-icon><CircleCheck/></el-icon>
+              没有未完结的病历
+            </p>
           </div>
         </div>
       </div>
@@ -209,12 +279,13 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorMsgGroup} from "@/request/MsgApi";
-import {reqRecordTodo} from "@/request/RecordApi";
+import {reqRecordPage, reqRecordTodo} from "@/request/RecordApi";
+import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
 import {reqLogout} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
@@ -240,6 +311,30 @@ const pendingAppoints = computed<AppointDto2[]>(() => appoints.value.filter(a =>
 const pendingCount = computed(() => pendingAppoints.value.length)
 const doneCount = computed(() => appoints.value.length - pendingAppoints.value.length)
 const router = useRouter()
+
+// 今日待接诊：就诊日期为今天且未处理，按时间先后排序
+const todayStr = (): string => {
+  const t = new Date()
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
+}
+const todayPending = computed<AppointDto2[]>(() =>
+    pendingAppoints.value
+        .filter(a => a.appointmentDate && a.appointmentDate.slice(0, 10) === todayStr())
+        .sort((x, y) => (x.appointmentDate || '').localeCompare(y.appointmentDate || ''))
+)
+// 接诊中的病历（未完结，真实列表）
+const treatingRecords = ref<RecordDto[]>([])
+const loadTreating = (): void => {
+  reqRecordPage({
+    status: 0, numPage: 1, pageSize: 20,
+    petName: '', clientName: '', doctorName: '', diagnosis: '', startTime: '', endTime: ''
+  }).then(res => { treatingRecords.value = res?.records || [] })
+}
+// 待办合计（卡壳事项 + 接诊中）
+const todoTotal = computed(() =>
+    todo.value.labPending + todo.value.imagePending + todo.value.surgeryPending
+    + todo.value.followPending + todo.value.treating
+)
 
 // 在线咨询客户列表（医生谈过话的所有客户，含各自的未读数）
 const groupList = ref<ChatGroup[]>([])
@@ -295,6 +390,7 @@ onMounted(() => {
   tick()
   timeTimer = setInterval(tick, 1000)
   loadData()
+  loadTreating()
   loadClients()
   reqRecordTodo().then(res => { if (res) todo.value = res })
   ws = new WebSocket(wsUrl)
@@ -733,6 +829,102 @@ onBeforeUnmount(() => {
     box-sizing: border-box;
   }
 }
+
+/* 今日待办面板（工作台最显眼位置） */
+.today-panel {
+  border: 1px solid #f0d9b5;
+  background: linear-gradient(180deg, #fffdf8, #ffffff);
+
+  .panel-body { padding-top: 4px; }
+}
+
+.todo-sec {
+  margin-bottom: 18px;
+
+  &:last-child { margin-bottom: 0; }
+}
+
+.todo-sec-tit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1F2D3D;
+
+  .el-tag { margin-left: 2px; }
+}
+
+.todo-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.todo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #fafbfc;
+  border: 1px solid #edf0f3;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: box-shadow .2s, transform .15s, border-color .2s;
+
+  &:hover {
+    border-color: #c6e2ff;
+    box-shadow: 0 4px 14px rgba(30, 111, 168, .12);
+    transform: translateY(-1px);
+  }
+
+  .tr-time {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #909399;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tr-pet {
+    flex-shrink: 0;
+    min-width: 64px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1F2D3D;
+  }
+
+  .tr-owner {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #606266;
+  }
+
+  .tr-info {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: #606266;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.todo-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 14px;
+  background: #f6faf6;
+  border-radius: 8px;
+  color: #67C23A;
+  font-size: 13px;
+}
+
+/* 页头徽章：有待办时数字高亮 */
+.stat-badge.hot .stat-num { color: #E6A23C; }
 
 /* 诊疗待办面板 */
 .todo-grid {
