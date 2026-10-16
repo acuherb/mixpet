@@ -1,7 +1,7 @@
 <template>
   <div class="img-card" :class="type === 'success' ? 'is-success' : 'is-primary'">
     <div class="card-avatar">
-      <img :src="'/api/common/download?name='+data.photo" alt="头像">
+      <img :src="'/api/common/download?name='+data.photo" alt="头像" loading="lazy">
     </div>
     <div class="card-main">
       <div class="card-title">{{ data.tit }}</div>

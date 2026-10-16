@@ -8,8 +8,11 @@
         </router-link>
         <ul class="nav">
           <li v-if="isLogin" class="drop">
-            <span>个人中心</span>
-            <span class="caret">▾</span>
+            <span class="user-trigger">
+              <MyAvatar :name="user.clientPhoto"/>
+              <span class="user-name">{{ user.clientName || '个人中心' }}</span>
+              <span class="caret">▾</span>
+            </span>
             <ul class="drop-list">
               <li>
                 <router-link to="/reception/clientCenter">个人资料</router-link>
@@ -32,7 +35,7 @@
 
     <WindRoll :is-login="isLogin"/>
 
-    <main class="page">
+    <main class="page" v-loading="pageLoading">
       <!-- 公告 -->
       <section class="section">
         <div class="section-head">
@@ -79,6 +82,9 @@
                     :tit="card.tit"
                     :type="card.type"
                     :badge="card.routerPath === '/reception/chat' ? totalUnread : 0"
+                    need-login
+                    :guest="!isLogin"
+                    @need-login="goLogin"
           />
         </MyRow>
       </section>
@@ -120,12 +126,15 @@
       </section>
     </main>
 
+    <el-button v-show="showTop" class="back-top" circle type="primary" :icon="ArrowUp" title="回到顶部"
+               @click="scrollTop"/>
+
     <VueFoot/>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {onBeforeMount, onBeforeUnmount, reactive, ref} from "vue";
+import {onBeforeMount, onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import {Pet} from "@/model/entiy/Pet";
 import {Page} from "@/model/DO/Page";
 import PetCard from "@/components/zoneView/PetCard.vue";
@@ -148,26 +157,28 @@ import WindRoll from "@/components/show/WindRoll.vue";
 import MyRow from "@/components/row/MyRow.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
-import {Bell} from "@element-plus/icons-vue";
+import {ArrowUp, Bell} from "@element-plus/icons-vue";
+import MyAvatar from "@/components/show/MyAvatar.vue";
 
 /* 生命周期 */
 const isLogin = ref<boolean>(false)
+const pageLoading = ref<boolean>(true)
+// 当前登录用户（顶栏展示头像与昵称）
+const user = ref<{ clientName: string, clientPhoto: string }>({clientName: '', clientPhoto: ''})
+
 onBeforeMount(() => {
-  reqFourDoctor().then(res => {
-    doctorCardTxt.records = res.records
-  })
-  reqFourPet().then(res => {
-    petCardTxt.records = res.records
-  })
-  reqFosterPet(6).then(res => {
-    fosterCardTxt.records = res.records
-  })
-  reqFourNotice().then(res => {
-    notices.value = res
-  })
+  // 并行加载首页数据，完成后关闭 loading
+  Promise.all([
+    reqFourDoctor().then(res => { doctorCardTxt.records = res.records }),
+    reqFourPet().then(res => { petCardTxt.records = res.records }),
+    reqFosterPet(6).then(res => { fosterCardTxt.records = res.records }),
+    reqFourNotice().then(res => { notices.value = res }),
+  ]).catch(() => {}).finally(() => { pageLoading.value = false })
+
   reqLoginUser().then(res => {
     // 未登录时后端返回空，需做空值保护
     isLogin.value = !!(res && res.clientId != null)
+    if (isLogin.value) user.value = {clientName: res.clientName || '', clientPhoto: res.clientPhoto || ''}
     if (res && res.clientId != null && res.clientPwdChanged === false) {
       router.push("/changePwd")
     }
@@ -177,6 +188,20 @@ onBeforeMount(() => {
       connectChat()
     }
   })
+})
+
+// 未登录点击需登录入口时，引导去登录
+const goLogin = (): void => {
+  ElMessage.warning('请先登录')
+  setTimeout(() => router.push('/login'), 600)
+}
+
+// 回到顶部
+const showTop = ref<boolean>(false)
+const handleScroll = (): void => { showTop.value = (window.scrollY || 0) > 400 }
+const scrollTop = (): void => { window.scrollTo({top: 0, behavior: 'smooth'}) }
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
 })
 
 /* 公告栏 */
@@ -737,4 +762,34 @@ onBeforeUnmount(() => {
     font-size: 16px;
   }
 }
+/* 顶栏登录用户头像与昵称 */
+.drop .user-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  :deep(.my-avatar) { width: 30px; height: 30px; flex-shrink: 0; }
+
+  .user-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+    color: #1F2D3D;
+  }
+}
+
+/* 回到顶部 */
+.back-top {
+  position: fixed;
+  right: 28px;
+  bottom: 40px;
+  z-index: 200;
+  width: 46px;
+  height: 46px;
+  font-size: 20px;
+  box-shadow: 0 6px 18px rgba(31, 45, 61, .22);
+}
+
 </style>

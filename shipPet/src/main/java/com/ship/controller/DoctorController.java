@@ -6,6 +6,7 @@ import com.ship.model.dto.DoctorDto;
 import com.ship.model.entity.Doctor;
 import com.ship.model.dto.NameDo;
 import com.ship.security.model.RoleConst;
+import com.ship.service.AvatarFileService;
 import com.ship.service.IDoctorService;
 import com.ship.util.StrUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +27,12 @@ import java.util.List;
 @RequestMapping("/doctor")
 public class DoctorController {
     private final IDoctorService doctorService;
+    private final AvatarFileService avatarFileService;
 
     @Autowired
-    public DoctorController(IDoctorService doctorService) {
+    public DoctorController(IDoctorService doctorService, AvatarFileService avatarFileService) {
         this.doctorService = doctorService;
+        this.avatarFileService = avatarFileService;
     }
 
     /**
@@ -135,6 +138,10 @@ public class DoctorController {
         // 邮箱非空时校验
         if (!StrUtil.isWhite(doctor.getDoctorEmail()) && !doctor.getDoctorEmail().matches("^[A-Za-z0-9][A-Za-z0-9._]*@[A-Za-z0-9]+\\.[A-Za-z0-9.-]+[A-Za-z]$"))
             return Result.error("邮箱格式不正确");
+        // 更换头像时删除旧头像文件
+        Doctor oldDoctor = doctorService.getById(doctor.getDoctorId());
+        if (oldDoctor != null)
+            avatarFileService.removeOldAvatar(oldDoctor.getDoctorPhoto(), doctor.getDoctorPhoto());
         return Result.choice("修改", doctorService.updateById(doctor));
     }
 }

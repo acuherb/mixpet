@@ -7,6 +7,7 @@ import com.ship.model.entity.Client;
 import com.ship.model.entity.Pet;
 import com.ship.model.dto.NameDo;
 import com.ship.security.model.RoleConst;
+import com.ship.service.AvatarFileService;
 import com.ship.service.IPetService;
 import com.ship.service.IPetTransferService;
 import com.ship.model.vo.TransferVo;
@@ -32,11 +33,14 @@ import java.util.List;
 public class PetController {
     private final IPetService petService;
     private final IPetTransferService petTransferService;
+    private final AvatarFileService avatarFileService;
 
     @Autowired
-    public PetController(IPetService petService, IPetTransferService petTransferService) {
+    public PetController(IPetService petService, IPetTransferService petTransferService,
+                         AvatarFileService avatarFileService) {
         this.petService = petService;
         this.petTransferService = petTransferService;
+        this.avatarFileService = avatarFileService;
     }
 
     /**
@@ -149,6 +153,9 @@ public class PetController {
     public Result update(@RequestBody Pet pet) {
         if (StrUtil.isWhite(pet.getPetName())) return Result.error("姓名不能为空");
         if (StrUtil.isWhite(pet.getPetVariety())) return Result.error("品种不能为空");
+        // 更换头像时删除旧头像文件
+        Pet oldPet = petService.getById(pet.getPetId());
+        if (oldPet != null) avatarFileService.removeOldAvatar(oldPet.getPetPhoto(), pet.getPetPhoto());
         return Result.choice("修改", petService.updatePet(pet));
     }
 

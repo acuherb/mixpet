@@ -1,5 +1,5 @@
 <template>
-  <div :class="['link-card', `is-${type}`]" @click="$router.push(routerPath)">
+  <div :class="['link-card', `is-${type}`]" @click="onCardClick">
     <span v-if="badge && badge > 0" class="card-badge">{{ badge > 99 ? '99+' : badge }}</span>
     <div class="card-text">
       <div class="card-tit">{{ tit }}</div>
@@ -10,13 +10,26 @@
 </template>
 
 <script lang="ts" setup>
-defineProps<{
+import {useRouter} from "vue-router";
+
+const router = useRouter()
+const props = defineProps<{
   tit: string;
   body: string;
   type: "primary" | "success" | "warning";
   routerPath: string;
   badge?: number;
+  needLogin?: boolean;
+  guest?: boolean;
 }>()
+const emit = defineEmits<{
+  (e: 'needLogin'): void
+}>()
+// 需登录且当前为游客时，交由父组件引导登录；否则正常跳转
+const onCardClick = (): void => {
+  if (props.needLogin && props.guest) emit('needLogin')
+  else router.push(props.routerPath)
+}
 </script>
 
 <style lang="scss" scoped>

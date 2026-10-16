@@ -4,7 +4,7 @@
          :key="pet.fosterId"
          class="card">
       <div class="card">
-        <img :src="'/api/common/download?name='+pet.petPhoto" alt="头像">
+        <img :src="'/api/common/download?name='+pet.petPhoto" alt="头像" loading="lazy">
         <div class="card__content">
           <p class="card__title">{{ pet.petName }}</p>
           <div class="card__description">

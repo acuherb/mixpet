@@ -9,6 +9,7 @@ import com.ship.model.vo.PasswordVo;
 import com.ship.common.SendMail;
 import jakarta.servlet.http.HttpSession;
 import com.ship.security.model.RoleConst;
+import com.ship.service.AvatarFileService;
 import com.ship.service.IClientService;
 import com.ship.service.IMemberService;
 import com.ship.util.StrUtil;
@@ -34,11 +35,14 @@ import java.util.List;
 public class ClientController {
     private final IClientService clientService;
     private final IMemberService memberService;
+    private final AvatarFileService avatarFileService;
 
     @Autowired
-    public ClientController(IClientService clientService, IMemberService memberService) {
+    public ClientController(IClientService clientService, IMemberService memberService,
+                            AvatarFileService avatarFileService) {
         this.clientService = clientService;
         this.memberService = memberService;
+        this.avatarFileService = avatarFileService;
     }
 
     /** 管理员重置密码默认口令 */
@@ -138,6 +142,10 @@ public class ClientController {
         if (clientService.existsByTel(client.getClientTel(), client.getClientId()))
             return Result.error("手机号已被其他用户使用");
         client.setClientUsername(client.getClientTel());
+        // 更换头像时删除旧头像文件
+        Client oldClient = clientService.getById(client.getClientId());
+        if (oldClient != null)
+            avatarFileService.removeOldAvatar(oldClient.getClientPhoto(), client.getClientPhoto());
         return Result.choice("修改", clientService.updateById(client));
     }
 
@@ -161,6 +169,10 @@ public class ClientController {
                 return Result.error("手机号已被其他用户使用");
             client.setClientId(client1.getClientId());
             client.setClientUsername(client.getClientTel());
+            // 更换头像时删除旧头像文件
+            Client oldClient = clientService.getById(client1.getClientId());
+            if (oldClient != null)
+                avatarFileService.removeOldAvatar(oldClient.getClientPhoto(), client.getClientPhoto());
             return Result.choice("修改", clientService.updateSelf(client));
         } else return Result.error("未得到登录人信息");
     }
