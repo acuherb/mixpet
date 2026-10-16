@@ -8,7 +8,7 @@
         r.chief_complaint, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
-        r.create_time,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
         p.pet_name, c.client_name, d.doctor_name, dep.department_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id
@@ -28,7 +28,7 @@
         r.chief_complaint, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
-        r.create_time,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
         p.pet_name, c.client_name, d.doctor_name, dep.department_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id
@@ -44,6 +44,7 @@
     <select id="selectDoctorRecords" resultType="com.ship.model.dto.RecordDto">
         SELECT
         r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.create_time,
+        r.status, r.finish_time, r.cancel_reason,
         p.pet_name, c.client_name, d.doctor_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id
@@ -59,6 +60,7 @@
     <select id="selectDueRevisits" resultType="com.ship.model.dto.RecordDto">
         SELECT
         r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.revisit_date, r.create_time,
+        r.status, r.finish_time, r.cancel_reason,
         p.pet_name, c.client_name, d.doctor_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id

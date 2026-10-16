@@ -41,4 +41,13 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 往已有病历追加套餐（未付款账单累加套餐费） */
     Result addPackages(Integer recordId, java.util.List<Integer> packageIds);
+
+    /** 完结就诊：有未完成事项时返回清单（force=false）；force=true 强制完结 */
+    Result finishRecord(Integer recordId, boolean force);
+
+    /** 作废就诊（仅接诊中）：填写作废原因 */
+    Result cancelRecord(Integer recordId, String reason);
+
+    /** 未完绪病历修改（仅接诊中）：主诉/查体/诊断/治疗/医嘱/内部备注/复诊/分诊/体征 */
+    Result updateRecord(MedicalRecord record);
 }

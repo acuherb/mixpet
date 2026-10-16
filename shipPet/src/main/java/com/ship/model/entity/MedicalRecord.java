@@ -47,6 +47,13 @@ public class MedicalRecord implements Serializable {
 
     /** 分诊级别：1急诊 2普通 3复诊（顾客端walk-in预约） */
     private Integer triageLevel;
+
+    /** 就诊状态：0接诊中 1已完结 2已作废 */
+    private Integer status;
+    /** 完结时间 */
+    private LocalDateTime finishTime;
+    /** 作废原因 */
+    private String cancelReason;
     /** 就诊体重(kg) */
     private BigDecimal weight;
     /** 体温(℃) */

@@ -34,6 +34,12 @@ public class RecordDto {
     /** 支付状态（来自账单，未生成账单为 null） */
     private Boolean payStatus;
     private LocalDateTime createTime;
+    /** 就诊状态：0接诊中 1已完结 2已作废 */
+    private Integer status;
+    /** 完结时间 */
+    private LocalDateTime finishTime;
+    /** 作废原因 */
+    private String cancelReason;
     private String petName;
     private String clientName;
     private String doctorName;

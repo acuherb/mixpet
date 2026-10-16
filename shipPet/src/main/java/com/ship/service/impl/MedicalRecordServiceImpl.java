@@ -8,6 +8,7 @@ import com.ship.common.Result;
 import com.ship.mapper.BillMapper;
 import com.ship.mapper.DoctorMapper;
 import com.ship.mapper.DrugMapper;
+import com.ship.mapper.FollowUpMapper;
 import com.ship.mapper.ImageOrderMapper;
 import com.ship.mapper.ImageTestMapper;
 import com.ship.mapper.LabOrderItemMapper;
@@ -33,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,6 +58,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final ImageOrderMapper imageOrderMapper;
     private final SurgeryMapper surgeryMapper;
     private final IMemberService memberService;
+    private final FollowUpMapper followUpMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
@@ -65,7 +68,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                                     LabTestMapper labTestMapper, LabOrderMapper labOrderMapper,
                                     LabOrderItemMapper labOrderItemMapper, ImageTestMapper imageTestMapper,
                                     ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper,
-                                    IMemberService memberService) {
+                                    IMemberService memberService, FollowUpMapper followUpMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -81,6 +84,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.imageOrderMapper = imageOrderMapper;
         this.surgeryMapper = surgeryMapper;
         this.memberService = memberService;
+        this.followUpMapper = followUpMapper;
     }
 
     @Override
@@ -127,6 +131,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 prescriptions.add(p);
             }
         }
+        // 新接诊默认接诊中
+        record.setStatus(0);
         this.save(record);
         for (Prescription p : prescriptions) {
             p.setRecordId(record.getRecordId());
@@ -415,5 +421,76 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         }
         vo.setTotalAmount(total);
         return vo;
+    }
+
+    @Override
+    public Result finishRecord(Integer recordId, boolean force) {
+        MedicalRecord record = this.getById(recordId);
+        if (record == null) return Result.error("病历不存在");
+        if (record.getStatus() == null || record.getStatus() != 0)
+            return Result.error(record.getStatus() != null && record.getStatus() == 2
+                    ? "该就诊已作废，不能完结" : "该就诊已完结，无需重复操作");
+        // 未完成事项软检查：有卡壳事项时返回清单，由前端确认后 force=true 强制完结
+        if (!force) {
+            List<String> pending = new ArrayList<>();
+            long lab = labOrderMapper.selectCount(Wrappers.<LabOrder>lambdaQuery()
+                    .eq(LabOrder::getRecordId, recordId).eq(LabOrder::getStatus, false));
+            if (lab > 0) pending.add(lab + " 张化验单待出结果");
+            long image = imageOrderMapper.selectCount(Wrappers.<ImageOrder>lambdaQuery()
+                    .eq(ImageOrder::getRecordId, recordId).eq(ImageOrder::getStatus, false));
+            if (image > 0) pending.add(image + " 张影像单待出报告");
+            long surgery = surgeryMapper.selectCount(Wrappers.<Surgery>lambdaQuery()
+                    .eq(Surgery::getRecordId, recordId).eq(Surgery::getStatus, 0));
+            if (surgery > 0) pending.add(surgery + " 台手术待进行/待记录");
+            long follow = followUpMapper.selectCount(Wrappers.<FollowUp>lambdaQuery()
+                    .eq(FollowUp::getRecordId, recordId).eq(FollowUp::getStatus, false));
+            if (follow > 0) pending.add(follow + " 条随访待完成");
+            if (!pending.isEmpty())
+                return Result.error("还有未完成事项：" + String.join("；", pending) + "。确认仍要完结请再次提交");
+        }
+        this.lambdaUpdate().eq(MedicalRecord::getRecordId, recordId)
+                .set(MedicalRecord::getStatus, 1)
+                .set(MedicalRecord::getFinishTime, LocalDateTime.now())
+                .update();
+        return Result.success("就诊已完结");
+    }
+
+    @Override
+    public Result cancelRecord(Integer recordId, String reason) {
+        MedicalRecord record = this.getById(recordId);
+        if (record == null) return Result.error("病历不存在");
+        if (record.getStatus() == null || record.getStatus() != 0)
+            return Result.error("仅接诊中的就诊可以作废");
+        if (reason == null || reason.isBlank()) return Result.error("请填写作废原因");
+        this.lambdaUpdate().eq(MedicalRecord::getRecordId, recordId)
+                .set(MedicalRecord::getStatus, 2)
+                .set(MedicalRecord::getCancelReason, reason.trim())
+                .update();
+        return Result.success("就诊已作废");
+    }
+
+    @Override
+    public Result updateRecord(MedicalRecord form) {
+        if (form == null || form.getRecordId() == null) return Result.error("缺少病历id");
+        MedicalRecord record = this.getById(form.getRecordId());
+        if (record == null) return Result.error("病历不存在");
+        if (record.getStatus() == null || record.getStatus() != 0)
+            return Result.error("仅接诊中的病历可以修改（已完结/已作废不可改）");
+        // 只更新内容字段，费用不动（费用变动请走处方作废/退款流程）
+        this.lambdaUpdate().eq(MedicalRecord::getRecordId, form.getRecordId())
+                .set(MedicalRecord::getChiefComplaint, form.getChiefComplaint())
+                .set(MedicalRecord::getPhysicalExam, form.getPhysicalExam())
+                .set(MedicalRecord::getDiagnosis, form.getDiagnosis())
+                .set(MedicalRecord::getTreatment, form.getTreatment())
+                .set(MedicalRecord::getAdvice, form.getAdvice())
+                .set(MedicalRecord::getInternalNote, form.getInternalNote())
+                .set(MedicalRecord::getRevisitDate, form.getRevisitDate())
+                .set(MedicalRecord::getTriageLevel, form.getTriageLevel())
+                .set(MedicalRecord::getWeight, form.getWeight())
+                .set(MedicalRecord::getTemperature, form.getTemperature())
+                .set(MedicalRecord::getHeartRate, form.getHeartRate())
+                .set(MedicalRecord::getRespiratoryRate, form.getRespiratoryRate())
+                .update();
+        return Result.success("病历已更新");
     }
 }

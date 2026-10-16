@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ship.common.Result;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.Client;
+import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
 import com.ship.model.entity.Pet;
 import com.ship.model.entity.Prescription;
@@ -56,6 +57,30 @@ public class MedicalRecordController {
         if (UserUtil.getUser() instanceof Doctor doctor) {
             return recordService.saveRecord(vo, doctor);
         } else return Result.error("请登录医生账号");
+    }
+
+    /**
+     * 完结就诊：有未完成事项（待出结果/待手术/待随访）时返回清单，
+     * 前端确认后带 force=true 再次提交即强制完结
+     */
+    @PutMapping("/finish/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result finish(@PathVariable Integer id, boolean force) {
+        return recordService.finishRecord(id, force);
+    }
+
+    /** 作废就诊（仅接诊中）：填写作废原因 */
+    @PutMapping("/cancel/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result cancel(@PathVariable Integer id, String reason) {
+        return recordService.cancelRecord(id, reason);
+    }
+
+    /** 未完绪病历修改（仅接诊中）：内容字段可改，费用不走这里 */
+    @PutMapping
+    @Secured(RoleConst.DOCTOR)
+    public Result update(@RequestBody MedicalRecord record) {
+        return recordService.updateRecord(record);
     }
 
     /** 作废单条处方：冲减未付账单药费 */
