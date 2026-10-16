@@ -11,14 +11,14 @@
 
       <div class="clean-row">
         <span>保留天数：</span>
-        <el-input-number v-model="retainDays" :min="1" :max="3650" controls-position="right" size="small"/>
-        <span class="tip">大于该天数的聊天记录视为可清理</span>
+        <el-input-number v-model="retainDays" :min="0" :max="3650" controls-position="right" size="small"/>
+        <span class="tip">0=全部清理；1~3650=删除超过该天数的记录</span>
       </div>
 
       <div class="clean-row">
         <el-button type="primary" size="small" :loading="loading" @click="loadCount">查询可清理数量</el-button>
         <span v-if="count !== null" :class="count > 0 ? 'warn' : 'ok'">
-          {{ count > 0 ? `已超过 ${retainDays} 天的聊天记录共 ${count} 条` : '当前没有需要清理的聊天记录' }}
+          {{ count > 0 ? (retainDays === 0 ? `将清理全部聊天记录共 ${count} 条` : `已超过 ${retainDays} 天的聊天记录共 ${count} 条`) : '当前没有需要清理的聊天记录' }}
         </span>
       </div>
 
@@ -62,7 +62,9 @@ const loadCount = () => {
 
 const doClean = () => {
   ElMessageBox.confirm(
-      `将删除超过 ${retainDays.value} 天的聊天记录及其图片/文件，不可恢复，是否继续？`,
+      retainDays.value === 0
+          ? '将删除全部聊天记录及其图片/文件，不可恢复，是否继续？'
+          : `将删除超过 ${retainDays.value} 天的聊天记录及其图片/文件，不可恢复，是否继续？`,
       '确认清理',
       {type: 'warning'}
   ).then(() => {

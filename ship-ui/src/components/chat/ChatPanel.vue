@@ -164,16 +164,14 @@ const doFileUpload = async (options: UploadRequestOptions): Promise<void> => {
   const fd = new FormData()
   fd.append('myFile', options.file)
   try {
-    const resp = await axios.post<string>('/api/common/upChatFile', fd)
-    if (typeof resp.data === 'string' && resp.data) {
-      let parsed: {name: string, origin: string}
-      try {
-        parsed = JSON.parse(resp.data)
-      } catch {
-        ElMessage.error('文件发送失败，请重试')
-        return
-      }
-      emit("sendFileMsg", {name: parsed.name, origin: decodeURIComponent(parsed.origin)})
+    const resp = await axios.post('/api/common/upChatFile', fd)
+    // axios 默认会把合法 JSON 字符串响应自动解析成对象；兼容字符串与对象两种返回
+    let data: any = resp.data
+    if (typeof data === 'string') {
+      try { data = JSON.parse(data) } catch { ElMessage.error('文件发送失败，请重试'); return }
+    }
+    if (data && data.name) {
+      emit("sendFileMsg", {name: data.name, origin: decodeURIComponent(data.origin)})
     } else ElMessage.error('文件发送失败，请重试')
   } catch (e) {
     ElMessage.error('文件发送失败，请重试')

@@ -141,9 +141,12 @@ public class ImgController {
      * @param type image 或 file，决定去哪个子目录找
      */
     @GetMapping("/downChat")
-    public void downChat(String type, String name, HttpServletResponse response) {
+    public void downChat(String type, String name, Boolean inline, HttpServletResponse response) {
         String dir = "file".equals(type) ? chatFileDir() : chatImageDir();
-        sendFile(name, response, dir, "file".equals(type) && name != null);
+        // 预览（inline=true）时内联显示，便于浏览器直接预览；
+        // 否则保持原逻辑：聊天图片内联显示、聊天文件强制下载
+        boolean asAttachment = Boolean.TRUE.equals(inline) ? false : "file".equals(type);
+        sendFile(name, response, dir, asAttachment);
     }
 
     /**

@@ -46,7 +46,7 @@ public class MsgController {
      */
     @GetMapping("/expiredMsgNum")
     public long expiredMsgNum(Integer days) {
-        if (days == null || days <= 0) days = 90;
+        if (days == null) days = 90;
         return msgService.lambdaQuery()
                 .lt(Msg::getCreateTime, LocalDateTime.now().minusDays(days))
                 .count();
@@ -59,19 +59,19 @@ public class MsgController {
      */
     @PostMapping("/cleanExpiredMsg")
     public Result cleanExpiredMsg(Integer days) {
-        if (days == null || days <= 0) days = 90;
+        if (days == null) days = 90;
         List<Msg> expired = msgService.lambdaQuery()
                 .lt(Msg::getCreateTime, LocalDateTime.now().minusDays(days))
                 .list();
         if (expired.isEmpty()) return Result.choice("清理聊天记录", true);
-        // 删除磁盘上的图片/文件（纯文字消息 msgContent 不用删）
+        // 删除磁盘上的图片/文件（纯文字消息 msgContent 为空则跳过）
+        // 文件名全局唯一，直接在 image/ 与 file/ 两个目录各尝试删除一次，
+        // 这样即使消息的 isImg/msgType 标记异常也能正确清理对应文件，避免漏删
         List<Integer> ids = new ArrayList<>();
         for (Msg m : expired) {
             ids.add(m.getMsgId());
-            if (m.getIsImg() != null && m.getIsImg() && m.getMsgContent() != null) {
+            if (m.getMsgContent() != null) {
                 deleteIfExists(new File(chatPath + "image/" + m.getMsgContent()));
-            }
-            if ("FILE".equalsIgnoreCase(m.getMsgType()) && m.getMsgContent() != null) {
                 deleteIfExists(new File(chatPath + "file/" + m.getMsgContent()));
             }
         }
