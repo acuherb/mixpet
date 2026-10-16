@@ -169,7 +169,7 @@ const showDialog = (row: ImageOrder): void => {
       tplLabels.value = labels
       tplValues.value = labels.map(() => '')
     }
-  })
+  }).catch(() => { /* 模板接口不可用(如后端未重启)时回落自由文本，不挡录报告 */ })
 }
 
 // 关闭前防丢：有未提交内容时确认
