@@ -25,6 +25,8 @@ public class ImageTest implements Serializable {
     /** 单价(元) */
     private BigDecimal price;
     private String detail;
+    /** 报告模板项(JSON数组字符串，如 ["检查体位","影像所见"])，录报告时按项预置 */
+    private String reportTpl;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

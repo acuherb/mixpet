@@ -47,13 +47,28 @@
   <BackPage :total="list.total" @changePu="changePuB"/>
 
   <!--报告录入/查看弹窗-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="560px">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="560px" :close-on-click-modal="false">
     <div v-if="current" class="order-head">
       单号 #{{ current.orderId }} · {{ current.itemName }} · 宠物：{{ current.petName }}
+      <el-tag v-if="hasTpl && !readonly" size="small" type="success" effect="plain" style="margin-left:8px">模板录入</el-tag>
     </div>
     <el-form label-width="70px">
-      <el-form-item label="影像报告">
-        <el-input v-model="resultText" :disabled="readonly" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
+      <!-- 有报告模板：按预置项结构化填写 -->
+      <template v-if="hasTpl && !readonly">
+        <el-form-item v-for="(label, i) in tplLabels" :key="i" :label="label">
+          <el-input v-model="tplValues[i]" :rows="2" maxlength="500" type="textarea" :placeholder="`请填写${label}`"/>
+        </el-form-item>
+        <el-form-item label="补充说明">
+          <el-input v-model="extraText" :rows="2" maxlength="1000" placeholder="其他需要说明的情况（选填）" type="textarea"/>
+        </el-form-item>
+      </template>
+      <!-- 无模板：自由文本录入 -->
+      <el-form-item v-else-if="!readonly" label="影像报告">
+        <el-input v-model="extraText" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
+      </el-form-item>
+      <!-- 查看模式：直接展示报告文本 -->
+      <el-form-item v-else label="影像报告">
+        <div class="report-view">{{ current?.result || '（无报告内容）' }}</div>
       </el-form-item>
       <el-form-item label="报告附件">
         <UpImg v-if="!current?.reportFile" :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
@@ -64,20 +79,20 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="modalView = false">关闭</el-button>
+      <el-button @click="closeModal">关闭</el-button>
       <el-button v-if="!readonly" type="primary" @click="formSubmit">提交报告</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {Page} from "@/model/DO/Page";
-import {reqImageCancel, reqImageOrderPage, reqSaveImageReport} from "@/request/ImageApi";
+import {reqImageCancel, reqImageOrderPage, reqImageTestOne, reqSaveImageReport} from "@/request/ImageApi";
 import UpImg from "@/components/UpImg.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
@@ -111,27 +126,71 @@ const modalView = ref(false)
 const modalTit = ref('录报告')
 const readonly = ref(false)
 const current = ref<ImageOrder | null>(null)
-const resultText = ref('')
+// 报告模板（来自影像项目）：结构化填写
+const tplLabels = ref<string[]>([])
+const tplValues = ref<string[]>([])
+const extraText = ref('')
+const hasTpl = computed(() => tplLabels.value.length > 0)
+const parseTpl = (tpl: string | null | undefined): string[] => {
+  if (!tpl) return []
+  try {
+    const arr = JSON.parse(tpl)
+    return Array.isArray(arr) ? arr.map((x: unknown) => String(x)) : []
+  } catch { return [] }
+}
+// 按模板拼接报告文本（后端仍存纯文本，零接口改动）
+const buildResult = (): string => {
+  if (!hasTpl.value) return extraText.value.trim()
+  const lines = tplLabels.value.map((label, i) => `【${label}】${(tplValues.value[i] || '').trim()}`)
+  const extra = extraText.value.trim()
+  if (extra) lines.push('', `补充：${extra}`)
+  return lines.join('\n')
+}
 // 报告附件下载前缀（走独立的报告接口，与头像分离）
 const fileBase = window.location.origin + '/api/common/downReport?name='
-const onReportUpload = (f: string): void => { if (current.value) current.value.reportFile = f }
+const onReportUpload = (f: string): void => {
+  if (current.value) current.value.reportFile = f
+  if (f) ElMessage.success('报告附件已上传：' + f)
+}
 const removeReport = (): void => { if (current.value) current.value.reportFile = undefined }
 
 const showDialog = (row: ImageOrder): void => {
   current.value = row
-  resultText.value = row.result || ''
   readonly.value = !!row.status
   modalView.value = true
   modalTit.value = row.status ? '查看报告' : '录入影像报告'
+  // 拉取项目的报告模板，有则按项填写
+  tplLabels.value = []
+  tplValues.value = []
+  extraText.value = ''
+  reqImageTestOne(row.itemId).then(t => {
+    const labels = parseTpl(t?.reportTpl)
+    if (labels.length) {
+      tplLabels.value = labels
+      tplValues.value = labels.map(() => '')
+    }
+  })
+}
+
+// 关闭前防丢：有未提交内容时确认
+const closeModal = (): void => {
+  if (!readonly.value && (buildResult().trim() || current.value?.reportFile)) {
+    ElMessageBox.confirm('有未提交的报告内容，关闭将丢弃，确定关闭吗？', '提示', {
+      confirmButtonText: '丢弃并关闭', cancelButtonText: '继续编辑', type: 'warning'
+    }).then(() => { modalView.value = false }).catch(() => {})
+  } else {
+    modalView.value = false
+  }
 }
 
 const formSubmit = (): void => {
   if (!current.value) return
-  if (!resultText.value.trim()) {
+  const result = buildResult()
+  if (!result.trim()) {
     ElMessage.warning('请填写影像报告内容')
     return
   }
-  reqSaveImageReport({orderId: current.value.orderId, result: resultText.value, reportFile: current.value.reportFile ?? undefined}).then((res: Res) => {
+  reqSaveImageReport({orderId: current.value.orderId, result, reportFile: current.value.reportFile ?? undefined}).then((res: Res) => {
     if (res.code === 1) {
       ElMessage.success('影像报告已提交')
       modalView.value = false
@@ -172,5 +231,16 @@ onMounted(() => {
   font-size: 13px;
   color: #606266;
   margin-bottom: 8px;
+}
+.report-view {
+  width: 100%;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #303133;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

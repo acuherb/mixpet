@@ -26,6 +26,14 @@
     </el-table-column>
     <el-table-column label="单价(元)" prop="price" sortable width="100"/>
     <el-table-column label="说明" min-width="140" prop="detail" show-overflow-tooltip/>
+    <el-table-column label="报告模板" width="100">
+      <template #default="scope">
+        <el-tag v-if="tplCount(scope.row.reportTpl) > 0" size="small" type="success" effect="plain">
+          {{ tplCount(scope.row.reportTpl) }} 项
+        </el-tag>
+        <span v-else style="color:#c0c4cc">无</span>
+      </template>
+    </el-table-column>
     <el-table-column fixed="right" label="操作" width="120">
       <template #default="scope">
         <el-button-group>
@@ -54,6 +62,16 @@
       <el-form-item label="说明">
         <el-input v-model="form.detail" clearable maxlength="255" type="textarea" :rows="2" placeholder="检查范围/注意事项"/>
       </el-form-item>
+      <el-form-item label="报告模板">
+        <div class="tpl-editor">
+          <div v-for="(t, i) in tplItems" :key="i" class="tpl-row">
+            <el-input v-model="tplItems[i]" :maxlength="32" placeholder="模板项名称，如：影像所见" size="small"/>
+            <el-button :icon="Delete" circle size="small" type="danger" @click="tplItems.splice(i, 1)"/>
+          </div>
+          <el-button :icon="Plus" plain size="small" style="width:100%" @click="tplItems.push('')">添加模板项</el-button>
+          <p class="tpl-tip">录报告时按这些项依次填空；全部清空表示不启用模板</p>
+        </div>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="modalView = false">取消</el-button>
@@ -64,7 +82,7 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {Delete, Edit} from '@element-plus/icons-vue'
+import {Delete, Edit, Plus} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
@@ -121,8 +139,19 @@ const sureFlush = (res: Res): void => {
 
 const modalView = ref(false)
 const modalTit = ref<"新增影像项" | "修改影像项">("修改影像项")
+// 报告模板项（编辑态：字符串数组）
+const tplItems = ref<string[]>([])
+const tplCount = (tpl: string | null | undefined): number => parseTpl(tpl).length
+const parseTpl = (tpl: string | null | undefined): string[] => {
+  if (!tpl) return []
+  try {
+    const arr = JSON.parse(tpl)
+    return Array.isArray(arr) ? arr.map((x: unknown) => String(x)) : []
+  } catch { return [] }
+}
 const addRoleB = (): void => {
   form.value = exampleImageTest()
+  tplItems.value = []
   myFormRef.value?.resetFields()
   modalTit.value = "新增影像项"
   modalView.value = true
@@ -130,6 +159,7 @@ const addRoleB = (): void => {
 const showDialog = (row: ImageTest): void => {
   myFormRef.value?.clearValidate()
   form.value = {...row}
+  tplItems.value = parseTpl(row.reportTpl)
   modalView.value = true
   modalTit.value = "修改影像项"
 }
@@ -139,6 +169,9 @@ const myFormRef = ref<FormInstance>()
 const formSubmit = async (): Promise<void> => {
   await myFormRef.value?.validate((valid: boolean): void => {
     if (valid) {
+      // 模板项序列化为 JSON 字符串（全空则不启用模板）
+      const items = tplItems.value.map(t => t.trim()).filter(t => t)
+      form.value.reportTpl = items.length ? JSON.stringify(items) : ''
       modalView.value = false
       if (modalTit.value == "新增影像项") reqAddImageTest(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改影像项") reqUpdateImageTest(form.value).then(res => sureFlush(res))
@@ -163,5 +196,19 @@ onMounted(() => {
 .sel-tip b {
   font-size: 16px;
   margin: 0 2px;
+}
+.tpl-editor {
+  width: 100%;
+  .tpl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .tpl-tip {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #909399;
+  }
 }
 </style>

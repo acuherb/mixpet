@@ -50,6 +50,13 @@ public class ImageTestController {
         return Result.choice("保存", testService.saveOrUpdate(test));
     }
 
+    /** 单个影像项（录报告时取报告模板，员工可查） */
+    @GetMapping("/one/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public ImageTest one(@PathVariable Integer id) {
+        return testService.getById(id);
+    }
+
     /** 删除（被引用则停用） */
     @DeleteMapping("/item/{id}")
     @Secured(RoleConst.MANAGER)

@@ -12,6 +12,9 @@ export const reqImgGroup = (): Promise<ImageTest[]> =>
 // 字典分页
 export const reqImageTestPage = (params: { itemName: string; groupName: string; numPage: number; pageSize: number }): Promise<Page<ImageTest>> =>
     reqApi<string, Page<ImageTest>>("imageTest/page", {params})
+// 单个影像项（录报告时取报告模板）
+export const reqImageTestOne = (itemId: number): Promise<ImageTest> =>
+    reqApi<string, ImageTest>("imageTest/one/" + itemId)
 // 新增/修改
 export const reqAddImageTest = (data: ImageTest): Promise<Res> =>
     reqApi.put<string, Res>("imageTest", data)
