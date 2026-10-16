@@ -3,6 +3,7 @@ import reqApi from "@/request/reqAPI";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
 import {MedicalRecord} from "@/model/entiy/MedicalRecord";
+import {PetHistory} from "@/model/VO/PetHistory";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
@@ -39,3 +40,6 @@ export const reqCancelRecord = (recordId: number, reason: string): Promise<Res> 
 // 未完绪病历修改（内容字段：主诉/查体/诊断/治疗/医嘱/备注/复诊/分诊/体征）
 export const reqUpdateRecord = (record: MedicalRecord): Promise<Res> =>
     reqApi.put<string, Res>("record", record)
+// 宠物病史速览（接诊侧栏）
+export const reqPetHistory = (petId: number): Promise<PetHistory> =>
+    reqApi<string, PetHistory>("record/petHistory/" + petId)

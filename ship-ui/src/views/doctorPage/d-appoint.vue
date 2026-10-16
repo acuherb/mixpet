@@ -62,6 +62,9 @@
         </el-tag>
       </template>
 
+      <div class="treat-body">
+        <div class="treat-main">
+
       <!-- 阶段一：病历建档 -->
       <el-form v-if="treatPhase === 'record'" ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
         <el-divider content-position="left">病历</el-divider>
@@ -269,6 +272,48 @@
             <p v-if="savedPkg.length === 0" style="color:#999">尚未添加套餐</p>
           </el-tab-pane>
         </el-tabs>
+        </div>
+      </div>
+
+        <!-- 宠物病史侧栏：写病历时参考历史 -->
+        <aside v-if="petHistory" class="pet-history">
+          <div class="ph-head">宠物病史</div>
+          <div class="ph-sec">
+            <div class="ph-tit">档案</div>
+            <p>{{ petHistory.petName }}（{{ petHistory.petVariety || '未知品种' }} · {{ petHistory.petSex ? '公' : '母' }}）</p>
+            <p>芯片：{{ petHistory.petChip || '—' }} · {{ petHistory.petSterilization ? '已绝育' : '未绝育' }}</p>
+          </div>
+          <div v-if="petHistory.petAllergy" class="ph-sec ph-danger">
+            <div class="ph-tit">⚠ 过敏史</div>
+            <p>{{ petHistory.petAllergy }}</p>
+          </div>
+          <div v-if="petHistory.petHistory" class="ph-sec">
+            <div class="ph-tit">既往病史</div>
+            <p>{{ petHistory.petHistory }}</p>
+          </div>
+          <div class="ph-sec">
+            <div class="ph-tit">最近就诊</div>
+            <p v-if="!petHistory.recentRecords.length" class="ph-empty">暂无就诊记录</p>
+            <div v-for="r in petHistory.recentRecords" :key="r.recordId" class="ph-rec">
+              <span class="ph-diag" :title="r.diagnosis || ''">{{ r.diagnosis || '—' }}</span>
+              <span class="ph-date">{{ moveT(r.createTime) }}</span>
+            </div>
+          </div>
+          <div v-if="petHistory.recentRx.length" class="ph-sec">
+            <div class="ph-tit">近期用药</div>
+            <div v-for="(x, i) in petHistory.recentRx" :key="i" class="ph-rec">
+              <span class="ph-diag">{{ x.drugName }}</span>
+              <span class="ph-date">{{ x.usageInfo }}</span>
+            </div>
+          </div>
+          <div v-if="petHistory.abnormalLabs.length" class="ph-sec ph-warn">
+            <div class="ph-tit">近期检验异常</div>
+            <div v-for="(x, i) in petHistory.abnormalLabs" :key="i" class="ph-rec">
+              <span class="ph-diag">{{ x.itemName }}</span>
+              <span class="ph-date">{{ x.resultValue }}{{ x.itemUnit || '' }}</span>
+            </div>
+          </div>
+        </aside>
       </div>
 
       <template #footer>
@@ -337,6 +382,9 @@ import {reqDictByType} from "@/request/DictApi";
 import {SysDict} from "@/model/entiy/SysDict";
 import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {useRouter} from 'vue-router';
+import {moveT} from "@/utils/TimeUtil";
+import {reqPetHistory} from "@/request/RecordApi";
+import {PetHistory} from "@/model/VO/PetHistory";
 
 const router = useRouter()
 // 手术类型/麻醉方式字典（来自系统设置）
@@ -380,6 +428,12 @@ const loadRecordStatus = (): void => {
  */
 const treatView = ref(false)
 const treatAppoint = ref<AppointDto2 | null>(null)
+/** 宠物病史侧栏（接诊时参考：档案/过敏史/既往史/最近就诊/用药/检验异常） */
+const petHistory = ref<PetHistory | null>(null)
+const loadPetHistory = (petId: number): void => {
+  if (!petId) { petHistory.value = null; return }
+  reqPetHistory(petId).then(res => { petHistory.value = res })
+}
 const treatPhase = ref<'record' | 'orders'>('record')
 const treatRecordId = ref(0)
 /** 当前病历状态：0接诊中 1已完结 2已作废；非0时单据只读 */
@@ -441,6 +495,7 @@ const resetOrderForms = (): void => {
 
 const openTreat = (a: AppointDto2): void => {
   treatAppoint.value = a
+  loadPetHistory(a.petId)
   recordForm.value = exampleMedicalRecord(a.appointmentId)
   recordForm.value.chiefComplaint = a.appointmentInfo || ''
   tplId.value = null
@@ -724,5 +779,30 @@ watch(() => form.value.clientId, (newValue): void => {
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
 .order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
 .treat-total { float: left; font-size: 15px; }
+
+/* 接诊弹窗：左表单 + 右病史侧栏 */
+.treat-body { display: flex; gap: 14px; align-items: flex-start; }
+.treat-main { flex: 1; min-width: 0; }
+.pet-history {
+  width: 260px;
+  flex-shrink: 0;
+  max-height: 66vh;
+  overflow-y: auto;
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fafbfc;
+
+  .ph-head { font-weight: 700; color: #1F2D3D; margin-bottom: 8px; font-size: 14px; }
+  .ph-sec { margin-bottom: 10px; p { margin: 2px 0; font-size: 12px; color: #606266; line-height: 1.5; } }
+  .ph-tit { font-size: 12px; font-weight: 600; color: #909399; margin-bottom: 3px; }
+  .ph-rec { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding: 2px 0; }
+  .ph-date { color: #909399; flex-shrink: 0; }
+  .ph-diag { color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ph-empty { color: #c0c4cc; }
+  .ph-danger { background: #fef0f0; border-radius: 6px; padding: 6px; .ph-tit { color: #f56c6c; } p { color: #dd6161; } }
+  .ph-warn { background: #fdf6ec; border-radius: 6px; padding: 6px; .ph-tit { color: #e6a23c; } }
+}
+@media (max-width: 900px) { .pet-history { display: none; } }
 .summary-btns { margin-top: 16px; text-align: right; }
 </style>

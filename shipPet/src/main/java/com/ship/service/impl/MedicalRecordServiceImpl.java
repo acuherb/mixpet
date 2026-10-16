@@ -21,6 +21,7 @@ import com.ship.mapper.RecordPackageMapper;
 import com.ship.mapper.SurgeryMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
+import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 import com.ship.model.vo.SurgeryVo;
@@ -492,5 +493,25 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getRespiratoryRate, form.getRespiratoryRate())
                 .update();
         return Result.success("病历已更新");
+    }
+
+    @Override
+    public PetHistoryVo selectPetHistory(Integer petId) {
+        Pet pet = petMapper.selectById(petId);
+        if (pet == null) return null;
+        // 最近就诊（取前5条）
+        List<PetHistoryVo.RecordBrief> briefs = new ArrayList<>();
+        List<RecordDto> recent = baseMapper.selectPetRecords(new Page<>(1, 5), petId).getRecords();
+        if (recent != null) {
+            for (RecordDto d : recent) {
+                briefs.add(new PetHistoryVo.RecordBrief(d.getRecordId(), d.getCreateTime(), d.getDiagnosis(), d.getDoctorName()));
+            }
+        }
+        return new PetHistoryVo(
+                pet.getPetName(), pet.getPetVariety(), pet.getPetSex(), pet.getPetBirthday(),
+                pet.getPetSterilization(), pet.getPetChip(), pet.getPetAllergy(), pet.getPetHistory(),
+                briefs,
+                baseMapper.selectRecentRxByPet(petId),
+                baseMapper.selectAbnormalLabByPet(petId));
     }
 }

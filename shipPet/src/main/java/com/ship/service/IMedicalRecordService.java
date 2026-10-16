@@ -6,6 +6,7 @@ import com.ship.common.Result;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
+import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordVo;
 import com.ship.model.vo.RxSheetVo;
 
@@ -50,4 +51,7 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
 
     /** 未完绪病历修改（仅接诊中）：主诉/查体/诊断/治疗/医嘱/内部备注/复诊/分诊/体征 */
     Result updateRecord(MedicalRecord record);
+
+    /** 宠物病史速览（接诊侧栏）：档案+过敏/既往史+最近就诊+近期用药+检验异常 */
+    PetHistoryVo selectPetHistory(Integer petId);
 }

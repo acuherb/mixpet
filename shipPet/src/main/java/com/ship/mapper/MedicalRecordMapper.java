@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.MedicalRecord;
+import com.ship.model.vo.PetHistoryVo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,4 +26,10 @@ public interface MedicalRecordMapper extends BaseMapper<MedicalRecord> {
 
     /** 随访提醒：复诊日期在30天内（含逾期）的病历 */
     List<RecordDto> selectDueRevisits();
+
+    /** 宠物近期用药（跨处方+病历，最近10条） */
+    List<PetHistoryVo.RecentRx> selectRecentRxByPet(@Param("petId") Integer petId);
+
+    /** 宠物近期检验异常项（跨化验明细+化验单+病历，最近10条） */
+    List<PetHistoryVo.AbnormalLab> selectAbnormalLabByPet(@Param("petId") Integer petId);
 }

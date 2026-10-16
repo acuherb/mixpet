@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ship.common.Result;
 import com.ship.model.dto.RecordDto;
+import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.entity.Client;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.entity.Doctor;
@@ -81,6 +82,15 @@ public class MedicalRecordController {
     @Secured(RoleConst.DOCTOR)
     public Result update(@RequestBody MedicalRecord record) {
         return recordService.updateRecord(record);
+    }
+
+    /**
+     * 宠物病史速览（接诊侧栏）：档案+过敏/既往史+最近就诊+近期用药+检验异常；员工可查
+     */
+    @GetMapping("/petHistory/{petId}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public PetHistoryVo petHistory(@PathVariable Integer petId) {
+        return recordService.selectPetHistory(petId);
     }
 
     /** 作废单条处方：冲减未付账单药费 */

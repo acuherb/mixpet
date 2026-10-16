@@ -70,4 +70,25 @@
         AND r.revisit_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
         ORDER BY r.revisit_date ASC
     </select>
+    <!--宠物近期用药：跨处方+病历，取最近10条-->
+    <select id="selectRecentRxByPet" resultType="com.ship.model.vo.PetHistoryVo.RecentRx">
+        SELECT p.drug_name AS drugName, p.usage_info AS usageInfo, r.create_time AS createTime
+        FROM prescription p
+        JOIN medical_record r ON p.record_id = r.record_id
+        WHERE r.pet_id = #{petId} AND r.is_del = 0
+        ORDER BY r.create_time DESC
+        LIMIT 10
+    </select>
+
+    <!--宠物近期检验异常项：跨化验明细+化验单+病历，取最近10条-->
+    <select id="selectAbnormalLabByPet" resultType="com.ship.model.vo.PetHistoryVo.AbnormalLab">
+        SELECT i.item_name AS itemName, i.result_value AS resultValue, i.ref_range AS refRange,
+               i.item_unit AS itemUnit, i.result_time AS resultTime
+        FROM lab_order_item i
+        JOIN lab_order o ON i.order_id = o.order_id
+        JOIN medical_record r ON o.record_id = r.record_id
+        WHERE r.pet_id = #{petId} AND i.is_abnormal = 1
+        ORDER BY i.result_time DESC
+        LIMIT 10
+    </select>
 </mapper>
