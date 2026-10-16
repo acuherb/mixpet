@@ -16,7 +16,8 @@
       <AppointCard
           v-for="a in (appointTab === 'pending' ? pendingAppoint : doneAppoint)"
           :key="a.appointmentId"
-          :a="a" @toSuc="openTreat(a)"/>
+          :a="a"
+          :status="recordStatusMap[a.appointmentId]" @toSuc="openTreat(a)"/>
     </MyRow>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
@@ -134,6 +135,8 @@
           已建病历 #{{ treatRecordId }} · 挂号+诊疗 ￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }} · 当前合计
           <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
         </div>
+        <el-alert v-if="orderLocked" :title="treatStatus === 2 ? '该就诊已作废，单据只读' : '该就诊已完结，单据只读'"
+                  show-icon :closable="false" type="warning" style="margin-bottom: 10px"/>
         <el-tabs v-model="activeTab">
           <!-- 处方 -->
           <el-tab-pane label="处方" name="rx">
@@ -171,7 +174,7 @@
             </el-table>
             <el-button :icon="Plus" plain size="small" style="margin-top: 6px; width: 100%" @click="addPrescription">添加药品</el-button>
             <div style="margin-top: 10px; text-align: right">
-              <el-button size="small" type="primary" :loading="rxSaving" @click="saveRx">保存处方（￥{{ feeDrug() }}）</el-button>
+              <el-button size="small" type="primary" :loading="rxSaving" :disabled="orderLocked" @click="saveRx">保存处方（￥{{ feeDrug() }}）</el-button>
             </div>
             <el-divider content-position="left">已开处方</el-divider>
             <el-table :data="savedRx" border size="small">
@@ -210,7 +213,7 @@
                 <el-input-number v-model="surgeryForm.fee" :max="99999" :min="0" :precision="2" :step="100" style="width: 100%"/>
               </el-form-item>
               <div style="text-align: right">
-                <el-button size="small" type="primary" :loading="surgerySaving" @click="createSurgery">安排手术（￥{{ feeSurgery() }}）</el-button>
+                <el-button size="small" type="primary" :loading="surgerySaving" :disabled="orderLocked" @click="createSurgery">安排手术（￥{{ feeSurgery() }}）</el-button>
               </div>
             </template>
             <el-divider content-position="left">已安排手术</el-divider>
@@ -254,7 +257,7 @@
             </el-table>
             <el-button :icon="Plus" plain size="small" style="margin-top: 6px; width: 100%" @click="addPackage">添加套餐</el-button>
             <div style="margin-top: 10px; text-align: right">
-              <el-button size="small" type="primary" :loading="pkgSaving" @click="savePkg">保存套餐（￥{{ feePackage() }}）</el-button>
+              <el-button size="small" type="primary" :loading="pkgSaving" :disabled="orderLocked" @click="savePkg">保存套餐（￥{{ feePackage() }}）</el-button>
             </div>
             <el-divider content-position="left">已加套餐</el-divider>
             <el-table :data="savedPkg" border size="small">
@@ -271,17 +274,20 @@
       <template #footer>
         <span class="treat-total">合计：<b style="color:#f56c6c">￥{{ treatTotal() }}</b></span>
         <el-button @click="treatView = false">取消</el-button>
-        <el-button v-if="treatPhase === 'record'" :loading="treatSubmitting" type="primary" @click="submitRecord">保存病历并开单</el-button>
+        <el-button v-if="treatPhase === 'record'" :loading="treatSubmitting" type="primary" @click="submitRecord">
+          {{ treatRecordId > 0 ? '保存修改' : '保存病历并开单' }}
+        </el-button>
         <template v-else>
           <el-button @click="treatPhase = 'record'">返回病历</el-button>
-          <el-button type="primary" @click="finishTreat">完成接诊</el-button>
+          <el-button v-if="!orderLocked" plain type="danger" @click="cancelTreat">作废就诊</el-button>
+          <el-button :disabled="orderLocked" type="primary" @click="finishTreat">完结就诊</el-button>
         </template>
       </template>
     </el-dialog>
 
     <!--就诊汇总（流程连通）-->
-    <el-dialog v-model="summaryView" title="接诊完成" width="560px" append-to-body>
-      <p style="margin: 0 0 12px">本次接诊已完成，收费账单已生成。处方/手术/套餐可在"接诊"继续追加；检验、影像请在专用页面开单。</p>
+    <el-dialog v-model="summaryView" title="就诊完结" width="560px" append-to-body>
+      <p style="margin: 0 0 12px">本次就诊已完结，收费账单已生成。完结后不能再追加/修改单据；检验、影像请在专用页面开单。</p>
       <el-descriptions :column="1" border size="small">
         <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
         <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
@@ -314,14 +320,14 @@ import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {computed, onMounted, reactive, ref, watch} from "vue";
 import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
-import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
 import {Delete, Plus} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqAddRecordPackage, reqAddRecordPrescription, reqRecordByAppointment, reqRecordOne, reqSaveRecord} from "@/request/RecordApi";
+import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
 import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
 import {RecordTemplate} from "@/model/entiy/RecordTemplate";
 import {reqPackageList} from "@/request/PackageApi";
@@ -353,6 +359,17 @@ onMounted(() => {
 const queryAppoint = () => {
   reqDoctorAppoint().then(res => {
     appoint.value = res
+    loadRecordStatus()
+  })
+}
+// 已处理挂号对应的病历状态（0接诊中 1已完结 2已作废），用于卡片标签
+const recordStatusMap = ref<Record<number, number>>({})
+const loadRecordStatus = (): void => {
+  doneAppoint.value.forEach(a => {
+    if (recordStatusMap.value[a.appointmentId] != null) return
+    reqRecordByAppointment(a.appointmentId).then(rec => {
+      if (rec && rec.recordId) recordStatusMap.value[a.appointmentId] = rec.status ?? 1
+    })
   })
 }
 
@@ -365,6 +382,9 @@ const treatView = ref(false)
 const treatAppoint = ref<AppointDto2 | null>(null)
 const treatPhase = ref<'record' | 'orders'>('record')
 const treatRecordId = ref(0)
+/** 当前病历状态：0接诊中 1已完结 2已作废；非0时单据只读 */
+const treatStatus = ref<number>(0)
+const orderLocked = computed(() => treatStatus.value !== 0)
 const activeTab = ref('rx')
 const treatSubmitting = ref(false)
 
@@ -429,10 +449,24 @@ const openTreat = (a: AppointDto2): void => {
   loadDicts()
   treatView.value = true
   treatPhase.value = 'record'
-  // 已建过病历的直接进入开单阶段（支持继续追加）
+  treatStatus.value = 0
+  // 已建过病历：回显内容 + 进入开单阶段（接诊中可继续追加/修改，已完结/已作废只读）
   reqRecordByAppointment(a.appointmentId).then(rec => {
     if (rec && rec.recordId) {
       treatRecordId.value = rec.recordId
+      treatStatus.value = rec.status ?? 1
+      recordForm.value.chiefComplaint = rec.chiefComplaint ?? recordForm.value.chiefComplaint
+      recordForm.value.physicalExam = rec.physicalExam
+      recordForm.value.diagnosis = rec.diagnosis
+      recordForm.value.treatment = rec.treatment
+      recordForm.value.advice = rec.advice
+      recordForm.value.internalNote = rec.internalNote
+      recordForm.value.revisitDate = rec.revisitDate
+      recordForm.value.triageLevel = rec.triageLevel
+      recordForm.value.weight = rec.weight
+      recordForm.value.temperature = rec.temperature
+      recordForm.value.heartRate = rec.heartRate
+      recordForm.value.respiratoryRate = rec.respiratoryRate
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
       enterOrders()
@@ -456,10 +490,20 @@ const loadSaved = (): void => {
   reqSurgeryByRecord(treatRecordId.value).then(r => { savedSurgery.value = r || [] })
 }
 
-// 阶段一：保存病历并开单（只建病历+初始账单）
+// 阶段一：保存病历并开单（新建走 save；已建病历未完绪走 update 只改内容）
 const submitRecord = (): void => {
   recordFormRef.value?.validate((valid: boolean): void => {
     if (!valid) return
+    if (treatRecordId.value > 0) {
+      if (orderLocked.value) { ElMessage.warning('该就诊已完结/已作废，不能修改'); return }
+      treatSubmitting.value = true
+      reqUpdateRecord({...recordForm.value, recordId: treatRecordId.value}).then(res => {
+        treatSubmitting.value = false
+        if (res.code === 1) { ElMessage.success('病历已更新'); enterOrders() }
+        else ElMessage.error(res.msg || '保存失败')
+      })
+      return
+    }
     treatSubmitting.value = true
     reqSaveRecord({
       record: recordForm.value,
@@ -555,11 +599,27 @@ const treatTotal = (): string => {
   return sum.toFixed(2)
 }
 
-// 完成接诊 → 就诊汇总
+// 完结就诊 → 就诊汇总（有未完成事项时确认后强制完结）
 const summaryView = ref(false)
 const summaryRecordId = ref(0)
 const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, surgery: 0, total: 0})
 const finishTreat = (): void => {
+  reqFinishRecord(treatRecordId.value, false).then(res => {
+    if (res.code === 1) { showSummary(); return }
+    // 有未完成事项（待出结果/待手术/待随访）：确认后强制完结
+    ElMessageBox.confirm(res.msg + '。确认仍要完结吗？', '存在未完成事项', {
+      confirmButtonText: '仍要完结', cancelButtonText: '返回继续处理', type: 'warning'
+    }).then(() => {
+      reqFinishRecord(treatRecordId.value, true).then(r2 => {
+        if (r2.code === 1) showSummary()
+        else ElMessage.error(r2.msg || '完结失败')
+      })
+    }).catch(() => ElMessage.info('已取消，可继续处理'))
+  })
+}
+const showSummary = (): void => {
+  treatStatus.value = 1
+  if (treatAppoint.value) recordStatusMap.value[treatAppoint.value.appointmentId] = 1
   summaryRecordId.value = treatRecordId.value
   const drug = savedDrugSum() + Number(feeDrug())
   const pkg = savedPkgSum() + Number(feePackage())
@@ -569,6 +629,23 @@ const finishTreat = (): void => {
   summaryFee.value = {reg, treat, drug, pkg, surgery, total: reg + treat + drug + pkg + surgery}
   summaryView.value = true
   queryAppoint()
+}
+// 作废就诊（仅接诊中，需填原因）
+const cancelTreat = (): void => {
+  ElMessageBox.prompt('填写作废原因（必填）：', '作废就诊', {
+    confirmButtonText: '确认作废', cancelButtonText: '取消', inputType: 'textarea',
+    inputPattern: /\S+/, inputErrorMessage: '请填写作废原因'
+  }).then(({value}) => {
+    reqCancelRecord(treatRecordId.value, value).then(res => {
+      if (res.code === 1) {
+        ElMessage.success('已作废')
+        treatStatus.value = 2
+        if (treatAppoint.value) recordStatusMap.value[treatAppoint.value.appointmentId] = 2
+        treatView.value = false
+        queryAppoint()
+      } else ElMessage.error(res.msg || '作废失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 const printRx = (): void => {
   router.push('/doctorPage/d-rx?recordId=' + summaryRecordId.value)

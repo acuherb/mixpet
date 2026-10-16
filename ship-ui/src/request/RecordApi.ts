@@ -2,6 +2,7 @@ import {Page} from "@/model/DO/Page";
 import reqApi from "@/request/reqAPI";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
+import {MedicalRecord} from "@/model/entiy/MedicalRecord";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
@@ -29,3 +30,12 @@ export const reqAddRecordPrescription = (data: { recordId: number; prescriptions
 // 往已有病历追加套餐
 export const reqAddRecordPackage = (data: { recordId: number; packageIds: number[] }): Promise<Res> =>
     reqApi.post<string, Res>("record/package", data)
+// 完结就诊：有未完成事项时后端返回清单，确认后 force=true 强制完结
+export const reqFinishRecord = (recordId: number, force = false): Promise<Res> =>
+    reqApi.put<string, Res>("record/finish/" + recordId, {}, {params: {force}})
+// 作废就诊（仅接诊中，需填原因）
+export const reqCancelRecord = (recordId: number, reason: string): Promise<Res> =>
+    reqApi.put<string, Res>("record/cancel/" + recordId, {}, {params: {reason}})
+// 未完绪病历修改（内容字段：主诉/查体/诊断/治疗/医嘱/备注/复诊/分诊/体征）
+export const reqUpdateRecord = (record: MedicalRecord): Promise<Res> =>
+    reqApi.put<string, Res>("record", record)

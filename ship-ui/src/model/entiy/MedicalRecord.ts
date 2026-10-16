@@ -58,6 +58,12 @@ export interface MedicalRecord {
     respiratoryRate?: number | null;
     feeRegister: number;
     feeTreat: number;
+    /** 就诊状态：0接诊中 1已完结 2已作废 */
+    status?: number | null;
+    /** 完结时间 */
+    finishTime?: string | null;
+    /** 作废原因 */
+    cancelReason?: string | null;
 }
 
 export const exampleMedicalRecord = (appointmentId: number): MedicalRecord => {

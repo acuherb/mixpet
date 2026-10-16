@@ -11,10 +11,14 @@
       <li>结果：
         <el-tag v-if="a.isSuc" type="success">已处理</el-tag>
         <el-tag v-else type="warning">未处理</el-tag>
+        <el-tag v-if="a.isSuc && status === 0" size="small" style="margin-left:6px" type="warning">接诊中</el-tag>
+        <el-tag v-else-if="a.isSuc && status === 2" size="small" style="margin-left:6px" type="danger">已作废</el-tag>
       </li>
     </ul>
     <div class="appoint-btn">
       <el-button v-if="!a.isSuc" type="success" @click="toSuc">接诊</el-button>
+      <el-button v-else-if="status === 0" type="warning" @click="toSuc">继续开单</el-button>
+      <el-button v-else type="info" plain @click="toSuc">查看</el-button>
     </div>
     <div class="card_content">
       <div class="card-tit">宠物：{{ a.petName }}</div>
@@ -45,6 +49,8 @@ import {ref} from "vue";
 
 const props = defineProps<{
   a: AppointDto2
+  /** 病历状态：0接诊中 1已完结 2已作废（已处理挂号才有） */
+  status?: number | null
 }>();
 
 const myBorColor = ref<string>("#E6A23C")
