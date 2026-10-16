@@ -23,6 +23,9 @@ import com.ship.mapper.RecordPackageMapper;
 import com.ship.mapper.SurgeryMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
+import com.ship.model.vo.PetHistoryLab;
+import com.ship.model.vo.PetHistoryRecord;
+import com.ship.model.vo.PetHistoryRx;
 import com.ship.model.vo.PetHistoryVo;
 import com.ship.model.vo.RecordFullVo;
 import com.ship.model.vo.RecordQueryVo;
@@ -510,11 +513,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         Pet pet = petMapper.selectById(petId);
         if (pet == null) return null;
         // 最近就诊（取前5条）
-        List<PetHistoryVo.RecordBrief> briefs = new ArrayList<>();
+        List<PetHistoryRecord> briefs = new ArrayList<>();
         List<RecordDto> recent = baseMapper.selectPetRecords(new Page<>(1, 5), petId).getRecords();
         if (recent != null) {
             for (RecordDto d : recent) {
-                briefs.add(new PetHistoryVo.RecordBrief(d.getRecordId(), d.getCreateTime(), d.getDiagnosis(), d.getDoctorName()));
+                briefs.add(new PetHistoryRecord(d.getRecordId(), d.getCreateTime(), d.getDiagnosis(), d.getDoctorName()));
             }
         }
         return new PetHistoryVo(
