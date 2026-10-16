@@ -22,8 +22,8 @@
                is_img,
                msg_type,
                msg_name,
-               m.is_read,
-               m.create_time
+               m.create_time,
+               m.is_read
         FROM msg m,
              client c,
              doctor d
@@ -75,8 +75,8 @@
                is_img,
                msg_type,
                msg_name,
-               m.is_read,
-               m.create_time
+               m.create_time,
+               m.is_read
         FROM msg m,
              client c,
              doctor d

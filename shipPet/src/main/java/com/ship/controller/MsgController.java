@@ -131,6 +131,7 @@ public class MsgController {
         if (UserUtil.getUser() instanceof Client client) {
             msg.setClientId(client.getClientId());
             msg.setIsClient(true);
+            msg.setIsRead(false);
             return Result.choice("消息发送", msgService.save(msg));
         }
         return Result.error("未有登录");
@@ -174,6 +175,7 @@ public class MsgController {
         if (UserUtil.getUser() instanceof Doctor doctor) {
             msg.setDoctorId(doctor.getDoctorId());
             msg.setIsClient(false);
+            msg.setIsRead(false);
             return Result.choice("消息发送", msgService.save(msg));
         }
         return Result.error("未有登录");
