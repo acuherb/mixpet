@@ -49,4 +49,14 @@ public interface MsgMapper extends BaseMapper<Msg> {
      * 医生谈过话的用户
      */
     List<MsgNameDo> doctorGetClientGroup(@Param("doctorId") Integer doctorId, @Param("clientId") Integer clientId);
+
+    /**
+     * 医生查看与某客户会话：将客户发来的未读消息标记为已读
+     */
+    int markReadByDoctor(@Param("doctorId") Integer doctorId, @Param("clientId") Integer clientId);
+
+    /**
+     * 顾客查看与某医生会话：将医生发来的未读消息标记为已读
+     */
+    int markReadByClient(@Param("clientId") Integer clientId, @Param("doctorId") Integer doctorId);
 }

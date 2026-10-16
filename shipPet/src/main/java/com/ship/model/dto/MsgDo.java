@@ -14,6 +14,7 @@ public record MsgDo(
         boolean isImg,
         String msgType,
         String msgName,
-        LocalDateTime createTime
+        LocalDateTime createTime,
+        boolean isRead
 ) {
 }

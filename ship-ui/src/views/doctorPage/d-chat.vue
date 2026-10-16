@@ -12,6 +12,7 @@ import {ChatGroup} from "@/model/DO/ChatGroup";
 import {MsgDo} from "@/model/DO/MsgDo";
 import ChatPanel from "@/components/chat/ChatPanel.vue";
 import {onBeforeUnmount, onMounted, ref} from "vue";
+import {useRoute} from "vue-router";
 import {reqDoctorGetNearClient, reqDoctorMsgGroup, reqDoctorMsgList, reqSendDoctorMsg} from "@/request/MsgApi";
 import {ElMessage} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
@@ -22,12 +23,19 @@ import {getNowISO} from "@/utils/TimeUtil";
  │=============初始化的准备============│
  └───────────────────────────────────┘
  */
+const route = useRoute()
 onMounted(() => {
-  reqDoctorGetNearClient().then(res => {
-    client.clientId = res.roleId
-    client.clientName = res.roleName
-    cutClient(res.roleId)
-  })
+  // 支持从工作台带参进入，直接选中指定客户会话
+  const cid = Number(route.query.clientId)
+  if (cid) {
+    cutClient(cid)
+  } else {
+    reqDoctorGetNearClient().then(res => {
+      client.clientId = res.roleId
+      client.clientName = res.roleName
+      cutClient(res.roleId)
+    })
+  }
 })
 // 当前用户的ID
 const client = {

@@ -9,6 +9,7 @@ export interface MsgDo {
     msgType?: string;
     msgName?: string;
     createTime: string;
+    isRead: boolean;
     roleName: string;
     rolePhoto: string;
 }

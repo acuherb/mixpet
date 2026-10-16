@@ -7,6 +7,7 @@ package com.ship.model.dto;
  * @param roleId    医生id
  * @param roleName  医生名字
  * @param rolePhoto 医生照片
+ * @param unread    未读消息数
  */
-public record MsgNameDo(byte flag, Integer roleId, String roleName, String rolePhoto) {
+public record MsgNameDo(byte flag, Integer roleId, String roleName, String rolePhoto, int unread) {
 }

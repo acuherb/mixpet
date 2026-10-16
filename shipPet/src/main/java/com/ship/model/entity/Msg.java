@@ -78,6 +78,17 @@ public class Msg implements Serializable {
      */
     private Long isDel;
 
+    /**
+     * 接收方是否已读：false未读，true已读
+     * 顾客发的消息由医生读取；医生发的消息由顾客读取
+     */
+    private Boolean isRead;
+
+    /**
+     * 已读时间
+     */
+    private LocalDateTime readTime;
+
     public Integer getMsgId() {
         return msgId;
     }
@@ -166,6 +177,22 @@ public class Msg implements Serializable {
         this.isDel = isDel;
     }
 
+    public Boolean getIsRead() {
+        return isRead;
+    }
+
+    public void setIsRead(Boolean isRead) {
+        this.isRead = isRead;
+    }
+
+    public LocalDateTime getReadTime() {
+        return readTime;
+    }
+
+    public void setReadTime(LocalDateTime readTime) {
+        this.readTime = readTime;
+    }
+
     @Override
     public String toString() {
         return "Msg{" +
@@ -180,6 +207,8 @@ public class Msg implements Serializable {
                 ", updateTime = " + updateTime +
                 ", createTime = " + createTime +
                 ", isDel = " + isDel +
+                ", isRead = " + isRead +
+                ", readTime = " + readTime +
                 "}";
     }
 }

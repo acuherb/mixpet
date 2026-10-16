@@ -89,8 +89,8 @@
             <div class="ph-tit">
               <span class="ph-ico ico-chat"><el-icon><ChatDotRound/></el-icon></span>
               <div>
-                <h3>在线咨询</h3>
-                <p>回复顾客的在线咨询消息</p>
+                <h3>在线咨询<span v-if="totalUnread" class="unread-badge">{{ totalUnread > 99 ? '99+' : totalUnread }}</span></h3>
+                <p>回复顾客的在线咨询消息，新消息会自动提醒</p>
               </div>
             </div>
             <router-link to="/doctorPage/d-chat">
@@ -101,18 +101,21 @@
           </div>
 
           <div class="panel-body">
-            <template v-if="nearClient">
-              <div class="client-row">
+            <div v-if="sortedClients.length" class="client-list">
+              <div v-for="g in sortedClients" :key="g.roleId" class="client-row" @click="openChat(g.roleId)">
                 <div class="client-ava">
-                  <el-avatar :size="56" round>{{ nearClient.roleName?.charAt(0) }}</el-avatar>
+                  <el-avatar :size="44" round>{{ g.roleName?.charAt(0) }}</el-avatar>
                   <span class="dot"></span>
                 </div>
                 <div class="client-main">
-                  <div class="client-name">{{ nearClient.roleName }}</div>
-                  <div class="client-status">最近在线的咨询客户</div>
+                  <div class="client-name">{{ g.roleName }}</div>
+                  <div class="client-status">点击进入会话</div>
                 </div>
+                <span v-if="g.unread" class="client-unread">
+                  {{ g.unread > 99 ? '99+' : g.unread }}
+                </span>
               </div>
-            </template>
+            </div>
             <div v-else class="empty-box">
               <el-icon :size="40"><ChatDotRound/></el-icon>
               <p>暂无在线咨询客户</p>
@@ -168,14 +171,15 @@
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
 import {ArrowRight, Calendar, Camera, ChatDotRound, CircleCheck, FirstAidKit, HomeFilled, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
+import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
-import {reqDoctorGetNearClient} from "@/request/MsgApi";
+import {reqDoctorMsgGroup} from "@/request/MsgApi";
 import {reqLogout} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
-import {ElMessage, ElMessageBox} from "element-plus";
+import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {SwitchButton} from "@element-plus/icons-vue";
-import {NameDo} from "@/model/DO/NameDo";
 import {moveT} from "@/utils/TimeUtil";
+import {Msg} from "@/model/entiy/Msg";
 
 const timeText = ref<string>('--:--:--')
 let timeTimer: ReturnType<typeof setInterval> | undefined
@@ -193,18 +197,71 @@ const appoints = ref<AppointDto2[]>([])
 const pendingAppoints = computed<AppointDto2[]>(() => appoints.value.filter(a => !a.isSuc))
 const pendingCount = computed(() => pendingAppoints.value.length)
 const doneCount = computed(() => appoints.value.length - pendingAppoints.value.length)
-// 在线咨询客户
-const nearClient = ref<NameDo | null>(null)
+const router = useRouter()
+
+// 在线咨询客户列表（医生谈过话的所有客户，含各自的未读数）
+const groupList = ref<ChatGroup[]>([])
+// 有未读的客户置顶
+const sortedClients = computed<ChatGroup[]>(() =>
+    [...groupList.value].sort((a, b) => (b.unread || 0) - (a.unread || 0))
+)
+// 未读总数（标题角标）
+const totalUnread = computed(() =>
+    groupList.value.reduce((s, g) => s + (g.unread || 0), 0)
+)
+
+const loadClients = (): void => {
+  reqDoctorMsgGroup(0).then(res => groupList.value = res || [])
+}
+
+// WebSocket：医生工作台实时接收客户咨询消息并提醒
+const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
+let ws: WebSocket | null = null
+
+const clientNameOf = (cid: number): string =>
+    groupList.value.find(g => g.roleId === cid)?.roleName || `客户${cid}`
+
+const previewOf = (m: Msg): string => {
+  if (m.isImg) return '［图片］'
+  if (m.msgType === 'FILE') return `［文件］${m.msgName || ''}`
+  return m.msgContent || ''
+}
+
+// 收到客户消息：刷新客户列表（含未读数）并弹出提醒
+const handleChatMsg = (m: Msg): void => {
+  const cid = m.clientId
+  if (cid == null) return
+  loadClients()
+  ElNotification({
+    title: '新的咨询消息',
+    message: `${clientNameOf(cid)}：${previewOf(m)}`,
+    type: 'success',
+    duration: 0,
+    position: 'top-right',
+    onClick: () => router.push(`/doctorPage/d-chat?clientId=${cid}`)
+  })
+}
+
+// 点击某客户，进入与该客户的会话（进入后由后端标记已读，返回时刷新未读）
+const openChat = (cid: number): void => {
+  router.push(`/doctorPage/d-chat?clientId=${cid}`)
+}
 
 onMounted(() => {
   tick()
   timeTimer = setInterval(tick, 1000)
   loadData()
+  loadClients()
+  ws = new WebSocket(wsUrl)
+  ws.onmessage = (ev) => {
+    try {
+      handleChatMsg(JSON.parse(ev.data) as Msg)
+    } catch { /* 忽略非消息帧 */ }
+  }
 })
 
 const loadData = () => {
   reqDoctorAppoint().then(res => appoints.value = res)
-  reqDoctorGetNearClient().then(res => nearClient.value = res)
   // 取医生姓名用于问候
   reqGetLoginD().then(d => {
     if (d?.doctorName) doctorName.value = d.doctorName
@@ -212,7 +269,6 @@ const loadData = () => {
 }
 
 // 退出登录
-const router = useRouter()
 const doLogout = (): void => {
   ElMessageBox.confirm('确定退出登录吗？', '退出登录', {
     confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
@@ -225,6 +281,7 @@ const doLogout = (): void => {
 
 onBeforeUnmount(() => {
   if (timeTimer) clearInterval(timeTimer)
+  ws?.close(1000, '离开工作台')
 })
 </script>
 
@@ -556,41 +613,96 @@ onBeforeUnmount(() => {
   }
 }
 
-/* 在线咨询客户 */
+/* 在线咨询客户列表 */
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 264px;
+  overflow-y: auto;
+}
+
 .client-row {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
   background: linear-gradient(135deg, #F0FBF9, #EAF7FF);
   border-radius: 12px;
-  padding: 20px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: box-shadow .2s, transform .2s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(30, 111, 168, .16);
+    transform: translateY(-1px);
+  }
 
   .client-ava {
     position: relative;
+    flex-shrink: 0;
 
     .dot {
       position: absolute;
-      right: 2px;
-      bottom: 4px;
-      width: 12px;
-      height: 12px;
+      right: 0;
+      bottom: 2px;
+      width: 11px;
+      height: 11px;
       border-radius: 50%;
       border: 2px solid #fff;
       background: #67C23A;
     }
   }
 
+  .client-main {
+    flex: 1;
+    min-width: 0;
+  }
+
   .client-name {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: #1F2D3D;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .client-status {
-    margin-top: 4px;
-    font-size: 13px;
+    margin-top: 2px;
+    font-size: 12px;
     color: #909399;
   }
+
+  .client-unread {
+    flex-shrink: 0;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: #F56C6C;
+    color: #fff;
+    font-size: 12px;
+    line-height: 22px;
+    text-align: center;
+    box-sizing: border-box;
+  }
+}
+
+/* 标题上的未读角标 */
+.unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #F56C6C;
+  color: #fff;
+  font-size: 12px;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .panel-foot {

@@ -6,4 +6,5 @@ export interface ChatGroup {
     roleId: number;
     roleName: string;
     rolePhoto:string;
+    unread: number;
 }

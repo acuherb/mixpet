@@ -31,7 +31,10 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, Msg> implements IMsgS
 
     @Override
     public List<MsgDo> clientGetADoctor(Integer clientId, Integer doctorId) {
-        return baseMapper.clientGetADoctor(clientId, doctorId);
+        List<MsgDo> list = baseMapper.clientGetADoctor(clientId, doctorId);
+        // 顾客查看会话：将医生发来的未读消息标记为已读
+        baseMapper.markReadByClient(clientId, doctorId);
+        return list;
     }
 
     @Override
@@ -48,7 +51,10 @@ public class MsgServiceImpl extends ServiceImpl<MsgMapper, Msg> implements IMsgS
 
     @Override
     public List<MsgDo> doctorGetAClient(Integer doctorId, Integer clientId) {
-        return baseMapper.doctorGetAClient(doctorId, clientId);
+        List<MsgDo> list = baseMapper.doctorGetAClient(doctorId, clientId);
+        // 医生查看会话：将顾客发来的未读消息标记为已读
+        baseMapper.markReadByDoctor(doctorId, clientId);
+        return list;
     }
 
     @Override
