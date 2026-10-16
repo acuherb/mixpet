@@ -4,6 +4,7 @@ import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
 import {MedicalRecord} from "@/model/entiy/MedicalRecord";
 import {PetHistory} from "@/model/VO/PetHistory";
+import {RecordFull, RecordQuery} from "@/model/VO/RecordFull";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {Res} from "@/request/Res";
 
@@ -43,3 +44,9 @@ export const reqUpdateRecord = (record: MedicalRecord): Promise<Res> =>
 // 宠物病史速览（接诊侧栏）
 export const reqPetHistory = (petId: number): Promise<PetHistory> =>
     reqApi<string, PetHistory>("record/petHistory/" + petId)
+// 病例全量档案（一个接口拿全）
+export const reqRecordFull = (recordId: number): Promise<RecordFull> =>
+    reqApi<string, RecordFull>("record/detail/" + recordId)
+// 病历多条件检索（病例中心）
+export const reqRecordPage = (query: RecordQuery): Promise<Page<RecordDto>> =>
+    reqApi<string, Page<RecordDto>>("record/page", {params: query})

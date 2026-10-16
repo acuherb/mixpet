@@ -118,26 +118,9 @@
   </el-table>
   <!--分页条-->
   <BackPage :total="billList.total" @changePu="changePuB"/>
-  <!--病历详情弹窗-->
-  <el-dialog v-model="recordView" title="病历详情" top="6vh" width="90%" style="max-width: 640px">
-    <el-descriptions v-if="recordDetail" :column="2" border>
-      <el-descriptions-item label="宠物">{{ recordDetail.record.petName }}</el-descriptions-item>
-      <el-descriptions-item label="客户">{{ recordDetail.record.clientName }}</el-descriptions-item>
-      <el-descriptions-item :span="2" label="主诉">{{ recordDetail.record.chiefComplaint || '无' }}</el-descriptions-item>
-      <el-descriptions-item :span="2" label="诊断">{{ recordDetail.record.diagnosis || '无' }}</el-descriptions-item>
-      <el-descriptions-item :span="2" label="医嘱">{{ recordDetail.record.advice || '无' }}</el-descriptions-item>
-      <el-descriptions-item label="接诊医生">{{ recordDetail.record.doctorName }}</el-descriptions-item>
-      <el-descriptions-item label="就诊时间">{{ recordDetail.record.createTime }}</el-descriptions-item>
-    </el-descriptions>
-    <h4 style="margin: 12px 0 6px">处方</h4>
-    <el-table v-if="recordDetail" :data="recordDetail.prescriptions" border size="small">
-      <el-table-column label="药品" min-width="120" prop="drugName" show-overflow-tooltip/>
-      <el-table-column label="规格" min-width="100" prop="drugSpec" show-overflow-tooltip/>
-      <el-table-column label="数量" prop="quantity" width="60"/>
-      <el-table-column label="单价" prop="drugPrice" width="70"/>
-      <el-table-column label="用法" min-width="130" prop="usageInfo" show-overflow-tooltip/>
-    </el-table>
-    <p v-if="recordDetail && recordDetail.prescriptions.length === 0" style="color:#999">未开处方</p>
+  <!--病历详情弹窗（完整病例档案）-->
+  <el-dialog v-model="recordView" title="病历详情" top="6vh" width="90%" style="max-width: 900px">
+    <RecordDetailFull v-if="recordId" :record-id="recordId"/>
   </el-dialog>
 </template>
 
@@ -153,8 +136,7 @@ import {reqBillDispense, reqBillPage, reqBillPay, reqBillRefund} from "@/request
 import {exportCsv} from "@/utils/ExportUtil";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
-import {RecordDetailVo} from "@/model/DO/RecordDto";
-import {Prescription} from "@/model/entiy/MedicalRecord";
+import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 
 /**
@@ -324,18 +306,14 @@ const recharge = (row: BillDto): void => {
  └───────────────────────────────────┘
  */
 const recordView = ref(false)
-const recordDetail = ref<RecordDetailVo | null>(null)
+const recordId = ref(0)
 const showRecord = (row: BillDto): void => {
   if (!row.recordId) {
     ElMessage.info('该账单没有关联病历')
     return
   }
-  reqRecordOne(row.recordId).then(res => {
-    if (res) {
-      recordDetail.value = res
-      recordView.value = true
-    }
-  })
+  recordId.value = row.recordId
+  recordView.value = true
 }
 
 /**
