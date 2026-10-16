@@ -78,6 +78,7 @@
                     :router-path="card.routerPath"
                     :tit="card.tit"
                     :type="card.type"
+                    :badge="card.routerPath === '/reception/chat' ? totalUnread : 0"
           />
         </MyRow>
       </section>
@@ -124,7 +125,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onBeforeMount, reactive, ref} from "vue";
+import {onBeforeMount, onBeforeUnmount, reactive, ref} from "vue";
 import {Pet} from "@/model/entiy/Pet";
 import {Page} from "@/model/DO/Page";
 import PetCard from "@/components/zoneView/PetCard.vue";
@@ -134,6 +135,9 @@ import {DoctorDto} from "@/model/DO/DoctorDto";
 import {FosterCardDto} from "@/model/DO/FosterCardDto";
 import {NoticeDto} from "@/model/DO/NoticeDto";
 import {reqLoginUser, reqLogout} from "@/request/PowerApi";
+import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
+import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
+import {Msg} from "@/model/entiy/Msg";
 import {reqFourDoctor} from "@/request/DoctorApi";
 import {reqFourPet} from "@/request/PetApi";
 import {reqFosterPet} from "@/request/FosterApi";
@@ -166,6 +170,11 @@ onBeforeMount(() => {
     isLogin.value = !!(res && res.clientId != null)
     if (res && res.clientId != null && res.clientPwdChanged === false) {
       router.push("/changePwd")
+    }
+    // 登录后才加载未读并连接医生回复提醒
+    if (isLogin.value) {
+      loadUnread()
+      connectChat()
     }
   })
 })
@@ -216,10 +225,56 @@ const fosterCardTxt: Page<FosterCardDto> = reactive({records: [], total: 3})
 /* 退出登录 */
 const router = useRouter()
 const myLogout = () => {
-  reqLogout().then(res => {
-    if (res.code === 204) router.push("/")
+  ElMessageBox.confirm('确定退出登录吗？', '退出登录', {
+    confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqLogout().then(() => {
+      // 无论返回码，退出后重置前端登录态并回到未登录首页
+      isLogin.value = false
+      totalUnread.value = 0
+      if (ws) { ws.close(1000, '退出登录'); ws = null }
+      router.push("/")
+    }).catch(() => ElMessage.error('退出失败，请重试'))
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+/* 在线咨询未读（医生发来、顾客未读）与医生回复实时提醒 */
+const totalUnread = ref<number>(0)
+const loadUnread = (): void => {
+  reqClientGetNearDoctor().then(doc => {
+    reqClientMsgGroup(doc.roleId).then(list => {
+      totalUnread.value = (list || []).reduce((s, g) => s + (g.unread || 0), 0)
+    })
   })
 }
+const previewOf = (m: Msg): string => {
+  if (m.isImg) return '［图片］'
+  if (m.msgType === 'FILE') return `［文件］${m.msgName || ''}`
+  return m.msgContent || ''
+}
+const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
+let ws: WebSocket | null = null
+const connectChat = (): void => {
+  if (ws) return
+  ws = new WebSocket(wsUrl)
+  ws.onmessage = (ev) => {
+    try {
+      const m = JSON.parse(ev.data) as Msg
+      loadUnread()
+      ElNotification({
+        title: '医生回复了您',
+        message: previewOf(m),
+        type: 'success',
+        duration: 0,
+        position: 'top-right',
+        onClick: () => router.push('/reception/chat')
+      })
+    } catch { /* 忽略非消息帧 */ }
+  }
+}
+onBeforeUnmount(() => {
+  if (ws) { ws.close(1000, '离开首页'); ws = null }
+})
 </script>
 
 <style lang="scss" scoped>

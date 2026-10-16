@@ -1,5 +1,6 @@
 <template>
   <div :class="['link-card', `is-${type}`]" @click="$router.push(routerPath)">
+    <span v-if="badge && badge > 0" class="card-badge">{{ badge > 99 ? '99+' : badge }}</span>
     <div class="card-text">
       <div class="card-tit">{{ tit }}</div>
       <p class="card-body">{{ body }}</p>
@@ -14,6 +15,7 @@ defineProps<{
   body: string;
   type: "primary" | "success" | "warning";
   routerPath: string;
+  badge?: number;
 }>()
 </script>
 
@@ -21,6 +23,7 @@ defineProps<{
 .link-card {
   --accent: #1E6FA8;
 
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,6 +75,22 @@ defineProps<{
     color: #C0C4CC;
     transition: color .2s, transform .2s;
     flex-shrink: 0;
+  }
+
+  .card-badge {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 10px;
+    background: #F56C6C;
+    color: #fff;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(245, 108, 108, .4);
   }
 }
 </style>

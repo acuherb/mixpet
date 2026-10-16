@@ -20,7 +20,7 @@
       </label>
       <label>
         <input v-model="checkValue" name="radio" type="radio" value="/reception/chat">
-        <span>在线咨询<span v-if="totalUnread" class="unread-dot">{{ totalUnread > 99 ? '99+' : totalUnread }}</span></span>
+        <span>在线咨询</span>
       </label>
     </div>
     <!--内容区-->
@@ -33,7 +33,6 @@
 <script lang="ts" setup>
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import router from "@/router";
-import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
 import {Msg} from "@/model/entiy/Msg";
 import {ElNotification} from "element-plus";
 
@@ -42,32 +41,20 @@ watch(checkValue, () => {
   router.push(checkValue.value)
 })
 
-// 在线咨询未读总数（医生发来、顾客未读）
-const totalUnread = ref<number>(0)
-const loadUnread = (): void => {
-  reqClientGetNearDoctor().then(doc => {
-    reqClientMsgGroup(doc.roleId).then(list => {
-      totalUnread.value = (list || []).reduce((s, g) => s + (g.unread || 0), 0)
-    })
-  })
-}
-
 const previewOf = (m: Msg): string => {
   if (m.isImg) return '［图片］'
   if (m.msgType === 'FILE') return `［文件］${m.msgName || ''}`
   return m.msgContent || ''
 }
 
-// WebSocket：顾客在个人中心时，实时接收医生回复并提醒（进入聊天页会互斥连接）
+// WebSocket：顾客在个人中心时，实时接收医生回复并提醒（未读角标已在首页“咨询医生”入口展示）
 const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
 let ws: WebSocket | null = null
 onMounted(() => {
-  loadUnread()
   ws = new WebSocket(wsUrl)
   ws.onmessage = (ev) => {
     try {
       const m = JSON.parse(ev.data) as Msg
-      loadUnread()
       ElNotification({
         title: '医生回复了您',
         message: previewOf(m),
@@ -172,20 +159,4 @@ $bord-color: #887456;
     padding: 16px;
   }
 }
-/* 在线咨询未读小红点 */
-.unread-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 6px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #F56C6C;
-  color: #fff;
-  font-size: 12px;
-  line-height: 1;
-}
-
 </style>
