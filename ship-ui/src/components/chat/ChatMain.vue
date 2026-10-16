@@ -24,60 +24,141 @@
       </div>
     </div>
   </div>
-  <!--图片点击放大预览-->
-  <el-dialog v-model="previewVisible" title="图片预览" width="80%" top="5vh" @close="closePreview">
-    <div class="preview-toolbar">
-      <el-button-group>
-        <el-button @click="scaleDown">缩小</el-button>
-        <el-button @click="scaleUp">放大</el-button>
-        <el-button @click="resetScale">重置(100%)</el-button>
-      </el-button-group>
-      <span class="preview-scale">{{ Math.round(previewScale * 100) }}%</span>
-      <span class="preview-tip">滚轮可缩放，拖动画布查看大图</span>
-    </div>
-    <div class="preview-body" @wheel.prevent="onWheel">
-      <img v-if="previewSrc" :src="previewSrc" alt="预览图片" class="preview-img"
-           :style="{ transform: `scale(${previewScale})` }"/>
-    </div>
-  </el-dialog>
+  <!--图片全屏预览：滚轮/双指缩放 + 鼠标/单指拖动 + 预览框贴合图片-->
+  <teleport to="body">
+    <transition name="pv-fade">
+      <div v-if="previewVisible" class="pv-mask" @click.self="closePreview">
+        <div class="pv-wrap" :style="wrapStyle"
+             @mousedown.prevent="onDragStart" @wheel.prevent="onWheel"
+             @touchstart.prevent="onTouchStart" @touchmove.prevent="onTouchMove" @touchend="onTouchEnd">
+          <img ref="imgEl" :src="previewSrc" alt="预览图片" class="pv-img" :style="imgStyle"
+               draggable="false" @load="onImgLoad"/>
+        </div>
+        <button class="pv-close" title="关闭" @click="closePreview"><el-icon><Close/></el-icon></button>
+        <div class="pv-bar">
+          <button class="pv-btn" title="缩小" @click="scaleDown"><el-icon><ZoomOut/></el-icon></button>
+          <span class="pv-zoom">{{ Math.round(previewScale * 100) }}%</span>
+          <button class="pv-btn" title="放大" @click="scaleUp"><el-icon><ZoomIn/></el-icon></button>
+          <button class="pv-btn" title="重置" @click="resetScale"><el-icon><Refresh/></el-icon></button>
+        </div>
+      </div>
+    </transition>
+  </teleport>
 </template>
 
 <script lang="ts" setup>
 /*=====前台的聊天记录展示，会自动将滚动条划到底=====*/
 import {MsgDo} from "@/model/DO/MsgDo";
-import {onBeforeUpdate, onMounted, ref} from "vue";
+import {computed, onBeforeUpdate, onMounted, ref} from "vue";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import MyAvatar from "@/components/show/MyAvatar.vue";
-import {Document} from "@element-plus/icons-vue";
+import {Close, Document, Refresh, ZoomIn, ZoomOut} from "@element-plus/icons-vue";
 
 defineProps<{
   msgList: MsgDo[]
 }>()
 
-// 图片点击放大预览
+// 图片全屏预览：滚轮/双指缩放 + 鼠标/单指拖动 + 预览框贴合图片
 const previewVisible = ref(false)
 const previewSrc = ref("")
 const previewScale = ref(1)
+const offsetX = ref(0)
+const offsetY = ref(0)
+const baseW = ref(0)
+const baseH = ref(0)
+const imgEl = ref<HTMLImageElement>()
+const wrapStyle = computed(() => ({ width: baseW.value + 'px', height: baseH.value + 'px' }))
+const imgStyle = computed(() => ({
+  transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${previewScale.value})`
+}))
 const openPreview = (src: string): void => {
   previewSrc.value = src
   previewScale.value = 1
+  offsetX.value = 0
+  offsetY.value = 0
+  baseW.value = 0
+  baseH.value = 0
   previewVisible.value = true
 }
 const closePreview = (): void => {
   previewVisible.value = false
   previewSrc.value = ""
   previewScale.value = 1
+  offsetX.value = 0
+  offsetY.value = 0
 }
-const scaleUp = (): void => {
-  previewScale.value = Math.min(5, +(previewScale.value + 0.25).toFixed(2))
+// 图片加载后按视口适配尺寸，使预览框贴合图片、无上下空白
+const onImgLoad = (): void => {
+  const img = imgEl.value
+  if (!img || !img.naturalWidth) return
+  const fit = Math.min(1, (window.innerWidth * 0.9) / img.naturalWidth, (window.innerHeight * 0.82) / img.naturalHeight)
+  baseW.value = Math.round(img.naturalWidth * fit)
+  baseH.value = Math.round(img.naturalHeight * fit)
 }
-const scaleDown = (): void => {
-  previewScale.value = Math.max(0.25, +(previewScale.value - 0.25).toFixed(2))
+const clampScale = (s: number): number => Math.min(5, Math.max(0.2, +s.toFixed(2)))
+const scaleUp = (): void => { previewScale.value = clampScale(previewScale.value + 0.25) }
+const scaleDown = (): void => { previewScale.value = clampScale(previewScale.value - 0.25) }
+const resetScale = (): void => {
+  previewScale.value = 1
+  offsetX.value = 0
+  offsetY.value = 0
 }
-const resetScale = (): void => { previewScale.value = 1 }
+// 滚轮缩放
 const onWheel = (e: WheelEvent): void => {
   if (e.deltaY < 0) scaleUp()
   else scaleDown()
+}
+// 鼠标拖动移动图片
+let dragging = false
+let lastX = 0
+let lastY = 0
+const onDragStart = (e: MouseEvent): void => {
+  dragging = true
+  lastX = e.clientX
+  lastY = e.clientY
+  window.addEventListener('mousemove', onDragMove)
+  window.addEventListener('mouseup', onDragEnd)
+}
+const onDragMove = (e: MouseEvent): void => {
+  if (!dragging) return
+  offsetX.value += e.clientX - lastX
+  offsetY.value += e.clientY - lastY
+  lastX = e.clientX
+  lastY = e.clientY
+}
+const onDragEnd = (): void => {
+  dragging = false
+  window.removeEventListener('mousemove', onDragMove)
+  window.removeEventListener('mouseup', onDragEnd)
+}
+// 触摸：单指拖动 + 双指缩放
+let lastTouch: { x: number, y: number } | null = null
+let pinchStart = 0
+let pinchScaleStart = 1
+const touchDist = (t: TouchList): number =>
+    Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+const onTouchStart = (e: TouchEvent): void => {
+  if (e.touches.length === 1) {
+    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  } else if (e.touches.length === 2) {
+    lastTouch = null
+    pinchStart = touchDist(e.touches)
+    pinchScaleStart = previewScale.value
+  }
+}
+const onTouchMove = (e: TouchEvent): void => {
+  if (e.touches.length === 1 && lastTouch) {
+    const t = e.touches[0]
+    offsetX.value += t.clientX - lastTouch.x
+    offsetY.value += t.clientY - lastTouch.y
+    lastTouch = { x: t.clientX, y: t.clientY }
+  } else if (e.touches.length === 2 && pinchStart > 0) {
+    previewScale.value = clampScale(pinchScaleStart * (touchDist(e.touches) / pinchStart))
+  }
+}
+const onTouchEnd = (): void => {
+  lastTouch = null
+  pinchStart = 0
 }
 
 // 滚动条到底
@@ -214,37 +295,107 @@ onMounted(() => {
   }
 }
 
-/*=====图片预览弹窗=====*/
-.preview-toolbar {
+/*=====图片全屏预览（缩放/拖动/双指，贴合图片）=====*/
+.pv-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  justify-content: center;
+  background: rgba(8, 10, 13, .9);
+  backdrop-filter: blur(4px);
+  overflow: hidden;
 
-  .preview-scale {
-    font-size: 13px;
-    color: #606266;
+  /* 图片容器：尺寸=适配后的图片尺寸，紧贴图片无空白 */
+  .pv-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+
+    &:active { cursor: grabbing; }
+
+    .pv-img {
+      max-width: none;
+      display: block;
+      border-radius: 6px;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, .6);
+      transform-origin: center center;
+      user-select: none;
+      -webkit-user-drag: none;
+      will-change: transform;
+    }
   }
 
-  .preview-tip {
-    font-size: 12px;
-    color: #909399;
+  /* 右上角关闭 */
+  .pv-close {
+    position: fixed;
+    top: 18px;
+    right: 22px;
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+    font-size: 22px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+
+    &:hover { background: rgba(255, 255, 255, .26); }
+  }
+
+  /* 底部玻璃工具栏 */
+  .pv-bar {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(28, 32, 38, .85);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    backdrop-filter: blur(6px);
+
+    .pv-zoom {
+      min-width: 56px;
+      text-align: center;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      color: #e8eaed;
+    }
+
+    .pv-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .1);
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background .15s, transform .1s;
+
+      &:hover { background: #1e6fa8; }
+      &:active { transform: scale(.92); }
+    }
   }
 }
 
-.preview-body {
-  overflow: auto;
-  max-height: 70vh;
-  text-align: center;
-  background: #f5f7fa;
-  border-radius: 8px;
-  padding: 8px;
-
-  .preview-img {
-    transform-origin: center center;
-    transition: transform 0.1s ease;
-    max-width: none;
-    display: inline-block;
-  }
-}
+/* 预览淡入淡出 */
+.pv-fade-enter-active,
+.pv-fade-leave-active { transition: opacity .18s ease; }
+.pv-fade-enter-from,
+.pv-fade-leave-to { opacity: 0; }
 </style>
