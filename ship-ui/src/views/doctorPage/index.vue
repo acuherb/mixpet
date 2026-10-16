@@ -280,9 +280,9 @@ const handleChatMsg = (m: Msg): void => {
     title: '新的咨询消息',
     message: `${clientNameOf(cid)}：${previewOf(m)}`,
     type: 'success',
-    duration: 0,
+    duration: 6000,
     position: 'top-right',
-    onClick: () => router.push(`/doctorPage/d-chat?clientId=${cid}`)
+    onClick: () => { ElNotification.closeAll(); router.push(`/doctorPage/d-chat?clientId=${cid}`) }
   })
 }
 
@@ -327,6 +327,7 @@ const doLogout = (): void => {
 onBeforeUnmount(() => {
   if (timeTimer) clearInterval(timeTimer)
   ws?.close(1000, '离开工作台')
+  ElNotification.closeAll()
 })
 </script>
 

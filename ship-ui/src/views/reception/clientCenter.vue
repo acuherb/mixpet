@@ -59,15 +59,16 @@ onMounted(() => {
         title: '医生回复了您',
         message: previewOf(m),
         type: 'success',
-        duration: 0,
+        duration: 6000,
         position: 'top-right',
-        onClick: () => router.push('/reception/chat')
+        onClick: () => { ElNotification.closeAll(); router.push('/reception/chat') }
       })
     } catch { /* 忽略非消息帧 */ }
   }
 })
 onBeforeUnmount(() => {
   ws?.close(1000, '离开个人中心')
+  ElNotification.closeAll()
 })
 </script>
 
