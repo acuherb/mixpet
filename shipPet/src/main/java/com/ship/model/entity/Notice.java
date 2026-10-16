@@ -69,6 +69,11 @@ public class Notice implements Serializable {
     private Boolean noticeType;
 
     /**
+     * 排序权重：号大越靠前
+     */
+    private Integer sort;
+
+    /**
      * 逻辑删除，默认0，填充删除日期
      */
     private Long isDel;
@@ -143,6 +148,14 @@ public class Notice implements Serializable {
 
     public void setNoticeType(Boolean noticeType) {
         this.noticeType = noticeType;
+    }
+
+    public Integer getSort() {
+        return sort;
+    }
+
+    public void setSort(Integer sort) {
+        this.sort = sort;
     }
 
     public Long getIsDel() {

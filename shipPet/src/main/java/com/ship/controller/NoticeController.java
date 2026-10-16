@@ -45,6 +45,22 @@ public class NoticeController {
         return noticeService.selectFour();
     }
 
+    /**
+     * 顾客端公告分页（仅顾客可见公告，无需登录）
+     */
+    @GetMapping("/public")
+    public IPage<NoticeDto> getPublic(int numPage, int pageSize, String noticeName) {
+        return noticeService.selectNoticePagePublic(numPage, pageSize, noticeName);
+    }
+
+    /**
+     * 顾客端公告详情（文本内容）
+     */
+    @GetMapping("/detail")
+    public String getDetail(Integer id) {
+        return noticeService.getNoticeText(id);
+    }
+
     @PostMapping
     @Secured(RoleConst.MANAGER)
     public Result save(@RequestBody NoticeDto noticeDto) {

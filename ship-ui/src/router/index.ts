@@ -21,6 +21,10 @@ const routes: RouteRecordRaw[] = [
         path: '/register',
         component: () => import('@/views/register.vue')
     }, {
+        // 顾客端公告列表（更多公告）
+        path: '/reception/noticeList',
+        component: () => import('@/views/reception/noticeList.vue')
+    }, {
         path: '/changePwd',
         component: () => import('@/views/changePwd.vue')
     }, {

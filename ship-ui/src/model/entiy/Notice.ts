@@ -7,4 +7,6 @@ export interface Notice {
     isDisable?: null | boolean;
     /** 公告类型：false顾客公告 true系统提醒(仅员工可见) */
     noticeType?: null | boolean;
+    /** 排序权重：号大越靠前 */
+    sort?: number;
 }

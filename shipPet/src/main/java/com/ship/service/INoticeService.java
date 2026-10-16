@@ -50,6 +50,16 @@ public interface INoticeService extends IService<Notice> {
     IPage<NoticeDto> selectByPage(String noticeName, int numPage, int pageSize);
 
     /**
+     * 顾客端公告分页（仅顾客可见公告）
+     */
+    IPage<NoticeDto> selectNoticePagePublic(int numPage, int pageSize, String noticeName);
+
+    /**
+     * 读取公告文本内容
+     */
+    String getNoticeText(Integer noticeId);
+
+    /**
      * 主页的公告查询
      */
     List<NoticeDto> selectFour();

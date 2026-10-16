@@ -56,6 +56,10 @@
       <el-form-item label="标题" prop="noticeTitle">
         <el-input v-model="form.noticeTitle" clearable placeholder="无"/>
       </el-form-item>
+      <el-form-item label="排序序号">
+        <el-input-number v-model="form.sort" :min="0" controls-position="right"/>
+        <span style="margin-left:10px;font-size:12px;color:#909399">序号越大越靠前</span>
+      </el-form-item>
       <el-form-item label="状态">
         <el-tag v-if="form.isDisable" type="danger">已禁用</el-tag>
         <el-tag v-else>已启用</el-tag>
@@ -220,6 +224,7 @@ const showDialog = (row: NoticeDto) => {
   form.value.isDisable = row.isDisable
   form.value.noticeFile = row.noticeFile
   form.value.textNotice = row.textNotice
+  form.value.sort = row.sort ?? 0
   // ===赋值完成===
   modalView.value = true
   modalTit.value = "修改公告"

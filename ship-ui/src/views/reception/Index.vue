@@ -43,6 +43,7 @@
             <h2 class="section-title">网站公告</h2>
             <p class="section-desc">最新通知与动态</p>
           </div>
+          <router-link class="section-action" to="/reception/noticeList">查看全部 →</router-link>
         </div>
         <div v-if="notices.length" class="notice-grid">
           <div
@@ -56,6 +57,7 @@
             </div>
             <div class="notice-card-body">
               <div class="notice-title">{{ notice.noticeTitle }}</div>
+              <div class="notice-time">{{ noticeTime(notice.createTime) }}</div>
               <div class="notice-arrow">查看详情 →</div>
             </div>
           </div>
@@ -147,6 +149,7 @@ import {reqLoginUser, reqLogout} from "@/request/PowerApi";
 import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
+import {getDisplayTime} from "@/utils/TimeUtil";
 import {reqFourDoctor} from "@/request/DoctorApi";
 import {reqFourPet} from "@/request/PetApi";
 import {reqFosterPet} from "@/request/FosterApi";
@@ -206,6 +209,7 @@ onMounted(() => {
 
 /* 公告栏 */
 const notices = ref<NoticeDto[]>([])
+const noticeTime = (t: string | null | undefined): string => (t ? getDisplayTime(t) : '')
 const myShow = ref<InstanceType<typeof MyDialog> | null>(null)
 const noticeDialog = reactive({tit: "标题", content: "文本内容"})
 const openDialog = (notice: NoticeDto) => {
@@ -613,6 +617,11 @@ onBeforeUnmount(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   min-height: 42px;
+}
+
+.notice-time {
+  font-size: 12px;
+  color: #B0B6C4;
 }
 
 .notice-arrow {

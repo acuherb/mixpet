@@ -8,6 +8,12 @@ import {Res} from "@/request/Res";
 // 主页查询宠物
 export const reqFourNotice = (): Promise<NoticeDto[]> =>
     reqApi<string, NoticeDto[]>("notice/four")
+// 顾客端公告分页（更多公告）
+export const reqNoticePublic = (page: { numPage: number, pageSize: number, noticeName?: string }): Promise<Page<NoticeDto>> =>
+    reqApi<string, Page<NoticeDto>>("notice/public", {params: page})
+// 顾客端公告详情（文本）
+export const reqNoticeDetail = (id: number): Promise<string> =>
+    reqApi<string, string>("notice/detail?id=" + id)
 // 后台公告列表
 export const reqNoticeList = (page: YNoticeList): Promise<Page<NoticeDto>> =>
     reqApi<string, Page<NoticeDto>>("notice/page", {params: page})

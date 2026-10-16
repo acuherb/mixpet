@@ -14,6 +14,7 @@ export const exampleNotice = (): NoticeDto => {
         noticeFile: "",
         noticeId: 0,
         noticeTitle: "",
-        textNotice: ""
+        textNotice: "",
+        sort: 0
     }
 }

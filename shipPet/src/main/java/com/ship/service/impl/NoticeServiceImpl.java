@@ -111,6 +111,18 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     @Override
+    public IPage<NoticeDto> selectNoticePagePublic(int numPage, int pageSize, String noticeName) {
+        return baseMapper.selectNoticePagePublic(new Page<>(numPage, pageSize), noticeName);
+    }
+
+    @Override
+    public String getNoticeText(Integer noticeId) {
+        Notice notice = getById(noticeId);
+        if (notice == null) return null;
+        return getText(notice.getNoticeFile());
+    }
+
+    @Override
     public List<NoticeDto> selectFour() {
         List<NoticeDto> noticeList = baseMapper.selectFour();
         noticeList.forEach(noticeDto -> noticeDto.setTextNotice(getText(noticeDto.getNoticeFile())));
@@ -123,7 +135,8 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
             noticeDto.setCreatId(doctor.getDoctorId());
             String path = UUID.randomUUID() + ".txt";
             writeText(noticeDto.getTextNotice(), path);
-            return baseMapper.addNotice(noticeDto.getCreatId(), noticeDto.getNoticeTitle(), path);
+            Integer sort = noticeDto.getSort() == null ? 0 : noticeDto.getSort();
+            return baseMapper.addNotice(noticeDto.getCreatId(), noticeDto.getNoticeTitle(), path, sort);
         } else return false;
     }
 

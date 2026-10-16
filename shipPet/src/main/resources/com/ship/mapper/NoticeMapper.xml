@@ -33,27 +33,43 @@
             <bind name="noticeKw" value="'%'+noticeName+'%'"/>
             and (a.notice_title like #{noticeKw} or b.doctor_name like #{noticeKw})
         </if>
+        ORDER BY a.sort DESC, a.create_time DESC
     </select>
     <!--主页：查询（仅顾客可见公告，排除系统提醒，避免泄露全院宠物/客户信息）-->
     <select id="selectFour" resultType="com.ship.model.dto.NoticeDto">
-        SELECT notice_id, notice_title, notice_file
+        SELECT notice_id, notice_title, notice_file, create_time
         FROM notice
         WHERE is_del = 0
           AND is_disable = 0
-          AND notice_type = 0 LIMIT 3
+          AND notice_type = 0
+        ORDER BY sort DESC, create_time DESC
+        LIMIT 6
+    </select>
+    <!--顾客端公告分页（仅顾客可见公告 notice_type=0）-->
+    <select id="selectNoticePagePublic" resultType="com.ship.model.dto.NoticeDto">
+        SELECT notice_id, notice_title, create_time
+        FROM notice
+        WHERE is_del = 0
+          AND is_disable = 0
+          AND notice_type = 0
+        <if test="noticeName!=null and noticeName!=''">
+            AND notice_title LIKE CONCAT('%', #{noticeName}, '%')
+        </if>
+        ORDER BY sort DESC, create_time DESC
     </select>
     <!--修改公告信息-->
     <update id="updateNotice">
         UPDATE notice
         SET notice_title=#{noticeTitle},
+            sort=#{sort},
             update_id=#{updateId},
             update_time=now()
         WHERE notice_id = #{noticeId}
     </update>
-    <!--添加公告-->
+    <!--添加公告（顾客公告 notice_type=0）-->
     <insert id="addNotice">
-        INSERT INTO notice (notice_title, notice_file, creat_id, create_time, update_id, update_time)
-        VALUES (#{noticeTitle}, #{noticeFile}, #{creatId}, now(), creat_id, create_time)
+        INSERT INTO notice (notice_title, notice_file, creat_id, create_time, update_id, update_time, notice_type, sort)
+        VALUES (#{noticeTitle}, #{noticeFile}, #{creatId}, now(), #{creatId}, now(), 0, #{sort})
     </insert>
     <!--添加系统公告（notice_type=1 仅员工可见，creat/update 记为系统0）-->
     <insert id="addSystemNotice">

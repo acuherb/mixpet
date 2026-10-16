@@ -31,6 +31,8 @@ public interface NoticeMapper extends BaseMapper<Notice> {
 
     IPage<NoticeDto> selectNoticePage(IPage<NoticeDto> page, @Param("noticeName") String noticeName);
 
+    IPage<NoticeDto> selectNoticePagePublic(IPage<NoticeDto> page, @Param("noticeName") String noticeName);
+
     List<NoticeDto> selectFour();
 
     /**
@@ -43,7 +45,7 @@ public interface NoticeMapper extends BaseMapper<Notice> {
      */
     boolean updateNotice(Notice notice);
 
-    boolean addNotice(Integer creatId, String noticeTitle, String noticeFile);
+    boolean addNotice(Integer creatId, String noticeTitle, String noticeFile, Integer sort);
 
     /** 系统公告（notice_type=1，仅员工可见），creat/update 记为系统 0 */
     boolean addSystemNotice(String noticeTitle, String noticeFile);
