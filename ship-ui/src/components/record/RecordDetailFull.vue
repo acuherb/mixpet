@@ -183,9 +183,10 @@
         </div>
       </div>
       <template #footer>
-        <span class="pv-tip">打印目标选择「另存为 PDF」即可导出电子病历</span>
+        <span class="pv-tip">「导出 PDF 文件」直接下载；打印目标选“另存为 PDF”亦可</span>
         <el-button @click="printView = false">关闭</el-button>
-        <el-button type="primary" @click="doFramePrint">打印 / 另存 PDF</el-button>
+        <el-button @click="doFramePrint">打印</el-button>
+        <el-button type="success" @click="exportPdfFile">导出 PDF 文件</el-button>
       </template>
     </el-dialog>
   </div>
@@ -194,7 +195,7 @@
 
 <script lang="ts" setup>
 import {computed, onMounted, ref} from "vue";
-import {Document, Picture, Tickets} from "@element-plus/icons-vue";
+import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
 import {useRouter} from "vue-router";
 import {reqRecordFull} from "@/request/RecordApi";
 import {RecordFull} from "@/model/VO/RecordFull";
@@ -220,9 +221,10 @@ const usageText = (p: any): string => {
 }
 
 const printView = ref(false)
-const printStyle = ref<'std' | 'color' | 'rx'>('std')
+const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
 const printTpls = [
   {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
+  {style: 'mono' as const, name: '黑白简化', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer},
   {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
   {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
 ]
@@ -235,6 +237,10 @@ const printSrc = computed(() => {
 const doFramePrint = (): void => {
   const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
   f?.contentWindow?.print()
+}
+// 导出真实 PDF：新窗口打开打印页（带 autopdf=1 自动触发下载）
+const exportPdfFile = (): void => {
+  window.open(printSrc.value + '&autopdf=1', '_blank')
 }
 </script>
 

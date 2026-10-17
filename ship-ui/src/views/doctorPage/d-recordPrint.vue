@@ -5,14 +5,16 @@
       <el-button @click="router.back()">返回</el-button>
       <el-radio-group v-model="style">
         <el-radio-button value="std">国标病历</el-radio-button>
+        <el-radio-button value="mono">黑白简化</el-radio-button>
         <el-radio-button value="color">彩色详情版</el-radio-button>
       </el-radio-group>
-      <el-button :disabled="!full" type="primary" @click="doPrint">打印 / 另存 PDF</el-button>
-      <span class="rp-hint">打印目标选择“另存为 PDF”即可导出电子病历</span>
+      <el-button :disabled="!full" type="primary" @click="doPrint">打印</el-button>
+      <el-button :disabled="!full" :loading="pdfing" type="success" @click="exportPdf">导出 PDF 文件</el-button>
+      <span class="rp-hint">「导出 PDF 文件」直接下载电子病历；打印目标选“另存为 PDF”亦可</span>
     </div>
 
-    <!-- ═══════════ 国标病历（黑白规范，适合纸质归档） ═══════════ -->
-    <div v-if="full && style === 'std'" class="rp-sheet">
+    <!-- ═══════════ 国标病历（黑白规范，适合纸质归档；mono=黑白简化紧凑版） ═══════════ -->
+    <div v-if="full && (style === 'std' || style === 'mono')" :class="['rp-sheet', {'rp-mono': style === 'mono'}]">
       <div class="rp-title">宠物病历记录</div>
       <div class="rp-no">编号：No.{{ full.record.recordId }}<span style="float:right">{{ fmt(full.record.createTime) }}</span></div>
 
@@ -202,13 +204,15 @@ import {getAge} from "@/utils/TimeUtil";
 import {surgeryStatusText} from "@/model/entiy/Surgery";
 import {reqPetOne} from "@/request/PetApi";
 import {Pet} from "@/model/entiy/Pet";
+import {ElMessage} from "element-plus";
+import html2pdf from 'html2pdf.js';
 
 const route = useRoute()
 const router = useRouter()
 const full = ref<RecordFull | null>(null)
 const pet = ref<Pet | null>(null)
 const loading = ref(true)
-const style = ref<'std' | 'color'>((route.query.style as string) === 'color' ? 'color' : 'std')
+const style = ref<'std' | 'mono' | 'color'>((route.query.style as string) ?? 'std')
 
 onMounted(() => {
   const recordId = Number(route.query.recordId)
@@ -217,6 +221,8 @@ onMounted(() => {
     full.value = res
     loading.value = false
     if (res?.record.petId) reqPetOne(res.record.petId).then(p => { pet.value = p })
+    // 带 autopdf=1（从打印预览弹窗跳入）：渲染后自动导出 PDF
+    if (route.query.autopdf === '1') setTimeout(() => exportPdf(), 600)
   })
 })
 
@@ -257,6 +263,22 @@ const colorSections = computed(() => {
 })
 
 const doPrint = (): void => window.print()
+
+// 导出真实 PDF 文件（html2pdf：当前模板纸张 → A4 PDF，文件名带病历号与模板名）
+const pdfing = ref(false)
+const exportPdf = (): void => {
+  const el = document.querySelector('.rp-sheet') as HTMLElement | null
+  if (!el || !full.value) return
+  pdfing.value = true
+  const tplName = style.value === 'std' ? '国标病历' : style.value === 'mono' ? '黑白简化' : '彩色详情版'
+  html2pdf().set({
+    margin: 8,
+    filename: `病历-No.${full.value.record.recordId}-${tplName}.pdf`,
+    image: {type: 'jpeg', quality: 0.95},
+    html2canvas: {scale: 2},
+    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
+  }).from(el).save().catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
+}
 </script>
 
 <style lang="scss" scoped>
@@ -330,6 +352,23 @@ const doPrint = (): void => window.print()
   text-align: center;
   color: #999;
   margin-top: 60px;
+}
+
+/* ═══ 黑白简化：灰度兜底 + 紧凑排版，适合针式打印机/普通纸归档 ═══ */
+.rp-sheet.rp-mono {
+  filter: grayscale(1);
+  padding: 16px 18px;
+
+  .rp-title { font-size: 20px; letter-spacing: 5px; }
+  .rp-table {
+    td, th { padding: 4px 6px; font-size: 12px; }
+  }
+  .rp-sec {
+    margin-bottom: 6px;
+    .rp-sec-body { font-size: 12px; line-height: 1.5; }
+    .rp-sec-tit { font-size: 13px; }
+  }
+  .rp-sign td { height: 34px; }
 }
 
 /* ═══ 彩色详情版 ═══ */
