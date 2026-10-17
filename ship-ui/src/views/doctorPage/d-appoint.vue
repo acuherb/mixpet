@@ -357,6 +357,8 @@
       </el-descriptions>
       <div class="summary-btns">
         <el-button type="primary" @click="printRx">打印处方笺</el-button>
+        <el-button @click="printRecord('std')">国标病历</el-button>
+        <el-button @click="printRecord('color')">彩色详情版</el-button>
         <el-button @click="goOrder('d-lab')">去开检验单</el-button>
         <el-button @click="goOrder('d-image')">去开影像单</el-button>
         <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
@@ -742,6 +744,10 @@ const cancelTreat = (): void => {
 }
 const printRx = (): void => {
   router.push('/doctorPage/d-rx?recordId=' + summaryRecordId.value)
+}
+// 打印完整病历：std 国标病历 / color 彩色详情版
+const printRecord = (style: string): void => {
+  router.push('/doctorPage/d-recordPrint?recordId=' + summaryRecordId.value + '&style=' + style)
 }
 const goOrder = (path: string): void => {
   const id = summaryRecordId.value

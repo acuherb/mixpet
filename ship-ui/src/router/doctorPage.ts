@@ -33,5 +33,9 @@ export const doctorPage: RouteRecordRaw[] = [
         // 兽医处方笺（国标，可打印）
         path: "d-rx",
         component: () => import('@/views/doctorPage/d-rx.vue'),
+    }, {
+        // 病历打印（国标病历 / 彩色详情版）
+        path: "d-recordPrint",
+        component: () => import('@/views/doctorPage/d-recordPrint.vue'),
     },
 ]

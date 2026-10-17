@@ -156,6 +156,8 @@
 
     <div class="rf-foot">
       <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
+      <el-button size="small" @click="printRecord('std')">国标病历</el-button>
+      <el-button size="small" @click="printRecord('color')">彩色详情版</el-button>
     </div>
   </div>
   <div v-else v-loading="true" class="rf-loading">加载中...</div>
@@ -179,6 +181,10 @@ onMounted(() => {
 
 const printRx = (): void => {
   router.push('/doctorPage/d-rx?recordId=' + props.recordId)
+}
+// 打印完整病历：std 国标病历 / color 彩色详情版
+const printRecord = (style: string): void => {
+  router.push('/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + style)
 }
 </script>
 
