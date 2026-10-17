@@ -91,19 +91,27 @@ const toLogin = async (): Promise<void> => {
   }).catch(() => { loading.value = false })
 }
 
-// 登录成功后按角色跳转：
+// 登录成功后按角色跳转（失败时停留登录页并提示，不盲目进后台）：
 // 顾客需首次改密（pwdChanged=false 先去 changePwd），医生/管理员进后台
-const getLoginRole = (): void => {
-  reqGetLogin().then(resp => {
+const getLoginRole = async (): Promise<void> => {
+  try {
+    const resp = await reqGetLogin()
     if (resp === RoleEnum.CLIENT) {
-      reqLoginUser().then(user => {
+      try {
+        const user = await reqLoginUser()
         if (user && user.clientPwdChanged === false) router.push("/changePwd")
         else router.push("/")
-      })
+      } catch {
+        loading.value = false
+        ElMessage.error('获取用户信息失败，请重试')
+      }
     } else {
       router.push("/backstage")
     }
-  }).catch(() => router.push("/backstage"))
+  } catch {
+    loading.value = false
+    ElMessage.error('获取登录信息失败，请重试')
+  }
 }
 </script>
 
