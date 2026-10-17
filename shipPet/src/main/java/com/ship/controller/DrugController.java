@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ship.common.Result;
 import com.ship.model.entity.Drug;
 import com.ship.model.entity.DrugRecord;
+import com.ship.model.vo.InboundBatchVo;
+import com.ship.model.vo.InboundLine;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IDrugService;
 import com.ship.util.StrUtil;
@@ -102,6 +104,16 @@ public class DrugController {
     @Secured(RoleConst.MANAGER)
     public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
         return drugService.inbound(drugId, quantity, expireDate, note, supplierId, batchNo);
+    }
+
+    /**
+     * 批量入库：逐条复用 inbound 逻辑独立提交（部分成功），
+     * 返回成功数/失败数/失败原因(含行号)/失败行号(前端据此保留失败行)
+     */
+    @PostMapping("/inbound/batch")
+    @Secured(RoleConst.MANAGER)
+    public InboundBatchVo inboundBatch(@RequestBody List<InboundLine> lines) {
+        return drugService.inboundBatch(lines);
     }
 
     /** 近效期预警列表（expireDate 在未来 days 天内，含当天） */

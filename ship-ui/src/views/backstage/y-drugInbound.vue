@@ -74,7 +74,8 @@
 import {computed, onMounted, ref} from 'vue'
 import {Delete, Plus} from '@element-plus/icons-vue'
 import PageHead from "@/components/row/PageHead.vue";
-import {reqDrugInbound, reqDrugPage} from "@/request/DrugApi";
+import {reqDrugInboundBatch, reqDrugPage} from "@/request/DrugApi";
+import {InboundLine} from "@/model/entiy/InboundBatch";
 import {Drug} from "@/model/entiy/Drug";
 import {ElMessage} from "element-plus";
 
@@ -124,32 +125,33 @@ const onPaste = (e: ClipboardEvent): void => {
 
 const validRows = computed(() => rows.value.filter(r => r.drugId && r.quantity > 0))
 
-/** 逐条入库（串行，避免并发库存问题），汇总成功/失败 */
+/** 批量入库：一次提交（后端逐条独立提交、部分成功），成功行移除、失败行保留继续改 */
 const submitAll = (): void => {
-  if (!validRows.value.length) { ElMessage.warning('没有可入库的行（需选择药品且数量≥1）'); return }
-  submitting.value = true
-  let ok = 0
-  const errs: string[] = []
-  const run = async (): Promise<void> => {
-    for (const r of validRows.value) {
-      try {
-        const res = await reqDrugInbound({
-          drugId: r.drugId!, quantity: r.quantity,
-          batchNo: r.batchNo || undefined, expireDate: r.expireDate || undefined, note: r.note || undefined
-        })
-        if (res.code === 1) ok++
-        else errs.push(res.msg || '未知错误')
-      } catch {
-        errs.push('网络异常')
-      }
-    }
-  }
-  run().finally(() => {
-    submitting.value = false
-    if (ok) ElMessage.success(`入库成功 ${ok} 条，库存已更新`)
-    if (errs.length) ElMessage.error(`失败 ${errs.length} 条，首条原因：${errs[0]}`)
-    if (ok) rows.value = []
+  // 只提交选了药品且数量≥1 的行；记录原始行号，用于把失败行号映射回表格
+  const picked: {line: InboundLine, rowIdx: number}[] = []
+  rows.value.forEach((r, i) => {
+    if (r.drugId && r.quantity > 0) picked.push({
+      line: {
+        drugId: r.drugId, quantity: r.quantity,
+        batchNo: r.batchNo || undefined, expireDate: r.expireDate || undefined, note: r.note || undefined
+      },
+      rowIdx: i
+    })
   })
+  if (!picked.length) { ElMessage.warning('没有可入库的行（需选择药品且数量≥1）'); return }
+  submitting.value = true
+  reqDrugInboundBatch(picked.map(p => p.line)).then(res => {
+    submitting.value = false
+    if (res.success) ElMessage.success(`入库成功 ${res.success} 条，库存已更新`)
+    if (res.failed) {
+      ElMessage.error(`失败 ${res.failed} 条：${res.errors.join('；')}`)
+      // 移除成功行，保留失败行与未匹配行继续修改重试
+      const failRowIdx = new Set(res.failedRows.map(n => picked[n - 1]?.rowIdx).filter(v => v != null))
+      rows.value = rows.value.filter((_, i) => failRowIdx.has(i))
+    } else {
+      rows.value = []
+    }
+  }).catch(() => { submitting.value = false })
 }
 
 onMounted(() => {

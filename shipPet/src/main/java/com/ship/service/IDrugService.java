@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.ship.common.Result;
 import com.ship.model.entity.Drug;
 import com.ship.model.entity.DrugRecord;
+import com.ship.model.vo.InboundBatchVo;
+import com.ship.model.vo.InboundLine;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,6 +35,9 @@ public interface IDrugService extends IService<Drug> {
 
     /** 入库：增加库存并记台账（可带供应商/批号），可同时更新有效期 */
     Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo);
+
+    /** 批量入库：逐条复用 inbound 逻辑独立提交（部分成功），返回逐行结果 */
+    InboundBatchVo inboundBatch(List<InboundLine> lines);
 
     /** 出入库台账分页 */
     IPage<DrugRecord> stockRecordPage(Integer drugId, int numPage, int pageSize);

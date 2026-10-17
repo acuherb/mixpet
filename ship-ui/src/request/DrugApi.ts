@@ -1,4 +1,5 @@
 import {Page} from "@/model/DO/Page";
+import {InboundBatchVo, InboundLine} from "@/model/entiy/InboundBatch";
 import reqApi from "@/request/reqAPI";
 import {Drug} from "@/model/entiy/Drug";
 import {Res} from "@/request/Res";
@@ -33,6 +34,9 @@ export const reqDrugExpiring = (days: number): Promise<Drug[]> =>
 // 入库（增加库存并记台账，可带供应商/批号）
 export const reqDrugInbound = (data: { drugId: number; quantity: number; expireDate?: string; note?: string; supplierId?: number; batchNo?: string }): Promise<Res> =>
     reqApi.post<string, Res>("drug/inbound", {}, {params: data})
+// 批量入库（逐条独立提交、部分成功，返回逐行结果）
+export const reqDrugInboundBatch = (lines: InboundLine[]): Promise<InboundBatchVo> =>
+    reqApi.post<string, InboundBatchVo>("drug/inbound/batch", lines)
 // 出入库台账分页
 export const reqDrugRecordPage = (params: { drugId?: number; numPage: number; pageSize: number }): Promise<Page<import("@/model/entiy/DrugRecord").DrugRecord>> =>
     reqApi<string, Page<import("@/model/entiy/DrugRecord").DrugRecord>>("drug/record/page", {params})

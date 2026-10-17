@@ -19,6 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import com.ship.model.vo.InboundBatchVo;
+import com.ship.model.vo.InboundLine;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -123,6 +126,27 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         r.setNote(note);
         drugRecordMapper.insert(r);
         return Result.success("入库成功，当前库存 " + after);
+    }
+
+    @Override
+    public InboundBatchVo inboundBatch(List<InboundLine> lines) {
+        if (lines == null || lines.isEmpty()) return new InboundBatchVo(0, 0, List.of(), List.of());
+        List<String> errors = new ArrayList<>();
+        List<Integer> failedRows = new ArrayList<>();
+        int success = 0;
+        // 逐条独立提交（部分成功语义：一条失败不影响其他行；失败行由前端保留重试）
+        for (int i = 0; i < lines.size(); i++) {
+            InboundLine line = lines.get(i);
+            Result r = this.inbound(line.getDrugId(), line.getQuantity(), line.getExpireDate(),
+                    line.getNote(), line.getSupplierId(), line.getBatchNo());
+            if (r.code() != null && r.code() == 1) {
+                success++;
+            } else {
+                failedRows.add(i + 1);
+                errors.add("第" + (i + 1) + "行：" + (r.msg() == null ? "入库失败" : r.msg()));
+            }
+        }
+        return new InboundBatchVo(success, failedRows.size(), errors, failedRows);
     }
 
     @Override
