@@ -158,7 +158,7 @@
             <el-table :data="prescriptions" border size="small">
               <el-table-column label="药品" min-width="180">
                 <template #default="scope">
-                  <el-select v-model="scope.row.drugId" filterable placeholder="选择药品" size="small" style="width: 100%">
+                  <el-select v-model="scope.row.drugId" filterable placeholder="选择药品" size="small" style="width: 100%" @change="doseCalc(scope.row)">
                     <el-option v-for="d in drugList" :key="d.drugId"
                                :disabled="d.drugStock === 0"
                                :label="`${d.drugName}（￥${d.drugPrice}/${d.drugUnit}，库存${d.drugStock}）`"
@@ -166,9 +166,10 @@
                   </el-select>
                 </template>
               </el-table-column>
-              <el-table-column label="数量" width="100">
+              <el-table-column label="数量" min-width="120">
                 <template #default="scope">
                   <el-input-number v-model="scope.row.quantity" :max="99" :min="1" size="small" style="width: 90px"/>
+                  <div v-if="scope.row.doseTip" style="margin-top:2px;font-size:11px;line-height:1.35;color:#E6A23C">{{ scope.row.doseTip }}</div>
                 </template>
               </el-table-column>
               <el-table-column label="用法" min-width="140">
@@ -604,6 +605,26 @@ const submitRecord = (): void => {
 
 // 字典查找
 const drugOf = (drugId: number): Drug | undefined => drugList.value.find(d => d.drugId === drugId)
+// 处方自动算量：药品配置了剂量规则时，按体重/固定量自动填入数量（医生可改）
+const doseCalc = (row: Prescription): void => {
+  const d = drugOf(row.drugId)
+  if (!d) return
+  if (d.doseFixed != null && d.doseFixed > 0) {
+    row.quantity = Math.max(1, Math.round(d.doseFixed))
+    row.doseTip = `固定单次用量 ${d.doseFixed}${d.drugUnit || ''}，已自动填入，请确认`
+  } else if (d.dosePerKg != null && d.dosePerKg > 0) {
+    const w = recordForm.value.weight
+    if (w == null) {
+      row.doseTip = '该药按体重算量，请先在上方「体征」填写体重'
+      return
+    }
+    const dose = w * d.dosePerKg
+    row.quantity = Math.max(1, Math.round(dose))
+    row.doseTip = `按体重 ${w}kg 算得单次约 ${dose.toFixed(2)}${d.drugUnit || ''}，已取整，请确认`
+  } else {
+    row.doseTip = ''
+  }
+}
 const pkgOf = (packageId: number): ServicePackage | undefined => packageList.value.find(p => p.packageId === packageId)
 const addPrescription = (): void => { prescriptions.value.push(examplePrescription()) }
 const addPackage = (): void => { packages.value.push(examplePackage()) }

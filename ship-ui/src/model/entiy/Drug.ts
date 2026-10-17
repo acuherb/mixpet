@@ -16,6 +16,10 @@ export interface Drug {
     brand?: string | null;
     prevent?: string | null;
     intervalDays?: number | null;
+    /** 每kg体重单次用量（单位同药剂单位），空=不自动算量 */
+    dosePerKg?: number | null;
+    /** 固定单次用量（与体重无关，优先），空=不自动算量 */
+    doseFixed?: number | null;
     active: boolean;
 }
 
@@ -38,6 +42,8 @@ export const exampleDrug = (): Drug => {
         brand: null,
         prevent: null,
         intervalDays: null,
+        dosePerKg: null,
+        doseFixed: null,
         active: true
     }
 }

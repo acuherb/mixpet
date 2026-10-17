@@ -16,13 +16,16 @@ export interface Prescription {
     quantity: number;
     /** 用法，如 每日2次，每次1片 */
     usageInfo: string | null;
+    /** 前端态：自动算量提示（不提交后端） */
+    doseTip?: string;
 }
 
 export const examplePrescription = (): Prescription => {
     return {
         drugId: 0,
         quantity: 1,
-        usageInfo: ""
+        usageInfo: "",
+        doseTip: ""
     }
 }
 

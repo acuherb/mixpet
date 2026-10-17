@@ -102,6 +102,14 @@
       <el-form-item label="预警阈值">
         <el-input-number v-model="form.warningStock" :max="9999" :min="0" style="width: 100%"/>
       </el-form-item>
+      <el-form-item label="每kg用量">
+        <el-input-number v-model="form.dosePerKg" :max="9999" :min="0" :precision="3" :step="0.01" style="width: 100%"/>
+        <span style="display:block;font-size:12px;color:#909399;line-height:1.4">按体重自动算量：单次用量 = 体重 × 该值，单位与药剂单位一致（如 0.1 = 0.1mL/kg）</span>
+      </el-form-item>
+      <el-form-item label="固定用量">
+        <el-input-number v-model="form.doseFixed" :max="9999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+        <span style="display:block;font-size:12px;color:#909399;line-height:1.4">每次固定用量（与体重无关，优先于每kg用量）；两项均空 = 不自动算量</span>
+      </el-form-item>
       <el-form-item label="有效期至">
         <el-date-picker v-model="form.expireDate" type="date" value-format="YYYY-MM-DD" placeholder="选择有效期" style="width: 100%"/>
       </el-form-item>

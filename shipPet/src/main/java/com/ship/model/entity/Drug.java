@@ -42,6 +42,10 @@ public class Drug implements Serializable {
     private String prevent;
     /** 建议接种间隔天数（疫苗用，用于推算下一针） */
     private Integer intervalDays;
+    /** 每kg体重单次用量（单位同药剂单位，如 0.1 表示 0.1mL/kg），空=不自动算量 */
+    private BigDecimal dosePerKg;
+    /** 固定单次用量（与体重无关，优先于 dosePerKg），空=不自动算量 */
+    private BigDecimal doseFixed;
     /** 启停（停用后不可再开方） */
     private Boolean active;
 
