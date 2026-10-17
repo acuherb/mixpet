@@ -45,3 +45,44 @@ a {
 *, *::before, *::after {
     box-sizing: border-box;
 }
+
+/* ============ 窄屏适配（手机/平板，重点：后台表格页与按钮不溢出） ============ */
+@media (max-width: 768px) {
+  /* 后台/工作台内容区间距收敛 */
+  .el-card {
+    margin-left: 12px !important;
+    margin-right: 12px !important;
+  }
+
+  /* 弹窗撑满可用宽度 */
+  .el-dialog {
+    width: 94% !important;
+  }
+
+  /* 表格操作按钮留间距、允许换行，防止挤压溢出 */
+  .el-table .el-button + .el-button {
+    margin-left: 6px;
+  }
+
+  /* 分页居中可换行 */
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* 医生工作台页头：徽章换行不挤压 */
+  .dash-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ph-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* 页脚栏改单列 */
+  .foot-cols {
+    grid-template-columns: 1fr !important;
+  }
+}

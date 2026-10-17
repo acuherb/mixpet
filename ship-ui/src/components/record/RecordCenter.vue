@@ -70,6 +70,11 @@
       </el-table-column>
     </el-table>
 
+    <!-- 加载失败态：一键重试 -->
+    <el-empty v-if="listError" description="加载失败，请检查网络后重试">
+      <el-button size="small" type="primary" @click="sendQuery">重新加载</el-button>
+    </el-empty>
+
     <div class="rc-pager">
       <el-pagination
           v-model:current-page="q.numPage"
@@ -114,12 +119,19 @@ const q = reactive<{
 const dateRange = ref<[string, string] | null>(null)
 const list = ref<Page<RecordDto>>({records: [], total: 0})
 const loading = ref(false)
+// 加载失败态（可一键重试，避免接口异常时表格白屏）
+const listError = ref(false)
 const detailView = ref(false)
 const detailId = ref(0)
 
 const load = (): void => {
   loading.value = true
-  reqRecordPage(q).then(res => { list.value = res || {records: [], total: 0} })
+  loading.value = true
+  listError.value = false
+  reqRecordPage(q).then(res => {
+    loading.value = false
+    list.value = res || {records: [], total: 0}
+  }).catch(() => { loading.value = false; listError.value = true })
       .finally(() => { loading.value = false })
 }
 const search = (): void => { q.numPage = 1; load() }

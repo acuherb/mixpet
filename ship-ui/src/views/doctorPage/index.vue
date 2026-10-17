@@ -63,6 +63,9 @@
         </div>
 
         <div class="panel-body">
+          <el-alert v-if="loadError" title="数据加载失败，请检查网络" type="error" show-icon :closable="false" style="margin-bottom:12px">
+            <el-button size="small" type="primary" @click="reloadAll">重新加载</el-button>
+          </el-alert>
           <!-- 接诊队列：今日待接诊优先，其余预约按时间补足 -->
           <div class="todo-sec">
             <div class="todo-sec-tit">
@@ -306,7 +309,7 @@ const loadTreating = (): void => {
   reqRecordPage({
     status: 0, numPage: 1, pageSize: 20,
     petName: '', clientName: '', doctorName: '', diagnosis: '', startTime: '', endTime: ''
-  }).then(res => { treatingRecords.value = res?.records || [] })
+  }).then(res => { treatingRecords.value = res?.records || [] }).catch(() => { loadError.value = true })
 }
 // 待办合计（卡壳事项 + 接诊中）
 const todoTotal = computed(() =>
@@ -318,6 +321,8 @@ const todoTotal = computed(() =>
 const groupList = ref<ChatGroup[]>([])
 // 诊疗待办：接诊后卡在中间环节的事项
 const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
+// 数据加载失败态（工作台关键数据，失败时提示重试）
+const loadError = ref(false)
 // 有未读的客户置顶
 const sortedClients = computed<ChatGroup[]>(() =>
     [...groupList.value].sort((a, b) => (b.unread || 0) - (a.unread || 0))
@@ -380,11 +385,19 @@ onMounted(() => {
 })
 
 const loadData = () => {
-  reqDoctorAppoint().then(res => appoints.value = res)
+  reqDoctorAppoint().then(res => appoints.value = res).catch(() => { loadError.value = true })
   // 取医生姓名用于问候
   reqGetLoginD().then(d => {
     if (d?.doctorName) doctorName.value = d.doctorName
   })
+}
+// 一键重载（加载失败时）
+const reloadAll = (): void => {
+  loadError.value = false
+  loadData()
+  loadTreating()
+  loadClients()
+  reqRecordTodo().then(res => { if (res) todo.value = res })
 }
 
 // 退出登录
