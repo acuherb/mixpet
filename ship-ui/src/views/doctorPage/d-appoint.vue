@@ -53,20 +53,33 @@
       </template>
     </el-dialog>
 
-    <!--接诊弹窗：阶段一「病历建档」→ 阶段二「开单调（处方/手术/套餐，检验影像走专用开单页）」-->
+    <!--接诊弹窗：向导式（问诊检查 → 诊断医嘱 → 处置开单 → 完结结算）-->
     <el-dialog v-model="treatView" :close-on-click-modal="false" top="4vh" width="94%" style="max-width: 800px">
       <template #header>
-        <span style="font-weight: bold">{{ treatPhase === 'record' ? '接诊建档' : '开单调' }}</span>
+        <span style="font-weight: bold">接诊向导 · {{ stepTitles[activeStep] }}</span>
         <el-tag v-if="treatAppoint" style="margin-left: 8px" type="warning">
           {{ treatAppoint.petName }} · {{ treatAppoint.clientName }}
         </el-tag>
+        <el-tag v-if="orderLocked" style="margin-left: 8px" type="info">
+          {{ treatStatus === 2 ? '已作废' : '已完结' }} · 只读
+        </el-tag>
       </template>
+
+      <!-- 接诊向导步骤条 -->
+      <el-steps :active="activeStep" align-center simple style="margin-bottom: 12px">
+        <el-step title="问诊与检查"/>
+        <el-step title="诊断与医嘱"/>
+        <el-step title="处置开单"/>
+        <el-step title="完结结算"/>
+      </el-steps>
 
       <div class="treat-body">
         <div class="treat-main">
 
-      <!-- 阶段一：病历建档 -->
-      <el-form v-if="treatPhase === 'record'" ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
+      <!-- 接诊向导表单：始终渲染，按步骤 v-show 切换 -->
+      <el-form ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
+        <!-- 第一步：问诊与检查（模板/主诉/现病史/既往史/查体/体征） -->
+        <div v-show="activeStep === 0" class="treat-step">
         <el-divider content-position="left">病历模板（一键填充，可再修改）</el-divider>
         <el-form-item label="选择模板">
           <el-select v-model="tplId" clearable filterable placeholder="选择模板一键填充（可再修改）" style="width: 100%" @change="applyTpl">
@@ -94,30 +107,6 @@
           </div>
         </el-form-item>
 
-        <el-divider content-position="left">三、诊断与治疗</el-divider>
-        <el-form-item label="诊断" prop="diagnosis">
-          <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
-        </el-form-item>
-        <el-form-item label="治疗方案">
-          <el-input v-model="recordForm.treatment" :rows="2" maxlength="255" placeholder="治疗措施" type="textarea"/>
-        </el-form-item>
-        <el-form-item label="医嘱">
-          <el-input v-model="recordForm.advice" :rows="2" maxlength="255" placeholder="给宠物主人的嘱咐（顾客端可见）" type="textarea"/>
-        </el-form-item>
-        <el-form-item label="复诊日期">
-          <el-date-picker
-              v-model="recordForm.revisitDate"
-              format="YYYY-MM-DD"
-              placeholder="需要复诊时选择（可选）"
-              style="width: 100%"
-              type="date"
-              value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <el-form-item label="内部备注">
-          <el-input v-model="recordForm.internalNote" :rows="2" maxlength="255" placeholder="仅医院内部可见，顾客端不显示" type="textarea"/>
-        </el-form-item>
-
         <el-divider content-position="left">分诊与体征</el-divider>
         <el-form-item label="分诊级别">
           <el-select v-model="recordForm.triageLevel" placeholder="选择分诊级别" style="width: 160px">
@@ -142,17 +131,46 @@
           <el-input v-model="recordForm.bloodPressure" clearable maxlength="16" placeholder="如：120/80" style="width: 150px"/>
         </el-form-item>
 
+        </div>
+
+        <!-- 第二步：诊断与医嘱（含费用） -->
+        <div v-show="activeStep === 1" class="treat-step">
+        <el-divider content-position="left">三、诊断与治疗</el-divider>
+        <el-form-item label="诊断" prop="diagnosis">
+          <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
+        </el-form-item>
+        <el-form-item label="治疗方案">
+          <el-input v-model="recordForm.treatment" :rows="2" maxlength="255" placeholder="治疗措施" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="医嘱">
+          <el-input v-model="recordForm.advice" :rows="2" maxlength="255" placeholder="给宠物主人的嘱咐（顾客端可见）" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="复诊日期">
+          <el-date-picker
+              v-model="recordForm.revisitDate"
+              format="YYYY-MM-DD"
+              placeholder="需要复诊时选择（可选）"
+              style="width: 100%"
+              type="date"
+              value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="内部备注">
+          <el-input v-model="recordForm.internalNote" :rows="2" maxlength="255" placeholder="仅医院内部可见，顾客端不显示" type="textarea"/>
+        </el-form-item>
+
         <el-divider content-position="left">费用</el-divider>
         <el-form-item label="挂号费(元)">
           <el-input-number v-model="recordForm.feeRegister" :max="9999" :min="0" :precision="2" :step="5"/>
           <span class="fee-sep">诊疗费(元)</span>
           <el-input-number v-model="recordForm.feeTreat" :max="99999" :min="0" :precision="2" :step="10"/>
         </el-form-item>
-        <p class="phase-tip">保存病历后进入开单调：可开处方/手术/套餐；检验、影像请点下方"去开检验单/影像单"在专用页面选择项目开单。</p>
+        <p class="phase-tip">保存病历后进入处置开单：可开处方/手术/套餐；检验、影像请点「去开检验单/影像单」在专用页面选择项目开单。</p>
+        </div>
       </el-form>
 
-      <!-- 阶段二：开单调（处方 / 手术 / 套餐） -->
-      <div v-else>
+      <!-- 第三步：处置开单（处方 / 手术 / 套餐） -->
+      <div v-show="activeStep === 2 && treatRecordId > 0" class="treat-step">
         <div class="order-summary">
           已建病历 #{{ treatRecordId }} · 挂号+诊疗 ￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }} · 当前合计
           <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
@@ -314,6 +332,45 @@
         </div>
       </div>
 
+      <!-- 第四步：完结结算（汇总预览 + 收尾操作） -->
+      <div v-show="activeStep === 3 && treatRecordId > 0" class="treat-step">
+        <el-alert v-if="orderLocked" :title="treatStatus === 2 ? '该就诊已作废' : '该就诊已完结，单据只读'"
+                  show-icon :closable="false" type="warning" style="margin-bottom: 10px"/>
+        <div class="settle-cards">
+          <div class="settle-card">
+            <div class="sc-tit">病历摘要</div>
+            <p><b>诊断：</b>{{ recordForm.diagnosis || '（未填写）' }}</p>
+            <p><b>医嘱：</b>{{ recordForm.advice || '（无）' }}</p>
+            <p><b>复诊：</b>{{ recordForm.revisitDate || '无需复诊' }}</p>
+          </div>
+          <div class="settle-card">
+            <div class="sc-tit">已关联单据</div>
+            <p>处方 <b>{{ savedRx.length }}</b> 项 · 套餐 <b>{{ savedPkg.length }}</b> 项 · 手术 <b>{{ savedSurgery.length }}</b> 项</p>
+            <p>检验 <b>{{ labCount }}</b> 单 · 影像 <b>{{ imageCount }}</b> 单</p>
+            <p class="sc-tip">检验/影像在专用页面开单，完成后这里显示数量</p>
+          </div>
+          <div class="settle-card">
+            <div class="sc-tit">费用合计</div>
+            <div class="sc-fee"><span>挂号+诊疗</span><b>￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }}</b></div>
+            <div class="sc-fee"><span>药费</span><b>￥{{ savedDrugSum() }}</b></div>
+            <div class="sc-fee"><span>套餐费</span><b>￥{{ savedPkgSum() }}</b></div>
+            <div class="sc-fee" v-if="savedSurgery.length"><span>手术费</span><b>￥{{ savedSurgerySum() }}</b></div>
+            <div class="sc-fee sc-total"><span>合计</span><b>￥{{ treatTotal() }}</b></div>
+          </div>
+        </div>
+        <div class="settle-ops">
+          <el-button @click="goOrder('d-lab')">去开检验单<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
+          <el-button @click="goOrder('d-image')">去开影像单<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
+          <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
+          <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
+          <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
+          <el-button @click="goBackstage('z-follow')">写随访</el-button>
+          <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
+          <el-button type="primary" plain @click="printView = true">打印预览</el-button>
+        </div>
+        <p class="phase-tip">确认信息无误后点「完结就诊」；有未完成事项（待出结果/待手术/待随访）会提醒，确认后仍可强制完结。</p>
+      </div>
+
         <!-- 宠物病史侧栏：写病历时参考历史 -->
         <aside v-if="petHistory" class="pet-history">
           <div class="ph-head">宠物病史</div>
@@ -356,44 +413,33 @@
       </div>
 
       <template #footer>
-        <span class="treat-total">合计：<b style="color:#f56c6c">￥{{ treatTotal() }}</b></span>
-        <el-button @click="treatView = false">取消</el-button>
-        <el-button v-if="treatPhase === 'record'" :loading="treatSubmitting" type="primary" @click="submitRecord">
-          {{ treatRecordId > 0 ? '保存修改' : '保存病历并开单' }}
-        </el-button>
-        <template v-else>
-          <el-button @click="treatPhase = 'record'">返回病历</el-button>
+        <span class="treat-total">
+          已关联：处方{{ savedRx.length }} · 套餐{{ savedPkg.length }} · 手术{{ savedSurgery.length }} · 检验{{ labCount }} · 影像{{ imageCount }}
+          ｜ 合计 <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
+        </span>
+        <el-button @click="treatView = false">{{ orderLocked ? '关闭' : '取消' }}</el-button>
+        <!-- 第一步/第二步：步骤导航 + 保存病历 -->
+        <template v-if="activeStep <= 1">
+          <el-button v-if="activeStep === 0" @click="activeStep = 1">下一步：诊断医嘱</el-button>
+          <el-button v-else @click="activeStep = 0">上一步</el-button>
+          <el-button :loading="treatSubmitting" type="primary" @click="submitRecord">
+            {{ treatRecordId > 0 ? '保存修改' : '保存病历并开单' }}
+          </el-button>
+        </template>
+        <!-- 第三步：处置开单 -->
+        <template v-else-if="activeStep === 2">
+          <el-button @click="goBackRecord">返回病历</el-button>
           <el-button v-if="!orderLocked" plain type="danger" @click="cancelTreat">作废就诊</el-button>
           <el-button :disabled="orderLocked" type="primary" @click="finishTreat">完结就诊</el-button>
         </template>
+        <!-- 第四步：完结结算 -->
+        <template v-else>
+          <el-button v-if="!orderLocked" @click="activeStep = 2">返回开单</el-button>
+          <el-button v-if="!orderLocked" plain type="danger" @click="cancelTreat">作废就诊</el-button>
+          <el-button v-if="!orderLocked" type="primary" @click="finishTreat">完结就诊</el-button>
+          <el-button v-else @click="treatView = false">完成</el-button>
+        </template>
       </template>
-    </el-dialog>
-
-    <!--就诊汇总（流程连通）-->
-    <el-dialog v-model="summaryView" title="就诊完结" width="560px" append-to-body>
-      <p style="margin: 0 0 12px">本次就诊已完结，收费账单已生成。完结后不能再追加/修改单据；检验、影像请在专用页面开单。</p>
-      <el-descriptions :column="1" border size="small">
-        <el-descriptions-item label="挂号+诊疗">￥{{ (summaryFee.reg + summaryFee.treat).toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="药费">￥{{ summaryFee.drug.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="套餐费">￥{{ summaryFee.pkg.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item v-if="summaryFee.surgery > 0" label="手术费">￥{{ summaryFee.surgery.toFixed(2) }}</el-descriptions-item>
-        <el-descriptions-item label="合计">
-          <b style="color: #f56c6c">￥{{ summaryFee.total.toFixed(2) }}</b>
-        </el-descriptions-item>
-      </el-descriptions>
-      <div class="summary-btns">
-        <el-button type="primary" @click="printView = true">打印预览</el-button>
-        <el-button @click="goOrder('d-lab')">去开检验单<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
-        <el-button @click="goOrder('d-image')">去开影像单<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
-        <el-button plain type="warning" @click="openAi">
-          <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
-        </el-button>
-        <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
-        <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
-        <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
-        <el-button @click="goBackstage('z-follow')">写随访</el-button>
-        <el-button @click="summaryView = false">完成</el-button>
-      </div>
     </el-dialog>
 
     <!-- AI 辅助抽屉：结构化建议 + 合规横幅 + 一键填入 -->
@@ -547,6 +593,9 @@ const orderLocked = computed(() => treatStatus.value !== 0)
 // 检验/影像已开单数（开单调 tab 角标）
 const labCount = ref<number>(0)
 const imageCount = ref<number>(0)
+// 接诊向导步骤：0问诊检查 1诊断医嘱 2处置开单 3完结结算
+const activeStep = ref<number>(0)
+const stepTitles = ['问诊与检查', '诊断与医嘱', '处置开单', '完结结算']
 const activeTab = ref('rx')
 const treatSubmitting = ref(false)
 
@@ -614,6 +663,7 @@ const openTreat = (a: AppointDto2): void => {
   loadDicts()
   treatView.value = true
   treatPhase.value = 'record'
+  activeStep.value = 0
   treatStatus.value = 0
   // 已建过病历：回显内容 + 进入开单阶段（接诊中可继续追加/修改，已完结/已作废只读）
   reqRecordByAppointment(a.appointmentId).then(rec => {
@@ -642,14 +692,22 @@ const openTreat = (a: AppointDto2): void => {
         labCount.value = f?.labOrders?.length ?? 0
         imageCount.value = f?.imageOrders?.length ?? 0
       })
-      enterOrders()
+      // 接诊中→进入开单步骤；已完结/已作废→直达完结结算（只读汇总）
+      if ((rec.status ?? 1) === 0) enterOrders()
+      else { treatPhase.value = 'orders'; activeStep.value = 3; loadSaved() }
     }
   })
 }
 const enterOrders = (): void => {
   treatPhase.value = 'orders'
+  activeStep.value = 2
   activeTab.value = 'rx'
   loadSaved()
+}
+// 从开单步骤返回病历（未完绪可继续修改）
+const goBackRecord = (): void => {
+  treatPhase.value = 'record'
+  activeStep.value = 0
 }
 const loadSaved = (): void => {
   reqRecordOne(treatRecordId.value).then(res => {
@@ -812,10 +870,7 @@ const treatTotal = (): string => {
   return sum.toFixed(2)
 }
 
-// 完结就诊 → 就诊汇总（有未完成事项时确认后强制完结）
-const summaryView = ref(false)
-const summaryRecordId = ref(0)
-const summaryFee = ref({reg: 0, treat: 0, drug: 0, pkg: 0, surgery: 0, total: 0})
+// 完结就诊：有未完成事项时确认后强制完结，完结后进入结算步骤
 const finishTreat = (): void => {
   reqFinishRecord(treatRecordId.value, false).then(res => {
     if (res.code === 1) { showSummary(); return }
@@ -833,14 +888,8 @@ const finishTreat = (): void => {
 const showSummary = (): void => {
   treatStatus.value = 1
   if (treatAppoint.value) recordStatusMap.value[treatAppoint.value.appointmentId] = 1
-  summaryRecordId.value = treatRecordId.value
-  const drug = savedDrugSum() + Number(feeDrug())
-  const pkg = savedPkgSum() + Number(feePackage())
-  const surgery = savedSurgerySum() + Number(feeSurgery())
-  const reg = recordForm.value.feeRegister || 0
-  const treat = recordForm.value.feeTreat || 0
-  summaryFee.value = {reg, treat, drug, pkg, surgery, total: reg + treat + drug + pkg + surgery}
-  summaryView.value = true
+  // 完结后直达结算步骤（汇总预览+收尾操作）
+  activeStep.value = 3
   queryAppoint()
 }
 // 作废就诊（仅接诊中，需填原因）
@@ -904,8 +953,8 @@ const printTpls = [
   {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
 ]
 const printSrc = computed(() => printStyle.value === 'rx'
-    ? '/#/doctorPage/d-rx?recordId=' + summaryRecordId.value
-    : '/#/doctorPage/d-recordPrint?recordId=' + summaryRecordId.value + '&style=' + printStyle.value)
+    ? '/#/doctorPage/d-rx?recordId=' + treatRecordId.value
+    : '/#/doctorPage/d-recordPrint?recordId=' + treatRecordId.value + '&style=' + printStyle.value)
 const doFramePrint = (): void => {
   const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
   f?.contentWindow?.print()
@@ -915,14 +964,10 @@ const exportPdfFile = (): void => {
   window.open(printSrc.value + '&autopdf=1', '_blank')
 }
 const goOrder = (path: string): void => {
-  const id = summaryRecordId.value
-  summaryView.value = false
-  router.push('/doctorPage/' + path + '?recordId=' + id)
+  router.push('/doctorPage/' + path + '?recordId=' + treatRecordId.value)
 }
 const goBackstage = (path: string): void => {
-  const id = summaryRecordId.value
-  summaryView.value = false
-  router.push('/backstage/' + path + '?recordId=' + id)
+  router.push('/backstage/' + path + '?recordId=' + treatRecordId.value)
 }
 
 const recordRules = reactive<FormRules>({
@@ -1035,6 +1080,48 @@ watch(() => form.value.clientId, (newValue): void => {
   line-height: 16px;
   text-align: center;
   font-weight: 600;
+}
+
+/* 向导步骤容器：固定最小高度，切换步骤不跳动 */
+.treat-step { min-height: 340px; }
+
+/* 完结结算卡片 */
+.settle-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.settle-card {
+  border: 1px solid #ebeef5;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fafbfc;
+  .sc-tit { font-size: 13px; font-weight: 700; color: #1F2D3D; margin-bottom: 8px; }
+  p { margin: 4px 0; font-size: 12px; color: #606266; line-height: 1.6; }
+  .sc-tip { color: #c0c4cc; font-size: 11px; }
+}
+.sc-fee {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #606266;
+  padding: 3px 0;
+  b { color: #1F2D3D; }
+  &.sc-total {
+    border-top: 1px dashed #dcdfe6;
+    margin-top: 4px;
+    padding-top: 6px;
+    b { color: #f56c6c; font-size: 14px; }
+  }
+}
+.settle-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: #f8f9fb;
+  border-radius: 10px;
 }
 
 /* 接诊弹窗：左表单 + 右病史侧栏 */

@@ -16,7 +16,7 @@
       </label>
       <label>
         <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientAppoint">
-        <span>挂号查看</span>
+        <span>挂号查看<i v-if="todayAppointCount > 0" class="nav-badge">{{ todayAppointCount > 99 ? '99+' : todayAppointCount }}</i></span>
       </label>
       <label>
         <input v-model="checkValue" name="radio" type="radio" value="/reception/chat">
@@ -35,11 +35,23 @@ import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import router from "@/router";
 import {Msg} from "@/model/entiy/Msg";
 import {ElNotification} from "element-plus";
+import {reqClientAppoint} from "@/request/AppointApi";
 
 const checkValue = ref<string>(router.currentRoute.value.fullPath)
 watch(checkValue, () => {
   router.push(checkValue.value)
 })
+
+// 今日待就诊角标（挂号查看入口，对称医生工作台的今日待接诊）
+const todayAppointCount = ref<number>(0)
+const loadTodayAppoint = (): void => {
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  reqClientAppoint().then(list => {
+    todayAppointCount.value = (list || []).filter(a => !a.isSuc && (a.appointmentDate || '').slice(0, 10) === todayStr).length
+  })
+}
+onMounted(loadTodayAppoint)
 
 const previewOf = (m: Msg): string => {
   if (m.isImg) return '［图片］'
@@ -92,6 +104,22 @@ $bord-color: #887456;
   padding: 28px 36px;
   min-height: 500px;
   box-sizing: border-box;
+}
+
+/* 导航角标：今日待就诊（红色小圆标） */
+.nav-badge {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  background: #f56c6c;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-style: normal;
+  font-weight: 600;
 }
 
 .radio-group {
