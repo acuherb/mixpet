@@ -63,26 +63,33 @@
         </div>
 
         <div class="panel-body">
-          <!-- 待接诊挂号（今天） -->
+          <!-- 接诊队列：今日待接诊优先，其余预约按时间补足 -->
           <div class="todo-sec">
             <div class="todo-sec-tit">
               <el-icon><Calendar/></el-icon>
-              <span>待接诊挂号</span>
-              <el-tag size="small" round effect="plain" type="warning">{{ todayPending.length }}</el-tag>
+              <span>接诊队列</span>
+              <el-tag size="small" round effect="plain" type="warning">今日 {{ todayPending.length }}</el-tag>
+              <el-tag v-if="pendingAppoints.length > todayPending.length" size="small" round effect="plain">
+                待处理共 {{ pendingAppoints.length }}
+              </el-tag>
             </div>
-            <div v-if="todayPending.length" class="todo-rows">
-              <div v-for="a in todayPending" :key="a.appointmentId" class="todo-row"
+            <div v-if="queueAppoints.length" class="todo-rows">
+              <div v-for="a in queueAppoints" :key="a.appointmentId" class="todo-row"
                    @click="$router.push('/doctorPage/d-appoint')">
                 <span class="tr-time">{{ moveT(a.appointmentDate) }}</span>
                 <span class="tr-pet">{{ a.petName }}</span>
                 <span class="tr-owner">{{ a.clientName }}</span>
+                <el-tag v-if="isToday(a.appointmentDate)" round size="small" type="danger" effect="light">今天</el-tag>
                 <span class="tr-info" :title="a.appointmentInfo || ''">{{ a.appointmentInfo || '—' }}</span>
                 <el-button size="small" round type="primary" @click.stop="$router.push('/doctorPage/d-appoint')">去接诊</el-button>
               </div>
+              <p v-if="pendingAppoints.length > queueAppoints.length" class="more-tip">
+                还有 {{ pendingAppoints.length - queueAppoints.length }} 条待处理挂号，点右上角「全部挂号」查看
+              </p>
             </div>
             <p v-else class="todo-empty">
               <el-icon><CircleCheck/></el-icon>
-              今天没有待接诊的挂号
+              暂无待处理的挂号
             </p>
           </div>
 
@@ -111,87 +118,8 @@
         </div>
       </div>
 
-      <!--经营数据：今日营收/接诊/挂号/待收费/待发药/住院中-->
-      <div class="panel stat-panel">
-        <div class="panel-head">
-          <div class="ph-tit">
-            <span class="ph-ico ico-stat"><el-icon><TrendCharts/></el-icon></span>
-            <div>
-              <h3>经营数据</h3>
-              <p>今日门诊实时概览</p>
-            </div>
-          </div>
-        </div>
-        <div class="panel-body stat-grid">
-          <div class="stat-item stat-rev">
-            <span class="si-num">￥{{ (stat.todayRevenue ?? 0).toFixed(2) }}</span>
-            <span class="si-lbl">今日营收</span>
-          </div>
-          <div class="stat-item">
-            <span class="si-num">{{ stat.todayRecord ?? 0 }}</span>
-            <span class="si-lbl">今日接诊</span>
-          </div>
-          <div class="stat-item">
-            <span class="si-num">{{ stat.todayAppoint ?? 0 }}</span>
-            <span class="si-lbl">今日挂号</span>
-          </div>
-          <div class="stat-item" :class="{hot: (stat.pendingBills ?? 0) > 0}">
-            <span class="si-num">{{ stat.pendingBills ?? 0 }}</span>
-            <span class="si-lbl">待收费</span>
-          </div>
-          <div class="stat-item" :class="{hot: (stat.pendingDispense ?? 0) > 0}">
-            <span class="si-num">{{ stat.pendingDispense ?? 0 }}</span>
-            <span class="si-lbl">待发药</span>
-          </div>
-          <div class="stat-item">
-            <span class="si-num">{{ stat.inHospital ?? 0 }}</span>
-            <span class="si-lbl">住院中</span>
-          </div>
-        </div>
-      </div>
-
-      <!--核心功能区：处理挂号 + 在线咨询-->
+      <!--核心功能区：在线咨询 + 诊疗待办-->
       <div class="dash-grid">
-        <!--处理挂号卡片-->
-        <div class="panel appoint-panel">
-          <div class="panel-head">
-            <div class="ph-tit">
-              <span class="ph-ico ico-appoint"><el-icon><Calendar/></el-icon></span>
-              <div>
-                <h3>处理挂号</h3>
-                <p>查看待处理挂号并进行接诊</p>
-              </div>
-            </div>
-            <router-link to="/doctorPage/d-appoint">
-              <el-button type="primary" round>
-                全部挂号<el-icon style="margin-left:4px"><ArrowRight/></el-icon>
-              </el-button>
-            </router-link>
-          </div>
-
-          <div class="panel-body">
-            <template v-if="pendingAppoints.length">
-              <div v-for="a in pendingAppoints.slice(0, 3)" :key="a.appointmentId" class="appoint-row">
-                <div class="ar-ava">{{ a.petName?.charAt(0) || '宠' }}</div>
-                <div class="ar-main">
-                  <div class="ar-title">
-                    <span class="ar-name">{{ a.petName }}</span>
-                    <el-tag size="small" effect="plain">{{ a.clientName }}</el-tag>
-                    <el-tag size="small" type="warning" effect="light">未处理</el-tag>
-                  </div>
-                  <div class="ar-info">{{ a.appointmentInfo }}</div>
-                </div>
-                <div class="ar-time">{{ moveT(a.appointmentDate).slice(0, 16) }}</div>
-              </div>
-              <p v-if="pendingCount > 3" class="more-tip">还有 {{ pendingCount - 3 }} 条待办挂号，点击「全部挂号」查看</p>
-            </template>
-            <div v-else class="empty-box">
-              <el-icon :size="40"><CircleCheck/></el-icon>
-              <p>太棒了，暂无待处理挂号</p>
-            </div>
-          </div>
-        </div>
-
         <!--在线咨询卡片-->
         <div class="panel chat-panel">
           <div class="panel-head">
@@ -318,14 +246,12 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Sunny, TrendCharts, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorMsgGroup} from "@/request/MsgApi";
 import {reqRecordPage, reqRecordTodo} from "@/request/RecordApi";
-import {reqStatOverview} from "@/request/StatisticsApi";
-import {StatOverview} from "@/model/entiy/StatOverview";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
 import {reqLogout} from "@/request/PowerApi";
@@ -358,11 +284,19 @@ const todayStr = (): string => {
   const t = new Date()
   return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
 }
+const isToday = (d: string | null): boolean => !!d && d.slice(0, 10) === todayStr()
 const todayPending = computed<AppointDto2[]>(() =>
     pendingAppoints.value
-        .filter(a => a.appointmentDate && a.appointmentDate.slice(0, 10) === todayStr())
+        .filter(a => isToday(a.appointmentDate))
         .sort((x, y) => (x.appointmentDate || '').localeCompare(y.appointmentDate || ''))
 )
+// 接诊队列：今日优先，其余预约按时间补足（最多 6 条）
+const queueAppoints = computed<AppointDto2[]>(() => {
+  const rest = pendingAppoints.value
+      .filter(a => !isToday(a.appointmentDate))
+      .sort((x, y) => (x.appointmentDate || '').localeCompare(y.appointmentDate || ''))
+  return [...todayPending.value, ...rest].slice(0, 6)
+})
 // 接诊中的病历（未完结，真实列表）
 const treatingRecords = ref<RecordDto[]>([])
 const loadTreating = (): void => {
@@ -381,8 +315,6 @@ const todoTotal = computed(() =>
 const groupList = ref<ChatGroup[]>([])
 // 诊疗待办：接诊后卡在中间环节的事项
 const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
-// 经营数据（今日营收/接诊/待收费/待发药/住院中）
-const stat = ref<StatOverview>({} as StatOverview)
 // 有未读的客户置顶
 const sortedClients = computed<ChatGroup[]>(() =>
     [...groupList.value].sort((a, b) => (b.unread || 0) - (a.unread || 0))
@@ -436,7 +368,6 @@ onMounted(() => {
   loadTreating()
   loadClients()
   reqRecordTodo().then(res => { if (res) todo.value = res })
-  reqStatOverview().then(res => { if (res) stat.value = res })
   ws = new WebSocket(wsUrl)
   ws.onmessage = (ev) => {
     try {
@@ -969,34 +900,6 @@ onBeforeUnmount(() => {
 
 /* 页头徽章：有待办时数字高亮 */
 .stat-badge.hot .stat-num { color: #E6A23C; }
-
-/* 经营数据卡 */
-.stat-panel .stat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-}
-.stat-item {
-  background: #fafbfc;
-  border: 1px solid #edf0f3;
-  border-radius: 10px;
-  padding: 14px 10px;
-  text-align: center;
-  .si-num {
-    display: block;
-    font-size: 22px;
-    font-weight: 700;
-    color: #1F2D3D;
-    font-variant-numeric: tabular-nums;
-  }
-  .si-lbl { display: block; font-size: 12px; color: #909399; margin-top: 4px; }
-  &.hot .si-num { color: #E6A23C; }
-}
-.stat-rev {
-  background: linear-gradient(135deg, #eef7fd, #f0faf8);
-  border-color: #d6e9f8;
-  .si-num { color: #1E6FA8; }
-}
 
 /* 诊疗待办面板 */
 .todo-grid {
