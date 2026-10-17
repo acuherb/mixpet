@@ -92,6 +92,7 @@
             <span>系统管理</span>
           </template>
           <el-menu-item index="/backstage/z-setting">系统设置</el-menu-item>
+          <el-menu-item index="/backstage/y-hospitalInfo">医院资料</el-menu-item>
           <el-menu-item index="/backstage/z-labTest">检验项字典</el-menu-item>
           <el-menu-item index="/backstage/z-imageTest">影像项字典</el-menu-item>
           <el-menu-item index="/backstage/z-template">病历模板</el-menu-item>

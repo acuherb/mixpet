@@ -6,7 +6,18 @@
   </router-view>
 </template>
 <script lang="ts" setup>
+import {onMounted, watch} from 'vue'
+import {hospital, loadHospital} from "@/utils/hospital";
+
 console.log(import.meta.env.VITE_BACK_URL)
+
+// 医院信息：App 启动加载一次（页脚/title 用），标题随医院名联动
+onMounted(() => {
+  loadHospital()
+  watch(hospital, h => {
+    document.title = (h && h.name) ? `${h.name} · 宠物医院管理系统` : '宠物医院管理系统'
+  }, {immediate: true})
+})
 </script>
 <style lang="scss" scoped>
 .flip-enter-active {

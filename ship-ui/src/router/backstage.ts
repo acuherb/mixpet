@@ -22,6 +22,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "y-drugInbound",
         component: () => import('@/views/backstage/y-drugInbound.vue')
     }, {
+        // 医院资料（单行配置：名称/地址/电话/logo）
+        path: "y-hospitalInfo",
+        component: () => import('@/views/backstage/y-hospitalInfo.vue')
+    }, {
         // 病例中心（病历检索 + 全量档案）
         path: "z-recordList",
         component: () => import('@/views/backstage/z-recordList.vue')

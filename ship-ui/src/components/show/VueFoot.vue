@@ -24,9 +24,9 @@
         <div class="foot-col foot-brand">
           <div class="brand-line">
             <span class="brand-mark">PET</span>
-            <span class="brand-name">mixpet</span>
+            <span class="brand-name">{{ hosp.name || 'mixpet' }}</span>
           </div>
-          <p class="brand-desc">宠物医院管理系统</p>
+          <p class="brand-desc">{{ hosp.intro || '宠物医院管理系统' }}</p>
         </div>
 
         <!-- 快捷入口 -->
@@ -43,9 +43,9 @@
         <div class="foot-col">
           <h3 class="col-title">关于我们</h3>
           <ul class="col-list">
-            <li>营业时间：09:00 - 20:00</li>
-            <li>咨询电话：400-000-0000</li>
-            <li>地址：请在后台设置</li>
+            <li>营业时间：{{ hosp.bizHours || '09:00 - 20:00' }}</li>
+            <li>咨询电话：{{ hosp.phone || '400-000-0000' }}</li>
+            <li>地址：{{ hosp.address || '请在后台设置' }}</li>
           </ul>
         </div>
       </div>
@@ -60,6 +60,12 @@
 </template>
 
 <script lang="ts" setup>
+import {onMounted} from 'vue'
+import {hospital, loadHospital} from "@/utils/hospital";
+
+// 医院信息（全局单例，App 已加载；此处兜底再触发一次）
+const hosp = hospital
+onMounted(() => loadHospital())
 </script>
 
 <style lang="scss" scoped>

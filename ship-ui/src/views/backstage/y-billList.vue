@@ -136,6 +136,8 @@ import {reqBillDispense, reqBillPage, reqBillPay, reqBillRefund} from "@/request
 import {exportCsv} from "@/utils/ExportUtil";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
+import {reqHospitalSetting} from "@/request/SettingApi";
+import {HospitalSetting} from "@/model/entiy/HospitalSetting";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 
@@ -324,20 +326,22 @@ const showRecord = (row: BillDto): void => {
  * @param row 账单行
  * @param justPaidType undefined=重打已结算；false/true=刚用余额/现金收款，取当前时间
  */
-const printTicket = (row: BillDto, justPaidType?: boolean, justPaid = false): void => {
+const printTicket = async (row: BillDto, justPaidType?: boolean, justPaid = false): Promise<void> => {
   // 刚收款时没有处方（recordId 在），重打时也已结算，统一尝试取处方明细
+  // 打印前拉医院信息（小票抬头，保证最新配置）
+  const hosp = await reqHospitalSetting().catch(() => null)
   reqRecordOne(row.recordId || 0).then(res => {
     if (justPaid) {
       // 刚收款：payStatus 用 true，payType 用刚才的方式，payTime 用当前时刻
       row = {...row, payStatus: true, payType: justPaidType!, payTime: new Date().toLocaleString('zh-CN')}
     }
-    buildPrintWindow(row, res?.prescriptions ?? [])
-  }).catch(() => buildPrintWindow(row, []))
+    buildPrintWindow(row, res?.prescriptions ?? [], hosp)
+  }).catch(() => buildPrintWindow(row, [], hosp))
 }
 
 const money = (v: number | null | undefined): string => (v ?? 0).toFixed(2)
 
-const buildPrintWindow = (row: BillDto, prescriptions: Prescription[]): void => {
+const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
   // 支付方式文案
   const payTypeText = row.payType ? '现金' : '余额'
   const payTime = row.payTime || row.createTime || ''
@@ -379,8 +383,8 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[]): void => 
   @media print {body{margin:0; width:72mm;}}
 </style></head>
 <body>
-  <h1>宠物医院管理系统</h1>
-  <div class="sub">收费小票</div>
+  <h1>${hosp?.name || '宠物医院管理系统'}</h1>
+  <div class="sub">收费小票${hosp?.phone ? ' · ' + hosp.phone : ''}</div>
   <hr class="line">
   <div class="row"><span class="k">账单号</span><span>${row.billId}</span></div>
   <div class="row"><span class="k">客户</span><span>${row.clientName || ''}${row.clientTel ? ' (' + row.clientTel + ')' : ''}</span></div>
@@ -465,17 +469,19 @@ const moneyCN = (n: number | null | undefined): string => {
  * A4 增值税普通发票版式（870 主要内容打印，非税务联网）
  * 仅对已结算账单可用
  */
-const printInvoice = (row: BillDto): void => {
+const printInvoice = async (row: BillDto): Promise<void> => {
   if (!row.payStatus) {
     ElMessage.warning('该账单尚未结算，请先收款')
     return
   }
+  // 打印前拉医院信息（发票抬头/销售方/电话地址，保证最新配置）
+  const hosp = await reqHospitalSetting().catch(() => null)
   reqRecordOne(row.recordId || 0).then(res => {
-    buildInvoiceWindow(row, res?.prescriptions ?? [])
-  }).catch(() => buildInvoiceWindow(row, []))
+    buildInvoiceWindow(row, res?.prescriptions ?? [], hosp)
+  }).catch(() => buildInvoiceWindow(row, [], hosp))
 }
 
-const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void => {
+const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
   const payTypeText = row.payType ? '现金' : '余额'
   const payTime = row.payTime || row.createTime || ''
   // 明细行：挂号/诊疗/药费 + 处方药品逐项
@@ -538,7 +544,7 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void =
 </style></head>
 <body>
   <div class="head">
-    <h1>宠物医院管理系统</h1>
+    <h1>${hosp?.name || '宠物医院管理系统'}</h1>
     <div class="no">发票代码：21300000000${String(row.billId).padStart(5, '0')}<br>发票号码：${String(row.billId).padStart(8, '0')}<br>开票日期：${payTime}</div>
   </div>
   <div class="t2">
@@ -547,7 +553,7 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void =
   </div>
   <div class="t2">
     <span>购买方电话：${row.clientTel || ''}</span>
-    <span>销售方名称：宠物医院管理系统</span>
+    <span>销售方名称：${hosp?.name || '宠物医院管理系统'}</span>
   </div>
   <table>
     <tr><th class="l" style="width:30%">货物或应税劳务名称</th><th style="width:8%">数量</th><th style="width:8%">单位</th><th style="width:10%">单价</th><th style="width:13%">金额</th><th style="width:10%">税率</th><th style="width:13%">税额</th><th style="width:13%">价税合计</th></tr>
@@ -564,6 +570,7 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[]): void =
     <span>开票人：________</span>
     <span>销售方(盖章)：</span>
   </div>
+  <div class="foot">${hosp?.phone ? '电话：' + hosp.phone + '　' : ''}${hosp?.address || ''}</div>
   <div class="foot">本发票样式为系统内置格式，不联网，仅供内部记账/报销凭证使用</div>
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`

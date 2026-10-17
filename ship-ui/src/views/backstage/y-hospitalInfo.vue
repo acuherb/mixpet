@@ -1,0 +1,78 @@
+<template>
+  <div>
+    <PageHead>医院资料</PageHead>
+    <el-card shadow="never" style="margin: 0 80px 40px">
+      <el-alert :closable="false" show-icon type="info" style="margin-bottom: 16px"
+                title="此处填写的信息将一键生效于：前台首页页脚、浏览器标题、病历打印抬头、收费小票与 A4 发票"/>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" style="max-width: 640px">
+        <el-form-item label="医院名称" prop="name">
+          <el-input v-model="form.name" clearable maxlength="64" placeholder="如：爱康宠物医院"/>
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="form.phone" clearable maxlength="32" placeholder="如：0755-1234567"/>
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input v-model="form.address" clearable maxlength="160" placeholder="医院地址（单据抬头展示）"/>
+        </el-form-item>
+        <el-form-item label="营业时间">
+          <el-input v-model="form.bizHours" clearable maxlength="64" placeholder="如：09:00 - 20:00"/>
+        </el-form-item>
+        <el-form-item label="简介">
+          <el-input v-model="form.intro" :rows="2" clearable maxlength="255" placeholder="一句话介绍/宣传文案（页脚展示）" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="LOGO">
+          <UpImg :photo-nm="form.logo || ''" @upPhoto="onLogo"/>
+          <span style="margin-left:10px;font-size:12px;color:#909399">上传后保存即生效（复用公共下载接口）</span>
+        </el-form-item>
+        <el-form-item>
+          <el-button :loading="saving" type="primary" @click="submit">保存设置</el-button>
+          <el-button style="margin-left:8px" @click="reset">还原</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import {onMounted, reactive, ref} from 'vue'
+import PageHead from "@/components/row/PageHead.vue";
+import UpImg from "@/components/UpImg.vue";
+import {emptyHospital, HospitalSetting} from "@/model/entiy/HospitalSetting";
+import {reqHospitalSetting, reqSaveHospitalSetting} from "@/request/SettingApi";
+import {loadHospital} from "@/utils/hospital";
+import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {Res} from "@/request/Res";
+
+const form = ref<HospitalSetting>(emptyHospital())
+const formRef = ref<FormInstance>()
+const saving = ref(false)
+const rules = reactive<FormRules>({
+  name: [{required: true, message: '请输入医院名称', trigger: 'blur'}],
+  phone: [{required: true, message: '请输入联系电话', trigger: 'blur'}]
+})
+
+const onLogo = (f: string): void => { form.value.logo = f }
+
+onMounted(() => {
+  reqHospitalSetting().then(res => { form.value = res || emptyHospital() })
+})
+
+const reset = (): void => {
+  reqHospitalSetting().then(res => { form.value = res || emptyHospital() })
+}
+
+const submit = (): void => {
+  formRef.value?.validate((valid: boolean) => {
+    if (!valid) return
+    saving.value = true
+    reqSaveHospitalSetting(form.value).then((res: Res) => {
+      saving.value = false
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '保存成功，各处已生效')
+        // 刷新全局单例，让页脚/title 立即更新
+        loadHospital(true)
+      } else ElMessage.error(res.msg || '保存失败')
+    }).catch(() => { saving.value = false })
+  })
+}
+</script>

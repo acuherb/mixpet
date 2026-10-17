@@ -15,6 +15,7 @@
 
     <!-- ═══════════ 国标病历（黑白规范，适合纸质归档；mono=黑白简化紧凑版） ═══════════ -->
     <div v-if="full && (style === 'std' || style === 'mono')" :class="['rp-sheet', {'rp-mono': style === 'mono'}]">
+      <div v-if="hosp.name" class="rp-hosp-name">{{ hosp.name }}</div>
       <div class="rp-title">宠物病历记录</div>
       <div class="rp-no">编号：No.{{ full.record.recordId }}<span style="float:right">{{ fmt(full.record.createTime) }}</span></div>
 
@@ -95,7 +96,7 @@
     <div v-else-if="full && style === 'color'" class="rp-sheet rp-color">
       <div class="rc-head">
         <div class="rc-head-l">
-          <div class="rc-hosp">mixpet 宠物医院</div>
+          <div class="rc-hosp">{{ hosp.name || 'mixpet 宠物医院' }}</div>
           <div class="rc-sub">就诊病历 · 详情版</div>
         </div>
         <div class="rc-head-r">
@@ -206,6 +207,12 @@ import {reqPetOne} from "@/request/PetApi";
 import {Pet} from "@/model/entiy/Pet";
 import {ElMessage} from "element-plus";
 import html2pdf from 'html2pdf.js';
+import {reqHospitalSetting} from "@/request/SettingApi";
+import {emptyHospital, HospitalSetting} from "@/model/entiy/HospitalSetting";
+
+// 打印页独立渲染（window.open/iframe）：自行拉医院信息，不用全局缓存，保证每次打印最新值
+const hosp = ref<HospitalSetting>(emptyHospital())
+reqHospitalSetting().then(s => { if (s) hosp.value = s })
 
 const route = useRoute()
 const router = useRouter()
@@ -302,6 +309,12 @@ const exportPdf = (): void => {
   border: 2px solid #333;
   padding: 24px 28px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+.rp-hosp-name {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
 }
 .rp-title {
   text-align: center;
