@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -72,6 +73,23 @@ public class AppointmentController {
         } else return null;
     }
 
+    /**
+     * 顾客查某医生当日已约数（挂号时段余号展示，date=YYYY-MM-DD）
+     */
+    @GetMapping("/self/dayCount")
+    public long dayCount(Integer doctorId, String date) {
+        if (doctorId == null || StrUtil.isWhite(date)) return 0;
+        LocalDate day = LocalDate.parse(date);
+        LocalDateTime dayStart = day.atStartOfDay();
+        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
+        return appointmentService.lambdaQuery()
+                .eq(Appointment::getDoctorId, doctorId)
+                .ge(Appointment::getAppointmentDate, dayStart)
+                .lt(Appointment::getAppointmentDate, dayEnd)
+                .and(w -> w.eq(Appointment::getIsDel, 0).or().isNull(Appointment::getIsDel))
+                .count();
+    }
+
     @PostMapping
     @Secured(RoleConst.NURSE)
     public Result save(@RequestBody Appointment appointment) {
@@ -106,8 +124,7 @@ public class AppointmentController {
 
     /**
      * 顾客改期自己的待就诊预约（仅可改就诊时间，其余以原单为准，防越权）
-     */
-    @PutMapping("/self/{id}")
+     */    @PutMapping("/self/{id}")
     public Result updateSelf(@PathVariable Integer id, @RequestBody Appointment appointment) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
         Appointment db = appointmentService.getById(id);

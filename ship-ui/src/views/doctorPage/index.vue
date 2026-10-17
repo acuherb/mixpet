@@ -3,8 +3,8 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <span class="brand-mark">DR</span>
-          <span class="brand-name">mixpet 医生工作台</span>
+          <span class="brand-mark">{{ hosp.name ? hosp.name.charAt(0) : 'DR' }}</span>
+          <span class="brand-name">{{ hosp.name ? hosp.name + ' · 医生工作台' : 'mixpet 医生工作台' }}</span>
         </div>
         <ul class="nav">
           <li><router-link to="/backstage">
@@ -252,6 +252,7 @@ import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorMsgGroup} from "@/request/MsgApi";
 import {reqRecordPage, reqRecordTodo} from "@/request/RecordApi";
+import {hospital} from "@/utils/hospital";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
 import {reqLogout} from "@/request/PowerApi";
@@ -262,6 +263,8 @@ import {moveT} from "@/utils/TimeUtil";
 import {Msg} from "@/model/entiy/Msg";
 
 const timeText = ref<string>('--:--:--')
+// 医院信息（全局单例，顶栏品牌位展示）
+const hosp = hospital
 let timeTimer: ReturnType<typeof setInterval> | undefined
 
 const pad = (n: number) => n.toString().padStart(2, '0')

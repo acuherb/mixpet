@@ -4,7 +4,7 @@
       <div class="topbar-inner">
         <router-link :to="isLogin ? '/reception/clientCenter' : '/'" class="brand">
           <span class="brand-mark">PET</span>
-          <span class="brand-name">mixpet</span>
+          <span class="brand-name">{{ hosp.name || 'mixpet' }}</span>
         </router-link>
         <ul class="nav">
           <li v-if="isLogin" class="drop">
@@ -32,6 +32,31 @@
         </ul>
       </div>
     </header>
+
+    <!-- 品牌 Hero：医院名/标语/联系方式（来自医院信息设置） -->
+    <section class="hero">
+      <div class="hero-glow"></div>
+      <div class="hero-inner">
+        <div class="hero-text">
+          <div class="hero-badge">专业宠物医疗 · 用心呵护每一只毛孩子</div>
+          <h1 class="hero-title">{{ hosp.name || 'mixpet 宠物医院' }}</h1>
+          <p class="hero-sub">{{ hosp.intro || '提供接诊、检验影像、住院手术、免疫驱虫等一站式宠物医疗服务，让每一次就诊都被完整记录。' }}</p>
+          <div class="hero-meta">
+            <span v-if="hosp.phone"><el-icon><Phone/></el-icon>{{ hosp.phone }}</span>
+            <span v-if="hosp.bizHours"><el-icon><Clock/></el-icon>{{ hosp.bizHours }}</span>
+            <span v-if="hosp.address"><el-icon><Location/></el-icon>{{ hosp.address }}</span>
+          </div>
+          <div class="hero-cta">
+            <el-button round type="primary" @click="$router.push(isLogin ? '/reception/clientCenter/clientAppoint' : '/login')">预约挂号</el-button>
+            <el-button round plain @click="$router.push('/reception/chat')">在线咨询</el-button>
+          </div>
+        </div>
+        <div class="hero-logo">
+          <img v-if="hosp.logo" :src="'/api/common/download?name=' + hosp.logo" alt="logo"/>
+          <span v-else>{{ (hosp.name || 'P').charAt(0) }}</span>
+        </div>
+      </div>
+    </section>
 
     <WindRoll :is-login="isLogin"/>
 
@@ -150,6 +175,7 @@ import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
 import {getDisplayTime} from "@/utils/TimeUtil";
+import {hospital} from "@/utils/hospital";
 import {reqFourDoctor} from "@/request/DoctorApi";
 import {reqFourPet} from "@/request/PetApi";
 import {reqFosterPet} from "@/request/FosterApi";
@@ -160,7 +186,7 @@ import WindRoll from "@/components/show/WindRoll.vue";
 import MyRow from "@/components/row/MyRow.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
-import {ArrowUp, Bell} from "@element-plus/icons-vue";
+import {ArrowUp, Bell, Clock, Location, Phone} from "@element-plus/icons-vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 
 /* 生命周期 */
@@ -206,6 +232,9 @@ const scrollTop = (): void => { window.scrollTo({top: 0, behavior: 'smooth'}) }
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
 })
+
+/* 医院信息（全局单例，App 已加载；供 Hero 与品牌位展示） */
+const hosp = hospital
 
 /* 公告栏 */
 const notices = ref<NoticeDto[]>([])
@@ -311,6 +340,89 @@ onBeforeUnmount(() => {
 .reception-home {
   min-height: 100vh;
   background: #F5F7FA;
+}
+
+/* 品牌 Hero */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(120deg, #1E6FA8 0%, #2BB6A8 100%);
+  color: #fff;
+
+  .hero-glow {
+    position: absolute;
+    width: 420px; height: 420px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
+    top: -180px; right: -80px;
+    &::after {
+      content: ""; position: absolute;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,.12), transparent 70%);
+      bottom: -140px; left: 60px;
+    }
+  }
+  .hero-inner {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px 42px;
+    display: flex;
+    align-items: center;
+    gap: 36px;
+  }
+  .hero-text { flex: 1; min-width: 0; }
+  .hero-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+  .hero-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .hero-sub {
+    margin: 12px 0 0;
+    font-size: 14px;
+    opacity: .92;
+    max-width: 560px;
+    line-height: 1.8;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin-top: 16px;
+    font-size: 13px;
+    opacity: .92;
+    span { display: inline-flex; align-items: center; gap: 5px; }
+  }
+  .hero-cta {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+  }
+  .hero-logo {
+    width: 108px; height: 108px;
+    border-radius: 24px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,.18);
+    border: 2px solid rgba(255,255,255,.35);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    font-size: 52px; font-weight: 800;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  @media (max-width: 768px) {
+    .hero-inner { padding: 32px 20px; }
+    .hero-title { font-size: 24px; }
+    .hero-logo { display: none; }
+  }
 }
 
 /* 顶部导航 */

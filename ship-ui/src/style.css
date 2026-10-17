@@ -1,3 +1,22 @@
+/* ============ 设计 Token（全站统一变量，渐进替换散落十六进制） ============ */
+:root {
+  --brand: #1E6FA8;        /* 品牌主色（蓝） */
+  --brand-dark: #175c8c;   /* 品牌深色 */
+  --brand-2: #2BB6A8;      /* 品牌辅色（青绿） */
+  --bg: #e9e9f5;           /* 页面背景 */
+  --card-bg: #ffffff;      /* 卡片背景 */
+  --text: #1F2D3D;         /* 主文字 */
+  --text-2: #606266;       /* 次文字 */
+  --text-3: #909399;       /* 弱文字 */
+  --border: #ebeef5;       /* 边框 */
+  --radius: 12px;          /* 卡片圆角 */
+  --radius-sm: 8px;        /* 小圆角 */
+  --shadow: 0 2px 12px rgba(31, 45, 61, 0.08); /* 卡片阴影 */
+  --danger: #F56C6C;
+  --warning: #E6A23C;
+  --success: #67C23A;
+}
+
 /* 全局：防止水平溢出导致左右晃动 */
 html, body {
     margin: 0;

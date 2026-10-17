@@ -71,20 +71,38 @@
           </el-select>
         </el-form-item>
         <el-form-item label="医生" prop="doctorId">
-          <el-select v-model="addForm.doctorId" filterable placeholder="先选科室，再选医生" style="width: 100%">
+          <el-select v-model="addForm.doctorId" filterable placeholder="先选科室，再选医生" style="width: 100%" @change="onDoctorChange">
             <el-option v-for="d in doctorList" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
           </el-select>
         </el-form-item>
-        <el-form-item label="就诊时间" prop="appointmentDate">
+        <el-form-item label="就诊日期" prop="appointmentDate">
           <el-date-picker
-              v-model="addForm.appointmentDate"
-              format="YYYY-MM-DD HH:mm"
-              placeholder="选择就诊时间"
+              v-model="appointDate"
+              :disabled-date="disabledDate"
+              format="YYYY-MM-DD"
+              placeholder="选择就诊日期"
               style="width: 100%"
-              type="datetime"
-              value-format="YYYY-MM-DDTHH:mm:ss"
+              type="date"
+              value-format="YYYY-MM-DD"
+              @change="onDateChange"
           />
         </el-form-item>
+        <el-form-item v-if="appointDate" label="就诊时段">
+          <div v-if="slots.length" class="slot-grid">
+            <div v-for="s in slots" :key="s.period"
+                 :class="['slot', {active: appointPeriod === s.period, full: s.left <= 0}]"
+                 @click="pickSlot(s)">
+              <div class="slot-name">{{ s.period === 1 ? '上午 09:00-12:00' : '下午 14:00-17:00' }}</div>
+              <div class="slot-left">{{ s.left > 0 ? '剩余 ' + s.left + ' 号' : '已约满' }}</div>
+            </div>
+          </div>
+          <p v-else class="slot-empty">该医生当日不出诊，请改选其他日期</p>
+        </el-form-item>
+        <!-- 选中回显：确认预约信息 -->
+        <div v-if="confirmText" class="appoint-confirm">
+          <el-icon><CircleCheck/></el-icon>
+          <span>{{ confirmText }}</span>
+        </div>
         <el-form-item label="描述" prop="appointmentInfo">
           <el-input
               v-model="addForm.appointmentInfo"
@@ -115,8 +133,11 @@ import {NameDo} from "@/model/DO/NameDo";
 import {reqClientPet} from "@/request/PetApi";
 import {reqDepartNameHaveDoctor} from "@/request/DepartApi";
 import {reqDoctorNameByDepartId} from "@/request/DoctorApi";
+import {reqScheduleByDoctor} from "@/request/ScheduleApi";
+import {reqDayCount} from "@/request/AppointApi";
+import {DoctorSchedule} from "@/model/entiy/DoctorSchedule";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
-import {Plus} from "@element-plus/icons-vue";
+import {CircleCheck, Plus} from "@element-plus/icons-vue";
 
 const appointList = ref<AppointDto[]>([])
 
@@ -133,12 +154,64 @@ const addRules = reactive<FormRules>({
   petId: [{required: true, message: '请选择宠物', trigger: 'change'}],
   departmentId: [{required: true, message: '请选择科室', trigger: 'change'}],
   doctorId: [{required: true, message: '请选择医生', trigger: 'change'}],
-  appointmentDate: [{required: true, message: '请选择就诊时间', trigger: 'change'}],
   appointmentInfo: [{required: true, message: '请简单描述症状', trigger: 'blur'}],
 })
+
+/*=====就诊日期 + 排班时段（余号实时）=====*/
+const appointDate = ref<string>('')
+const appointPeriod = ref<number | null>(null)
+const slots = ref<{period: number, max: number, left: number}[]>([])
+/** 禁用今天以前的日期 */
+const disabledDate = (d: Date): boolean => d.getTime() < Date.now() - 24 * 3600 * 1000
+/** 选日期：按星期匹配排班 + 当日已约数 → 计算各时段余号 */
+const onDateChange = (): void => {
+  appointPeriod.value = null
+  slots.value = []
+  const doctorId = addForm.value.doctorId
+  if (!appointDate.value || !doctorId) return
+  const weekday = new Date(appointDate.value + 'T00:00:00').getDay() || 7 // 1周一...7周日
+  Promise.all([
+    reqScheduleByDoctor(doctorId),
+    reqDayCount(doctorId, appointDate.value)
+  ]).then(([sc, cnt]) => {
+    slots.value = (sc || [])
+        .filter((s: DoctorSchedule) => s.active !== false && s.weekday === weekday)
+        .map((s: DoctorSchedule) => ({
+          period: s.period as number,
+          max: s.maxCount ?? 0,
+          left: Math.max(0, (s.maxCount ?? 0) - (cnt ?? 0))
+        }))
+        .sort((a, b) => a.period - b.period)
+  })
+}
+const pickSlot = (s: {period: number, left: number}): void => {
+  if (s.left <= 0) return
+  appointPeriod.value = s.period
+}
+/** 换医生：清空已选日期与时段 */
+const onDoctorChange = (): void => {
+  appointDate.value = ''
+  appointPeriod.value = null
+  slots.value = []
+}
+/** 选中回显：宠物+科室+医生+日期(星期)+时段 */
+const confirmText = computed<string>(() => {
+  if (!appointDate.value || appointPeriod.value == null) return ''
+  const pet = appointablePets.value.find(p => p.petId === addForm.value.petId)
+  const dep = departList.value.find(d => d.roleId === addForm.value.departmentId)
+  const doc = doctorList.value.find(d => d.roleId === addForm.value.doctorId)
+  const d = new Date(appointDate.value + 'T00:00:00')
+  const week = '日一二三四五六'.charAt(d.getDay())
+  const periodText = appointPeriod.value === 1 ? '上午 09:00' : '下午 14:00'
+  return `已选：${pet?.petName ?? ''} · ${dep?.roleName ?? ''} · ${doc?.roleName ?? ''} · ${appointDate.value} 周${week} ${periodText}，确认提交即预约成功`
+})
+
 const openAddDialog = (): void => {
   addForm.value = exampleAppoint()
   addForm.value.appointmentDate = null
+  appointDate.value = ''
+  appointPeriod.value = null
+  slots.value = []
   originRecordId.value = null
   addFormRef.value?.clearValidate()
   addVisible.value = true
@@ -147,6 +220,9 @@ const openAddDialog = (): void => {
 const onDepartChange = (departmentId: number): void => {
   addForm.value.doctorId = null
   doctorList.value = []
+  appointDate.value = ''
+  appointPeriod.value = null
+  slots.value = []
   reqDoctorNameByDepartId(departmentId).then(res => {
     doctorList.value = res
   })
@@ -154,6 +230,10 @@ const onDepartChange = (departmentId: number): void => {
 const submitAdd = (): void => {
   addFormRef.value?.validate((valid: boolean) => {
     if (!valid) return
+    if (!appointDate.value) { ElMessage.warning('请选择就诊日期'); return }
+    if (appointPeriod.value == null) { ElMessage.warning('请选择就诊时段'); return }
+    // 组装就诊时间：日期 + 时段固定钟点
+    addForm.value.appointmentDate = appointDate.value + (appointPeriod.value === 1 ? 'T09:00:00' : 'T14:00:00')
     reqAddSelfAppoint(addForm.value).then(res => {
       if (res.code === 1) {
         ElMessage.success(res.msg || '预约成功')
@@ -250,5 +330,46 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+/* 就诊时段选择（排班+余号） */
+.slot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+.slot {
+  border: 2px solid #ebeef5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  .slot-name { font-size: 13px; font-weight: 600; color: #1F2D3D; }
+  .slot-left { font-size: 12px; color: #67C23A; margin-top: 3px; }
+  &:hover { border-color: #c6e2ff; }
+  &.active { border-color: #1E6FA8; background: #f0f7fc; }
+  &.full { opacity: .55; cursor: not-allowed; .slot-left { color: #F56C6C; } }
+}
+.slot-empty {
+  margin: 0;
+  padding: 10px 12px;
+  background: #fdf6ec;
+  border-radius: 8px;
+  color: #E6A23C;
+  font-size: 12px;
+}
+.appoint-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  background: #f0f9f4;
+  border: 1px dashed #67C23A;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #3a7d44;
+  line-height: 1.5;
 }
 </style>

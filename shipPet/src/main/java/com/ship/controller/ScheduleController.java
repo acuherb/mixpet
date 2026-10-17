@@ -23,9 +23,9 @@ public class ScheduleController {
         this.scheduleService = scheduleService;
     }
 
-    /** 某医生排班（编辑回显） */
+    /** 某医生排班（编辑回显；顾客挂号时读时段与余号） */
     @GetMapping("/doctor/{doctorId}")
-    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN, RoleConst.CLIENT})
     public List<DoctorSchedule> byDoctor(@PathVariable Integer doctorId) {
         return scheduleService.listByDoctor(doctorId);
     }
