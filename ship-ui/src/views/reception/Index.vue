@@ -78,7 +78,7 @@
               @click="openDialog(notice)"
           >
             <div class="notice-icon-wrap">
-              <el-icon class="notice-icon" color="#1E6FA8"><Bell/></el-icon>
+              <el-icon class="notice-icon" color="var(--brand)"><Bell/></el-icon>
             </div>
             <div class="notice-card-body">
               <div class="notice-title">{{ notice.noticeTitle }}</div>
@@ -346,7 +346,7 @@ onBeforeUnmount(() => {
 .hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(120deg, #1E6FA8 0%, #2BB6A8 100%);
+  background: linear-gradient(120deg, var(--brand) 0%, #2BB6A8 100%);
   color: #fff;
 
   .hero-glow {
@@ -451,7 +451,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  color: #1E6FA8;
+  color: var(--brand);
   font-size: 18px;
   letter-spacing: .3px;
 
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
     width: 30px;
     height: 30px;
     border-radius: 6px;
-    background: #1E6FA8;
+    background: var(--brand);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -494,12 +494,12 @@ onBeforeUnmount(() => {
 
     &:hover {
       background: #EAF3FA;
-      color: #1E6FA8;
+      color: var(--brand);
     }
   }
 
   .nav-cta {
-    background: #1E6FA8;
+    background: var(--brand);
     color: #fff;
 
     &:hover {
@@ -523,7 +523,7 @@ onBeforeUnmount(() => {
 
   &:hover {
     background: #EAF3FA;
-    color: #1E6FA8;
+    color: var(--brand);
   }
 
   .caret {
@@ -563,7 +563,7 @@ onBeforeUnmount(() => {
 
       &:hover {
         background: #F5F7FA;
-        color: #1E6FA8;
+        color: var(--brand);
       }
     }
 
@@ -622,7 +622,7 @@ onBeforeUnmount(() => {
 
 .section-action {
   font-size: 13px;
-  color: #1E6FA8;
+  color: var(--brand);
   white-space: nowrap;
 
   &:hover {
@@ -667,7 +667,7 @@ onBeforeUnmount(() => {
     top: 0;
     bottom: 0;
     width: 4px;
-    background: linear-gradient(180deg, #1E6FA8 0%, #7BD1A8 100%);
+    background: linear-gradient(180deg, var(--brand) 0%, #7BD1A8 100%);
     opacity: 0.85;
     transition: opacity 0.25s;
   }
@@ -688,7 +688,7 @@ onBeforeUnmount(() => {
     }
 
     .notice-arrow {
-      color: #1E6FA8;
+      color: var(--brand);
       opacity: 1;
       transform: translateX(2px);
     }

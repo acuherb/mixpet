@@ -396,7 +396,7 @@ const exportPdf = (): void => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 26px;
-  background: linear-gradient(120deg, #1E6FA8, #2BB6A8);
+  background: linear-gradient(120deg, var(--brand), #2BB6A8);
   color: #fff;
   .rc-hosp { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
   .rc-sub { font-size: 12px; opacity: .85; margin-top: 2px; }
@@ -412,7 +412,7 @@ const exportPdf = (): void => {
   border-bottom: 1px solid #e4e7ed;
   .rc-pet-ava {
     width: 48px; height: 48px; border-radius: 50%;
-    background: linear-gradient(135deg, #1E6FA8, #2BB6A8);
+    background: linear-gradient(135deg, var(--brand), #2BB6A8);
     color: #fff; font-size: 20px; font-weight: 700;
     display: flex; align-items: center; justify-content: center;
   }
@@ -432,7 +432,7 @@ const exportPdf = (): void => {
     font-size: 13px;
     font-weight: 700;
     color: #1F2D3D;
-    border-left: 3px solid #1E6FA8;
+    border-left: 3px solid var(--brand);
   }
   .rc-card-body {
     padding: 10px 14px;

@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  color: #1E6FA8;
+  color: var(--brand);
   font-size: 16px;
 
   .brand-mark {
@@ -457,7 +457,7 @@ onBeforeUnmount(() => {
     width: 30px;
     height: 30px;
     border-radius: 6px;
-    background: #1E6FA8;
+    background: var(--brand);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -486,7 +486,7 @@ onBeforeUnmount(() => {
 
       &:hover {
         background: #EAF3FA;
-        color: #1E6FA8;
+        color: var(--brand);
       }
 
       &.nav-logout {
@@ -548,7 +548,7 @@ onBeforeUnmount(() => {
     }
 
     .hello {
-      color: #1E6FA8;
+      color: var(--brand);
       font-weight: 600;
     }
   }
@@ -571,7 +571,7 @@ onBeforeUnmount(() => {
       .stat-num {
         font-size: 26px;
         font-weight: 700;
-        color: #1E6FA8;
+        color: var(--brand);
         line-height: 1.1;
       }
 
@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
       color: #fff;
 
       &.ico-appoint {
-        background: linear-gradient(135deg, #1E6FA8, #4aa3df);
+        background: linear-gradient(135deg, var(--brand), #4aa3df);
       }
 
       &.ico-chat {

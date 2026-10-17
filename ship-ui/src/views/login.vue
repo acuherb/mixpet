@@ -116,7 +116,7 @@ const getLoginRole = (): void => {
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
-  background: linear-gradient(135deg, #1E6FA8 0%, #4aa3df 45%, #6fc9b0 100%);
+  background: linear-gradient(135deg, var(--brand) 0%, #4aa3df 45%, #6fc9b0 100%);
   overflow: hidden;
 }
 
@@ -195,12 +195,12 @@ const getLoginRole = (): void => {
     color: #606266;
     cursor: pointer;
 
-    input { width: 15px; height: 15px; accent-color: #1E6FA8; cursor: pointer; }
+    input { width: 15px; height: 15px; accent-color: var(--brand); cursor: pointer; }
   }
 
   .link {
     font-size: 13px;
-    color: #1E6FA8;
+    color: var(--brand);
     text-decoration: none;
 
     &:hover { text-decoration: underline; }
@@ -221,7 +221,7 @@ const getLoginRole = (): void => {
   color: #606266;
 
   a {
-    color: #1E6FA8;
+    color: var(--brand);
     text-decoration: none;
 
     &:hover { text-decoration: underline; }

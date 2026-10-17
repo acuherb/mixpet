@@ -25,6 +25,8 @@ public class HospitalSetting implements Serializable {
     private String phone;
     /** logo 文件名（相对 common/download?name=） */
     private String logo;
+    /** 品牌主题色(HEX，如 #1E6FA8)，注入 CSS 变量 --brand 全局生效 */
+    private String brandColor;
     private String bizHours;
     private String intro;
 }

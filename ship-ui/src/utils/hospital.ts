@@ -1,4 +1,4 @@
-import {ref} from 'vue'
+import {ref, watch} from 'vue'
 import {reqHospitalSetting} from "@/request/SettingApi";
 import {emptyHospital, HospitalSetting} from "@/model/entiy/HospitalSetting";
 
@@ -7,6 +7,32 @@ import {emptyHospital, HospitalSetting} from "@/model/entiy/HospitalSetting";
  * 注意：打印页（window.open/独立渲染）不用此缓存，自行拉接口保证取到最新值
  */
 export const hospital = ref<HospitalSetting>(emptyHospital())
+
+/** 默认品牌色（与 style.css :root 保持一致） */
+const DEFAULT_BRAND = '#1E6FA8'
+
+/** HEX 颜色压暗/提亮（用于派生 --brand-dark） */
+function shade(hex: string, ratio: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return DEFAULT_BRAND
+  const n = parseInt(m[1], 16)
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)))
+  const r = clamp(((n >> 16) & 255) * ratio)
+  const g = clamp(((n >> 8) & 255) * ratio)
+  const b = clamp((n & 255) * ratio)
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * 把品牌色注入 CSS 变量（--brand / --brand-dark），全站引用处即时生效
+ * 支持 HEX（#RRGGBB）；非法值回落默认色
+ */
+export const injectBrand = (color?: string | null): void => {
+  const brand = /^#[0-9a-fA-F]{6}$/.test((color || '').trim()) ? color!.trim() : DEFAULT_BRAND
+  const root = document.documentElement
+  root.style.setProperty('--brand', brand)
+  root.style.setProperty('--brand-dark', shade(brand, 0.82))
+}
 
 let loading: Promise<void> | null = null
 
@@ -18,3 +44,6 @@ export const loadHospital = (force = false): Promise<void> => {
     }).catch(() => { /* 接口异常时保持默认值，不阻断页面 */ })
     return loading
 }
+
+// 品牌色联动：医院信息变化（启动加载/设置页保存）即重新注入 :root
+watch(hospital, h => injectBrand(h?.brandColor), {immediate: true})

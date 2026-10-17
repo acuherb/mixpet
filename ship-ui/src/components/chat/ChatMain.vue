@@ -387,7 +387,7 @@ onMounted(() => {
       font-size: 18px;
       transition: background .15s, transform .1s;
 
-      &:hover { background: #1e6fa8; }
+      &:hover { background: var(--brand); }
       &:active { transform: scale(.92); }
     }
   }

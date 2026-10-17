@@ -141,7 +141,7 @@ onMounted(() => loadHospital())
     width: 28px;
     height: 28px;
     border-radius: 6px;
-    background: #1E6FA8;
+    background: var(--brand);
     color: #fff;
     font-size: 11px;
     font-weight: 700;
@@ -151,7 +151,7 @@ onMounted(() => loadHospital())
   .brand-name {
     font-size: 16px;
     font-weight: 700;
-    color: #1E6FA8;
+    color: var(--brand);
     letter-spacing: 0.3px;
   }
 }
@@ -184,7 +184,7 @@ onMounted(() => loadHospital())
       transition: color 0.15s;
 
       &:hover {
-        color: #1E6FA8;
+        color: var(--brand);
       }
     }
   }
@@ -204,7 +204,7 @@ onMounted(() => loadHospital())
   flex-wrap: wrap;
 
   a {
-    color: #1E6FA8;
+    color: var(--brand);
 
     &:hover {
       text-decoration: underline;

@@ -225,7 +225,7 @@ const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
 const printTpls = [
   {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
   {style: 'mono' as const, name: '黑白简化', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer},
-  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
+  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: 'var(--brand)', icon: Picture},
   {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
 ]
 const printSrc = computed(() => {
@@ -250,7 +250,7 @@ const exportPdfFile = (): void => {
     margin: 16px 0 8px;
     font-size: 15px;
     color: #1F2D3D;
-    border-left: 3px solid #1E6FA8;
+    border-left: 3px solid var(--brand);
     padding-left: 8px;
   }
 
@@ -304,7 +304,7 @@ const exportPdfFile = (): void => {
     cursor: pointer;
     transition: all .2s;
     &:hover { border-color: #c6e2ff; }
-    &.active { border-color: #1E6FA8; background: #f0f7fc; }
+    &.active { border-color: var(--brand); background: #f0f7fc; }
     .pv-tpl-ico {
       width: 40px; height: 40px; margin: 0 auto 8px;
       border-radius: 10px; color: #fff;

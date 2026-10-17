@@ -24,6 +24,13 @@
           <UpImg :photo-nm="form.logo || ''" @upPhoto="onLogo"/>
           <span style="margin-left:10px;font-size:12px;color:#909399">上传后保存即生效（复用公共下载接口）</span>
         </el-form-item>
+        <el-form-item label="品牌主题色">
+          <div class="brand-color-row">
+            <el-color-picker v-model="form.brandColor" :predefine="brandPresets" size="small"/>
+            <span v-for="c in brandPresets" :key="c" class="bc-dot" :style="{background: c}" title="点击选用" @click="form.brandColor = c"/>
+            <span style="margin-left:10px;font-size:12px;color:#909399">全站按钮/渐变/图标主色调，保存后即时生效</span>
+          </div>
+        </el-form-item>
         <el-form-item>
           <el-button :loading="saving" type="primary" @click="submit">保存设置</el-button>
           <el-button style="margin-left:8px" @click="reset">还原</el-button>
@@ -44,6 +51,8 @@ import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
 const form = ref<HospitalSetting>(emptyHospital())
+// 品牌色预设（多医院交付可快速切换）
+const brandPresets = ['#1E6FA8', '#2BB6A8', '#7C5CBF', '#E6A23C', '#F56C6C', '#3A7D44', '#0F4C81', '#5B8C5A']
 const formRef = ref<FormInstance>()
 const saving = ref(false)
 const rules = reactive<FormRules>({
@@ -74,5 +83,24 @@ const submit = (): void => {
       } else ElMessage.error(res.msg || '保存失败')
     }).catch(() => { saving.value = false })
   })
+}
+/* 品牌色选择行 */
+.brand-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  .bc-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #dcdfe6;
+    transition: transform .15s;
+
+    &:hover { transform: scale(1.15); }
+  }
 }
 </script>
