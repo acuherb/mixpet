@@ -63,6 +63,7 @@
         <el-button-group>
           <el-button :icon="Edit" circle title="编辑" type="warning" @click="showDialog(scope.row)"/>
           <el-button size="small" title="入库" type="primary" @click="openIn(scope.row)">入库</el-button>
+          <el-button size="small" title="批量入库(Excel粘贴)" type="success" @click="$router.push('/backstage/y-drugInbound')">批量</el-button>
           <el-button size="small" title="出入库台账" type="info" @click="openLedger(scope.row)">台账</el-button>
           <el-button :icon="Delete" circle title="删除" type="danger" @click="delOne(scope.row.drugId)"/>
         </el-button-group>

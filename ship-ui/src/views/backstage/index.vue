@@ -67,6 +67,7 @@
             <span>商品与库存</span>
           </template>
           <el-menu-item index="/backstage/y-drugList">药品管理</el-menu-item>
+          <el-menu-item index="/backstage/y-drugInbound">批量入库</el-menu-item>
           <el-menu-item index="/backstage/z-package">服务套餐</el-menu-item>
           <el-menu-item index="/backstage/z-supplier">供应商管理</el-menu-item>
         </el-sub-menu>
