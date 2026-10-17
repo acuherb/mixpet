@@ -14,18 +14,30 @@ export interface Prescription {
     drugUnit?: string | null;
     drugPrice?: number | null;
     quantity: number;
+    /** 频次：每日几次（数量=单次剂量×频次×天数） */
+    dailyTimes?: number | null;
+    /** 单次剂量(单位同药剂单位) */
+    singleDose?: number | null;
+    /** 单次剂量单位 */
+    singleDoseUnit?: string | null;
     /** 用法，如 每日2次，每次1片 */
     usageInfo: string | null;
     /** 前端态：自动算量提示（不提交后端） */
     doseTip?: string;
+    /** 前端态：用药天数（仅参与算量，不入库） */
+    days?: number;
 }
 
 export const examplePrescription = (): Prescription => {
     return {
         drugId: 0,
         quantity: 1,
+        dailyTimes: 2,
+        singleDose: null,
+        singleDoseUnit: null,
         usageInfo: "",
-        doseTip: ""
+        doseTip: "",
+        days: 1
     }
 }
 

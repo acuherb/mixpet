@@ -39,7 +39,9 @@
       <el-table-column label="规格" min-width="100" prop="drugSpec" show-overflow-tooltip/>
       <el-table-column label="数量" prop="quantity" width="60"/>
       <el-table-column label="单价" prop="drugPrice" width="70"/>
-      <el-table-column label="用法" min-width="130" prop="usageInfo" show-overflow-tooltip/>
+      <el-table-column label="用法" min-width="130">
+        <template #default="s">{{ usageText(s.row) }}</template>
+      </el-table-column>
     </el-table>
     <p v-else class="rf-empty">未开处方</p>
 
@@ -208,6 +210,15 @@ onMounted(() => {
 })
 
 // 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
+/** 用法展示：有结构化单次剂量时展示「单次X×每日Y次」，否则回退自由文本 */
+const usageText = (p: any): string => {
+  if (p.singleDose != null) {
+    const s = `单次${p.singleDose}${p.singleDoseUnit || ''}×每日${p.dailyTimes || 1}次`
+    return p.usageInfo ? `${s}（${p.usageInfo}）` : s
+  }
+  return p.usageInfo || '—'
+}
+
 const printView = ref(false)
 const printStyle = ref<'std' | 'color' | 'rx'>('std')
 const printTpls = [

@@ -182,6 +182,16 @@
                   <div v-if="scope.row.doseTip" style="margin-top:2px;font-size:11px;line-height:1.35;color:#E6A23C">{{ scope.row.doseTip }}</div>
                 </template>
               </el-table-column>
+              <el-table-column label="频次(次/日)" width="105">
+                <template #default="scope">
+                  <el-input-number v-model="scope.row.dailyTimes" :max="12" :min="1" size="small" style="width: 80px" @change="recalcDose(scope.row)"/>
+                </template>
+              </el-table-column>
+              <el-table-column label="天数" width="85">
+                <template #default="scope">
+                  <el-input-number v-model="scope.row.days" :max="90" :min="1" size="small" style="width: 70px" @change="recalcDose(scope.row)"/>
+                </template>
+              </el-table-column>
               <el-table-column label="用法" min-width="140">
                 <template #default="scope">
                   <el-input v-model="scope.row.usageInfo" clearable maxlength="64" placeholder="如：每日2次，每次1片" size="small"/>
@@ -661,13 +671,22 @@ const appendExam = (tag: string): void => {
   recordForm.value.physicalExam = cur ? cur + '，' + tag : tag
 }
 
-// 处方自动算量：药品配置了剂量规则时，按体重/固定量自动填入数量（医生可改）
+// 按已算出的单次剂量×频次×天数重算数量（频次/天数变更时触发）
+const recalcDose = (row: Prescription): void => {
+  if (row.singleDose == null || row.singleDose <= 0) return
+  row.quantity = Math.max(1, Math.ceil(row.singleDose * (row.dailyTimes || 1) * (row.days || 1)))
+}
+// 处方自动算量：药品配置了剂量规则时，算单次剂量并按 单次×频次×天数 填数量（医生可改）
 const doseCalc = (row: Prescription): void => {
   const d = drugOf(row.drugId)
   if (!d) return
+  const unit = d.drugUnit || ''
   if (d.doseFixed != null && d.doseFixed > 0) {
-    row.quantity = Math.max(1, Math.round(d.doseFixed))
-    row.doseTip = `固定单次用量 ${d.doseFixed}${d.drugUnit || ''}，已自动填入，请确认`
+    row.singleDose = d.doseFixed
+    row.singleDoseUnit = unit
+    recalcDose(row)
+    if (!row.usageInfo) row.usageInfo = `每次${d.doseFixed}${unit}，每日${row.dailyTimes || 1}次`
+    row.doseTip = `固定单次用量 ${d.doseFixed}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.days || 1}天`
   } else if (d.dosePerKg != null && d.dosePerKg > 0) {
     const w = recordForm.value.weight
     if (w == null) {
@@ -675,8 +694,11 @@ const doseCalc = (row: Prescription): void => {
       return
     }
     const dose = w * d.dosePerKg
-    row.quantity = Math.max(1, Math.round(dose))
-    row.doseTip = `按体重 ${w}kg 算得单次约 ${dose.toFixed(2)}${d.drugUnit || ''}，已取整，请确认`
+    row.singleDose = Math.round(dose * 100) / 100
+    row.singleDoseUnit = unit
+    recalcDose(row)
+    if (!row.usageInfo) row.usageInfo = `每次${row.singleDose}${unit}，每日${row.dailyTimes || 1}次`
+    row.doseTip = `按体重 ${w}kg 算得单次约 ${dose.toFixed(2)}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.days || 1}天`
   } else {
     row.doseTip = ''
   }

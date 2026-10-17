@@ -48,7 +48,7 @@
             <td>{{ it.drugName }}{{ it.drugUnit ? '（' + it.drugUnit + '）' : '' }}</td>
             <td>{{ it.drugSpec || '—' }}</td>
             <td>{{ it.quantity }}</td>
-            <td>{{ it.usageInfo || '—' }}</td>
+            <td>{{ usageText(it) }}</td>
             <td>￥{{ ((it.drugPrice ?? 0) * it.quantity).toFixed(2) }}</td>
           </tr>
           <tr v-if="!rx.items.length">
@@ -105,6 +105,15 @@ onMounted(() => {
 
 const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)
 const doPrint = (): void => window.print()
+
+/** 用法展示：有结构化单次剂量时展示「单次X×每日Y次」，否则回退自由文本 */
+const usageText = (it: any): string => {
+  if (it.singleDose != null) {
+    const s = `单次${it.singleDose}${it.singleDoseUnit || ''}×每日${it.dailyTimes || 1}次`
+    return it.usageInfo ? `${s}（${it.usageInfo}）` : s
+  }
+  return it.usageInfo || '—'
+}
 
 /** 金额转人民币大写 */
 const amountToCn = (num: number): string => {
