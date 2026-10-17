@@ -55,6 +55,10 @@ public class DrugController {
         if (drug.getDrugPrice() != null && drug.getDrugPrice().compareTo(BigDecimal.ZERO) < 0)
             return Result.error("单价不能为负数");
         if (drug.getDrugStock() != null && drug.getDrugStock() < 0) return Result.error("库存不能为负数");
+        if (drug.getDosePerKg() != null && drug.getDosePerKg().compareTo(BigDecimal.ZERO) < 0)
+            return Result.error("每kg单次用量不能为负数");
+        if (drug.getDoseFixed() != null && drug.getDoseFixed().compareTo(BigDecimal.ZERO) < 0)
+            return Result.error("固定单次用量不能为负数");
         if (drug.getActive() == null) drug.setActive(true);
         return Result.choice("添加", drugService.save(drug));
     }
@@ -67,6 +71,10 @@ public class DrugController {
         if (drug.getDrugPrice() != null && drug.getDrugPrice().compareTo(BigDecimal.ZERO) < 0)
             return Result.error("单价不能为负数");
         if (drug.getDrugStock() != null && drug.getDrugStock() < 0) return Result.error("库存不能为负数");
+        if (drug.getDosePerKg() != null && drug.getDosePerKg().compareTo(BigDecimal.ZERO) < 0)
+            return Result.error("每kg单次用量不能为负数");
+        if (drug.getDoseFixed() != null && drug.getDoseFixed().compareTo(BigDecimal.ZERO) < 0)
+            return Result.error("固定单次用量不能为负数");
         return Result.choice("修改", drugService.updateById(drug));
     }
 
