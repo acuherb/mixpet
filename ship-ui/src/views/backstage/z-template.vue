@@ -32,8 +32,18 @@
         <el-form-item label="分类" prop="category">
           <el-input v-model="form.category" clearable maxlength="32" placeholder="如：常见病/体检/术后/复诊"/>
         </el-form-item>
-        <el-form-item label="主诉"><el-input v-model="form.chiefComplaint" :rows="2" maxlength="500" type="textarea"/></el-form-item>
-        <el-form-item label="体格检查"><el-input v-model="form.physicalExam" :rows="2" maxlength="500" type="textarea"/></el-form-item>
+        <el-form-item label="主诉">
+          <el-input v-model="form.chiefComplaint" :rows="2" maxlength="500" type="textarea" placeholder="主要症状+持续时间，如：呕吐2天，今日次数增加伴食欲下降"/>
+        </el-form-item>
+        <el-form-item label="现病史">
+          <el-input v-model="form.presentIllness" :rows="2" maxlength="500" type="textarea" placeholder="症状发展：开始→变化→当前状态，如：2日前开始间断呕吐，今日加重至3次…"/>
+        </el-form-item>
+        <el-form-item label="既往病史">
+          <el-input v-model="form.pastHistory" :rows="2" maxlength="500" type="textarea" placeholder="过去重要的医疗信息：既往疾病/手术/长期用药/过敏等"/>
+        </el-form-item>
+        <el-form-item label="体格检查">
+          <el-input v-model="form.physicalExam" :rows="2" maxlength="500" type="textarea" placeholder="体温/心率/呼吸/精神/黏膜等检查发现"/>
+        </el-form-item>
         <el-form-item label="诊断"><el-input v-model="form.diagnosis" :rows="2" maxlength="500" type="textarea"/></el-form-item>
         <el-form-item label="治疗方案"><el-input v-model="form.treatment" :rows="2" maxlength="500" type="textarea"/></el-form-item>
         <el-form-item label="医嘱"><el-input v-model="form.advice" :rows="2" maxlength="500" type="textarea"/></el-form-item>

@@ -6,6 +6,8 @@ export interface RecordTemplate {
     name: string;
     category?: string | null;
     chiefComplaint?: string | null;
+    presentIllness?: string | null;
+    pastHistory?: string | null;
     physicalExam?: string | null;
     diagnosis?: string | null;
     treatment?: string | null;
@@ -15,6 +17,6 @@ export interface RecordTemplate {
 }
 
 export const exampleRecordTemplate = (): RecordTemplate => ({
-    name: '', category: '常见病', chiefComplaint: '', physicalExam: '',
+    name: '', category: '常见病', chiefComplaint: '', presentIllness: '', pastHistory: '', physicalExam: '',
     diagnosis: '', treatment: '', advice: '', internalNote: '', active: true
 })

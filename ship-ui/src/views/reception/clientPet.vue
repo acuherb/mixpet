@@ -80,6 +80,8 @@
           <el-descriptions-item label="宠物">{{ detail.record.petName }}</el-descriptions-item>
           <el-descriptions-item label="就诊时间">{{ (detail.record.createTime || '').replace('T', ' ').slice(0, 16) }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="主诉">{{ detail.record.chiefComplaint || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="现病史">{{ detail.record.presentIllness || '—' }}</el-descriptions-item>
+          <el-descriptions-item :span="2" label="既往病史">{{ detail.record.pastHistory || '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="体格检查">{{ detail.record.physicalExam || '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="诊断">{{ detail.record.diagnosis || '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="治疗方案">{{ detail.record.treatment || '—' }}</el-descriptions-item>

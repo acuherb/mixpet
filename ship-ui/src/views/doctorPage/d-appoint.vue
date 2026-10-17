@@ -67,18 +67,30 @@
 
       <!-- 阶段一：病历建档 -->
       <el-form v-if="treatPhase === 'record'" ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
-        <el-divider content-position="left">病历</el-divider>
-        <el-form-item label="病历模板">
+        <el-divider content-position="left">病历模板（一键填充，可再修改）</el-divider>
+        <el-form-item label="选择模板">
           <el-select v-model="tplId" clearable filterable placeholder="选择模板一键填充（可再修改）" style="width: 100%" @change="applyTpl">
             <el-option v-for="t in templates" :key="t.templateId" :label="`${t.name}${t.category ? '（' + t.category + '）' : ''}`" :value="t.templateId"/>
           </el-select>
         </el-form-item>
+
+        <el-divider content-position="left">一、问诊 · 宠物为什么来医院？</el-divider>
         <el-form-item label="主诉" prop="chiefComplaint">
-          <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="宠物主人描述的症状，已自动带入挂号描述" type="textarea"/>
+          <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="主要症状 + 持续时间，如：呕吐2天，今日次数增加伴食欲下降（已自动带入挂号描述）" type="textarea"/>
         </el-form-item>
+        <el-form-item label="现病史">
+          <el-input v-model="recordForm.presentIllness" :rows="3" maxlength="1000" placeholder="按时间顺序记录：何时开始 → 初期表现 → 加重/减轻 → 伴随症状 → 是否治疗及用药效果。如：2日前开始间断呕吐，最初每日约1次…今日加重至3次，伴食欲下降" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="既往病史">
+          <el-input v-model="recordForm.pastHistory" :rows="2" maxlength="1000" placeholder="过去重要的医疗信息：既往疾病 / 手术 / 长期用药 / 过敏 / 类似发作史（可参考右侧病史卡与宠物档案）" type="textarea"/>
+        </el-form-item>
+
+        <el-divider content-position="left">二、检查 · 医生检查发现了什么？</el-divider>
         <el-form-item label="体格检查">
-          <el-input v-model="recordForm.physicalExam" :rows="2" maxlength="255" placeholder="如：体温39.2℃，心率120，精神沉郁" type="textarea"/>
+          <el-input v-model="recordForm.physicalExam" :rows="2" maxlength="255" placeholder="视触叩听等检查发现，如：体温39.2℃，心率120，精神沉郁，黏膜苍白" type="textarea"/>
         </el-form-item>
+
+        <el-divider content-position="left">三、诊断与治疗</el-divider>
         <el-form-item label="诊断" prop="diagnosis">
           <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
         </el-form-item>
@@ -87,9 +99,6 @@
         </el-form-item>
         <el-form-item label="医嘱">
           <el-input v-model="recordForm.advice" :rows="2" maxlength="255" placeholder="给宠物主人的嘱咐（顾客端可见）" type="textarea"/>
-        </el-form-item>
-        <el-form-item label="内部备注">
-          <el-input v-model="recordForm.internalNote" :rows="2" maxlength="255" placeholder="仅医院内部可见，顾客端不显示" type="textarea"/>
         </el-form-item>
         <el-form-item label="复诊日期">
           <el-date-picker
@@ -100,6 +109,9 @@
               type="date"
               value-format="YYYY-MM-DD"
           />
+        </el-form-item>
+        <el-form-item label="内部备注">
+          <el-input v-model="recordForm.internalNote" :rows="2" maxlength="255" placeholder="仅医院内部可见，顾客端不显示" type="textarea"/>
         </el-form-item>
 
         <el-divider content-position="left">分诊与体征</el-divider>
@@ -477,6 +489,8 @@ const applyTpl = (id: number): void => {
   const t = templates.value.find(x => x.templateId === id)
   if (!t) return
   if (t.chiefComplaint != null) recordForm.value.chiefComplaint = t.chiefComplaint
+  if (t.presentIllness != null) recordForm.value.presentIllness = t.presentIllness
+  if (t.pastHistory != null) recordForm.value.pastHistory = t.pastHistory
   if (t.physicalExam != null) recordForm.value.physicalExam = t.physicalExam
   if (t.diagnosis != null) recordForm.value.diagnosis = t.diagnosis
   if (t.treatment != null) recordForm.value.treatment = t.treatment
@@ -512,6 +526,8 @@ const openTreat = (a: AppointDto2): void => {
       treatRecordId.value = rec.recordId
       treatStatus.value = rec.status ?? 1
       recordForm.value.chiefComplaint = rec.chiefComplaint ?? recordForm.value.chiefComplaint
+      recordForm.value.presentIllness = rec.presentIllness
+      recordForm.value.pastHistory = rec.pastHistory
       recordForm.value.physicalExam = rec.physicalExam
       recordForm.value.diagnosis = rec.diagnosis
       recordForm.value.treatment = rec.treatment

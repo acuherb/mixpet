@@ -493,6 +493,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         // 只更新内容字段，费用不动（费用变动请走处方作废/退款流程）
         this.lambdaUpdate().eq(MedicalRecord::getRecordId, form.getRecordId())
                 .set(MedicalRecord::getChiefComplaint, form.getChiefComplaint())
+                .set(MedicalRecord::getPresentIllness, form.getPresentIllness())
+                .set(MedicalRecord::getPastHistory, form.getPastHistory())
                 .set(MedicalRecord::getPhysicalExam, form.getPhysicalExam())
                 .set(MedicalRecord::getDiagnosis, form.getDiagnosis())
                 .set(MedicalRecord::getTreatment, form.getTreatment())

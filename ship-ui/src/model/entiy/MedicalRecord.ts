@@ -37,6 +37,10 @@ export interface MedicalRecord {
     doctorId?: number | null;
     departmentId?: number | null;
     chiefComplaint: string | null;
+    /** 现病史：症状从出现到本次就诊的发展过程 */
+    presentIllness?: string | null;
+    /** 既往病史：过去与本次判断相关的重要医疗信息 */
+    pastHistory?: string | null;
     physicalExam: string | null;
     diagnosis: string | null;
     treatment: string | null;

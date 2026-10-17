@@ -29,6 +29,10 @@ public class MedicalRecord implements Serializable {
 
     /** 主诉 */
     private String chiefComplaint;
+    /** 现病史：症状从出现到本次就诊的发展过程 */
+    private String presentIllness;
+    /** 既往病史：过去与本次判断相关的重要医疗信息 */
+    private String pastHistory;
     /** 体格检查 */
     private String physicalExam;
     /** 诊断 */

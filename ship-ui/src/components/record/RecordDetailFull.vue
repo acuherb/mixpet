@@ -7,6 +7,8 @@
       <el-descriptions-item label="接诊医生">{{ full.record.doctorName }}（{{ full.record.departmentName }}）</el-descriptions-item>
       <el-descriptions-item label="就诊时间">{{ getDisplayTime(full.record.createTime) }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="主诉">{{ full.record.chiefComplaint || '无' }}</el-descriptions-item>
+      <el-descriptions-item :span="2" label="现病史">{{ full.record.presentIllness || '无' }}</el-descriptions-item>
+      <el-descriptions-item :span="2" label="既往病史">{{ full.record.pastHistory || '无' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="体格检查">{{ full.record.physicalExam || '无' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="诊断">{{ full.record.diagnosis || '无' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="治疗方案">{{ full.record.treatment || '无' }}</el-descriptions-item>

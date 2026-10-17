@@ -17,6 +17,8 @@ public class RecordDto {
     private Integer clientId;
     private Integer doctorId;
     private String chiefComplaint;
+    private String presentIllness;
+    private String pastHistory;
     private String diagnosis;
     private String treatment;
     private String advice;

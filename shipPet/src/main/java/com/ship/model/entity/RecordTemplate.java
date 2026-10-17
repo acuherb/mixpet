@@ -25,6 +25,10 @@ public class RecordTemplate implements Serializable {
     /** 分类：体检/常见病/术后/复诊等 */
     private String category;
     private String chiefComplaint;
+    /** 现病史模板 */
+    private String presentIllness;
+    /** 既往病史模板 */
+    private String pastHistory;
     private String physicalExam;
     private String diagnosis;
     private String treatment;
