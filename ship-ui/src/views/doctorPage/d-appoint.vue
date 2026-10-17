@@ -88,6 +88,10 @@
         <el-divider content-position="left">二、检查 · 医生检查发现了什么？</el-divider>
         <el-form-item label="体格检查">
           <el-input v-model="recordForm.physicalExam" :rows="2" maxlength="255" placeholder="视触叩听等检查发现，如：体温39.2℃，心率120，精神沉郁，黏膜苍白" type="textarea"/>
+          <!-- 查体快捷标签：点击即填入，实现"半勾选式"录入 -->
+          <div class="exam-tags">
+            <span v-for="t in examTags" :key="t" class="exam-tag" @click="appendExam(t)">{{ t }}</span>
+          </div>
         </el-form-item>
 
         <el-divider content-position="left">三、诊断与治疗</el-divider>
@@ -154,7 +158,10 @@
                   show-icon :closable="false" type="warning" style="margin-bottom: 10px"/>
         <el-tabs v-model="activeTab">
           <!-- 处方 -->
-          <el-tab-pane label="处方" name="rx">
+          <el-tab-pane name="rx">
+            <template #label>
+              <span>处方<b v-if="savedRx.length" class="tab-num">{{ savedRx.length }}</b></span>
+            </template>
             <el-table :data="prescriptions" border size="small">
               <el-table-column label="药品" min-width="180">
                 <template #default="scope">
@@ -209,7 +216,10 @@
           </el-tab-pane>
 
           <!-- 手术 -->
-          <el-tab-pane label="手术" name="surgery">
+          <el-tab-pane name="surgery">
+            <template #label>
+              <span>手术<b v-if="savedSurgery.length" class="tab-num">{{ savedSurgery.length }}</b></span>
+            </template>
             <el-form-item label="需要手术">
               <el-switch v-model="needSurgery"/>
             </el-form-item>
@@ -249,7 +259,10 @@
           </el-tab-pane>
 
           <!-- 套餐 -->
-          <el-tab-pane label="套餐" name="pkg">
+          <el-tab-pane name="pkg">
+            <template #label>
+              <span>套餐<b v-if="savedPkg.length" class="tab-num">{{ savedPkg.length }}</b></span>
+            </template>
             <el-table :data="packages" border size="small">
               <el-table-column label="套餐" min-width="200">
                 <template #default="scope">
@@ -356,17 +369,38 @@
         </el-descriptions-item>
       </el-descriptions>
       <div class="summary-btns">
-        <el-button type="primary" @click="printRx">打印处方笺</el-button>
-        <el-button @click="printRecord('std')">国标病历</el-button>
-        <el-button @click="printRecord('color')">彩色详情版</el-button>
-        <el-button @click="goOrder('d-lab')">去开检验单</el-button>
-        <el-button @click="goOrder('d-image')">去开影像单</el-button>
+        <el-button type="primary" @click="printView = true">打印预览</el-button>
+        <el-button @click="goOrder('d-lab')">去开检验单<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
+        <el-button @click="goOrder('d-image')">去开影像单<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
         <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
         <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
         <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
         <el-button @click="goBackstage('z-follow')">写随访</el-button>
         <el-button @click="summaryView = false">完成</el-button>
       </div>
+    </el-dialog>
+
+    <!-- 打印预览模态：模板宫格 + iframe 预览 + 打印/另存PDF -->
+    <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
+      <div class="pv-body">
+        <div class="pv-tpls">
+          <div v-for="t in printTpls" :key="t.style" :class="['pv-tpl', {active: printStyle === t.style}]" @click="printStyle = t.style">
+            <div class="pv-tpl-ico" :style="{background: t.color}">
+              <el-icon :size="22"><component :is="t.icon"/></el-icon>
+            </div>
+            <div class="pv-tpl-name">{{ t.name }}</div>
+            <div class="pv-tpl-desc">{{ t.desc }}</div>
+          </div>
+        </div>
+        <div class="pv-preview">
+          <iframe v-if="printSrc" :src="printSrc" class="pv-frame" title="打印预览"/>
+        </div>
+      </div>
+      <template #footer>
+        <span class="pv-tip">打印目标选择「另存为 PDF」即可导出电子病历</span>
+        <el-button @click="printView = false">关闭</el-button>
+        <el-button type="primary" @click="doFramePrint">打印 / 另存 PDF</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -384,11 +418,11 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, Plus} from "@element-plus/icons-vue";
+import {Delete, Document, Picture, Plus, Tickets} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordFull, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
 import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
 import {RecordTemplate} from "@/model/entiy/RecordTemplate";
 import {reqPackageList} from "@/request/PackageApi";
@@ -455,6 +489,9 @@ const treatRecordId = ref(0)
 /** 当前病历状态：0接诊中 1已完结 2已作废；非0时单据只读 */
 const treatStatus = ref<number>(0)
 const orderLocked = computed(() => treatStatus.value !== 0)
+// 检验/影像已开单数（开单调 tab 角标）
+const labCount = ref<number>(0)
+const imageCount = ref<number>(0)
 const activeTab = ref('rx')
 const treatSubmitting = ref(false)
 
@@ -544,6 +581,11 @@ const openTreat = (a: AppointDto2): void => {
       recordForm.value.respiratoryRate = rec.respiratoryRate
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
+      // 检验/影像已开单数（tab 角标用）
+      reqRecordFull(rec.recordId).then(f => {
+        labCount.value = f?.labOrders?.length ?? 0
+        imageCount.value = f?.imageOrders?.length ?? 0
+      })
       enterOrders()
     }
   })
@@ -607,6 +649,14 @@ const submitRecord = (): void => {
 
 // 字典查找
 const drugOf = (drugId: number): Drug | undefined => drugList.value.find(d => d.drugId === drugId)
+// 查体快捷标签：点击即填入体格检查（半勾选式录入，不用手打常用所见）
+const examTags = ['精神沉郁', '精神尚可', '黏膜苍白', '黏膜黄染', '眼结膜潮红', '被毛粗乱', '皮肤红疹',
+  '脱水明显', '淋巴结肿大', '心肺音减弱', '心律不齐', '腹部触痛', '肠音亢进', '关节肿胀', '跛行', '口腔溃疡', '牙结石']
+const appendExam = (tag: string): void => {
+  const cur = (recordForm.value.physicalExam || '').replace(/[，,]$/, '')
+  recordForm.value.physicalExam = cur ? cur + '，' + tag : tag
+}
+
 // 处方自动算量：药品配置了剂量规则时，按体重/固定量自动填入数量（医生可改）
 const doseCalc = (row: Prescription): void => {
   const d = drugOf(row.drugId)
@@ -742,12 +792,20 @@ const cancelTreat = (): void => {
     })
   }).catch(() => ElMessage.info('已取消'))
 }
-const printRx = (): void => {
-  router.push('/doctorPage/d-rx?recordId=' + summaryRecordId.value)
-}
-// 打印完整病历：std 国标病历 / color 彩色详情版
-const printRecord = (style: string): void => {
-  router.push('/doctorPage/d-recordPrint?recordId=' + summaryRecordId.value + '&style=' + style)
+// 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
+const printView = ref(false)
+const printStyle = ref<'std' | 'color' | 'rx'>('std')
+const printTpls = [
+  {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
+  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
+  {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
+]
+const printSrc = computed(() => printStyle.value === 'rx'
+    ? '/#/doctorPage/d-rx?recordId=' + summaryRecordId.value
+    : '/#/doctorPage/d-recordPrint?recordId=' + summaryRecordId.value + '&style=' + printStyle.value)
+const doFramePrint = (): void => {
+  const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
+  f?.contentWindow?.print()
 }
 const goOrder = (path: string): void => {
   const id = summaryRecordId.value
@@ -823,6 +881,39 @@ watch(() => form.value.clientId, (newValue): void => {
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
 .order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
 .treat-total { float: left; font-size: 15px; }
+
+/* 查体快捷标签 */
+.exam-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.exam-tag {
+  padding: 2px 8px;
+  background: #ecf5ff;
+  color: #409eff;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .2s;
+  &:hover { background: #409eff; color: #fff; }
+}
+
+/* tab 数字角标 */
+.tab-num {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  background: #f56c6c;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 600;
+}
 
 /* 接诊弹窗：左表单 + 右病史侧栏 */
 .treat-body { display: flex; gap: 14px; align-items: flex-start; }

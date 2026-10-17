@@ -155,16 +155,38 @@
     </template>
 
     <div class="rf-foot">
-      <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
-      <el-button size="small" @click="printRecord('std')">国标病历</el-button>
-      <el-button size="small" @click="printRecord('color')">彩色详情版</el-button>
+      <el-button size="small" type="primary" @click="printView = true">打印预览</el-button>
     </div>
+
+    <!-- 打印预览模态：模板宫格选择 + 实时预览 + 打印/另存PDF -->
+    <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
+      <div class="pv-body">
+        <div class="pv-tpls">
+          <div v-for="t in printTpls" :key="t.style" :class="['pv-tpl', {active: printStyle === t.style}]" @click="printStyle = t.style">
+            <div class="pv-tpl-ico" :style="{background: t.color}">
+              <el-icon :size="22"><component :is="t.icon"/></el-icon>
+            </div>
+            <div class="pv-tpl-name">{{ t.name }}</div>
+            <div class="pv-tpl-desc">{{ t.desc }}</div>
+          </div>
+        </div>
+        <div class="pv-preview">
+          <iframe v-if="printSrc" :src="printSrc" class="pv-frame" title="打印预览"/>
+        </div>
+      </div>
+      <template #footer>
+        <span class="pv-tip">打印目标选择「另存为 PDF」即可导出电子病历</span>
+        <el-button @click="printView = false">关闭</el-button>
+        <el-button type="primary" @click="doFramePrint">打印 / 另存 PDF</el-button>
+      </template>
+    </el-dialog>
   </div>
   <div v-else v-loading="true" class="rf-loading">加载中...</div>
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
+import {Document, Picture, Tickets} from "@element-plus/icons-vue";
 import {useRouter} from "vue-router";
 import {reqRecordFull} from "@/request/RecordApi";
 import {RecordFull} from "@/model/VO/RecordFull";
@@ -179,12 +201,23 @@ onMounted(() => {
   if (props.recordId) reqRecordFull(props.recordId).then(res => { full.value = res })
 })
 
-const printRx = (): void => {
-  router.push('/doctorPage/d-rx?recordId=' + props.recordId)
-}
-// 打印完整病历：std 国标病历 / color 彩色详情版
-const printRecord = (style: string): void => {
-  router.push('/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + style)
+// 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
+const printView = ref(false)
+const printStyle = ref<'std' | 'color' | 'rx'>('std')
+const printTpls = [
+  {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
+  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
+  {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
+]
+const printSrc = computed(() => {
+  const base = printStyle.value === 'rx'
+      ? '/#/doctorPage/d-rx?recordId=' + props.recordId
+      : '/#/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + printStyle.value
+  return base
+})
+const doFramePrint = (): void => {
+  const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
+  f?.contentWindow?.print()
 }
 </script>
 
@@ -223,6 +256,43 @@ const printRecord = (style: string): void => {
   }
 
   .rf-foot { margin-top: 16px; text-align: right; }
+}
+
+/* 打印预览模态 */
+.print-dlg {
+  .pv-body {
+    display: flex;
+    gap: 16px;
+    height: 78vh;
+  }
+  .pv-tpls {
+    width: 190px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+  .pv-tpl {
+    border: 2px solid #ebeef5;
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    &:hover { border-color: #c6e2ff; }
+    &.active { border-color: #1E6FA8; background: #f0f7fc; }
+    .pv-tpl-ico {
+      width: 40px; height: 40px; margin: 0 auto 8px;
+      border-radius: 10px; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pv-tpl-name { font-size: 13px; font-weight: 700; color: #1F2D3D; }
+    .pv-tpl-desc { font-size: 11px; color: #909399; margin-top: 2px; }
+  }
+  .pv-preview { flex: 1; min-width: 0; border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; background: #f5f6fa; }
+  .pv-frame { width: 100%; height: 100%; border: none; }
+  .pv-tip { float: left; font-size: 12px; color: #909399; line-height: 32px; }
 }
 
 .rf-loading { min-height: 200px; }
