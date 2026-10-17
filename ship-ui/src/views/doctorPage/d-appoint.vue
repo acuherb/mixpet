@@ -581,7 +581,7 @@ const treatView = ref(false)
 const treatAppoint = ref<AppointDto2 | null>(null)
 /** 宠物病史侧栏（接诊时参考：档案/过敏史/既往史/最近就诊/用药/检验异常） */
 const petHistory = ref<PetHistory | null>(null)
-const loadPetHistory = (petId: number): void => {
+const loadPetHistory = (petId: number | null): void => {
   if (!petId) { petHistory.value = null; return }
   reqPetHistory(petId).then(res => { petHistory.value = res })
 }

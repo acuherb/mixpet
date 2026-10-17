@@ -22,7 +22,7 @@
     </div>
 
     <el-dialog v-model="detailView" :title="cur?.noticeTitle || '公告详情'" width="640px">
-      <div class="nl-content">{{ detailText || "加载中..." }}</div>
+      <div v-loading="detailLoading" class="nl-content">{{ detailText }}</div>
     </el-dialog>
   </div>
 </template>
@@ -56,11 +56,15 @@ const debSearch = debounce(() => { qp.numPage = 1; load() }, 400)
 const detailView = ref(false)
 const cur = ref<NoticeDto | null>(null)
 const detailText = ref("")
+const detailLoading = ref(false)
 const openDetail = (n: NoticeDto): void => {
   cur.value = n
   detailView.value = true
   detailText.value = ""
-  reqNoticeDetail(n.noticeId).then(t => { detailText.value = t || "暂无内容" })
+  detailLoading.value = true
+  reqNoticeDetail(n.noticeId)
+      .then(t => { detailText.value = t || "暂无内容" })
+      .finally(() => { detailLoading.value = false })
 }
 </script>
 

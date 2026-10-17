@@ -5,7 +5,7 @@
       <el-descriptions-item label="宠物">{{ full.record.petName }}</el-descriptions-item>
       <el-descriptions-item label="客户">{{ full.record.clientName }}</el-descriptions-item>
       <el-descriptions-item label="接诊医生">{{ full.record.doctorName }}（{{ full.record.departmentName }}）</el-descriptions-item>
-      <el-descriptions-item label="就诊时间">{{ getDisplayTime(full.record.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="就诊时间">{{ getDisplayTime(full.record.createTime ?? '') }}</el-descriptions-item>
       <el-descriptions-item label="体重">{{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}</el-descriptions-item>
       <el-descriptions-item label="血压">{{ full.record.bloodPressure || '—' }}</el-descriptions-item>
       <el-descriptions-item label="体温(℃)">{{ full.record.temperature ?? '—' }}</el-descriptions-item>
@@ -196,14 +196,12 @@
 <script lang="ts" setup>
 import {computed, onMounted, ref} from "vue";
 import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
-import {useRouter} from "vue-router";
 import {reqRecordFull} from "@/request/RecordApi";
 import {RecordFull} from "@/model/VO/RecordFull";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import {surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
 
 const props = defineProps<{ recordId: number }>()
-const router = useRouter()
 const full = ref<RecordFull | null>(null)
 
 onMounted(() => {

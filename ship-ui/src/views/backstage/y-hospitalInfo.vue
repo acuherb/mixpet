@@ -84,6 +84,9 @@ const submit = (): void => {
     }).catch(() => { saving.value = false })
   })
 }
+</script>
+
+<style lang="scss" scoped>
 /* 品牌色选择行 */
 .brand-color-row {
   display: flex;
@@ -103,4 +106,4 @@ const submit = (): void => {
     &:hover { transform: scale(1.15); }
   }
 }
-</script>
+</style>

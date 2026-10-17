@@ -72,7 +72,7 @@
 
     <!-- 加载失败态：一键重试 -->
     <el-empty v-if="listError" description="加载失败，请检查网络后重试">
-      <el-button size="small" type="primary" @click="sendQuery">重新加载</el-button>
+      <el-button size="small" type="primary" @click="load">重新加载</el-button>
     </el-empty>
 
     <div class="rc-pager">

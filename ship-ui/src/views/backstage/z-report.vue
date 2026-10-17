@@ -108,14 +108,8 @@
           <b>每日收入趋势</b>
         </div>
       </template>
-      <div v-if="r.trend.length" class="bar-chart">
-        <div v-for="d in r.trend" :key="d.date" class="bar-col">
-          <div class="bar-track"><div class="bar-fill" :style="{height: barHeight(d.amount) + '%'}"></div></div>
-          <span class="bar-val">￥{{ money(d.amount) }}</span>
-          <span class="bar-date">{{ d.date.slice(5) }}</span>
-        </div>
-      </div>
-      <el-empty v-else description="该区间暂无已收款账单"/>
+      <MiniBar :items="r.trend.map(d => ({name: d.date.slice(5), value: d.amount, label: '￥' + money(d.amount)}))"
+               empty-text="该区间暂无已收款账单"/>
     </el-card>
 
     <div class="mid-row">
@@ -157,6 +151,7 @@
 
 <script lang="ts" setup>
 import {onMounted, ref, watch} from 'vue'
+import MiniBar from "@/components/chart/MiniBar.vue";
 import {
   DataBoard, Goods, Money, OfficeBuilding, PieChart, RefreshLeft, Search, Tickets,
   TrendCharts, User, Wallet
@@ -231,8 +226,6 @@ const buildCompose = (): void => {
 }
 const maxCompose = (): number => Math.max(1, ...compose.value.map(c => c.amount))
 const pct = (v: number): number => Math.round((v / maxCompose()) * 100)
-const maxTrend = (): number => Math.max(1, ...r.value.trend.map(d => d.amount))
-const barHeight = (v: number): number => Math.round((v / maxTrend()) * 100)
 
 onMounted(() => {
   load()
@@ -280,10 +273,4 @@ watch(r, buildCompose, {deep: true})
 .c-track { flex: 1; height: 16px; background: #f2f3f5; border-radius: 4px; overflow: hidden; }
 .c-fill { height: 100%; background: linear-gradient(90deg, #409eff, #67c23a); }
 .c-amt { width: 90px; text-align: right; font-size: 13px; color: #303133; flex-shrink: 0; }
-.bar-chart { display: flex; align-items: flex-end; gap: 12px; height: 200px; padding-top: 10px; overflow-x: auto; }
-.bar-col { flex: 1; min-width: 34px; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
-.bar-track { width: 100%; max-width: 40px; flex: 1; display: flex; align-items: flex-end; background: #f2f3f5; border-radius: 6px 6px 0 0; }
-.bar-fill { width: 100%; background: linear-gradient(180deg, #67c23a, #409eff); border-radius: 6px 6px 0 0; min-height: 3px; }
-.bar-val { font-size: 10px; color: #909399; }
-.bar-date { font-size: 11px; color: #606266; }
 </style>

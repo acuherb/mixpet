@@ -88,6 +88,7 @@ ws.onmessage = (ev) => {
       msgType: dataMsg.msgType,
       msgName: dataMsg.msgName,
       isMine: false,
+      isRead: false,
       msgContent: dataMsg.msgContent,
       roleName: doctor.doctorName,
       rolePhoto: doctor.doctorPhoto

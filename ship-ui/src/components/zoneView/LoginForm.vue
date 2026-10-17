@@ -77,7 +77,6 @@ const formLogin: LoginVo = reactive({
 const toLogin = () => {
   formLogin.role = prop.role
   reqLogin(formLogin).then(resp => {
-    console.log(resp.msg)
     if (resp.code == 1) {
       emit("loginSuc")
     }

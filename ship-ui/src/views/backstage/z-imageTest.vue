@@ -64,7 +64,7 @@
       </el-form-item>
       <el-form-item label="报告模板">
         <div class="tpl-editor">
-          <div v-for="(t, i) in tplItems" :key="i" class="tpl-row">
+          <div v-for="(_, i) in tplItems" :key="i" class="tpl-row">
             <el-input v-model="tplItems[i]" :maxlength="32" placeholder="模板项名称，如：影像所见" size="small"/>
             <el-button :icon="Delete" circle size="small" type="danger" @click="tplItems.splice(i, 1)"/>
           </div>

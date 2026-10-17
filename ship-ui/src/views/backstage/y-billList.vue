@@ -136,6 +136,7 @@ import {reqBillDispense, reqBillPage, reqBillPay, reqBillRefund} from "@/request
 import {exportCsv} from "@/utils/ExportUtil";
 import {reqRechargeClient} from "@/request/ClientApi";
 import {reqRecordOne} from "@/request/RecordApi";
+import {Prescription} from "@/model/entiy/MedicalRecord";
 import {reqHospitalSetting} from "@/request/SettingApi";
 import {HospitalSetting} from "@/model/entiy/HospitalSetting";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";

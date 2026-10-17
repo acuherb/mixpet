@@ -12,7 +12,7 @@
 
     <!-- 粘贴框 -->
     <div style="margin: 0 80px 12px">
-      <el-input v-model="pasteText" :rows="3" placeholder="在此 Ctrl+V 粘贴 Excel 数据（Tab 分列、回车分行）" type="textarea"/>
+      <el-input v-model="pasteText" :rows="3" placeholder="在此 Ctrl+V 粘贴 Excel 数据（Tab 分列、回车分行）" type="textarea" @paste="onPaste"/>
     </div>
 
     <!-- 可编辑表格 -->

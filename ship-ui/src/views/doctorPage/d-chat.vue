@@ -69,6 +69,7 @@ ws.onmessage = (ev) => {
       msgType: dataMsg.msgType,
       msgName: dataMsg.msgName,
       isMine: false,
+      isRead: false,
       msgContent: dataMsg.msgContent,
       roleName: client.clientName,
       rolePhoto: client.clientPhoto

@@ -1,6 +1,6 @@
 <template>
   <router-view v-slot="{ Component }">
-    <transition name="flip">
+    <transition name="fade-up">
       <component :is="Component"/>
     </transition>
   </router-view>
@@ -9,9 +9,7 @@
 import {onMounted, watch} from 'vue'
 import {hospital, loadHospital} from "@/utils/hospital";
 
-console.log(import.meta.env.VITE_BACK_URL)
-
-// 医院信息：App 启动加载一次（页脚/title 用），标题随医院名联动
+// 医院信息：App 启动加载一次（页脚/title/品牌色注入用），标题随医院名联动
 onMounted(() => {
   loadHospital()
   watch(hospital, h => {
@@ -20,29 +18,32 @@ onMounted(() => {
 })
 </script>
 <style lang="scss" scoped>
-.flip-enter-active {
-  animation: flip-in 0.5s;
+/* 路由切换过渡：短促淡入+上移（避免 3D 翻转在慢设备上白闪/抖动/横向滚动） */
+.fade-up-enter-active {
+  animation: fade-up-in 0.25s ease-out;
 }
 
-.flip-leave-active {
-  animation: flip-out 0.5s;
+.fade-up-leave-active {
+  animation: fade-up-out 0.15s ease-in;
 }
 
-@keyframes flip-in {
+@keyframes fade-up-in {
   from {
-    transform: rotateY(90deg);
+    opacity: 0;
+    transform: translateY(10px);
   }
   to {
-    transform: rotateY(0deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-@keyframes flip-out {
+@keyframes fade-up-out {
   from {
-    transform: rotateY(0deg);
+    opacity: 1;
   }
   to {
-    transform: rotateY(90deg);
+    opacity: 0;
   }
 }
 </style>

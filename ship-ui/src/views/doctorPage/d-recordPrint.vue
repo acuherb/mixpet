@@ -167,7 +167,7 @@
       <!-- 其他诊疗记录 -->
       <div v-if="full.surgeries.length || full.hospitals.length || full.immunes.length || full.followUps.length" class="rc-card">
         <div class="rc-card-tit">其他诊疗记录</div>
-        <div v-if="full.surgeries.length" class="rc-other">手术：<span v-for="s in full.surgeries" :key="s.surgeryId">{{ s.surgeryName }}（{{ surgeryStatusText(s.status) }}）</span></div>
+        <div v-if="full.surgeries.length" class="rc-other">手术：<span v-for="s in full.surgeries" :key="s.surgeryId">{{ s.surgeryName }}（{{ surgeryStatusText(s.status ?? 0) }}）</span></div>
         <div v-if="full.hospitals.length" class="rc-other">住院：<span v-for="h in full.hospitals" :key="h.hospitalId">{{ h.roomNo || '—' }}（{{ h.status ? '已出院' : '住院中' }}）</span></div>
         <div v-if="full.immunes.length" class="rc-other">免疫：<span v-for="m in full.immunes" :key="m.immuneId">{{ m.drugName }}（{{ fmt(m.vaccinateTime).slice(0, 10) }}）</span></div>
         <div v-if="full.followUps.length" class="rc-other">随访：<span v-for="f in full.followUps" :key="f.followId">{{ f.followType }} · {{ f.status ? '已完成' : '待随访' }}</span></div>
@@ -219,7 +219,7 @@ const router = useRouter()
 const full = ref<RecordFull | null>(null)
 const pet = ref<Pet | null>(null)
 const loading = ref(true)
-const style = ref<'std' | 'mono' | 'color'>((route.query.style as string) ?? 'std')
+const style = ref<'std' | 'mono' | 'color'>((route.query.style as 'std' | 'mono' | 'color' | undefined) ?? 'std')
 
 onMounted(() => {
   const recordId = Number(route.query.recordId)
@@ -238,7 +238,7 @@ const petSex = computed(() => pet.value?.petSex ?? null)
 const petBirthday = computed(() => pet.value?.petBirthday ?? null)
 const petChip = computed(() => pet.value?.petChip ?? '')
 
-const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)
+const fmt = (t: string | null | undefined): string => (t || '').replace('T', ' ').slice(0, 16)
 
 // 国标病历分区（按规范病历结构）
 const stdSections = computed(() => {

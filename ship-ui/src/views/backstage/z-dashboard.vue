@@ -130,16 +130,8 @@
             <b>近7日实收趋势</b>
           </div>
         </template>
-        <div v-if="stat.revenueTrend.length" class="bar-chart">
-          <div v-for="d in stat.revenueTrend" :key="d.date" class="bar-col">
-            <div class="bar-track">
-              <div class="bar-fill" :style="{height: barHeight(d.amount) + '%'}"></div>
-            </div>
-            <span class="bar-val">￥{{ money(d.amount) }}</span>
-            <span class="bar-date">{{ d.date.slice(5) }}</span>
-          </div>
-        </div>
-        <el-empty v-else description="近7日暂无已收费账单"/>
+        <MiniBar :items="stat.revenueTrend.map(d => ({name: d.date.slice(5), value: d.amount, label: '￥' + money(d.amount)}))"
+                 empty-text="近7日暂无已收费账单"/>
       </el-card>
       <el-card shadow="never" class="chart-card">
         <template #header>
@@ -171,6 +163,7 @@ import {
 } from "@element-plus/icons-vue";
 import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqStatOverview} from "@/request/StatisticsApi";
+import MiniBar from "@/components/chart/MiniBar.vue";
 
 const router = useRouter()
 const go = (path: string): void => { router.push(path) }
@@ -184,12 +177,6 @@ const stat = ref<StatOverview>({
 
 const money = (n: number | null | undefined): string =>
     (n ?? 0).toFixed(2)
-
-// 柱状高度：相对最大值归一化，至少给一点点
-const maxAmt = (): number =>
-    Math.max(1, ...stat.value.revenueTrend.map(d => d.amount))
-const barHeight = (v: number): number =>
-    Math.round((v / maxAmt()) * 100)
 
 const rankPct = (v: number): number =>
     Math.min(100, Math.round((v / Math.max(1, ...stat.value.doctorTop.map(d => d.count))) * 100))
@@ -308,44 +295,6 @@ onMounted(() => {
 .c-ico {
   width: 30px; height: 30px; border-radius: 8px; color: #fff; font-size: 16px;
   display: flex; align-items: center; justify-content: center;
-}
-.bar-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-  height: 220px;
-  padding-top: 10px;
-}
-.bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-}
-.bar-track {
-  width: 100%;
-  max-width: 46px;
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  background: #f2f3f5;
-  border-radius: 6px 6px 0 0;
-}
-.bar-fill {
-  width: 100%;
-  background: linear-gradient(180deg, #67c23a, #409eff);
-  border-radius: 6px 6px 0 0;
-  min-height: 4px;
-}
-.bar-val {
-  font-size: 11px;
-  color: #909399;
-}
-.bar-date {
-  font-size: 12px;
-  color: #606266;
 }
 .doctor-rank {
   display: flex;
