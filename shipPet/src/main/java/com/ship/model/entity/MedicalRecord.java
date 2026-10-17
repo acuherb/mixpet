@@ -66,6 +66,8 @@ public class MedicalRecord implements Serializable {
     private Integer heartRate;
     /** 呼吸(次/分) */
     private Integer respiratoryRate;
+    /** 血压(收缩/舒张,如 120/80) */
+    private String bloodPressure;
 
     /** 挂号费 */
     private BigDecimal feeRegister;

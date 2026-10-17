@@ -26,6 +26,7 @@
         SELECT
         r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
         r.chief_complaint, r.present_illness, r.past_history, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
+        r.triage_level, r.weight, r.temperature, r.heart_rate, r.respiratory_rate, r.blood_pressure,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time, r.status, r.finish_time, r.cancel_reason,
@@ -96,6 +97,7 @@
         SELECT
         r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
         r.chief_complaint, r.present_illness, r.past_history, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
+        r.triage_level, r.weight, r.temperature, r.heart_rate, r.respiratory_rate, r.blood_pressure,
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time, r.status, r.finish_time, r.cancel_reason,

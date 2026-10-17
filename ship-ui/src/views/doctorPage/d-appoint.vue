@@ -138,6 +138,9 @@
         <el-form-item label="呼吸(次/分)">
           <el-input-number v-model="recordForm.respiratoryRate" :max="200" :min="0" :step="2" style="width: 150px"/>
         </el-form-item>
+        <el-form-item label="血压(mmHg)">
+          <el-input v-model="recordForm.bloodPressure" clearable maxlength="16" placeholder="如：120/80" style="width: 150px"/>
+        </el-form-item>
 
         <el-divider content-position="left">费用</el-divider>
         <el-form-item label="挂号费(元)">
@@ -579,6 +582,7 @@ const openTreat = (a: AppointDto2): void => {
       recordForm.value.temperature = rec.temperature
       recordForm.value.heartRate = rec.heartRate
       recordForm.value.respiratoryRate = rec.respiratoryRate
+      recordForm.value.bloodPressure = rec.bloodPressure
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
       // 检验/影像已开单数（tab 角标用）

@@ -63,6 +63,8 @@ export interface MedicalRecord {
     heartRate?: number | null;
     /** 呼吸(次/分) */
     respiratoryRate?: number | null;
+    /** 血压(收缩/舒张,如 120/80) */
+    bloodPressure?: string | null;
     feeRegister: number;
     feeTreat: number;
     /** 就诊状态：0接诊中 1已完结 2已作废 */

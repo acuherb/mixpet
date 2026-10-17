@@ -79,6 +79,11 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="宠物">{{ detail.record.petName }}</el-descriptions-item>
           <el-descriptions-item label="就诊时间">{{ (detail.record.createTime || '').replace('T', ' ').slice(0, 16) }}</el-descriptions-item>
+          <el-descriptions-item label="体重">{{ detail.record.weight != null ? detail.record.weight + 'kg' : '—' }}</el-descriptions-item>
+          <el-descriptions-item label="血压">{{ detail.record.bloodPressure || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="体温(℃)">{{ detail.record.temperature ?? '—' }}</el-descriptions-item>
+          <el-descriptions-item label="心率(次/分)">{{ detail.record.heartRate ?? '—' }}</el-descriptions-item>
+          <el-descriptions-item label="呼吸(次/分)">{{ detail.record.respiratoryRate ?? '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="主诉">{{ detail.record.chiefComplaint || '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="现病史">{{ detail.record.presentIllness || '—' }}</el-descriptions-item>
           <el-descriptions-item :span="2" label="既往病史">{{ detail.record.pastHistory || '—' }}</el-descriptions-item>

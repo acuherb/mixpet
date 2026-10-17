@@ -6,6 +6,12 @@
       <el-descriptions-item label="客户">{{ full.record.clientName }}</el-descriptions-item>
       <el-descriptions-item label="接诊医生">{{ full.record.doctorName }}（{{ full.record.departmentName }}）</el-descriptions-item>
       <el-descriptions-item label="就诊时间">{{ getDisplayTime(full.record.createTime) }}</el-descriptions-item>
+      <el-descriptions-item label="体重">{{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}</el-descriptions-item>
+      <el-descriptions-item label="血压">{{ full.record.bloodPressure || '—' }}</el-descriptions-item>
+      <el-descriptions-item label="体温(℃)">{{ full.record.temperature ?? '—' }}</el-descriptions-item>
+      <el-descriptions-item label="心率(次/分)">{{ full.record.heartRate ?? '—' }}</el-descriptions-item>
+      <el-descriptions-item label="呼吸(次/分)">{{ full.record.respiratoryRate ?? '—' }}</el-descriptions-item>
+      <el-descriptions-item label="分诊">{{ {1: '急诊', 2: '普通', 3: '复诊'}[full.record.triageLevel!] || '—' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="主诉">{{ full.record.chiefComplaint || '无' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="现病史">{{ full.record.presentIllness || '无' }}</el-descriptions-item>
       <el-descriptions-item :span="2" label="既往病史">{{ full.record.pastHistory || '无' }}</el-descriptions-item>

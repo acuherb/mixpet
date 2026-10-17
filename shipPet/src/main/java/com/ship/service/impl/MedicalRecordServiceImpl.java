@@ -44,6 +44,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import com.ship.util.StrUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -265,7 +266,17 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .eq(Appointment::getAppointmentId, appoint.getAppointmentId())
                 .set(Appointment::getIsSuc, true)
                 .update();
-        return Result.success("接诊完成，已生成收费账单");
+        // 完整性软提示：缺项拼进 msg 提醒医生（不阻断保存，前端保存成功提示即展示）
+        List<String> lacks = new ArrayList<>();
+        if (StrUtil.isWhite(record.getChiefComplaint())) lacks.add("主诉");
+        if (StrUtil.isWhite(record.getPresentIllness())) lacks.add("现病史");
+        if (StrUtil.isWhite(record.getPastHistory())) lacks.add("既往病史");
+        if (StrUtil.isWhite(record.getPhysicalExam())) lacks.add("体格检查");
+        if (StrUtil.isWhite(record.getDiagnosis())) lacks.add("诊断");
+        if (record.getWeight() == null) lacks.add("体重(体征)");
+        return Result.success(lacks.isEmpty()
+                ? "接诊完成，已生成收费账单"
+                : "接诊完成，已生成收费账单。提醒：" + String.join("、", lacks) + " 尚未填写");
     }
 
     @Override
@@ -444,6 +455,9 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (record.getStatus() == null || record.getStatus() != 0)
             return Result.error(record.getStatus() != null && record.getStatus() == 2
                     ? "该就诊已作废，不能完结" : "该就诊已完结，无需重复操作");
+        // 完整性硬校验：主诉/诊断必填（完结=病历归档，最后一道关）
+        if (StrUtil.isWhite(record.getChiefComplaint()) || StrUtil.isWhite(record.getDiagnosis()))
+            return Result.error("主诉/诊断未填写，为避免病历不完整请先补全");
         // 未完成事项软检查：有卡壳事项时返回清单，由前端确认后 force=true 强制完结
         if (!force) {
             List<String> pending = new ArrayList<>();
@@ -506,6 +520,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getTemperature, form.getTemperature())
                 .set(MedicalRecord::getHeartRate, form.getHeartRate())
                 .set(MedicalRecord::getRespiratoryRate, form.getRespiratoryRate())
+                .set(MedicalRecord::getBloodPressure, form.getBloodPressure())
                 .update();
         return Result.success("病历已更新");
     }

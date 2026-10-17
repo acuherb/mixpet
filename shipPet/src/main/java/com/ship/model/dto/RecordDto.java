@@ -42,6 +42,12 @@ public class RecordDto {
     private LocalDateTime finishTime;
     /** 作废原因 */
     private String cancelReason;
+    /** 体征：体重(kg)/体温(℃)/心率/呼吸/血压 */
+    private BigDecimal weight;
+    private BigDecimal temperature;
+    private Integer heartRate;
+    private Integer respiratoryRate;
+    private String bloodPressure;
     private String petName;
     private String clientName;
     private String doctorName;
