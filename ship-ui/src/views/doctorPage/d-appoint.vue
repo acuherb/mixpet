@@ -730,7 +730,7 @@ const submitRecord = (): void => {
       treatSubmitting.value = true
       reqUpdateRecord({...recordForm.value, recordId: treatRecordId.value}).then(res => {
         treatSubmitting.value = false
-        if (res.code === 1) { ElMessage.success('病历已更新'); enterOrders() }
+        if (res.code === 1) { enterOrders() }
         else ElMessage.error(res.msg || '保存失败')
       })
       return
@@ -814,7 +814,7 @@ const saveRx = (): void => {
   rxSaving.value = true
   reqAddRecordPrescription({recordId: treatRecordId.value, prescriptions: ps}).then(res => {
     rxSaving.value = false
-    if (res.code === 1) { ElMessage.success(res.msg || '已保存处方'); prescriptions.value = []; loadSaved() }
+    if (res.code === 1) { prescriptions.value = []; loadSaved() }
     else ElMessage.error(res.msg || '保存失败')
   }).catch(() => { rxSaving.value = false })
 }
@@ -824,7 +824,7 @@ const savePkg = (): void => {
   pkgSaving.value = true
   reqAddRecordPackage({recordId: treatRecordId.value, packageIds: ids}).then(res => {
     pkgSaving.value = false
-    if (res.code === 1) { ElMessage.success(res.msg || '已保存套餐'); packages.value = []; loadSaved() }
+    if (res.code === 1) { packages.value = []; loadSaved() }
     else ElMessage.error(res.msg || '保存失败')
   }).catch(() => { pkgSaving.value = false })
 }
@@ -834,7 +834,6 @@ const createSurgery = (): void => {
   reqCreateSurgery({...surgeryForm.value, recordId: treatRecordId.value}).then(res => {
     surgerySaving.value = false
     if (res.code === 1) {
-      ElMessage.success(res.msg || '手术已安排')
       needSurgery.value = false
       surgeryForm.value = {recordId: null, surgeryName: '', surgeryType: null, anesthesiaType: null, scheduledTime: null, surgeon: null, assistant: null, fee: 0}
       loadSaved()

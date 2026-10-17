@@ -45,7 +45,7 @@
   <!--分页条-->
   <BackPage :total="list.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px" :close-on-click-modal="false">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="检验项" prop="testName">
         <el-input v-model="form.testName" clearable maxlength="64" placeholder="如：白细胞计数"/>

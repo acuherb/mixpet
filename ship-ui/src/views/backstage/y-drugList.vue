@@ -73,7 +73,7 @@
   <!--分页条-->
   <BackPage :total="drugList.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px" :close-on-click-modal="false">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="药品名" prop="drugName">
         <el-input v-model="form.drugName" clearable maxlength="64" placeholder="如：阿莫西林克拉维酸钾片"/>
@@ -139,7 +139,7 @@
   </el-dialog>
 
   <!--入库弹窗-->
-  <el-dialog v-model="inView" draggable title="药品入库" width="420px">
+  <el-dialog v-model="inView" draggable title="药品入库" width="420px" :close-on-click-modal="false">
     <el-form label-width="90px">
       <el-form-item label="药品">
         <span>{{ inDrug?.drugName }}（当前库存 {{ inDrug?.drugStock ?? 0 }}）</span>

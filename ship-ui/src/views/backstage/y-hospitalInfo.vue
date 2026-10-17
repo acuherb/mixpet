@@ -77,8 +77,7 @@ const submit = (): void => {
     reqSaveHospitalSetting(form.value).then((res: Res) => {
       saving.value = false
       if (res.code === 1) {
-        ElMessage.success(res.msg || '保存成功，各处已生效')
-        // 刷新全局单例，让页脚/title 立即更新
+        // 刷新全局单例，让页脚/title/品牌色立即更新
         loadHospital(true)
       } else ElMessage.error(res.msg || '保存失败')
     }).catch(() => { saving.value = false })

@@ -46,7 +46,7 @@
   <!--分页条-->
   <BackPage :total="list.total" @changePu="changePuB"/>
   <!--新增/修改弹窗-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px" :close-on-click-modal="false">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="项目名" prop="itemName">
         <el-input v-model="form.itemName" clearable maxlength="64" placeholder="如：胸部X光片"/>

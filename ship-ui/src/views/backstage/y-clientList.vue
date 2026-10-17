@@ -85,7 +85,7 @@
   <BackPage :total="clientList.total" @changePu="changePuB"/>
 
   <!--会员中心弹窗：积分兑换 / 购卡 / 次卡核销-->
-  <el-dialog v-model="memberView" :title="memberTitle" draggable width="580px">
+  <el-dialog v-model="memberView" :title="memberTitle" draggable width="580px" :close-on-click-modal="false">
     <el-descriptions :column="3" border size="small">
       <el-descriptions-item label="余额">￥{{ memberClient?.clientBalance ?? 0 }}</el-descriptions-item>
       <el-descriptions-item label="积分">{{ memberClient?.clientPoints ?? 0 }}</el-descriptions-item>
@@ -129,9 +129,9 @@
     <el-empty v-if="!memberCards.length" :image-size="40" description="暂无次卡"/>
   </el-dialog>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%"
-               :close-on-click-modal="false" :close-on-press-escape="false"
-               @open="onDialogOpen">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%" :close-on-click-modal="false"
+              :close-on-press-escape="false"
+              @open="onDialogOpen">
     <!--头像上传框-->
     <UpImg :photoNm="form.clientPhoto" @upPhoto="changePhoto"/>
     <!--表单-->

@@ -236,7 +236,6 @@ const submitAdd = (): void => {
     addForm.value.appointmentDate = appointDate.value + (appointPeriod.value === 1 ? 'T09:00:00' : 'T14:00:00')
     reqAddSelfAppoint(addForm.value).then(res => {
       if (res.code === 1) {
-        ElMessage.success(res.msg || '预约成功')
         addVisible.value = false
         reqClientAppoint().then(r => {
           appointList.value = r
