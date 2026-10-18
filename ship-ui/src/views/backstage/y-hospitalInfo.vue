@@ -21,7 +21,10 @@
           <el-input v-model="form.intro" :rows="2" clearable maxlength="255" placeholder="一句话介绍/宣传文案（页脚展示）" type="textarea"/>
         </el-form-item>
         <el-form-item label="LOGO">
-          <UpImg :photo-nm="form.logo || ''" @upPhoto="onLogo"/>
+          <!-- 上传框在表单流内占位（UpImg 默认 absolute 是为弹窗头像设计的，本页需常规流） -->
+          <div class="logo-uploader-wrap">
+            <UpImg :photo-nm="form.logo || ''" @upPhoto="onLogo"/>
+          </div>
           <div class="form-tip">上传后保存即生效（复用公共下载接口）；未上传时各品牌位显示默认标识</div>
         </el-form-item>
         <el-form-item label="品牌主题色">
@@ -113,5 +116,15 @@ const submit = (): void => {
   color: #909399;
   line-height: 1.5;
   margin-top: 2px;
+}
+/* LOGO 上传框：覆盖 UpImg 默认的绝对定位（本页需常规文档流，避免与下方主题色行重叠） */
+.logo-uploader-wrap {
+  :deep(.avatar-uploader) {
+    position: relative !important;
+    right: auto !important;
+    top: auto !important;
+    left: auto !important;
+    margin: 0 !important;
+  }
 }
 </style>
