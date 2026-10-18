@@ -1,11 +1,10 @@
 <template>
   <section ref="myRoll">
-    <!-- 背景装饰：模糊光斑 -->
+    <!-- 背景装饰：模糊光斑（颜色随主题色） -->
     <div class="blob blob-1" ref="blob1"/>
     <div class="blob blob-2" ref="blob2"/>
-    <div class="blob blob-3" ref="blob3"/>
-    <!-- 装饰网格 -->
-    <div class="grid"/>
+    <!-- 顶部过渡雾：把顶栏深色柔和延伸下来 -->
+    <div class="roll-fade"/>
     <!-- 主内容 -->
     <div class="hero-inner">
       <div class="hero-tag">mixpet · 宠物医疗</div>
@@ -32,7 +31,6 @@ defineProps<{
 const myRoll = ref<HTMLElement>()
 const blob1 = ref<HTMLElement>()
 const blob2 = ref<HTMLElement>()
-const blob3 = ref<HTMLElement>()
 let rollHeight = 900
 
 const scrollBlobs = () => {
@@ -40,7 +38,6 @@ const scrollBlobs = () => {
   if (y > rollHeight) return
   if (blob1.value) blob1.value.style.transform = `translate(${y * 0.15}px, ${y * 0.2}px)`
   if (blob2.value) blob2.value.style.transform = `translate(${-y * 0.2}px, ${y * 0.15}px)`
-  if (blob3.value) blob3.value.style.transform = `translate(${y * 0.1}px, ${-y * 0.1}px)`
 }
 
 onMounted(() => {
@@ -68,31 +65,31 @@ section {
   min-height: 520px;
   overflow: hidden;
   max-width: 100vw;
-  background: linear-gradient(160deg, #E8F5EE 0%, #F5F7FA 55%, #EAF3FA 100%);
+  /* 背景随主题色联动：品牌淡调 → 页面背景 → 白，与顶栏/内容区同一色调线 */
+  background: linear-gradient(160deg, var(--brand-soft) 0%, var(--bg) 55%, #ffffff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* 背景网格 */
-.grid {
+/* 顶部过渡雾：顶栏深色渐变柔和延伸至横幅 */
+.roll-fade {
   position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(30, 111, 168, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 111, 168, 0.05) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(circle at 50% 45%, #000 30%, transparent 75%);
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 72px;
+  background: linear-gradient(to bottom, var(--brand) 0%, transparent 100%);
+  opacity: 0.28;
   pointer-events: none;
 }
 
-/* 模糊光斑 */
+/* 模糊光斑（主题色系，低透明度保持柔和） */
 .blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: 0.55;
+  opacity: 0.22;
   pointer-events: none;
   will-change: transform;
 }
@@ -100,7 +97,7 @@ section {
 .blob-1 {
   width: 420px;
   height: 420px;
-  background: #7BD1A8;
+  background: var(--brand);
   top: -80px;
   left: -60px;
   animation: float 12s ease-in-out infinite;
@@ -109,20 +106,10 @@ section {
 .blob-2 {
   width: 380px;
   height: 380px;
-  background: #A8D3EC;
+  background: var(--brand-2);
   bottom: -100px;
   right: -80px;
   animation: float 15s ease-in-out infinite reverse;
-}
-
-.blob-3 {
-  width: 260px;
-  height: 260px;
-  background: #FFD9A0;
-  top: 40%;
-  right: 25%;
-  opacity: 0.35;
-  animation: float 18s ease-in-out infinite;
 }
 
 @keyframes float {
@@ -142,8 +129,9 @@ section {
 .hero-tag {
   display: inline-block;
   padding: 6px 14px;
-  background: rgba(30, 111, 168, 0.10);
-  color: #1E6FA8;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--brand-dark);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;

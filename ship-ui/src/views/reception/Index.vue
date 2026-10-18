@@ -330,6 +330,8 @@ onBeforeUnmount(() => {
   z-index: 100;
   user-select: none;
   overflow: hidden;
+  /* 底部品牌色晕：顶栏与内容区之间的柔和过渡带（不被 overflow 裁剪） */
+  box-shadow: 0 12px 28px -10px var(--brand-soft);
 
   &::before {
     content: "";

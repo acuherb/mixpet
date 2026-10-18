@@ -1,5 +1,21 @@
 <template>
   <footer class="vue-foot">
+    <!-- 波浪过渡（fill 用 CSS 变量，颜色随主题色联动） -->
+    <div class="foot-wave">
+      <svg class="waves" preserveAspectRatio="none" shape-rendering="auto"
+           viewBox="0 24 150 28" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <defs>
+          <path id="gentle-wave"
+                d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"/>
+        </defs>
+        <g class="parallax">
+          <use class="w1" x="48" xlink:href="#gentle-wave" y="0"/>
+          <use class="w2" x="48" xlink:href="#gentle-wave" y="3"/>
+          <use class="w3" x="48" xlink:href="#gentle-wave" y="5"/>
+        </g>
+      </svg>
+    </div>
+
     <!-- 页脚内容 -->
     <div class="foot-main">
       <div class="foot-cols">
@@ -60,6 +76,38 @@ onMounted(() => loadHospital())
   margin-top: 2.5rem;
   /* 页脚背景随主题色联动（极淡品牌色） */
   background: linear-gradient(180deg, var(--brand-soft), #ffffff);
+}
+
+/* 波浪（颜色随主题色：品牌软色/品牌色淡描/白） */
+.foot-wave .waves {
+  position: relative;
+  width: 100%;
+  height: 12vh;
+  margin-bottom: -7px;
+  min-height: 80px;
+  max-height: 130px;
+
+  @media (max-width: 768px) {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .parallax > use {
+    animation: move-forever 25s cubic-bezier(.55, .5, .45, .5) infinite;
+
+    &:nth-child(1) { animation-delay: -2s; animation-duration: 7s; }
+    &:nth-child(2) { animation-delay: -3s; animation-duration: 10s; }
+    &:nth-child(3) { animation-delay: -4s; animation-duration: 13s; }
+  }
+
+  .w1 { fill: var(--brand-soft); }
+  .w2 { fill: var(--brand); opacity: 0.18; }
+  .w3 { fill: #ffffff; }
+
+  @keyframes move-forever {
+    0% { transform: translate3d(-90px, 0, 0) }
+    100% { transform: translate3d(85px, 0, 0) }
+  }
 }
 
 /* 主体 */
