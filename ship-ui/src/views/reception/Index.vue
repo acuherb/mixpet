@@ -322,16 +322,37 @@ onBeforeUnmount(() => {
 
 /* 顶部导航 */
 .topbar {
-  /* 菜单栏背景随主题色联动（品牌渐变） */
+  /* 菜单栏背景随主题色联动（品牌渐变 + 柔和光斑破除纯色生硬感） */
   background: linear-gradient(135deg, var(--brand), var(--brand-dark));
   border-bottom: none;
   position: sticky;
   top: 0;
   z-index: 100;
   user-select: none;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 280px; height: 280px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 70%);
+    top: -150px; right: 6%;
+    pointer-events: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.10), transparent 70%);
+    bottom: -130px; left: 10%;
+    pointer-events: none;
+  }
 }
 
 .topbar-inner {
+  position: relative;
+  z-index: 1;
   max-width: 1200px;
   margin: 0 auto;
   height: 60px;
