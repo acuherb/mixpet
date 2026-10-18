@@ -164,7 +164,11 @@
 
     <div class="rf-foot">
       <el-button size="small" type="primary" @click="printView = true">打印预览</el-button>
+      <el-button size="small" @click="rxView = true">打印处方笺</el-button>
     </div>
+
+    <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
+    <RxPrintDialog v-model="rxView" :record-id="props.recordId"/>
 
     <!-- 打印预览模态：模板宫格选择 + 实时预览 + 打印/另存PDF -->
     <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
@@ -197,6 +201,7 @@
 import {computed, onMounted, ref} from "vue";
 import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
 import {reqRecordFull} from "@/request/RecordApi";
+import RxPrintDialog from "@/components/record/RxPrintDialog.vue";
 import {RecordFull} from "@/model/VO/RecordFull";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import {surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
@@ -219,6 +224,8 @@ const usageText = (p: any): string => {
 }
 
 const printView = ref(false)
+// 兽用处方笺打印弹窗
+const rxView = ref(false)
 const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
 const printTpls = [
   {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},

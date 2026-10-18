@@ -77,6 +77,7 @@
     <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 560px">
       <template #footer>
         <el-button round @click="saveRecordPdf">保存病历（PDF）</el-button>
+        <el-button round @click="viewRx">查看处方笺</el-button>
         <el-button round type="primary" @click="detailVisible = false">关闭</el-button>
       </template>
       <template v-if="detail">
@@ -334,6 +335,10 @@ const detail = ref<RecordDetailVo | null>(null)
 // 保存病历：跳打印页彩色详情版导出 PDF（顾客仅能导自己的病历，后端 /record/detail 有归属校验）
 const saveRecordPdf = (): void => {
   if (detail.value) window.open('/#/doctorPage/d-recordPrint?recordId=' + detail.value.record.recordId + '&style=color', '_blank')
+}
+// 查看处方笺：只读查看（编号由医院打印时生成；GET /record/rx 有顾客归属校验）
+const viewRx = (): void => {
+  if (detail.value) window.open('/#/doctorPage/d-rx?recordId=' + detail.value.record.recordId, '_blank')
 }
 const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])

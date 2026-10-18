@@ -30,6 +30,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-recordList",
         component: () => import('@/views/backstage/z-recordList.vue')
     }, {
+        // 处方笺档案（734号：调档/补打/作废）
+        path: "z-rxArchive",
+        component: () => import('@/views/backstage/z-rxArchive.vue')
+    }, {
         // 科室表
         path: "x-departmentList",
         component: () => import('@/views/backstage/x-departmentList.vue')

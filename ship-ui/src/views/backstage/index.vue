@@ -62,6 +62,7 @@
           <el-menu-item v-show="menuMatch('疫苗驱虫')" index="/backstage/z-immune">疫苗驱虫</el-menu-item>
           <el-menu-item v-show="menuMatch('随访提醒')" index="/backstage/z-remind">随访提醒</el-menu-item>
           <el-menu-item v-show="menuMatch('随访记录')" index="/backstage/z-follow">随访记录</el-menu-item>
+          <el-menu-item v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
         </el-sub-menu>
 
         <!-- 商品与库存 -->

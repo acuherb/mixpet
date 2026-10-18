@@ -367,6 +367,7 @@
           <el-button @click="goBackstage('z-follow')">写随访</el-button>
           <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
           <el-button type="primary" plain @click="printView = true">打印预览</el-button>
+          <el-button plain @click="rxView = true">打印处方笺</el-button>
         </div>
         <p class="phase-tip">确认信息无误后点「完结就诊」；有未完成事项（待出结果/待手术/待随访）会提醒，确认后仍可强制完结。</p>
       </div>
@@ -478,6 +479,9 @@
       </template>
     </el-drawer>
 
+    <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
+    <RxPrintDialog v-model="rxView" :record-id="treatRecordId"/>
+
     <!-- 打印预览模态：模板宫格 + iframe 预览 + 打印/另存PDF -->
     <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
       <div class="pv-body">
@@ -533,6 +537,7 @@ import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {useRouter} from 'vue-router';
 import {moveT} from "@/utils/TimeUtil";
 import {reqPetHistory} from "@/request/RecordApi";
+import RxPrintDialog from "@/components/record/RxPrintDialog.vue";
 import {PetHistory} from "@/model/VO/PetHistory";
 import {reqAiAssist} from "@/request/AiApi";
 import {AiAdvice} from "@/model/VO/AiAdvice";
@@ -944,6 +949,8 @@ const fillAi = (): void => {
 
 // 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
 const printView = ref(false)
+// 兽用处方笺打印弹窗
+const rxView = ref(false)
 const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
 const printTpls = [
   {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
