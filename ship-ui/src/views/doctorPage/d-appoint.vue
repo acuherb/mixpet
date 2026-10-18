@@ -10,14 +10,24 @@
           class="appoint-tab"
           :class="{active: appointTab === 'done'}"
           @click="appointTab = 'done'">已处理 ({{ doneAppoint.length }})</button>
+      <!-- 日期筛选：留空=全部 -->
+      <el-date-picker
+          v-model="appointDateFilter"
+          clearable
+          format="YYYY-MM-DD"
+          placeholder="按就诊日期筛选"
+          size="default"
+          style="width: 170px; margin-left: 12px"
+          type="date"
+          value-format="YYYY-MM-DD"/>
       <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
     </div>
     <MyRow>
       <AppointCard
-          v-for="a in (appointTab === 'pending' ? pendingAppoint : doneAppoint)"
+          v-for="a in (appointTab === 'pending' ? filteredPending : filteredDone)"
           :key="a.appointmentId"
           :a="a"
-          :status="recordStatusMap[a.appointmentId]" @toSuc="openTreat(a)"/>
+          :status="recordStatusMap[a.appointmentId]" @toSuc="openTreat(a)" @toMiss="markMiss(a)"/>
     </MyRow>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
@@ -367,6 +377,7 @@
           <el-button @click="goBackstage('z-follow')">写随访</el-button>
           <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
           <el-button type="primary" plain @click="printView = true">打印预览</el-button>
+          <el-button type="success" plain @click="goCashier">去收银台收费</el-button>
           <el-button plain @click="rxView = true">打印处方笺</el-button>
         </div>
         <p class="phase-tip">确认信息无误后点「完结就诊」；有未完成事项（待出结果/待手术/待随访）会提醒，确认后仍可强制完结。</p>
@@ -534,15 +545,17 @@ import {surgeryStatusText, surgeryStatusType, Surgery, SurgeryVo} from "@/model/
 import {reqDictByType} from "@/request/DictApi";
 import {SysDict} from "@/model/entiy/SysDict";
 import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
-import {useRouter} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import {moveT} from "@/utils/TimeUtil";
 import {reqPetHistory} from "@/request/RecordApi";
 import RxPrintDialog from "@/components/record/RxPrintDialog.vue";
+import {reqMissAppoint} from "@/request/AppointApi";
 import {PetHistory} from "@/model/VO/PetHistory";
 import {reqAiAssist} from "@/request/AiApi";
 import {AiAdvice} from "@/model/VO/AiAdvice";
 
 const router = useRouter()
+const route = useRoute()
 // 手术类型/麻醉方式字典（来自系统设置）
 const surgeryTypeOpts = ref<SysDict[]>([])
 const anesthesiaTypeOpts = ref<SysDict[]>([])
@@ -554,11 +567,31 @@ const appoint = ref<AppointDto2[]>([])
 const appointTab = ref<'pending' | 'done'>('pending')
 const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc))
 const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc))
+/** 日期筛选（留空=全部）：按就诊日期过滤两个列表 */
+const appointDateFilter = ref<string>('')
+const filteredPending = computed(() =>
+    appointDateFilter.value
+        ? pendingAppoint.value.filter(a => (a.appointmentDate || '').slice(0, 10) === appointDateFilter.value)
+        : pendingAppoint.value)
+const filteredDone = computed(() =>
+    appointDateFilter.value
+        ? doneAppoint.value.filter(a => (a.appointmentDate || '').slice(0, 10) === appointDateFilter.value)
+        : doneAppoint.value)
 onMounted(() => {
   queryAppoint()
   reqClientNameHavePet(null).then(res => {
     clientNameL.value = res;
   })
+  // 从医生工作台「去接诊」直达：自动打开指定挂号单的接诊向导
+  const aid = Number(route.query.appointmentId)
+  if (aid) {
+    const tryOpen = (times: number): void => {
+      const target = appoint.value.find(a => a.appointmentId === aid)
+      if (target) openTreat(target)
+      else if (times < 5) setTimeout(() => tryOpen(times + 1), 200)
+    }
+    tryOpen(0)
+  }
 })
 const queryAppoint = () => {
   reqDoctorAppoint().then(res => {
@@ -708,6 +741,17 @@ const enterOrders = (): void => {
   activeStep.value = 2
   activeTab.value = 'rx'
   loadSaved()
+}
+// 标记爽约：预约时间已过未到店，确认后从待处理队列移除（不删病历数据）
+const markMiss = (a: AppointDto2): void => {
+  ElMessageBox.confirm(`确认将单号 #${a.appointmentId}（${a.petName} · ${a.clientName}）标记为爽约吗？`, '标记爽约', {
+    confirmButtonText: '确认爽约', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqMissAppoint(a.appointmentId).then(res => {
+      if (res.code === 1) { ElMessage.success('已标记爽约'); queryAppoint() }
+      else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
 }
 // 从开单步骤返回病历（未完绪可继续修改）
 const goBackRecord = (): void => {
@@ -974,6 +1018,10 @@ const goOrder = (path: string): void => {
 }
 const goBackstage = (path: string): void => {
   router.push('/backstage/' + path + '?recordId=' + treatRecordId.value)
+}
+// 去收银台：直达待收费列表（完结生成的账单在那里收款/发药）
+const goCashier = (): void => {
+  router.push('/backstage/y-billList?payStatus=0')
 }
 
 const recordRules = reactive<FormRules>({

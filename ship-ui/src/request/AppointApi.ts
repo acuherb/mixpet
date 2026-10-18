@@ -25,6 +25,9 @@ export const reqRescheduleSelfAppoint = (id: number, appointmentDate: string): P
 // 顾客取消自己的待就诊预约
 export const reqCancelSelfAppoint = (id: number): Promise<Res> =>
     reqApi.put<string, Res>("appointment/self/cancel/" + id)
+// 医生标记爽约（预约时间已过未到店，队列不再占位）
+export const reqMissAppoint = (id: number): Promise<Res> =>
+    reqApi.put<string, Res>("appointment/miss/" + id)
 // 顾客查某医生当日已约数（时段余号，date=YYYY-MM-DD）
 export const reqDayCount = (doctorId: number, date: string): Promise<number> =>
     reqApi<string, number>("appointment/self/dayCount", {params: {doctorId, date}})

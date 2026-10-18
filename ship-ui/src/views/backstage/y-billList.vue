@@ -171,7 +171,10 @@ import {Prescription} from "@/model/entiy/MedicalRecord";
 import {reqHospitalSetting} from "@/request/SettingApi";
 import {HospitalSetting} from "@/model/entiy/HospitalSetting";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
+import {useRoute} from "vue-router";
 import {ElMessage, ElMessageBox} from "element-plus";
+
+const route = useRoute()
 
 /**
  ┌───────────────────────────────────┐
@@ -179,6 +182,9 @@ import {ElMessage, ElMessageBox} from "element-plus";
  └───────────────────────────────────┘
  */
 onMounted(() => {
+  // 从接诊结算步「去收银台」带入待收费筛选
+  const ps = route.query.payStatus
+  if (ps != null && ps !== '') qp.payStatus = Number(ps)
   sendQuery()
 })
 

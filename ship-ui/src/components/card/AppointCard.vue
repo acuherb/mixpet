@@ -19,6 +19,8 @@
       <el-button v-if="!a.isSuc" type="success" @click="toSuc">接诊</el-button>
       <el-button v-else-if="status === 0" type="warning" @click="toSuc">继续开单</el-button>
       <el-button v-else type="info" plain @click="toSuc">查看</el-button>
+      <!-- 爽约：预约时间已过且未处理的单才显示 -->
+      <el-button v-if="!a.isSuc && isOverdue" size="small" plain type="danger" @click="toMiss">标记爽约</el-button>
     </div>
     <div class="card_content">
       <div class="card-tit">宠物：{{ a.petName }}</div>
@@ -45,7 +47,7 @@
 import TagSex from "@/components/show/TagSex.vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {getAge, moveT} from "@/utils/TimeUtil";
-import {ref} from "vue";
+import {computed, ref} from "vue";
 
 const props = defineProps<{
   a: AppointDto2
@@ -62,11 +64,17 @@ if (props.a.isSuc) {
 
 const emit = defineEmits<{
   (e: "toSuc"): void
+  (e: "toMiss"): void
 }>()
 
 const toSuc = () => {
   emit("toSuc")
 }
+const toMiss = () => {
+  emit("toMiss")
+}
+/** 预约时间已过（可标记爽约） */
+const isOverdue = computed(() => !!props.a.appointmentDate && new Date(props.a.appointmentDate).getTime() < Date.now())
 </script>
 
 <style lang="scss" scoped>

@@ -14,6 +14,7 @@
             label="宠物"
             label-align="right">
           {{ a.petName }}
+          <el-tag v-if="a.petId != null && unpaidPets.has(a.petId)" size="small" style="margin-left:6px" type="danger">有待缴费用</el-tag>
         </el-descriptions-item>
         <el-descriptions-item align="center" label="科室" label-align="right">
           <el-tag>{{ a.departmentName }}</el-tag>
@@ -148,6 +149,7 @@ import {NameDo} from "@/model/DO/NameDo";
 import {reqClientPet} from "@/request/PetApi";
 import {reqDepartNameHaveDoctor} from "@/request/DepartApi";
 import {reqDoctorNameByDepartId} from "@/request/DoctorApi";
+import {reqClientBill} from "@/request/BillApi";
 import {reqScheduleByDoctor} from "@/request/ScheduleApi";
 import {reqDayCount} from "@/request/AppointApi";
 import {DoctorSchedule} from "@/model/entiy/DoctorSchedule";
@@ -244,6 +246,13 @@ const onDepartChange = (departmentId: number): void => {
 }
 // 预约凭证卡数据（宠物/科室医生/时间，从已选项组装）
 const receiptView = ref(false)
+// 有待缴费用的宠物集合（后端 /bill/self，未付账单按 petId 汇总；收款在前台）
+const unpaidPets = ref<Set<number>>(new Set())
+const loadUnpaid = (): void => {
+  reqClientBill().then(list => {
+    unpaidPets.value = new Set((list || []).filter(b => !b.payStatus && b.petId != null).map(b => b.petId!))
+  }).catch(() => { /* 静默：不挡挂号主流程 */ })
+}
 const receipt = ref({petName: '', departmentName: '', doctorName: '', timeText: ''})
 const buildReceipt = (): void => {
   const pet = appointablePets.value.find(p => p.petId === addForm.value.petId)
@@ -326,6 +335,7 @@ onMounted(() => {
   reqClientAppoint().then(res => {
     appointList.value = res
   })
+  loadUnpaid()
   // 名下宠物（挂号用）与有医生的科室
   reqClientPet().then(res => {
     petList.value = res

@@ -82,14 +82,14 @@
             </div>
             <div v-if="queueAppoints.length" class="todo-rows">
               <div v-for="a in queueAppoints" :key="a.appointmentId" class="todo-row"
-                   @click="$router.push('/doctorPage/d-appoint')">
+                   @click="goTreat(a.appointmentId)">
                 <span class="tr-time">{{ moveT(a.appointmentDate) }}</span>
                 <span class="tr-pet">{{ a.petName }}</span>
                 <span class="tr-owner">{{ a.clientName }}</span>
                 <el-tag v-if="isToday(a.appointmentDate)" round size="small" type="danger" effect="light">今天</el-tag>
                 <el-tag v-else-if="isTomorrow(a.appointmentDate)" round size="small" type="primary" effect="light">明日</el-tag>
                 <span class="tr-info" :title="a.appointmentInfo || ''">{{ a.appointmentInfo || '—' }}</span>
-                <el-button size="small" round type="primary" @click.stop="$router.push('/doctorPage/d-appoint')">去接诊</el-button>
+                <el-button size="small" round type="primary" @click.stop="goTreat(a.appointmentId)">去接诊</el-button>
               </div>
               <p v-if="pendingAppoints.length > queueAppoints.length" class="more-tip">
                 还有 {{ pendingAppoints.length - queueAppoints.length }} 条待处理挂号，点右上角「全部挂号」查看
@@ -294,6 +294,7 @@ const timeText = ref<string>('--:--:--')
 // 医院信息（全局单例，顶栏品牌位展示）
 const hosp = hospital
 let timeTimer: ReturnType<typeof setInterval> | undefined
+let dataTimer: ReturnType<typeof setInterval> | undefined
 
 const pad = (n: number) => n.toString().padStart(2, '0')
 const tick = () => {
@@ -321,6 +322,10 @@ const tomorrowStr = (): string => {
   return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
 }
 const isTomorrow = (d: string | null): boolean => !!d && d.slice(0, 10) === tomorrowStr()
+// 直达接诊：带挂号单 id 进接诊页，页面自动打开该单的接诊向导
+const goTreat = (appointmentId: number): void => {
+  router.push('/doctorPage/d-appoint?appointmentId=' + appointmentId)
+}
 const tomorrowCount = computed(() => pendingAppoints.value.filter(a => isTomorrow(a.appointmentDate)).length)
 const todayPending = computed<AppointDto2[]>(() =>
     pendingAppoints.value
@@ -407,6 +412,12 @@ onMounted(() => {
   loadTreating()
   loadClients()
   reqRecordTodo().then(res => { if (res) todo.value = res })
+  // 每 60 秒刷新待办数据：检验/影像结果由护士录完后，医生的「待出结果」自动减少
+  dataTimer = setInterval(() => {
+    loadData()
+    loadTreating()
+    reqRecordTodo().then(res => { if (res) todo.value = res })
+  }, 60000)
   ws = new WebSocket(wsUrl)
   ws.onmessage = (ev) => {
     try {
@@ -444,6 +455,7 @@ const doLogout = (): void => {
 
 onBeforeUnmount(() => {
   if (timeTimer) clearInterval(timeTimer)
+  if (dataTimer) clearInterval(dataTimer)
   ws?.close(1000, '离开工作台')
   ElNotification.closeAll()
 })

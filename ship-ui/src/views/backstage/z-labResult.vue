@@ -59,6 +59,7 @@
     <el-table-column label="操作" width="220" fixed="right">
       <template #default="scope">
         <el-button size="small" @click="printReq(scope.row)">申请单</el-button>
+        <el-button v-if="scope.row.status" size="small" type="success" @click="printReport(scope.row)">报告单</el-button>
         <el-button :type="scope.row.status ? 'info' : 'primary'" plain size="small" @click="showDialog(scope.row)">
           {{ scope.row.status ? '查看结果' : '录入结果' }}
         </el-button>
@@ -155,6 +156,10 @@ const router = useRouter()
 // 打印检验申请单（国标）
 const printReq = (row: LabOrderDto): void => {
   router.push('/backstage/z-requisition?type=lab&orderId=' + row.orderId)
+}
+// 打印检验报告单（含结果/参考范围/异常标记）
+const printReport = (row: LabOrderDto): void => {
+  router.push('/backstage/z-examReport?type=lab&recordId=' + row.recordId + '&orderId=' + row.orderId)
 }
 // 展开某行时自动加载质检结果明细
 const loadDetail = (row: LabOrderDto, expandedRows: LabOrderDto[]): void => {

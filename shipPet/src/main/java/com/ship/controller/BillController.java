@@ -3,11 +3,16 @@ package com.ship.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.ship.common.Result;
 import com.ship.model.dto.BillDto;
+import com.ship.model.entity.Bill;
+import com.ship.model.entity.Client;
 import com.ship.security.model.RoleConst;
 import com.ship.service.IBillService;
+import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 收费管理：账单列表与收款
@@ -31,6 +36,22 @@ public class BillController {
     @Secured(RoleConst.MANAGER)
     public IPage<BillDto> getPage(int numPage, int pageSize, String seaName, Integer payStatus) {
         return billService.selectByPage(seaName, payStatus == null ? -1 : payStatus, numPage, pageSize);
+    }
+
+    /**
+     * 顾客查自己的账单（结账提醒用：待缴费状态展示，实际收款仍需到前台）
+     * 仅返回本人账单；不可操作（无写接口）
+     */
+    @GetMapping("/self")
+    public List<Bill> getSelf() {
+        if (UserUtil.getUser() instanceof Client client) {
+            return billService.lambdaQuery()
+                    .eq(Bill::getClientId, client.getClientId())
+                    .eq(Bill::getIsDel, 0)
+                    .orderByDesc(Bill::getBillId)
+                    .list();
+        }
+        return List.of();
     }
 
     /**
