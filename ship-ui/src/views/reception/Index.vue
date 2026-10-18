@@ -36,27 +36,13 @@
       </div>
     </header>
 
-    <!-- 品牌 Hero：医院名/标语/联系方式（来自医院信息设置） -->
+    <!-- 品牌横幅：医院名 + 快捷入口（联系方式/简介统一在页脚展示，避免重复） -->
     <section class="hero">
-      <div class="hero-glow"></div>
       <div class="hero-inner">
-        <div class="hero-text">
-          <div class="hero-badge">专业宠物医疗 · 用心呵护每一只毛孩子</div>
-          <h1 class="hero-title">{{ hosp.name || 'mixpet 宠物医院' }}</h1>
-          <p class="hero-sub">{{ hosp.intro || '提供接诊、检验影像、住院手术、免疫驱虫等一站式宠物医疗服务，让每一次就诊都被完整记录。' }}</p>
-          <div class="hero-meta">
-            <span v-if="hosp.phone"><el-icon><Phone/></el-icon>{{ hosp.phone }}</span>
-            <span v-if="hosp.bizHours"><el-icon><Clock/></el-icon>{{ hosp.bizHours }}</span>
-            <span v-if="hosp.address"><el-icon><Location/></el-icon>{{ hosp.address }}</span>
-          </div>
-          <div class="hero-cta">
-            <el-button round type="primary" @click="$router.push(isLogin ? '/reception/clientCenter/clientAppoint' : '/login')">预约挂号</el-button>
-            <el-button round plain @click="$router.push('/reception/chat')">在线咨询</el-button>
-          </div>
-        </div>
-        <div class="hero-logo">
-          <img v-if="hosp.logo" :src="'/api/common/download?name=' + hosp.logo" alt="logo"/>
-          <span v-else>{{ (hosp.name || 'P').charAt(0) }}</span>
+        <h1 class="hero-title">{{ hosp.name || 'mixpet 宠物医院' }}</h1>
+        <div class="hero-cta">
+          <el-button round class="cta-main" @click="$router.push(isLogin ? '/reception/clientCenter/clientAppoint' : '/login')">预约挂号</el-button>
+          <el-button round class="cta-sub" @click="$router.push('/reception/chat')">在线咨询</el-button>
         </div>
       </div>
     </section>
@@ -189,7 +175,7 @@ import WindRoll from "@/components/show/WindRoll.vue";
 import MyRow from "@/components/row/MyRow.vue";
 import LinkCard from "@/components/card/LinkCard.vue";
 import MyDialog from "@/components/show/MyDialog.vue";
-import {ArrowUp, Bell, Clock, Location, Phone} from "@element-plus/icons-vue";
+import {ArrowUp, Bell} from "@element-plus/icons-vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 
 /* 生命周期 */
@@ -345,93 +331,58 @@ onBeforeUnmount(() => {
   background: #F5F7FA;
 }
 
-/* 品牌 Hero */
+/* 品牌横幅（与顶栏渐变衔接；联系方式/简介在页脚，不重复） */
 .hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(120deg, var(--brand) 0%, #2BB6A8 100%);
+  background: linear-gradient(120deg, var(--brand) 0%, var(--brand-2) 100%);
   color: #fff;
 
-  .hero-glow {
-    position: absolute;
-    width: 420px; height: 420px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%);
-    top: -180px; right: -80px;
-    &::after {
-      content: ""; position: absolute;
-      width: 300px; height: 300px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(255,255,255,.12), transparent 70%);
-      bottom: -140px; left: 60px;
-    }
-  }
   .hero-inner {
     position: relative;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 48px 24px 42px;
+    padding: 20px 24px;
     display: flex;
     align-items: center;
-    gap: 36px;
-  }
-  .hero-text { flex: 1; min-width: 0; }
-  .hero-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    background: rgba(255,255,255,.16);
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 999px;
-    font-size: 12px;
-    margin-bottom: 14px;
+    justify-content: space-between;
+    gap: 20px;
   }
   .hero-title {
     margin: 0;
-    font-size: 32px;
+    font-size: 24px;
     font-weight: 800;
     letter-spacing: 1px;
   }
-  .hero-sub {
-    margin: 12px 0 0;
-    font-size: 14px;
-    opacity: .92;
-    max-width: 560px;
-    line-height: 1.8;
-  }
-  .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 20px;
-    margin-top: 16px;
-    font-size: 13px;
-    opacity: .92;
-    span { display: inline-flex; align-items: center; gap: 5px; }
-  }
   .hero-cta {
-    margin-top: 24px;
     display: flex;
     gap: 12px;
-  }
-  .hero-logo {
-    width: 108px; height: 108px;
-    border-radius: 24px;
     flex-shrink: 0;
-    background: rgba(255,255,255,.18);
-    border: 2px solid rgba(255,255,255,.35);
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
-    font-size: 52px; font-weight: 800;
-    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  .cta-main {
+    background: #fff;
+    color: var(--brand);
+    border: none;
+    font-weight: 600;
+    &:hover { background: #fff; color: var(--brand-dark); }
+  }
+  .cta-sub {
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    &:hover { background: rgba(255, 255, 255, 0.26); color: #fff; }
   }
   @media (max-width: 768px) {
-    .hero-inner { padding: 32px 20px; }
-    .hero-title { font-size: 24px; }
-    .hero-logo { display: none; }
+    .hero-inner { flex-direction: column; align-items: flex-start; padding: 14px 20px; }
+    .hero-title { font-size: 20px; }
   }
 }
 
 /* 顶部导航 */
 .topbar {
-  background: #fff;
-  border-bottom: 1px solid #E4E7ED;
+  /* 菜单栏背景随主题色联动（品牌渐变） */
+  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+  border-bottom: none;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -454,7 +405,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  color: var(--brand);
+  color: #fff;
   font-size: 18px;
   letter-spacing: .3px;
 
@@ -494,23 +445,23 @@ onBeforeUnmount(() => {
     padding: 8px 14px;
     border-radius: 6px;
     font-size: 14px;
-    color: #1F2D3D;
+    color: rgba(255, 255, 255, 0.92);
     cursor: pointer;
     transition: background .15s, color .15s;
 
     &:hover {
-      background: #EAF3FA;
-      color: var(--brand);
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
     }
   }
 
   .nav-cta {
-    background: var(--brand);
-    color: #fff;
+    background: #fff;
+    color: var(--brand);
 
     &:hover {
-      background: #2A82C2;
-      color: #fff;
+      background: #fff;
+      color: var(--brand-dark);
     }
   }
 }
@@ -523,13 +474,13 @@ onBeforeUnmount(() => {
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 14px;
-  color: #1F2D3D;
+  color: rgba(255, 255, 255, 0.92);
   cursor: pointer;
   transition: background .15s, color .15s;
 
   &:hover {
-    background: #EAF3FA;
-    color: var(--brand);
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
   }
 
   .caret {
