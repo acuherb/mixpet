@@ -36,17 +36,6 @@
       </div>
     </header>
 
-    <!-- 品牌横幅：医院名 + 快捷入口（联系方式/简介统一在页脚展示，避免重复） -->
-    <section class="hero">
-      <div class="hero-inner">
-        <h1 class="hero-title">{{ hosp.name || 'mixpet 宠物医院' }}</h1>
-        <div class="hero-cta">
-          <el-button round class="cta-main" @click="$router.push(isLogin ? '/reception/clientCenter/clientAppoint' : '/login')">预约挂号</el-button>
-          <el-button round class="cta-sub" @click="$router.push('/reception/chat')">在线咨询</el-button>
-        </div>
-      </div>
-    </section>
-
     <WindRoll :is-login="isLogin"/>
 
     <main class="page" v-loading="pageLoading">
@@ -329,53 +318,6 @@ onBeforeUnmount(() => {
 .reception-home {
   min-height: 100vh;
   background: #F5F7FA;
-}
-
-/* 品牌横幅（与顶栏渐变衔接；联系方式/简介在页脚，不重复） */
-.hero {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(120deg, var(--brand) 0%, var(--brand-2) 100%);
-  color: #fff;
-
-  .hero-inner {
-    position: relative;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-  }
-  .hero-title {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: 1px;
-  }
-  .hero-cta {
-    display: flex;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-  .cta-main {
-    background: #fff;
-    color: var(--brand);
-    border: none;
-    font-weight: 600;
-    &:hover { background: #fff; color: var(--brand-dark); }
-  }
-  .cta-sub {
-    background: rgba(255, 255, 255, 0.16);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.45);
-    &:hover { background: rgba(255, 255, 255, 0.26); color: #fff; }
-  }
-  @media (max-width: 768px) {
-    .hero-inner { flex-direction: column; align-items: flex-start; padding: 14px 20px; }
-    .hero-title { font-size: 20px; }
-  }
 }
 
 /* 顶部导航 */
