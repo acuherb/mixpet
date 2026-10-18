@@ -49,4 +49,21 @@ public class RxSheetVo {
     private List<Prescription> items;
     /** 兽药金额合计 */
     private BigDecimal totalAmount;
+
+    /** 开具日期 = prescription.create_time（为空回落 medical_record.create_time） */
+    private LocalDateTime prescriptionTime;
+    /** 处方笺编号 RX-YYYYMMDD-XXXX（未打印为 null，打印时自动生成） */
+    private String printNo;
+    /** 联次份数 1=仅第三联 3=三联全打 */
+    private Integer copies;
+    /** 毛色（pet.pet_color 或补录） */
+    private String hairColor;
+    /** 动物种类（补录） */
+    private String species;
+    /** 休药期（宠物处方 "—"） */
+    private String withdrawalPeriod;
+    /** 发药人（bill.dispense_by 或补录；空则处方笺留手写位） */
+    private String dispenser;
+    /** 处方笺状态 VALID/VOID（未打印为 null） */
+    private String supplementStatus;
 }

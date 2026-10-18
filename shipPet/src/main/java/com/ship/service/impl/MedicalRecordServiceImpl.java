@@ -20,6 +20,7 @@ import com.ship.mapper.MedicalRecordMapper;
 import com.ship.mapper.PetMapper;
 import com.ship.mapper.PrescriptionMapper;
 import com.ship.mapper.RecordPackageMapper;
+import com.ship.mapper.RxPrintSupplementMapper;
 import com.ship.mapper.SurgeryMapper;
 import com.ship.model.dto.RecordDto;
 import com.ship.model.entity.*;
@@ -57,6 +58,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final DrugMapper drugMapper;
     private final PrescriptionMapper prescriptionMapper;
     private final BillMapper billMapper;
+    private final RxPrintSupplementMapper rxPrintSupplementMapper;
     private final PetMapper petMapper;
     private final DoctorMapper doctorMapper;
     private final IServicePackageService packageService;
@@ -75,6 +77,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
                                     PrescriptionMapper prescriptionMapper, BillMapper billMapper,
+                                    RxPrintSupplementMapper rxPrintSupplementMapper,
                                     PetMapper petMapper, DoctorMapper doctorMapper,
                                     IServicePackageService packageService, RecordPackageMapper recordPackageMapper,
                                     LabTestMapper labTestMapper, LabOrderMapper labOrderMapper,
@@ -86,6 +89,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
         this.billMapper = billMapper;
+        this.rxPrintSupplementMapper = rxPrintSupplementMapper;
         this.petMapper = petMapper;
         this.doctorMapper = doctorMapper;
         this.packageService = packageService;
@@ -445,6 +449,27 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             }
         }
         vo.setTotalAmount(total);
+        // 开具日期（R2）：处方行创建时间优先，回落病历创建时间（编号日期亦取此）
+        LocalDateTime pTime = record.getCreateTime();
+        if (items != null && !items.isEmpty() && items.get(0).getCreateTime() != null) {
+            pTime = items.get(0).getCreateTime();
+        }
+        vo.setPrescriptionTime(pTime);
+        // 处方笺打印补充（未打印则为 null，不阻断展示）
+        if (items != null && !items.isEmpty()) {
+            RxPrintSupplement sup = rxPrintSupplementMapper.selectOne(Wrappers.<RxPrintSupplement>lambdaQuery()
+                    .eq(RxPrintSupplement::getPrescriptionId, items.get(0).getPrescriptionId())
+                    .last("limit 1"));
+            if (sup != null) {
+                vo.setPrintNo(sup.getPrintNo());
+                vo.setCopies(sup.getCopies());
+                vo.setHairColor(sup.getHairColor());
+                vo.setSpecies(sup.getSpecies());
+                vo.setWithdrawalPeriod(sup.getWithdrawalPeriod());
+                vo.setDispenser(sup.getDispenser());
+                vo.setSupplementStatus(sup.getStatus());
+            }
+        }
         return vo;
     }
 
