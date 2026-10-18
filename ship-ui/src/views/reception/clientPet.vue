@@ -75,6 +75,10 @@
 
     <!--病历详情弹窗（顾客视角，脱敏）-->
     <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 560px">
+      <template #footer>
+        <el-button round @click="saveRecordPdf">保存病历（PDF）</el-button>
+        <el-button round type="primary" @click="detailVisible = false">关闭</el-button>
+      </template>
       <template v-if="detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="宠物">{{ detail.record.petName }}</el-descriptions-item>
@@ -297,7 +301,7 @@ import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {HospitalDto} from "@/model/DO/HospitalDto";
 import {reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {Surgery, surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
-import {useRouter} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import PetHealthDialog from "@/components/PetHealthDialog.vue";
 
 const petList = ref<Pet[]>([]);
@@ -327,12 +331,17 @@ const openHealth = (pet: Pet): void => {
 }
 const detailVisible = ref(false)
 const detail = ref<RecordDetailVo | null>(null)
+// 保存病历：跳打印页彩色详情版导出 PDF（顾客仅能导自己的病历，后端 /record/detail 有归属校验）
+const saveRecordPdf = (): void => {
+  if (detail.value) window.open('/#/doctorPage/d-recordPrint?recordId=' + detail.value.record.recordId + '&style=color', '_blank')
+}
 const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])
 const hospitals = ref<HospitalDto[]>([])
 const surgeries = ref<Surgery[]>([])
 const revisits = ref<RecordDto[]>([])
 const router = useRouter()
+const route = useRoute()
 // 顾客自助打印兽医处方笺（后端 Rx 接口已按归属校验，仅本人宠物）
 const printRx = (): void => {
   if (detail.value) router.push('/doctorPage/d-rx?recordId=' + detail.value.record.recordId)
@@ -450,6 +459,12 @@ onMounted(() => {
   reqClientPet().then(res => {
     petList.value = res
   })
+  // 从宠物详情页(petOne)带病历id进入：自动打开该病历详情，并清掉URL参数防刷新重弹
+  const rid = Number(route.query.recordId)
+  if (rid) {
+    openRecordDetail(rid)
+    router.replace('/reception/clientCenter/clientPet')
+  }
 })
 </script>
 

@@ -122,6 +122,37 @@
   <el-dialog v-model="recordView" title="病历详情" top="6vh" width="90%" style="max-width: 900px">
     <RecordDetailFull v-if="recordId" :record-id="recordId"/>
   </el-dialog>
+
+  <!-- 发药核对：对照处方逐项勾选后发放 -->
+  <el-dialog v-model="dispenseView" append-to-body title="发药核对" width="90%" style="max-width: 520px"
+             :close-on-click-modal="false">
+    <el-alert :closable="false" show-icon style="margin-bottom:10px" type="warning"
+              title="请对照处方逐项核对药品（名称/规格/数量/用法），全部勾选后方可确认发放"/>
+    <el-table :data="dispenseRx" border size="small">
+      <el-table-column width="50">
+        <template #default="scope">
+          <el-checkbox v-model="dispenseChecks[scope.$index]"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
+      <el-table-column label="规格" min-width="80" prop="drugSpec" show-overflow-tooltip/>
+      <el-table-column label="数量" width="70">
+        <template #default="scope">{{ scope.row.quantity }}{{ scope.row.drugUnit }}</template>
+      </el-table-column>
+      <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
+    </el-table>
+    <p v-if="!dispenseRx.length" style="color:#909399;margin:8px 0">该账单无处方药品（纯诊疗/检验费用可直接核对发放）</p>
+    <el-form-item label="核对人" style="margin-top:12px">
+      <el-input v-model="dispenseUser" clearable maxlength="32" placeholder="核对人姓名（发药台账记录）" style="width: 220px"/>
+    </el-form-item>
+    <template #footer>
+      <span style="float:left;font-size:12px;color:#909399;line-height:32px">
+        已核对 {{ checkedCount }} / {{ dispenseRx.length }} 项
+      </span>
+      <el-button @click="dispenseView = false">取消</el-button>
+      <el-button :disabled="!allChecked" type="primary" @click="submitDispense">确认发放</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -242,23 +273,41 @@ const payBill = (row: BillDto, cash: boolean): void => {
  */
 /**
  ┌───────────────────────────────────┐
- │=============发药核对============│
+ │=============发药核对（逐项勾选）============│
  └───────────────────────────────────┘
  */
+const dispenseView = ref(false)
+const dispenseRow = ref<BillDto | null>(null)
+const dispenseRx = ref<Prescription[]>([])
+const dispenseChecks = ref<boolean[]>([])
+const dispenseUser = ref('')
+// 打开发药核对：拉该账单处方明细，逐项勾选核对
 const dispenseBill = (row: BillDto): void => {
-  ElMessageBox.prompt('发药核对：请输入核对人姓名', '发药核对', {
-    confirmButtonText: '确认发药',
-    cancelButtonText: '取消',
-    inputPattern: /^.+$/,
-    inputErrorMessage: '请输入核对人姓名'
-  }).then(({value}) => {
-    reqBillDispense(row.billId, value).then(res => {
-      if (res.code === 1) {
-        sendQuery()
-        ElMessage.success('发药核对完成')
-      } else ElMessage.error(res.msg || '操作失败')
+  dispenseRow.value = row
+  dispenseUser.value = ''
+  dispenseRx.value = []
+  dispenseChecks.value = []
+  dispenseView.value = true
+  if (row.recordId) {
+    reqRecordOne(row.recordId).then(res => {
+      dispenseRx.value = res?.prescriptions || []
+      dispenseChecks.value = dispenseRx.value.map(() => false)
     })
-  }).catch(() => ElMessage.info('取消发药'))
+  }
+}
+const checkedCount = computed(() => dispenseChecks.value.filter(Boolean).length)
+// 无处方明细时允许直接核对发放（纯诊疗/检验费用账单）
+const allChecked = computed(() => dispenseRx.value.length === 0 || dispenseChecks.value.every(Boolean))
+const submitDispense = (): void => {
+  if (!dispenseRow.value) return
+  if (!dispenseUser.value.trim()) { ElMessage.warning('请填写核对人姓名'); return }
+  if (!allChecked.value) { ElMessage.warning('请逐项核对全部药品后再确认发放'); return }
+  reqBillDispense(dispenseRow.value.billId, dispenseUser.value.trim()).then(res => {
+    if (res.code === 1) {
+      dispenseView.value = false
+      sendQuery()
+    } else ElMessage.error(res.msg || '操作失败')
+  })
 }
 
 /**

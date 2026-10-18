@@ -108,7 +108,8 @@
               <tr v-if="!records.length">
                 <td colspan="3" style="color:#909399">暂无就诊记录</td>
               </tr>
-              <tr v-for="r in records" :key="r.recordId">
+              <tr v-for="r in records" :key="r.recordId" class="record-row"
+                  @click="$router.push('/reception/clientCenter/clientPet?recordId=' + r.recordId)">
                 <td class="bold" style="width:110px">{{ moveT(r.createTime || '').slice(0, 10) }}</td>
                 <td>{{ r.diagnosis || '—' }}</td>
                 <td style="width:90px">{{ r.doctorName }}</td>
@@ -262,6 +263,14 @@ onMounted(() => {
 /*设置信息展示表格*/
 .myTable {
   border-collapse: collapse;
+
+  /* 就诊记录行：可点击进病历详情 */
+  .record-row {
+    cursor: pointer;
+    transition: background .15s;
+
+    &:hover { background: #f0f7fc; }
+  }
   /*设置定位*/
   width: 100%;
   margin-bottom: 4px;
