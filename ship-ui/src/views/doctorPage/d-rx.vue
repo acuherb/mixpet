@@ -10,89 +10,65 @@
     </div>
 
     <div v-if="rx">
-      <!-- 按联次渲染纸张：copies=1 仅第三联(畜主留存)；copies=3 三联全打 -->
+      <!-- 按联次渲染纸张：copies=1 仅第三联(动物主人留存)；copies=3 三联全打 -->
       <div v-for="pg in pages" :key="pg.no" class="rx-sheet">
-        <!-- 联次标识（每页顶部居中，文字标注不用颜色区分） -->
+        <!-- 联次标识：右侧竖排（734号样式，文字标注不用颜色区分） -->
         <div class="rx-copy">{{ pg.label }}</div>
 
-        <!-- 机构名 + 标题 + 编号 -->
-        <div class="rx-org">{{ hosp.name || '动物诊疗机构' }}</div>
-        <div class="rx-title">兽用处方笺</div>
-        <div class="rx-no">编号：{{ rx.printNo || rx.rxNo || '打印时自动生成' }}</div>
+        <!-- 标题：机构名 + 处方笺（734号样式1） -->
+        <div class="rx-title">{{ hosp.name || 'XXXXXXXX' }} 处方笺</div>
 
-        <!-- 前记 -->
-        <table class="rx-table rx-front">
-          <tbody>
-            <tr>
-              <td class="k">畜主姓名</td><td class="v">{{ rx.clientName }}</td>
-              <td class="k">病历号</td><td class="v">No.{{ rx.recordId }}</td>
-            </tr>
-            <tr>
-              <td class="k">动物种类</td><td class="v">{{ rx.species || '________' }}</td>
-              <td class="k">毛色</td><td class="v">{{ rx.hairColor || '________' }}</td>
-            </tr>
-            <tr>
-              <td class="k">性别</td><td class="v">{{ rx.petSex == null ? '____' : (rx.petSex ? '公' : '母') }}</td>
-              <td class="k">体重</td><td class="v">{{ rx.petWeight != null ? rx.petWeight + 'kg' : '____' }}</td>
-            </tr>
-            <tr>
-              <td class="k">年（日）龄</td><td class="v">{{ rx.petBirthday ? getAge(rx.petBirthday) : '____' }}</td>
-              <td class="k">开具日期</td><td class="v">{{ fmt(rx.prescriptionTime || rx.createTime) }}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- 正文：初步诊断 -->
-        <div class="rx-sec-tit">初步诊断</div>
-        <div class="rx-diag">{{ rx.diagnosis || '____' }}</div>
-
-        <!-- 正文：Rp 处方（兽药名称 | 规格 | 数量 | 用法用量 | 休药期） -->
-        <div class="rx-rp">Rp<span class="rx-rp-tip">（请取）</span></div>
-        <table class="rx-table rx-items">
-          <thead>
-            <tr>
-              <th style="width: 30%">兽药名称</th>
-              <th style="width: 15%">规格</th>
-              <th style="width: 10%">数量</th>
-              <th style="width: 28%">用法用量</th>
-              <th style="width: 17%">休药期</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(it, i) in rx.items" :key="i">
-              <td>{{ it.drugName }}{{ it.drugUnit ? '（' + it.drugUnit + '）' : '' }}</td>
-              <td>{{ it.drugSpec || '—' }}</td>
-              <td>{{ it.quantity }}</td>
-              <td>{{ usageText(it) }}</td>
-              <td>{{ rx.withdrawalPeriod || '—' }}</td>
-            </tr>
-            <!-- Rp 后空白处打印前自动划斜线（禁止假数据填充） -->
-            <tr class="rx-blank"><td colspan="5"/></tr>
-            <tr class="rx-blank"><td colspan="5"/></tr>
-            <tr class="rx-blank-end"><td colspan="5">以下为空白</td></tr>
-          </tbody>
-        </table>
-
-        <div class="rx-amount">
-          金额（小写）：￥{{ (rx.totalAmount ?? 0).toFixed(2) }}
-          <span style="margin-left: 14px">（大写）：{{ amountToCn(rx.totalAmount ?? 0) }}</span>
+        <!-- 前记：下划线横排填写式 -->
+        <div class="rx-front">
+          <p>动物主人/饲养单位 <span class="fill">{{ rx.clientName }}</span> 病历号 <span class="fill">No.{{ rx.recordId }}</span></p>
+          <p>动物种类 <span class="fill">{{ rx.species || '　' }}</span> 动物性别 <span class="fill">{{ rx.petSex == null ? '　' : (rx.petSex ? '公' : '母') }}</span> 动物毛色 <span class="fill">{{ rx.hairColor || '　' }}</span></p>
+          <p>体重 <span class="fill">{{ rx.petWeight != null ? rx.petWeight + 'kg' : '　' }}</span> 年（日）龄 <span class="fill">{{ rx.petBirthday ? getAge(rx.petBirthday) : '　' }}</span> 开具日期 <span class="fill">{{ fmt(rx.prescriptionTime || rx.createTime) }}</span></p>
         </div>
 
-        <!-- 后记 -->
-        <table class="rx-table rx-sign">
-          <tbody>
-            <tr>
-              <td class="k">执业兽医师</td><td class="v sign">（签名/盖章）</td>
-              <td class="k">注册号</td><td class="v">{{ rx.doctorCert || '____________' }}</td>
-            </tr>
-            <tr>
-              <td class="k">发药人</td><td class="v sign">（签名/盖章）</td>
-              <td class="k">发药日期</td><td class="v">____年__月__日</td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- 正文：左「诊断：」右「Rp:」分栏大框（734号样式1） -->
+        <div class="rx-body">
+          <div class="rx-diag-col">
+            <span class="col-tit">诊断：</span>
+            <div class="diag-text">{{ rx.diagnosis || '　' }}</div>
+          </div>
+          <div class="rx-rp-col">
+            <span class="col-tit">Rp:</span>
+            <table class="rx-items">
+              <thead>
+                <tr>
+                  <th style="width: 30%">兽药名称</th>
+                  <th style="width: 15%">规格</th>
+                  <th style="width: 10%">数量</th>
+                  <th style="width: 28%">用法用量</th>
+                  <th style="width: 17%">休药期</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(it, i) in rx.items" :key="i">
+                  <td>{{ it.drugName }}{{ it.drugUnit ? '（' + it.drugUnit + '）' : '' }}</td>
+                  <td>{{ it.drugSpec || '—' }}</td>
+                  <td>{{ it.quantity }}</td>
+                  <td>{{ usageText(it) }}</td>
+                  <td>{{ rx.withdrawalPeriod || '—' }}</td>
+                </tr>
+                <!-- Rp 后空白处打印前自动划斜线（禁止假数据填充） -->
+                <tr class="rx-blank"><td colspan="5"/></tr>
+                <tr class="rx-blank"><td colspan="5"/></tr>
+                <tr class="rx-blank-end"><td colspan="5">以下为空白</td></tr>
+              </tbody>
+            </table>
+            <div class="rx-amount">金额（小写）：￥{{ (rx.totalAmount ?? 0).toFixed(2) }}</div>
+          </div>
+        </div>
 
-        <div class="rx-foot">备注：兽用处方药须凭执业兽医处方调配；本处方仅限本院药房调配。不同兽药应当另起行开具；兽用麻醉药品、精神药品、毒性药品及中药自拟方应当单独开具；剂量与数量使用法定计量单位。依据：农业农村部公告第734号《兽医处方格式及应用规范》。</div>
+        <!-- 后记：下划线式（执业兽医师 / 发药人） -->
+        <div class="rx-sign">
+          <span>执业兽医师 <span class="fill sign-line">（{{ rx.doctorName }}）</span></span>
+          <span>注册号 <span class="fill">{{ rx.doctorCert || '　　　　' }}</span></span>
+          <span>发药人 <span class="fill sign-line">（签名/盖章）</span></span>
+        </div>
+
+        <div class="rx-foot">注：“{{ hosp.name || 'xxxxxxx' }} 处方笺”中，“{{ hosp.name || 'xxxxxxx' }}”为从事动物诊疗活动的单位名称。</div>
         <!-- 打印时间仅作留痕小字，不进入前记/正文/后记 -->
         <div class="rx-print-time">打印时间：{{ nowText() }}</div>
       </div>
@@ -170,59 +146,6 @@ const usageText = (it: any): string => {
   }
   return it.usageInfo || '—'
 }
-
-/** 金额转人民币大写 */
-const amountToCn = (num: number): string => {
-  if (isNaN(num)) return ''
-  const cn = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
-  const unit = ['', '拾', '佰', '仟']
-  const group = ['', '万', '亿', '兆']
-  let integer = Math.floor(Math.abs(num))
-  const decimal = Math.round((Math.abs(num) - integer) * 100)
-  let s = ''
-  if (integer === 0) {
-    s = '零'
-  } else {
-    let gi = 0
-    while (integer > 0) {
-      const g = integer % 10000
-      if (g !== 0) {
-        let gs = ''
-        let u = 0
-        let gg = g
-        let zero = false
-        while (gg > 0) {
-          const d = gg % 10
-          if (d === 0) {
-            if (!zero && gs !== '') zero = true
-          } else {
-            if (zero && gs !== '') gs = '零' + gs
-            gs = cn[d] + unit[u] + gs
-            zero = false
-          }
-          gg = Math.floor(gg / 10)
-          u++
-        }
-        s = gs + group[gi] + s
-      } else if (s !== '' && !s.startsWith('零')) {
-        s = '零' + s
-      }
-      integer = Math.floor(integer / 10000)
-      gi++
-    }
-  }
-  s += '元'
-  const jiao = Math.floor(decimal / 10)
-  const fen = decimal % 10
-  if (jiao === 0 && fen === 0) {
-    s += '整'
-  } else {
-    if (jiao > 0) s += cn[jiao] + '角'
-    else if (fen > 0) s += '零'
-    if (fen > 0) s += cn[fen] + '分'
-  }
-  return (num < 0 ? '负' : '') + s
-}
 </script>
 
 <style scoped>
@@ -246,105 +169,128 @@ const amountToCn = (num: number): string => {
   min-height: 148mm;
   margin: 0 auto 16px;
   background: #fff;
-  border: 2px solid #333;
-  padding: 18px 22px;
+  border: 1px solid #000;
+  padding: 14px 18px 10px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
   position: relative;
 }
+/* 联次标识：右侧竖排（734号样式） */
 .rx-copy {
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  font-size: 11px;
   letter-spacing: 2px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 4px;
-  margin-bottom: 6px;
-}
-.rx-org {
-  text-align: center;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: 3px;
+  color: #333;
 }
 .rx-title {
   text-align: center;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: 8px;
-  margin: 2px 0 2px;
+  letter-spacing: 3px;
+  margin: 2px 0 10px;
 }
-.rx-no {
-  text-align: right;
-  font-size: 12px;
-  color: #444;
-  margin-bottom: 6px;
+/* 前记：下划线横排填写式（无表格线，贴近官方样式） */
+.rx-front {
+  padding: 0 14px;
+  p {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: #222;
+    line-height: 1.9;
+  }
+  .fill {
+    display: inline-block;
+    min-width: 70px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+    padding: 0 4px;
+  }
 }
-.rx-table {
+/* 正文：诊断 | Rp 分栏大框 */
+.rx-body {
+  display: flex;
+  border: 1px solid #000;
+  min-height: 88mm;
+  margin: 0 14px;
+}
+.rx-diag-col {
+  width: 34%;
+  border-right: 1px solid #000;
+  padding: 6px 10px;
+  .diag-text {
+    font-size: 12px;
+    line-height: 1.8;
+    color: #222;
+    white-space: pre-wrap;
+  }
+}
+.rx-rp-col {
+  flex: 1;
+  padding: 6px 10px;
+  min-width: 0;
+}
+.col-tit {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111;
+}
+.rx-items {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 6px;
+  margin-top: 4px;
+  th, td {
+    border: 1px solid #333;
+    padding: 3px 5px;
+    font-size: 11px;
+  }
+  th { background: #f0f2f5; text-align: center; }
 }
-.rx-table td, .rx-table th {
-  border: 1px solid #333;
-  padding: 4px 6px;
-  font-size: 12px;
-}
-.rx-table .k {
-  background: #f0f2f5;
-  width: 76px;
-  text-align: center;
-  white-space: nowrap;
-}
-.rx-table .v { min-width: 50px; }
-.rx-table .sign { color: #666; letter-spacing: 1px; }
-.rx-items th { background: #f0f2f5; text-align: center; }
-.rx-sec-tit {
-  font-size: 13px;
-  font-weight: 700;
-  margin: 4px 0 2px;
-}
-.rx-diag {
-  border: 1px solid #333;
-  border-radius: 0;
-  padding: 5px 8px;
-  font-size: 12px;
-  min-height: 20px;
-  margin-bottom: 6px;
-}
-.rx-rp {
-  font-weight: 700;
-  font-size: 13px;
-  margin: 2px 0 2px;
-}
-.rx-rp-tip { font-weight: 400; font-size: 11px; color: #666; }
 /* Rp 后空白处：打印前自动划斜线（斜线条纹，无假数据行） */
 .rx-blank td {
-  height: 22px;
+  height: 20px;
   background: repeating-linear-gradient(45deg, transparent 0 10px, #ddd 10px 11px);
 }
 .rx-blank-end td {
   text-align: center;
   font-size: 11px;
   color: #666;
-  height: 18px;
+  height: 16px;
 }
 .rx-amount {
   text-align: right;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  margin: 4px 0 6px;
+  margin: 6px 2px 0;
 }
-.rx-sign td { height: 30px; }
+/* 后记：下划线式 */
+.rx-sign {
+  display: flex;
+  gap: 28px;
+  margin: 10px 14px 6px;
+  font-size: 12px;
+  color: #222;
+  .fill {
+    display: inline-block;
+    min-width: 90px;
+    border-bottom: 1px solid #333;
+    text-align: center;
+    padding: 0 4px;
+  }
+  .sign-line { color: #666; }
+}
 .rx-foot {
   font-size: 10px;
-  color: #888;
-  margin-top: 6px;
+  color: #666;
+  margin: 4px 14px 0;
 }
 .rx-print-time {
   position: absolute;
-  right: 22px;
-  bottom: 6px;
+  right: 18px;
+  bottom: 4px;
   font-size: 9px;
   color: #aaa;
 }
@@ -359,7 +305,7 @@ const amountToCn = (num: number): string => {
   .no-print { display: none !important; }
   .rx-sheet {
     box-shadow: none;
-    border: 2px solid #000;
+    border: 1px solid #000;
     margin: 0;
     page-break-after: always;
   }
