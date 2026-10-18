@@ -72,15 +72,15 @@ section {
   justify-content: center;
 }
 
-/* 顶部过渡雾：顶栏深色渐变柔和延伸至横幅 */
+/* 顶部过渡雾：把顶栏的品牌淡色轻柔延至横幅 */
 .roll-fade {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: 72px;
-  background: linear-gradient(to bottom, var(--brand) 0%, transparent 100%);
-  opacity: 0.28;
+  background: linear-gradient(to bottom, var(--brand-soft) 0%, transparent 100%);
+  opacity: 0.55;
   pointer-events: none;
 }
 

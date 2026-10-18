@@ -322,22 +322,27 @@ onBeforeUnmount(() => {
 
 /* 顶部导航 */
 .topbar {
-  /* 菜单栏背景随主题色联动（品牌渐变 + 柔和光斑破除纯色生硬感） */
-  background: linear-gradient(135deg, var(--brand), var(--brand-dark));
-  border-bottom: none;
+  /* 菜单栏：淡品牌玻璃拟态（浅而柔和，滚动时内容透出；品牌色只做点缀） */
+  background: linear-gradient(135deg, var(--brand-soft) 0%, rgba(255, 255, 255, 0.86) 62%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
   position: sticky;
   top: 0;
   z-index: 100;
   user-select: none;
   overflow: hidden;
-  /* 底部品牌色晕：顶栏与内容区之间的柔和过渡带（不被 overflow 裁剪） */
-  box-shadow: 0 12px 28px -10px var(--brand-soft);
+  /* 底部品牌渐变细线 + 柔和色晕：与内容区的过渡带 */
+  box-shadow:
+      0 1px 0 var(--brand-soft),
+      0 12px 28px -12px var(--brand-soft);
 
   &::before {
     content: "";
     position: absolute;
     width: 280px; height: 280px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 70%);
+    background: radial-gradient(circle, var(--brand), transparent 70%);
+    opacity: 0.07;
     top: -150px; right: 6%;
     pointer-events: none;
   }
@@ -346,7 +351,8 @@ onBeforeUnmount(() => {
     content: "";
     position: absolute;
     width: 220px; height: 220px; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.10), transparent 70%);
+    background: radial-gradient(circle, var(--brand), transparent 70%);
+    opacity: 0.05;
     bottom: -130px; left: 10%;
     pointer-events: none;
   }
@@ -370,7 +376,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 10px;
   font-weight: 700;
-  color: #fff;
+  color: var(--brand-dark);
   font-size: 18px;
   letter-spacing: .3px;
 
@@ -410,23 +416,23 @@ onBeforeUnmount(() => {
     padding: 8px 14px;
     border-radius: 6px;
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.92);
+    color: var(--text);
     cursor: pointer;
     transition: background .15s, color .15s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
+      background: var(--brand-soft);
+      color: var(--brand-dark);
     }
   }
 
   .nav-cta {
-    background: #fff;
-    color: var(--brand);
+    background: var(--brand);
+    color: #fff;
 
     &:hover {
-      background: #fff;
-      color: var(--brand-dark);
+      background: var(--brand-dark);
+      color: #fff;
     }
   }
 }
@@ -439,13 +445,13 @@ onBeforeUnmount(() => {
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text);
   cursor: pointer;
   transition: background .15s, color .15s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.16);
-    color: #fff;
+    background: var(--brand-soft);
+    color: var(--brand-dark);
   }
 
   .caret {
