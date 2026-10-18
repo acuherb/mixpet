@@ -3,7 +3,10 @@
     <header class="topbar">
       <div class="topbar-inner">
         <router-link :to="isLogin ? '/reception/clientCenter' : '/'" class="brand">
-          <span class="brand-mark">PET</span>
+          <span class="brand-mark">
+            <img v-if="hosp.logo" :src="'/api/common/download?name=' + hosp.logo" alt="logo"/>
+            <template v-else>PET</template>
+          </span>
           <span class="brand-name">{{ hosp.name || 'mixpet' }}</span>
         </router-link>
         <ul class="nav">
@@ -466,6 +469,9 @@ onBeforeUnmount(() => {
     color: #fff;
     font-size: 11px;
     font-weight: 700;
+    overflow: hidden;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
     letter-spacing: 1px;
   }
 }

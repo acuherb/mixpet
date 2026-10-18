@@ -23,7 +23,10 @@
         <!-- 品牌 -->
         <div class="foot-col foot-brand">
           <div class="brand-line">
-            <span class="brand-mark">PET</span>
+            <span class="brand-mark">
+              <img v-if="hosp.logo" :src="'/api/common/download?name=' + hosp.logo" alt="logo"/>
+              <template v-else>PET</template>
+            </span>
             <span class="brand-name">{{ hosp.name || 'mixpet' }}</span>
           </div>
           <p class="brand-desc">{{ hosp.intro || '宠物医院管理系统' }}</p>
@@ -72,7 +75,8 @@ onMounted(() => loadHospital())
 .vue-foot {
   width: 100%;
   margin-top: 2.5rem;
-  background-color: #F8F8FF;
+  /* 页脚背景随主题色联动（极淡品牌色） */
+  background: linear-gradient(180deg, var(--brand-soft), #ffffff);
 }
 
 /* 波浪 */
@@ -146,6 +150,9 @@ onMounted(() => loadHospital())
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
+    overflow: hidden;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 
   .brand-name {

@@ -22,14 +22,15 @@
         </el-form-item>
         <el-form-item label="LOGO">
           <UpImg :photo-nm="form.logo || ''" @upPhoto="onLogo"/>
-          <span style="margin-left:10px;font-size:12px;color:#909399">上传后保存即生效（复用公共下载接口）</span>
+          <div class="form-tip">上传后保存即生效（复用公共下载接口）；未上传时各品牌位显示默认标识</div>
         </el-form-item>
         <el-form-item label="品牌主题色">
           <div class="brand-color-row">
             <el-color-picker v-model="form.brandColor" :predefine="brandPresets" size="small"/>
             <span v-for="c in brandPresets" :key="c" class="bc-dot" :style="{background: c}" title="点击选用" @click="form.brandColor = c"/>
-            <span style="margin-left:10px;font-size:12px;color:#909399">全站按钮/渐变/图标主色调，保存后即时生效</span>
+            <span class="color-tip">按钮/渐变/图标主色调</span>
           </div>
+          <div class="form-tip">保存后即时生效；页面背景与页脚会随主题色联动调整</div>
         </el-form-item>
         <el-form-item>
           <el-button :loading="saving" type="primary" @click="submit">保存设置</el-button>
@@ -104,5 +105,13 @@ const submit = (): void => {
 
     &:hover { transform: scale(1.15); }
   }
+
+  .color-tip { font-size: 12px; color: #909399; }
+}
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+  margin-top: 2px;
 }
 </style>

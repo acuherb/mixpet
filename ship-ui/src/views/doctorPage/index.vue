@@ -3,7 +3,10 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand">
-          <span class="brand-mark">{{ hosp.name ? hosp.name.charAt(0) : 'DR' }}</span>
+          <span class="brand-mark">
+            <img v-if="hosp.logo" :src="'/api/common/download?name=' + hosp.logo" alt="logo"/>
+            <template v-else>{{ hosp.name ? hosp.name.charAt(0) : 'DR' }}</template>
+          </span>
           <span class="brand-name">{{ hosp.name ? hosp.name + ' · 医生工作台' : 'mixpet 医生工作台' }}</span>
         </div>
         <ul class="nav">
@@ -490,6 +493,9 @@ onBeforeUnmount(() => {
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 1px;
+    overflow: hidden;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 }
 

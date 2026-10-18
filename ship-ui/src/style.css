@@ -30,9 +30,9 @@ html, body {
     width: 100%;
 }
 
-/* 设置背景色 */
+/* 设置背景色（随品牌色联动：--bg 由 utils/hospital 注入，未配置时取 :root 默认） */
 body {
-    background-color: #e9e9f5;
+    background-color: var(--bg);
 }
 
 /* 设置链接样式 */

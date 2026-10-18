@@ -23,8 +23,19 @@ function shade(hex: string, ratio: number): string {
   return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')
 }
 
+/** HEX 与白色混合（ratio=白占比），用于派生极淡的背景/软色 */
+function mixWhite(hex: string, ratio: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return DEFAULT_BRAND
+  const n = parseInt(m[1], 16)
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+      .map(c => Math.round(c * (1 - ratio) + 255 * ratio))
+  return '#' + ch.map(v => v.toString(16).padStart(2, '0')).join('')
+}
+
 /**
- * 把品牌色注入 CSS 变量（--brand / --brand-dark），全站引用处即时生效
+ * 把品牌色注入 CSS 变量，全站引用处即时生效：
+ * --brand 主色 / --brand-dark 深色(hover) / --bg 页面背景(极淡) / --brand-soft 软色(页脚等)
  * 支持 HEX（#RRGGBB）；非法值回落默认色
  */
 export const injectBrand = (color?: string | null): void => {
@@ -32,6 +43,8 @@ export const injectBrand = (color?: string | null): void => {
   const root = document.documentElement
   root.style.setProperty('--brand', brand)
   root.style.setProperty('--brand-dark', shade(brand, 0.82))
+  root.style.setProperty('--bg', mixWhite(brand, 0.93))
+  root.style.setProperty('--brand-soft', mixWhite(brand, 0.86))
 }
 
 let loading: Promise<void> | null = null
