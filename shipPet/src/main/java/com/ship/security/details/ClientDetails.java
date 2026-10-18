@@ -43,10 +43,16 @@ public class ClientDetails implements UserDetailsService {
         // 审核状态校验：仅"通过(1)"可登录；待审核/拒绝均拦截并给出原因
         Integer audit = client.getAuditStatus();
         if (audit == null || audit != 1) {
-            if (audit != null && audit == 2)
-                throw new UsernameNotFoundException("账号未通过审核，请联系管理员");
-            else
+            if (audit != null && audit == 2) {
+                // 拒绝时带出管理员填写的拒绝原因，顾客知道为什么被拒、找谁
+                String reason = client.getAuditReason();
+                throw new UsernameNotFoundException(
+                        (reason == null || reason.isBlank())
+                                ? "账号未通过审核，请联系管理员"
+                                : "账号未通过审核：" + reason);
+            } else {
                 throw new UsernameNotFoundException("账号审核中，请等待管理员通过");
+            }
         }
         // 校验所需要的密码
         String password = client.getClientPassword();

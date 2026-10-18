@@ -276,10 +276,17 @@ public class ClientController {
      */
     @PutMapping("/audit/{id}")
     @Secured(RoleConst.MANAGER)
-    public Result audit(@PathVariable Integer id, Integer status) {
+    public Result audit(@PathVariable Integer id, Integer status, String reason) {
         if (status == null || (status != 1 && status != 2)) return Result.error("审核状态不正确");
         Client db = clientService.getById(id);
         if (db == null) return Result.error("客户不存在");
+        // 拒绝必须填原因（顾客登录时可见）；通过则清空历史原因
+        if (status == 2) {
+            if (reason == null || reason.isBlank()) return Result.error("请填写拒绝原因（顾客登录时可见）");
+            db.setAuditReason(reason.trim());
+        } else {
+            db.setAuditReason(null);
+        }
         db.setAuditStatus(status);
         // 审核通过时同时启用账号，确保可登录
         if (status == 1) db.setActive(true);

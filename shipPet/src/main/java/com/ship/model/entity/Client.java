@@ -97,6 +97,8 @@ public class Client implements Serializable {
 
     /** 审核状态：0待审核 1通过 2拒绝 */
     private Integer auditStatus;
+    /** 注册审核拒绝原因（登录时提示顾客） */
+    private String auditReason;
 
     public Integer getClientId() { return clientId; }
     public void setClientId(Integer clientId) { this.clientId = clientId; }
@@ -173,6 +175,9 @@ public class Client implements Serializable {
     public Integer getAuditStatus() { return auditStatus; }
     public void setAuditStatus(Integer auditStatus) { this.auditStatus = auditStatus; }
 
+    public String getAuditReason() { return auditReason; }
+    public void setAuditReason(String auditReason) { this.auditReason = auditReason; }
+
     @Override
     public String toString() {
         return "Client{" +
@@ -194,6 +199,7 @@ public class Client implements Serializable {
                 ", updateTime=" + updateTime +
                 ", isDel=" + isDel +
                 ", auditStatus=" + auditStatus +
+                ", auditReason=" + auditReason +
                 '}';
     }
 }

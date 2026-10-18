@@ -55,6 +55,21 @@
       </template>
     </el-dialog>
 
+    <!--预约成功凭证卡：确认"挂上了/几点/找谁"-->
+    <el-dialog v-model="receiptView" append-to-body align-center title="预约成功" width="90%" style="max-width: 420px">
+      <div class="receipt">
+        <el-icon class="receipt-ok"><CircleCheck/></el-icon>
+        <p class="receipt-tip">已为您锁定号源，请按时到院，到院后请前台签到</p>
+        <div class="receipt-row"><span>宠物</span><b>{{ receipt.petName }}</b></div>
+        <div class="receipt-row"><span>科室 / 医生</span><b>{{ receipt.departmentName }} · {{ receipt.doctorName }}</b></div>
+        <div class="receipt-row"><span>就诊时间</span><b>{{ receipt.timeText }}</b></div>
+      </div>
+      <template #footer>
+        <el-button round @click="receiptView = false; $router.push('/reception/clientCenter/clientAppoint')">查看我的挂号</el-button>
+        <el-button round type="primary" @click="receiptView = false">完成</el-button>
+      </template>
+    </el-dialog>
+
     <!--预约挂号弹窗-->
     <el-dialog v-model="addVisible" title="预约挂号" width="90%" style="max-width: 480px">
       <el-alert v-if="originRecordId" :title="`复诊挂号（关联病历 #${originRecordId}）`" :closable="false" show-icon type="info" style="margin-bottom:10px"/>
@@ -227,6 +242,21 @@ const onDepartChange = (departmentId: number): void => {
     doctorList.value = res
   })
 }
+// 预约凭证卡数据（宠物/科室医生/时间，从已选项组装）
+const receiptView = ref(false)
+const receipt = ref({petName: '', departmentName: '', doctorName: '', timeText: ''})
+const buildReceipt = (): void => {
+  const pet = appointablePets.value.find(p => p.petId === addForm.value.petId)
+  const dep = departList.value.find(d => d.roleId === addForm.value.departmentId)
+  const doc = doctorList.value.find(d => d.roleId === addForm.value.doctorId)
+  receipt.value = {
+    petName: pet?.petName ?? '',
+    departmentName: dep?.roleName ?? '',
+    doctorName: doc?.roleName ?? '',
+    timeText: (appointDate.value || '') + ' ' + (appointPeriod.value === 1 ? '上午 09:00-12:00' : '下午 14:00-17:00')
+  }
+}
+
 const submitAdd = (): void => {
   addFormRef.value?.validate((valid: boolean) => {
     if (!valid) return
@@ -237,9 +267,9 @@ const submitAdd = (): void => {
     reqAddSelfAppoint(addForm.value).then(res => {
       if (res.code === 1) {
         addVisible.value = false
-        reqClientAppoint().then(r => {
-          appointList.value = r
-        })
+        buildReceipt()
+        receiptView.value = true
+        refresh()
       } else {
         ElMessage.error(res.msg || '预约失败')
       }
@@ -329,6 +359,35 @@ onMounted(() => {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+/* 预约凭证卡 */
+.receipt {
+  text-align: center;
+
+  .receipt-ok {
+    font-size: 46px;
+    color: #67C23A;
+  }
+
+  .receipt-tip {
+    margin: 8px 0 14px;
+    font-size: 13px;
+    color: #606266;
+  }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #fafbfc;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+
+    span { color: #909399; }
+    b { color: #1F2D3D; }
+  }
 }
 
 /* 就诊时段选择（排班+余号） */

@@ -72,6 +72,7 @@
               <el-icon><Calendar/></el-icon>
               <span>接诊队列</span>
               <el-tag size="small" round effect="plain" type="warning">今日 {{ todayPending.length }}</el-tag>
+              <el-tag v-if="tomorrowCount > 0" size="small" round effect="plain" type="primary">明日 {{ tomorrowCount }}</el-tag>
               <el-tag v-if="pendingAppoints.length > todayPending.length" size="small" round effect="plain">
                 待处理共 {{ pendingAppoints.length }}
               </el-tag>
@@ -83,6 +84,7 @@
                 <span class="tr-pet">{{ a.petName }}</span>
                 <span class="tr-owner">{{ a.clientName }}</span>
                 <el-tag v-if="isToday(a.appointmentDate)" round size="small" type="danger" effect="light">今天</el-tag>
+                <el-tag v-else-if="isTomorrow(a.appointmentDate)" round size="small" type="primary" effect="light">明日</el-tag>
                 <span class="tr-info" :title="a.appointmentInfo || ''">{{ a.appointmentInfo || '—' }}</span>
                 <el-button size="small" round type="primary" @click.stop="$router.push('/doctorPage/d-appoint')">去接诊</el-button>
               </div>
@@ -223,6 +225,16 @@
           </router-link>
         </div>
         <div class="future-card">
+          <router-link to="/backstage/z-labResult" class="future-link">
+            <span class="f-ico ico-lab"><el-icon><Document/></el-icon></span>
+            <div class="f-txt">
+              <h4>化验结果录入</h4>
+              <p>按检验单逐项填写结果</p>
+            </div>
+            <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
+          </router-link>
+        </div>
+        <div class="future-card">
           <router-link to="/backstage/z-hospital" class="future-link">
             <span class="f-ico ico-ward"><el-icon><HomeFilled/></el-icon></span>
             <div class="f-txt">
@@ -242,6 +254,16 @@
             <el-tag size="small" type="success" effect="plain">去开单</el-tag>
           </router-link>
         </div>
+        <div class="future-card">
+          <router-link to="/backstage/z-imageResult" class="future-link">
+            <span class="f-ico ico-other"><el-icon><Picture/></el-icon></span>
+            <div class="f-txt">
+              <h4>影像报告录入</h4>
+              <p>按模板填写影像报告</p>
+            </div>
+            <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
+          </router-link>
+        </div>
       </div>
     </main>
   </div>
@@ -249,7 +271,7 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Picture, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
@@ -289,6 +311,14 @@ const todayStr = (): string => {
   return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
 }
 const isToday = (d: string | null): boolean => !!d && d.slice(0, 10) === todayStr()
+// 明天/未来预约：医生提前可见，便于准备
+const tomorrowStr = (): string => {
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
+}
+const isTomorrow = (d: string | null): boolean => !!d && d.slice(0, 10) === tomorrowStr()
+const tomorrowCount = computed(() => pendingAppoints.value.filter(a => isTomorrow(a.appointmentDate)).length)
 const todayPending = computed<AppointDto2[]>(() =>
     pendingAppoints.value
         .filter(a => isToday(a.appointmentDate))
@@ -356,7 +386,7 @@ const handleChatMsg = (m: Msg): void => {
     title: '新的咨询消息',
     message: `${clientNameOf(cid)}：${previewOf(m)}`,
     type: 'success',
-    duration: 6000,
+    duration: 10000,
     position: 'top-right',
     onClick: () => { ElNotification.closeAll(); router.push(`/doctorPage/d-chat?clientId=${cid}`) }
   })

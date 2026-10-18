@@ -43,7 +43,8 @@
     <el-table-column label="审核" width="120">
       <template #default="scope">
         <el-tag v-if="scope.row.auditStatus === 0" type="warning" size="small">待审核</el-tag>
-        <el-tag v-else-if="scope.row.auditStatus === 2" type="danger" size="small">已拒绝</el-tag>
+        <el-tag v-else-if="scope.row.auditStatus === 2" type="danger" size="small"
+                :title="scope.row.auditReason || ''">已拒绝{{ scope.row.auditReason ? ' ⓘ' : '' }}</el-tag>
         <el-tag v-else type="success" size="small">已通过</el-tag>
         <div v-if="scope.row.auditStatus === 0" style="margin-top:4px">
           <el-button size="small" type="success" link @click="auditClient(scope.row, 1)">通过</el-button>
@@ -471,17 +472,28 @@ const toggleActive = (row: Client): void => {
   }).catch(() => ElMessage.info('已取消'))
 }
 
-// 审核自助注册顾客：1通过 2拒绝
+// 审核自助注册顾客：1通过 2拒绝（拒绝需填原因，顾客登录时可见）
 const auditClient = (row: Client, status: number): void => {
-  const action = status === 1 ? '通过' : '拒绝'
-  ElMessageBox.confirm(`确认${action}顾客【${row.clientName}】的注册吗？`, '审核确认', {
-    confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning',
-  }).then(() => {
-    reqAuditClient(row.clientId, status).then(res => {
-      if (res.code === 1) { ElMessage.success(action + '成功'); sendQuery() }
-      else ElMessage.error(res.msg || '操作失败')
-    })
-  }).catch(() => ElMessage.info('已取消'))
+  if (status === 2) {
+    // 拒绝：先填写原因（必填，顾客登录拦截时会看到）
+    ElMessageBox.prompt(`填写拒绝【${row.clientName}】注册的原因（顾客登录时可见）：`, '审核拒绝', {
+      confirmButtonText: '确认拒绝', cancelButtonText: '取消',
+      inputType: 'textarea', inputPlaceholder: '如：手机号无法联系到本人/信息不完整，请补齐后重新提交',
+      inputPattern: /\S+/, inputErrorMessage: '请填写拒绝原因'
+    }).then(({value}) => {
+      doAudit(row.clientId, 2, value as string)
+    }).catch(() => ElMessage.info('已取消'))
+  } else {
+    ElMessageBox.confirm(`确认通过顾客【${row.clientName}】的注册吗？通过后即可登录。`, '审核确认', {
+      confirmButtonText: '确认通过', cancelButtonText: '取消', type: 'warning',
+    }).then(() => doAudit(row.clientId, 1)).catch(() => ElMessage.info('已取消'))
+  }
+}
+const doAudit = (id: number, status: number, reason?: string): void => {
+  reqAuditClient(id, status, reason).then(res => {
+    if (res.code === 1) { sendQuery() }
+    else ElMessage.error(res.msg || '操作失败')
+  }).catch(() => ElMessage.error('网络异常，请重试'))
 }
 
 // 重置密码为 123456

@@ -323,7 +323,7 @@ const connectChat = (): void => {
         title: '医生回复了您',
         message: previewOf(m),
         type: 'success',
-        duration: 6000,
+        duration: 10000,
         position: 'top-right',
         onClick: () => { ElNotification.closeAll(); router.push('/reception/chat') }
       })

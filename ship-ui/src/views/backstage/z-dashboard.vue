@@ -96,6 +96,16 @@
         </div>
         <el-link :underline="false" type="primary" @click="go('/backstage/z-immune')">查看档案 ›</el-link>
       </div>
+      <div class="todo-card" @click="go('/backstage/z-recordList')">
+        <div class="t-head">
+          <div class="t-ico bg-red"><el-icon><Tickets/></el-icon></div>
+          <div>
+            <p class="t-label">接诊中病历（未完结）</p>
+            <p class="t-value">{{ todo.treating }}</p>
+          </div>
+        </div>
+        <el-link :underline="false" type="danger" @click="go('/backstage/z-recordList')">去跟进 ›</el-link>
+      </div>
     </div>
 
     <div class="todo-grid two">
@@ -163,6 +173,8 @@ import {
 } from "@element-plus/icons-vue";
 import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqStatOverview} from "@/request/StatisticsApi";
+import {reqRecordTodo} from "@/request/RecordApi";
+import {RecordTodo} from "@/model/VO/RecordFull";
 import MiniBar from "@/components/chart/MiniBar.vue";
 
 const router = useRouter()
@@ -181,12 +193,16 @@ const money = (n: number | null | undefined): string =>
 const rankPct = (v: number): number =>
     Math.min(100, Math.round((v / Math.max(1, ...stat.value.doctorTop.map(d => d.count))) * 100))
 
+// 诊疗待办（卡壳就诊：接诊中/待出结果/待手术/待随访）
+const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
+
 onMounted(() => {
   reqStatOverview().then(res => {
     stat.value = res || stat.value
   }).catch(() => {
     // 静默，保留默认空数据
   })
+  reqRecordTodo().then(res => { if (res) todo.value = res }).catch(() => { /* 静默 */ })
 })
 </script>
 
