@@ -3,6 +3,8 @@
   <BackOpCol role="医生" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.doctorName" clearable placeholder="医生姓名 / 手机号 / 账号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-input v-model="qp.departmentName" clearable placeholder="科室名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <!-- 注册号缺失筛选：一键筛出未维护执业注册号的医生（处方笺必需项） -->
+    <el-checkbox v-model="qp.certNull" label="注册号缺失" size="large" border @change="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -32,6 +34,12 @@
       <template #default="scope">{{ getAge(scope.row.doctorAge)}}</template>
     </el-table-column>
     <el-table-column label="电话" prop="doctorTel"/>
+    <el-table-column label="执业注册号">
+      <template #default="scope">
+        <span v-if="scope.row.doctorCert">{{ scope.row.doctorCert }}</span>
+        <span v-else style="color:#f56c6c;font-weight:600">未填</span>
+      </template>
+    </el-table-column>
     <el-table-column label="邮箱" prop="doctorEmail"/>
     <el-table-column label="简介" prop="doctorInfo"/>
     <el-table-column label="科室">
@@ -189,6 +197,7 @@ onMounted(() => {
 const qp: YDoctorList = reactive({
   doctorName: '',
   departmentName: '',
+  certNull: false,
   numPage: 1,
   pageSize: 6
 })

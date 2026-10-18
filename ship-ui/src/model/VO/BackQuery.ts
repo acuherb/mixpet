@@ -21,6 +21,8 @@ export interface YClientList extends PageQuery {
 export interface YDoctorList extends PageQuery {
     doctorName: string
     departmentName: string
+    /** 注册号缺失筛选（true=只查 doctor_cert 为空的医生） */
+    certNull?: boolean
 }
 
 // 科室列表的查询参数

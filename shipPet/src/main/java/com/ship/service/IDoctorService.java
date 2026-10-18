@@ -42,7 +42,7 @@ public interface IDoctorService extends IService<Doctor> {
      * @param pageSize       当前一页的最大条数
      * @return 数据的总长度，与分页查询结果
      */
-    IPage<DoctorDto> selectByPage(String doctorName, String departmentName, int numPage, int pageSize);
+    IPage<DoctorDto> selectByPage(String doctorName, String departmentName, Boolean certNull, int numPage, int pageSize);
 
     /**
      * 顾客端展示医生分页（脱敏，不返回电话/邮箱/账号）

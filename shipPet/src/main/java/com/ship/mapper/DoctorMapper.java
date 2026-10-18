@@ -21,7 +21,7 @@ import java.util.List;
  */
 @Mapper
 public interface DoctorMapper extends BaseMapper<Doctor> {
-    IPage<DoctorDto> selectDoctorPage(IPage<DoctorDto> page, String doctorName, String departmentName);
+    IPage<DoctorDto> selectDoctorPage(IPage<DoctorDto> page, String doctorName, String departmentName, Boolean certNull);
 
     /**
      * 顾客端展示用分页，脱敏：不返回 phone/email/username 等敏感字段

@@ -30,6 +30,9 @@
                 where dd2.doctor_id=d.doctor_id and dep2.department_name like #{departmentNameKw}
             ))
         </if>
+        <if test="certNull!=null and certNull">
+            and (d.doctor_cert is null or d.doctor_cert = '')
+        </if>
     </select>
     <!--分页查询（顾客端脱敏版：不返回 phone/email/username）-->
     <select id="selectDoctorPagePublic" resultType="com.ship.model.dto.DoctorDto">

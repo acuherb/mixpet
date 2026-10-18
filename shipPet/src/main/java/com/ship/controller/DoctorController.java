@@ -72,8 +72,8 @@ public class DoctorController {
 
     @GetMapping("/page")
     @Secured({RoleConst.ADMIN, RoleConst.MANAGER})
-    public IPage<DoctorDto> getPage(int numPage, int pageSize, String doctorName, String departmentName) {
-        return doctorService.selectByPage(doctorName, departmentName, numPage, pageSize);
+    public IPage<DoctorDto> getPage(int numPage, int pageSize, String doctorName, String departmentName, Boolean certNull) {
+        return doctorService.selectByPage(doctorName, departmentName, certNull, numPage, pageSize);
     }
 
     /**
