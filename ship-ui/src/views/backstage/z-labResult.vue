@@ -81,7 +81,7 @@
       <el-table-column label="参考范围" width="120" prop="refRange"/>
       <el-table-column label="结果值" width="150">
         <template #default="scope">
-          <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值"/>
+          <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值" @blur="autoAbnormal(scope.row)"/>
           <span v-else>{{ scope.row.resultValue || '—' }}</span>
         </template>
       </el-table-column>
@@ -114,7 +114,7 @@
 
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {LabOrderItem} from "@/model/entiy/LabOrderItem";
@@ -153,6 +153,7 @@ const nowQuery = (): void => {
   sendQuery()
 }
 const router = useRouter()
+const route = useRoute()
 // 打印检验申请单（国标）
 const printReq = (row: LabOrderDto): void => {
   router.push('/backstage/z-requisition?type=lab&orderId=' + row.orderId)
@@ -224,6 +225,27 @@ const formSubmit = (): void => {
   })
 }
 
+/**
+ * 按参考范围自动预判异常（失焦时触发，医生仍可手工改开关）：
+ * 支持 "10-20" / "10~20" 区间与 ">5" / "<3" 等常见格式；解析不出则不干预
+ */
+const autoAbnormal = (row: LabOrderItem): void => {
+  const val = parseFloat((row.resultValue || '').trim())
+  const ref = (row.refRange || '').trim()
+  if (isNaN(val) || !ref) return
+  let abnormal: boolean | null = null
+  const range = ref.match(/^(-?[\d.]+)\s*[-~]\s*(-?[\d.]+)$/)
+  if (range) {
+    abnormal = val < parseFloat(range[1]) || val > parseFloat(range[2])
+  } else {
+    const gt = ref.match(/^[>≥]\s*(-?[\d.]+)$/)
+    const lt = ref.match(/^[<≤]\s*(-?[\d.]+)$/)
+    if (gt) abnormal = val > parseFloat(gt[1])
+    else if (lt) abnormal = val < parseFloat(lt[1])
+  }
+  if (abnormal != null) row.isAbnormal = abnormal
+}
+
 // 作废化验单（未出结果，冲减未付账单）
 const cancelOrder = (row: LabOrderDto): void => {
   ElMessageBox.confirm(`确认作废化验单 #${row.orderId}？将冲减未付账单的检验费。`, '作废确认', {
@@ -244,6 +266,9 @@ const cancelOrder = (row: LabOrderDto): void => {
  └───────────────────────────────────┘
  */
 onMounted(() => {
+  // 从医生工作台「待出结果」进入：默认筛选待出结果(status=0)
+  const s = route.query.status
+  if (s != null && s !== '') statusFilter.value = Number(s)
   sendQuery()
 })
 </script>

@@ -40,6 +40,8 @@
       <el-form-item>
         <el-button type="primary" @click="search">查询</el-button>
         <el-button @click="reset">重置</el-button>
+        <!-- 我的专属工作队列：只看我负责且未完结的病历 -->
+        <el-button v-if="myName" type="warning" plain @click="myPending">我的未完结</el-button>
       </el-form-item>
     </el-form>
 
@@ -96,6 +98,7 @@
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from "vue";
 import {reqRecordPage} from "@/request/RecordApi";
+import {reqGetLoginD} from "@/request/DoctorApi";
 import {Page} from "@/model/DO/Page";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {getDisplayTime} from "@/utils/TimeUtil";
@@ -144,6 +147,17 @@ const reset = (): void => {
 const onDateChange = (val: [string, string] | null): void => {
   q.startTime = val ? val[0] : ''
   q.endTime = val ? val[1] : ''
+}
+// 当前登录医生（「我的未完结」用；非医生账号为空则不显示该按钮）
+const myName = ref('')
+reqGetLoginD().then(d => { if (d?.doctorName) myName.value = d.doctorName }).catch(() => {})
+/** 我的未完结：我负责 + 接诊中，一键定位自己的待办病历 */
+const myPending = (): void => {
+  q.doctorName = myName.value
+  q.status = 0
+  q.startTime = ''; q.endTime = ''
+  dateRange.value = null
+  search()
 }
 const openDetail = (row: RecordDto): void => {
   detailId.value = row.recordId

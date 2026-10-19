@@ -190,11 +190,11 @@
           </div>
           <div class="panel-body">
             <div class="todo-grid">
-              <div class="todo-item" @click="$router.push('/doctorPage/d-lab')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-labResult?status=0')">
                 <span class="todo-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
                 <span class="todo-lbl">待出结果化验</span>
               </div>
-              <div class="todo-item" @click="$router.push('/doctorPage/d-image')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-imageResult?status=false')">
                 <span class="todo-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
                 <span class="todo-lbl">待出报告影像</span>
               </div>

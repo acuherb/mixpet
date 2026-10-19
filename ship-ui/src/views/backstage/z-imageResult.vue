@@ -88,7 +88,7 @@
 
 <script lang="ts" setup>
 import {computed, onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
@@ -118,6 +118,7 @@ const nowQuery = (): void => {
   sendQuery()
 }
 const router = useRouter()
+const route = useRoute()
 // 打印影像申请单（国标）
 const printReq = (row: ImageOrder): void => {
   router.push('/backstage/z-requisition?type=image&orderId=' + row.orderId)
@@ -219,6 +220,10 @@ const cancelOrder = (row: ImageOrder): void => {
 }
 
 onMounted(() => {
+  // 从医生工作台「待出报告」进入：默认筛选待检查(status=false)
+  const s = route.query.status
+  if (s === 'false') statusFilter.value = false
+  else if (s === 'true') statusFilter.value = true
   sendQuery()
 })
 </script>

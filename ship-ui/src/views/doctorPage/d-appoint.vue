@@ -174,6 +174,7 @@
           <el-input-number v-model="recordForm.feeRegister" :max="9999" :min="0" :precision="2" :step="5"/>
           <span class="fee-sep">诊疗费(元)</span>
           <el-input-number v-model="recordForm.feeTreat" :max="99999" :min="0" :precision="2" :step="10"/>
+          <div class="fee-tip">费用标准由管理层维护；最终金额以收银台收款确认为准</div>
         </el-form-item>
         <p class="phase-tip">保存病历后进入处置开单：可开处方/手术/套餐；检验、影像请点「去开检验单/影像单」在专用页面选择项目开单。</p>
         </div>
@@ -437,21 +438,26 @@
             <p class="sc-tip">检验/影像在专用页面开单，完成后这里显示数量</p>
           </div>
           <div class="settle-card">
-            <div class="sc-tit">费用合计</div>
+            <div class="sc-tit">费用明细</div>
+            <div class="sc-sub">已确认（已保存单据）</div>
             <div class="sc-fee"><span>挂号+诊疗</span><b>￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }}</b></div>
-            <div class="sc-fee"><span>药费</span><b>￥{{ savedDrugSum() }}</b></div>
-            <div class="sc-fee"><span>套餐费</span><b>￥{{ savedPkgSum() }}</b></div>
-            <div class="sc-fee" v-if="savedSurgery.length"><span>手术费</span><b>￥{{ savedSurgerySum() }}</b></div>
-            <div class="sc-fee sc-total"><span>合计</span><b>￥{{ treatTotal() }}</b></div>
+            <div class="sc-fee"><span>药费</span><b>￥{{ savedDrugSum().toFixed(2) }}</b></div>
+            <div class="sc-fee"><span>套餐费</span><b>￥{{ savedPkgSum().toFixed(2) }}</b></div>
+            <div class="sc-fee" v-if="savedSurgery.length"><span>手术费</span><b>￥{{ savedSurgerySum().toFixed(2) }}</b></div>
+            <div class="sc-sub">草稿（未保存，保存后计入）</div>
+            <div class="sc-fee draft" v-if="Number(feeDrug()) > 0"><span>药费草稿</span><b>￥{{ feeDrug() }}</b></div>
+            <div class="sc-fee draft" v-if="Number(feePackage()) > 0"><span>套餐草稿</span><b>￥{{ feePackage() }}</b></div>
+            <div class="sc-fee draft" v-if="Number(feeSurgery()) > 0"><span>手术草稿</span><b>￥{{ feeSurgery() }}</b></div>
+            <div class="sc-fee sc-total"><span>合计（含草稿）</span><b>￥{{ treatTotal() }}</b></div>
           </div>
         </div>
         <div class="settle-ops">
           <el-button @click="goOrder('d-lab')">去开检验单<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
           <el-button @click="goOrder('d-image')">去开影像单<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
-          <el-button @click="goBackstage('z-surgery')">手术记录</el-button>
-          <el-button @click="goBackstage('z-hospital')">入院登记</el-button>
-          <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
-          <el-button @click="goBackstage('z-follow')">写随访</el-button>
+          <el-button @click="goDoctor('z-surgery')">手术记录</el-button>
+          <el-button @click="goDoctor('z-hospital')">入院登记</el-button>
+          <el-button @click="goDoctor('z-immune')">免疫接种</el-button>
+          <el-button @click="goDoctor('z-follow')">写随访</el-button>
           <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
           <el-button type="primary" plain @click="printChoice = true">打印</el-button>
           <el-button type="success" plain @click="goCashier">去收银台收费</el-button>
@@ -503,7 +509,7 @@
       <template #footer>
         <span class="treat-total">
           已关联：处方{{ savedRx.length }} · 套餐{{ savedPkg.length }} · 手术{{ savedSurgery.length }} · 检验{{ labCount }} · 影像{{ imageCount }}
-          ｜ 合计 <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
+          ｜ 合计（含草稿） <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
         </span>
         <el-button @click="treatView = false">{{ orderLocked ? '关闭' : '取消' }}</el-button>
         <!-- 第一步/第二步：步骤导航 + 保存病历 -->
@@ -739,14 +745,16 @@ const loadDicts = (): void => {
 const applyTpl = (id: number): void => {
   const t = templates.value.find(x => x.templateId === id)
   if (!t) return
-  if (t.chiefComplaint != null) recordForm.value.chiefComplaint = t.chiefComplaint
-  if (t.presentIllness != null) recordForm.value.presentIllness = t.presentIllness
-  if (t.pastHistory != null) recordForm.value.pastHistory = t.pastHistory
-  if (t.physicalExam != null) recordForm.value.physicalExam = t.physicalExam
-  if (t.diagnosis != null) recordForm.value.diagnosis = t.diagnosis
-  if (t.treatment != null) recordForm.value.treatment = t.treatment
-  if (t.advice != null) recordForm.value.advice = t.advice
-  if (t.internalNote != null) recordForm.value.internalNote = t.internalNote
+  const f = recordForm.value
+  // 模板=打底：只填「空」字段，不覆盖已填写/挂号自动带入的内容（防静默丢失）
+  if (!f.chiefComplaint) f.chiefComplaint = t.chiefComplaint ?? ''
+  if (!f.presentIllness) f.presentIllness = t.presentIllness ?? ''
+  if (!f.pastHistory) f.pastHistory = t.pastHistory ?? ''
+  if (!f.physicalExam) f.physicalExam = t.physicalExam ?? ''
+  if (!f.diagnosis) f.diagnosis = t.diagnosis ?? ''
+  if (!f.treatment) f.treatment = t.treatment ?? ''
+  if (!f.advice) f.advice = t.advice ?? ''
+  if (!f.internalNote) f.internalNote = t.internalNote ?? ''
 }
 const resetOrderForms = (): void => {
   prescriptions.value = []
@@ -938,12 +946,25 @@ const addPackage = (): void => { packages.value.push(examplePackage()) }
 const saveRx = (): void => {
   const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
   if (!ps.length) { ElMessage.warning('请先添加药品'); return }
-  rxSaving.value = true
-  reqAddRecordPrescription({recordId: treatRecordId.value, prescriptions: ps}).then(res => {
-    rxSaving.value = false
-    if (res.code === 1) { prescriptions.value = []; loadSaved() }
-    else ElMessage.error(res.msg || '保存失败')
-  }).catch(() => { rxSaving.value = false })
+  // 数量与「单次剂量×频次×天数」算量结果一致性校验（防计费数量与医嘱用量脱节）
+  const mismatch = ps.filter(p => p.singleDose != null && p.singleDose > 0 &&
+      p.quantity !== Math.ceil(p.singleDose * (p.dailyTimes || 1) * (p.days || 1)))
+  const doSave = (): void => {
+    rxSaving.value = true
+    reqAddRecordPrescription({recordId: treatRecordId.value, prescriptions: ps}).then(res => {
+      rxSaving.value = false
+      if (res.code === 1) { prescriptions.value = []; loadSaved() }
+      else ElMessage.error(res.msg || '保存失败')
+    }).catch(() => { rxSaving.value = false })
+  }
+  if (mismatch.length) {
+    ElMessageBox.confirm(
+        `有 ${mismatch.length} 个药品的「数量」与 单次剂量×频次×天数 的算量结果不一致，可能导致计费数量与医嘱用量不符。确认按当前数量保存吗？`,
+        '数量与算量不一致', {confirmButtonText: '仍要保存', cancelButtonText: '返回修改', type: 'warning'}
+    ).then(doSave).catch(() => ElMessage.info('已取消，请核对数量'))
+    return
+  }
+  doSave()
 }
 const savePkg = (): void => {
   const ids = packages.value.filter(p => p.packageId && p.packageId > 0).map(p => p.packageId)
@@ -1145,8 +1166,9 @@ const printChoice = ref(false)
 const goOrder = (path: string): void => {
   router.push('/doctorPage/' + path + '?recordId=' + treatRecordId.value)
 }
-const goBackstage = (path: string): void => {
-  router.push('/backstage/' + path + '?recordId=' + treatRecordId.value)
+// 临床动作统一走医生端（组件与后台共用，不再切到管理后台语境）
+const goDoctor = (path: string): void => {
+  router.push('/doctorPage/' + path + '?recordId=' + treatRecordId.value)
 }
 // 去收银台：直达待收费列表（完结生成的账单在那里收款/发药）
 const goCashier = (): void => {
@@ -1213,6 +1235,14 @@ watch(() => form.value.clientId, (newValue): void => {
   &.active { background-color: #409eff; border-color: #409eff; color: #fff; }
 }
 .fee-sep { margin: 0 12px 0 24px; color: #909399; }
+.fee-tip { font-size: 12px; color: #E6A23C; line-height: 1.5; margin-top: 2px; }
+.sc-sub {
+  font-size: 11px;
+  color: #909399;
+  margin: 6px 0 2px;
+  font-weight: 600;
+}
+.sc-fee.draft { color: #a8abb2; b { color: #a8abb2; } }
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
 .order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
 .treat-total { float: left; font-size: 15px; }
@@ -1334,6 +1364,17 @@ watch(() => form.value.clientId, (newValue): void => {
   .ph-danger { background: #fef0f0; border-radius: 6px; padding: 6px; .ph-tit { color: #f56c6c; } p { color: #dd6161; } }
   .ph-warn { background: #fdf6ec; border-radius: 6px; padding: 6px; .ph-tit { color: #e6a23c; } }
 }
-@media (max-width: 900px) { .pet-history { display: none; } }
+@media (max-width: 900px) {
+  .treat-body { flex-direction: column; }
+  /* 病史侧栏窄屏不丢：置顶通栏 + 限高滚动（过敏史/既往史移动端也要可见） */
+  .pet-history {
+    display: block;
+    order: -1;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+}
 .summary-btns { margin-top: 16px; text-align: right; }
 </style>
