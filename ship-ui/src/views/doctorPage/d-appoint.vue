@@ -452,8 +452,8 @@
           </div>
         </div>
         <div class="settle-ops">
-          <el-button @click="goOrder('d-lab')">去开检验单<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
-          <el-button @click="goOrder('d-image')">去开影像单<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
+          <el-button title="补开/追开检验单，或打印检验申请单（常规开单请在第三步「检验」页签）" @click="goOrder('d-lab')">检验补开/打印<b v-if="labCount" class="tab-num">{{ labCount }}</b></el-button>
+          <el-button title="补开/追开影像单，或打印影像申请单（常规开单请在第三步「影像」页签）" @click="goOrder('d-image')">影像补开/打印<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></el-button>
           <el-button @click="goDoctor('z-surgery')">手术记录</el-button>
           <el-button @click="goDoctor('z-hospital')">入院登记</el-button>
           <el-button @click="goDoctor('z-immune')">免疫接种</el-button>

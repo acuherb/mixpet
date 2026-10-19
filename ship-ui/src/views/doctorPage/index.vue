@@ -194,15 +194,15 @@
                 <span class="todo-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
                 <span class="todo-lbl">待出结果化验</span>
               </div>
-              <div class="todo-item" @click="$router.push('/doctorPage/z-imageResult?status=false')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-imageResult?status=0')">
                 <span class="todo-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
                 <span class="todo-lbl">待出报告影像</span>
               </div>
-              <div class="todo-item" @click="$router.push('/backstage/z-surgery')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-surgery')">
                 <span class="todo-num" :class="{warn: todo.surgeryPending > 0}">{{ todo.surgeryPending }}</span>
                 <span class="todo-lbl">待手术/待记录</span>
               </div>
-              <div class="todo-item" @click="$router.push('/backstage/z-follow')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-follow')">
                 <span class="todo-num" :class="{warn: todo.followPending > 0}">{{ todo.followPending }}</span>
                 <span class="todo-lbl">待随访</span>
               </div>
@@ -228,7 +228,7 @@
           </router-link>
         </div>
         <div class="future-card">
-          <router-link to="/backstage/z-labResult" class="future-link">
+          <router-link to="/doctorPage/z-labResult" class="future-link">
             <span class="f-ico ico-lab"><el-icon><Document/></el-icon></span>
             <div class="f-txt">
               <h4>化验结果录入</h4>
@@ -238,7 +238,7 @@
           </router-link>
         </div>
         <div class="future-card">
-          <router-link to="/backstage/z-hospital" class="future-link">
+          <router-link to="/doctorPage/z-hospital" class="future-link">
             <span class="f-ico ico-ward"><el-icon><HomeFilled/></el-icon></span>
             <div class="f-txt">
               <h4>住院管理</h4>
@@ -258,7 +258,7 @@
           </router-link>
         </div>
         <div class="future-card">
-          <router-link to="/backstage/z-imageResult" class="future-link">
+          <router-link to="/doctorPage/z-imageResult" class="future-link">
             <span class="f-ico ico-other"><el-icon><Picture/></el-icon></span>
             <div class="f-txt">
               <h4>影像报告录入</h4>

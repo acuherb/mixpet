@@ -220,10 +220,10 @@ const cancelOrder = (row: ImageOrder): void => {
 }
 
 onMounted(() => {
-  // 从医生工作台「待出报告」进入：默认筛选待检查(status=false)
+  // 从医生工作台「待出报告」进入：默认筛选待检查(status=0待检查 1已出；兼容旧 false/true)
   const s = route.query.status
-  if (s === 'false') statusFilter.value = false
-  else if (s === 'true') statusFilter.value = true
+  if (s === '0' || s === 'false') statusFilter.value = false
+  else if (s === '1' || s === 'true') statusFilter.value = true
   sendQuery()
 })
 </script>
