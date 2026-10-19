@@ -95,8 +95,13 @@ import {reqRxPrintPrepare} from "@/request/RxApi";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {ElMessage} from "element-plus";
 
-const props = defineProps<{ recordId: number }>()
-const view = defineModel<boolean>({required: true})
+const props = defineProps<{ recordId: number; modelValue: boolean }>()
+const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
+// 双向显示控制（兼容写法：不用 defineModel，本项目 vue 3.2 运行时无 useModel 导出）
+const view = computed({
+  get: () => props.modelValue,
+  set: (v: boolean) => emit('update:modelValue', v)
+})
 
 /** 打印类型：record 电子病历 / rx 兽用处方笺 */
 const mode = ref<'record' | 'rx'>('record')
