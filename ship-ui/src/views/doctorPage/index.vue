@@ -267,6 +267,27 @@
             <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
           </router-link>
         </div>
+        <!-- 运营协同：医生代收/查档案直达（无需进后台） -->
+        <div class="future-card">
+          <router-link to="/backstage/y-billList" class="future-link">
+            <span class="f-ico ico-cash"><el-icon><Money/></el-icon></span>
+            <div class="f-txt">
+              <h4>收银台</h4>
+              <p>代收/查看账单，收银者自动留痕</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去收银</el-tag>
+          </router-link>
+        </div>
+        <div class="future-card">
+          <router-link to="/backstage/y-clientList" class="future-link">
+            <span class="f-ico ico-client"><el-icon><User/></el-icon></span>
+            <div class="f-txt">
+              <h4>客户管理</h4>
+              <p>顾客档案/宠物档案全院可查</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去查询</el-tag>
+          </router-link>
+        </div>
       </div>
     </main>
   </div>
@@ -274,7 +295,7 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Picture, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
@@ -1067,6 +1088,14 @@ onBeforeUnmount(() => {
 
     &.ico-lab {
       background: linear-gradient(135deg, #9063Cd, #b78ae2);
+    }
+
+    &.ico-cash {
+      background: linear-gradient(135deg, #e6a23c, #f3c563);
+    }
+
+    &.ico-client {
+      background: linear-gradient(135deg, #409eff, #79bbff);
     }
 
     &.ico-ward {

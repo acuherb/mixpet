@@ -49,7 +49,7 @@ public class AppointmentController {
     }
 
     @GetMapping("/page")
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public IPage<AppointmentDto> getPage(int numPage, int pageSize, String seaName, int seaType) {
         return appointmentService.selectByPage(seaName, seaType, numPage, pageSize);
     }

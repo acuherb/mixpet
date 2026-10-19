@@ -28,90 +28,51 @@
           <span>个人中心</span>
         </el-menu-item>
 
-        <!-- 数据中心 -->
-        <el-sub-menu index="g-stat" :title="isCollapse ? '数据中心' : ''">
+        <!-- ═══ 运营管理（前台/护士/医生日常作业线；临床诊疗请在医生工作台） ═══ -->
+        <el-sub-menu index="g-ops" :title="isCollapse ? '运营管理' : ''">
+          <template #title>
+            <el-icon><Tickets/></el-icon>
+            <span>运营管理</span>
+          </template>
+          <el-menu-item v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
+          <el-menu-item v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
+          <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
+          <el-menu-item v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
+        </el-sub-menu>
+
+        <!-- ═══ 经营分析（院长/管理者） ═══ -->
+        <el-sub-menu v-if="isManager" index="g-stat" :title="isCollapse ? '经营分析' : ''">
           <template #title>
             <el-icon><DataBoard/></el-icon>
-            <span>数据中心</span>
+            <span>经营分析</span>
           </template>
           <el-menu-item v-show="menuMatch('经营看板')" index="/backstage/z-dashboard">经营看板</el-menu-item>
           <el-menu-item v-show="menuMatch('财务报表')" index="/backstage/z-report">财务报表</el-menu-item>
         </el-sub-menu>
 
-        <!-- 接待管理（前台作业线：挂号 → 收费 → 寄养接待） -->
-        <el-sub-menu index="g-reception" :title="isCollapse ? '接待管理' : ''">
+        <!-- ═══ 系统设置（院长/管理者：定价规则/字典/组织/门面配置） ═══ -->
+        <el-sub-menu v-if="isManager" index="g-config" :title="isCollapse ? '系统设置' : ''">
           <template #title>
-            <el-icon><Tickets/></el-icon>
-            <span>接待管理</span>
-          </template>
-          <el-menu-item v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
-          <el-menu-item v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
-          <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 诊疗管理 -->
-        <el-sub-menu index="g-medical" :title="isCollapse ? '诊疗管理' : ''">
-          <template #title>
-            <el-icon><FirstAidKit/></el-icon>
-            <span>诊疗管理</span>
-          </template>
-          <el-menu-item v-show="menuMatch('化验结果录入')" index="/backstage/z-labResult">化验结果录入</el-menu-item>
-          <el-menu-item v-show="menuMatch('影像报告录入')" index="/backstage/z-imageResult">影像报告录入</el-menu-item>
-          <el-menu-item v-show="menuMatch('手术麻醉')" index="/backstage/z-surgery">手术麻醉</el-menu-item>
-          <el-menu-item v-show="menuMatch('住院管理')" index="/backstage/z-hospital">住院管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('疫苗驱虫')" index="/backstage/z-immune">疫苗驱虫</el-menu-item>
-          <el-menu-item v-show="menuMatch('随访提醒')" index="/backstage/z-remind">随访提醒</el-menu-item>
-          <el-menu-item v-show="menuMatch('随访记录')" index="/backstage/z-follow">随访记录</el-menu-item>
-          <el-menu-item v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 商品与库存 -->
-        <el-sub-menu index="g-goods" :title="isCollapse ? '商品与库存' : ''">
-          <template #title>
-            <el-icon><Goods/></el-icon>
-            <span>商品与库存</span>
+            <el-icon><Setting/></el-icon>
+            <span>系统设置</span>
           </template>
           <el-menu-item v-show="menuMatch('药品管理')" index="/backstage/y-drugList">药品管理</el-menu-item>
           <el-menu-item v-show="menuMatch('批量入库')" index="/backstage/y-drugInbound">批量入库</el-menu-item>
           <el-menu-item v-show="menuMatch('服务套餐')" index="/backstage/z-package">服务套餐</el-menu-item>
           <el-menu-item v-show="menuMatch('供应商管理')" index="/backstage/z-supplier">供应商管理</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 客户运营（客户资产与会员体系） -->
-        <el-sub-menu index="g-customer" :title="isCollapse ? '客户运营' : ''">
-          <template #title>
-            <el-icon><User/></el-icon>
-            <span>客户运营</span>
-          </template>
-          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
           <el-menu-item v-show="menuMatch('会员等级')" index="/backstage/z-memberLevel">会员等级</el-menu-item>
           <el-menu-item v-show="menuMatch('次卡模板')" index="/backstage/z-countCard">次卡模板</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 系统管理（设置 + 各类字典/模板 + 公告） -->
-        <el-sub-menu index="g-config" :title="isCollapse ? '系统管理' : ''">
-          <template #title>
-            <el-icon><Setting/></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
           <el-menu-item v-show="menuMatch('医院资料')" index="/backstage/y-hospitalInfo">医院资料</el-menu-item>
           <el-menu-item v-show="menuMatch('检验项字典')" index="/backstage/z-labTest">检验项字典</el-menu-item>
           <el-menu-item v-show="menuMatch('影像项字典')" index="/backstage/z-imageTest">影像项字典</el-menu-item>
           <el-menu-item v-show="menuMatch('病历模板')" index="/backstage/z-template">病历模板</el-menu-item>
-          <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
+          <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
           <el-menu-item v-show="menuMatch('公告管理')" index="/backstage/y-noticeList">公告管理</el-menu-item>
-        </el-sub-menu>
-
-        <!-- 组织管理（仅管理员：科室/职务/医生/排班） -->
-        <el-sub-menu v-if="isAdmin" index="g-org" :title="isCollapse ? '组织管理' : ''">
-          <template #title>
-            <el-icon><IconMenu/></el-icon>
-            <span>组织管理</span>
-          </template>
-          <el-menu-item-group :title="doctorNow.name">
+          <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
+          <el-menu-item-group title="组织管理">
             <el-menu-item v-show="menuMatch('科室列表')" index="/backstage/x-departmentList">科室列表</el-menu-item>
             <el-menu-item v-show="menuMatch('职务/职称')" index="/backstage/z-job">职务/职称</el-menu-item>
             <el-menu-item v-show="menuMatch('医生列表')" index="/backstage/x-doctorList">医生列表</el-menu-item>
@@ -127,7 +88,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Tickets, Goods, FirstAidKit, User, Setting, Search, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
+import {DataBoard, Tickets, Setting, Search, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
@@ -137,8 +98,9 @@ const doctorNow = reactive({
   authLv: 0
 })
 
-// 是否管理员（院长 authLv=8）
-const isAdmin = computed(() => doctorNow.authLv === 8)
+// 是否管理者（MANAGER=6 / ADMIN=8）：经营分析与系统设置组对其可见
+// 临床诊疗（接诊/化验/影像/手术/住院/免疫/随访）已收拢医生工作台，后台不再挂入口
+const isManager = computed(() => doctorNow.authLv >= 6)
 
 // 侧边栏折叠
 const isCollapse = ref(localStorage.getItem('asideCollapse') === '1')
