@@ -81,6 +81,14 @@
         <el-tag v-else-if="scope.row.payStatus" style="margin-left: 4px" type="danger">待发药</el-tag>
       </template>
     </el-table-column>
+    <!-- 收银者：谁登录谁收款即记录（忙时医生代收也可追溯） -->
+    <el-table-column label="收银员" width="90" show-overflow-tooltip>
+      <template #default="scope">
+        <span v-if="scope.row.payBy">{{ scope.row.payBy }}</span>
+        <span v-else-if="scope.row.payStatus" style="color:#909399">—（历史）</span>
+        <span v-else style="color:#c0c4cc">—</span>
+      </template>
+    </el-table-column>
     <el-table-column label="余额(元)" prop="clientBalance" width="90"/>
     <el-table-column label="时间" min-width="140" prop="createTime" show-overflow-tooltip>
       <template #default="scope">
@@ -499,6 +507,7 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
   <hr class="line">
   <div class="row"><span class="k">支付方式</span><span>${payTypeText}</span></div>
   <div class="row"><span class="k">支付时间</span><span>${payTime}</span></div>
+  <div class="row"><span class="k">收银员</span><span>${row.payBy || '____'}</span></div>
   <div class="center">谢谢惠顾，祝宠物早日康复！<br>（本小票仅作收据凭证）</div>
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`
@@ -659,7 +668,7 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: H
     <p>备注：本单为宠物诊疗服务费。宠物：${row.petName || ''}，医生：${row.doctorName || ''}，支付方式：${payTypeText}。</p>
   </div>
   <div class="sign">
-    <span>收款人：________</span>
+    <span>收款人：${row.payBy || '________'}</span>
     <span>复核：________</span>
     <span>开票人：________</span>
     <span>销售方(盖章)：</span>

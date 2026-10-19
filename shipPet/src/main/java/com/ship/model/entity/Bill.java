@@ -49,6 +49,8 @@ public class Bill implements Serializable {
     private Boolean payStatus;
     /** 0余额 1现金 */
     private Boolean payType;
+    /** 收款操作人姓名（收银不限定角色，忙时医生可代收，记录谁收的便于对账） */
+    private String payBy;
     /** 发药状态：0未发药 1已发药（护士核对后置1） */
     private Boolean dispenseStatus;
     /** 发药核对人 */

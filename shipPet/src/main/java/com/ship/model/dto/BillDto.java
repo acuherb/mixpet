@@ -31,6 +31,8 @@ public class BillDto {
     private String clientTel;
     private String petName;
     private String doctorName;
+    /** 收款操作人（收银者；历史账单为 null） */
+    private String payBy;
     /** 客户当前余额（收款时参考） */
     private BigDecimal clientBalance;
 }

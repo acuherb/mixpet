@@ -7,7 +7,7 @@
         b.bill_id, b.client_id, b.pet_id, b.record_id,
         b.fee_register, b.fee_treat, b.fee_drug, b.fee_lab, b.fee_hospital, b.fee_image, b.fee_package, b.fee_surgery, b.total_money,
         b.discount, b.discount_money, b.real_money,
-        b.pay_status, b.pay_type, b.dispense_status, b.dispense_by, b.dispense_time,
+        b.pay_status, b.pay_type, b.pay_by, b.dispense_status, b.dispense_by, b.dispense_time,
         b.create_time,
         CASE WHEN b.pay_status = 1 THEN b.update_time END AS pay_time,
         c.client_name, c.client_tel, c.client_balance,

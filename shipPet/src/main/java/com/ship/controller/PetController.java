@@ -78,7 +78,7 @@ public class PetController {
     }
 
     @GetMapping("/page")
-    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public IPage<PetDto> getPage(int numPage, int pageSize, String petName, String clientName) {
         return petService.selectByPage(petName, clientName, numPage, pageSize);
     }
@@ -149,7 +149,7 @@ public class PetController {
     }
 
     @PutMapping
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public Result update(@RequestBody Pet pet) {
         if (StrUtil.isWhite(pet.getPetName())) return Result.error("姓名不能为空");
         if (StrUtil.isWhite(pet.getPetVariety())) return Result.error("品种不能为空");

@@ -74,19 +74,19 @@ public class ClientController {
      * 根据id查询单个用户
      */
     @GetMapping("/one")
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public Client getOne(Integer id) {
         return clientService.getById(id);
     }
 
     @GetMapping("/page")
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public IPage<Client> getPage(int numPage, int pageSize, String clientName) {
         return clientService.selectByPage(clientName, numPage, pageSize);
     }
 
     @PostMapping
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public Result save(@RequestBody Client client) {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");
@@ -134,7 +134,7 @@ public class ClientController {
     }
 
     @PutMapping
-    @Secured(RoleConst.MANAGER)
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public Result update(@RequestBody Client client) {
         if (StrUtil.isWhite(client.getClientName())) return Result.error("用户姓名为空");
         if (StrUtil.isWhite(client.getClientTel())) return Result.error("手机号为空");

@@ -23,6 +23,8 @@ export interface BillDto {
     realMoney?: number | null;
     payStatus: boolean;
     payType: boolean | null;
+    /** 收款操作人（收银者；历史账单为 null） */
+    payBy?: string | null;
     /** 发药状态 0未发 1已发 */
     dispenseStatus?: boolean;
     /** 发药核对人 */
