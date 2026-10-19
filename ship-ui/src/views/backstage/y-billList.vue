@@ -94,7 +94,8 @@
         <el-button v-if="scope.row.payStatus && !scope.row.dispenseStatus" size="small" type="danger"
                    @click="dispenseBill(scope.row)">发药核对</el-button>
         <!-- 次要操作折叠：打印/充值/退款/病历 -->
-        <el-dropdown style="margin-left: 6px" @command="(cmd: string) => onMore(cmd, scope.row)">
+        <!-- 次要操作折叠：打印/充值/退款/病历（点击展开；表格内需显式 trigger=click） -->
+        <el-dropdown style="margin-left: 6px" trigger="click" @command="(cmd: string) => onMore(cmd, scope.row)">
           <el-button size="small">
             更多<el-icon style="margin-left: 2px"><ArrowDown/></el-icon>
           </el-button>
