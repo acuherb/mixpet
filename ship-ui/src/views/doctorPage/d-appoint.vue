@@ -338,6 +338,83 @@
             </el-table>
             <p v-if="savedPkg.length === 0" style="color:#999">尚未添加套餐</p>
           </el-tab-pane>
+
+          <!-- 检验 -->
+          <el-tab-pane name="lab">
+            <template #label>
+              <span>检验<b v-if="labCount" class="tab-num">{{ labCount }}</b></span>
+            </template>
+            <el-alert title="开单即计入账单并扣减对应费用，可多选" :closable="false" type="info" show-icon style="margin-bottom: 10px"/>
+            <template v-for="g in labGroups" :key="g">
+              <div class="lab-group-title">{{ g }}</div>
+              <el-checkbox-group v-model="labForm.testIds">
+                <el-checkbox v-for="t in labTestsOf(g)" :key="t.testId" :label="t.testId" border>
+                  {{ t.testName }}<span class="price">￥{{ t.testPrice ?? '-' }}</span>
+                </el-checkbox>
+              </el-checkbox-group>
+            </template>
+            <p v-if="labGroups.length === 0" style="color:#999">暂无可开检验项目</p>
+            <el-form-item label="检验目的" style="margin-top: 8px">
+              <el-input v-model="labForm.orderNote" :rows="2" maxlength="255" placeholder="填写检验目的/临床备注，可留空" type="textarea"/>
+            </el-form-item>
+            <div style="text-align: right">
+              <el-button size="small" type="primary" :loading="labSaving" :disabled="orderLocked" @click="submitLabOrder">确认开单（￥{{ labTotalFee() }}）</el-button>
+            </div>
+            <el-divider content-position="left">已开检验单</el-divider>
+            <el-table :data="savedLab" border size="small">
+              <el-table-column label="单号" width="70" prop="orderId"/>
+              <el-table-column label="费用(元)" width="90">
+                <template #default="s">￥{{ s.row.fee }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="100">
+                <template #default="s">
+                  <el-tag v-if="s.row.status" size="small" type="success">已出结果</el-tag>
+                  <el-tag v-else size="small" type="warning">待检验</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="开单时间" prop="createTime"/>
+            </el-table>
+            <p v-if="savedLab.length === 0" style="color:#999">尚未开检验单</p>
+          </el-tab-pane>
+
+          <!-- 影像 -->
+          <el-tab-pane name="image">
+            <template #label>
+              <span>影像<b v-if="imageCount" class="tab-num">{{ imageCount }}</b></span>
+            </template>
+            <el-alert title="开单即计入账单，每次一张影像申请单" :closable="false" type="info" show-icon style="margin-bottom: 10px"/>
+            <el-form-item label="检查项目">
+              <el-select v-model="imageForm.itemId" filterable placeholder="选择影像项目" style="width: 100%">
+                <el-option v-for="it in imageList" :key="it.itemId"
+                           :label="`${it.itemName}（${it.groupName} · ￥${it.price}）`" :value="it.itemId"/>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="检查部位">
+              <el-input v-model="imageForm.examPart" clearable maxlength="64" placeholder="如：右前肢 / 胸部侧位"/>
+            </el-form-item>
+            <el-form-item label="备注">
+              <el-input v-model="imageForm.note" :rows="2" maxlength="255" placeholder="临床指征/申请说明，可留空" type="textarea"/>
+            </el-form-item>
+            <div style="text-align: right">
+              <el-button size="small" type="primary" :loading="imageSaving" :disabled="orderLocked" @click="submitImageOrder">确认开单（￥{{ imageFee() }}）</el-button>
+            </div>
+            <el-divider content-position="left">已开影像单</el-divider>
+            <el-table :data="savedImage" border size="small">
+              <el-table-column label="单号" width="70" prop="orderId"/>
+              <el-table-column label="项目" prop="itemName" show-overflow-tooltip/>
+              <el-table-column label="部位" prop="examPart" width="90"/>
+              <el-table-column label="费用(元)" width="90">
+                <template #default="s">￥{{ s.row.fee }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="100">
+                <template #default="s">
+                  <el-tag v-if="s.row.status" size="small" type="success">已出报告</el-tag>
+                  <el-tag v-else size="small" type="warning">待检查</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+            <p v-if="savedImage.length === 0" style="color:#999">尚未开影像单</p>
+          </el-tab-pane>
         </el-tabs>
         </div>
       </div>
@@ -376,9 +453,8 @@
           <el-button @click="goBackstage('z-immune')">免疫接种</el-button>
           <el-button @click="goBackstage('z-follow')">写随访</el-button>
           <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
-          <el-button type="primary" plain @click="printView = true">打印预览</el-button>
+          <el-button type="primary" plain @click="printChoice = true">打印</el-button>
           <el-button type="success" plain @click="goCashier">去收银台收费</el-button>
-          <el-button plain @click="rxView = true">打印处方笺</el-button>
         </div>
         <p class="phase-tip">确认信息无误后点「完结就诊」；有未完成事项（待出结果/待手术/待随访）会提醒，确认后仍可强制完结。</p>
       </div>
@@ -491,31 +567,9 @@
     </el-drawer>
 
     <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
-    <RxPrintDialog v-model="rxView" :record-id="treatRecordId"/>
+    <!-- 统一打印入口：电子病历 / 兽用处方笺（国标） -->
+    <PrintChoiceDialog v-model="printChoice" :record-id="treatRecordId"/>
 
-    <!-- 打印预览模态：模板宫格 + iframe 预览 + 打印/另存PDF -->
-    <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
-      <div class="pv-body">
-        <div class="pv-tpls">
-          <div v-for="t in printTpls" :key="t.style" :class="['pv-tpl', {active: printStyle === t.style}]" @click="printStyle = t.style">
-            <div class="pv-tpl-ico" :style="{background: t.color}">
-              <el-icon :size="22"><component :is="t.icon"/></el-icon>
-            </div>
-            <div class="pv-tpl-name">{{ t.name }}</div>
-            <div class="pv-tpl-desc">{{ t.desc }}</div>
-          </div>
-        </div>
-        <div class="pv-preview">
-          <iframe v-if="printSrc" :src="printSrc" class="pv-frame" title="打印预览"/>
-        </div>
-      </div>
-      <template #footer>
-        <span class="pv-tip">「导出 PDF 文件」直接下载；打印目标选“另存为 PDF”亦可</span>
-        <el-button @click="printView = false">关闭</el-button>
-        <el-button @click="doFramePrint">打印</el-button>
-        <el-button type="success" @click="exportPdfFile">导出 PDF 文件</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -532,11 +586,11 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, Document, MagicStick, Picture, Plus, Printer, Tickets} from "@element-plus/icons-vue";
+import {Delete, MagicStick, Plus} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordFull, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
 import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
 import {RecordTemplate} from "@/model/entiy/RecordTemplate";
 import {reqPackageList} from "@/request/PackageApi";
@@ -548,11 +602,17 @@ import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {useRoute, useRouter} from 'vue-router';
 import {moveT} from "@/utils/TimeUtil";
 import {reqPetHistory} from "@/request/RecordApi";
-import RxPrintDialog from "@/components/record/RxPrintDialog.vue";
+import PrintChoiceDialog from "@/components/record/PrintChoiceDialog.vue";
 import {reqMissAppoint} from "@/request/AppointApi";
 import {PetHistory} from "@/model/VO/PetHistory";
 import {reqAiAssist} from "@/request/AiApi";
 import {AiAdvice} from "@/model/VO/AiAdvice";
+import {LabTest} from "@/model/entiy/LabTest";
+import {reqCreateLabOrder, reqLabByRecord, reqLabTestList} from "@/request/LabApi";
+import {LabOrderDto} from "@/model/DO/LabOrderDto";
+import {ImageTest} from "@/model/entiy/ImageTest";
+import {reqCreateImageOrder, reqImageByRecord, reqImgGroup} from "@/request/ImageApi";
+import {ImageOrder} from "@/model/entiy/ImageOrder";
 
 const router = useRouter()
 const route = useRoute()
@@ -650,6 +710,15 @@ const surgeryForm = ref<SurgeryVo>({recordId: null, surgeryName: '', surgeryType
 const savedRx = ref<Prescription[]>([])
 const savedPkg = ref<RecordPackage[]>([])
 const savedSurgery = ref<Surgery[]>([])
+// 检验/影像开单（向导内嵌，替代跳转独立页面）
+const tests = ref<LabTest[]>([])
+const savedLab = ref<LabOrderDto[]>([])
+const labForm = reactive<{ testIds: number[]; orderNote: string }>({ testIds: [], orderNote: '' })
+const labSaving = ref(false)
+const imageList = ref<ImageTest[]>([])
+const savedImage = ref<ImageOrder[]>([])
+const imageForm = reactive<{ itemId: number | null; examPart: string; note: string }>({ itemId: null, examPart: '', note: '' })
+const imageSaving = ref(false)
 
 // 保存中
 const rxSaving = ref(false)
@@ -687,6 +756,15 @@ const resetOrderForms = (): void => {
   savedRx.value = []
   savedPkg.value = []
   savedSurgery.value = []
+  savedLab.value = []
+  savedImage.value = []
+  labForm.testIds = []
+  labForm.orderNote = ''
+  imageForm.itemId = null
+  imageForm.examPart = ''
+  imageForm.note = ''
+  labCount.value = 0
+  imageCount.value = 0
   activeTab.value = 'rx'
 }
 
@@ -699,6 +777,8 @@ const openTreat = (a: AppointDto2): void => {
   resetOrderForms()
   recordFormRef.value?.clearValidate()
   loadDicts()
+  loadLabTests()
+  loadImageTests()
   treatView.value = true
   treatPhase.value = 'record'
   activeStep.value = 0
@@ -725,11 +805,8 @@ const openTreat = (a: AppointDto2): void => {
       recordForm.value.bloodPressure = rec.bloodPressure
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
-      // 检验/影像已开单数（tab 角标用）
-      reqRecordFull(rec.recordId).then(f => {
-        labCount.value = f?.labOrders?.length ?? 0
-        imageCount.value = f?.imageOrders?.length ?? 0
-      })
+      // 检验/影像已开单数与列表（tab 角标用）
+      loadOrders()
       // 接诊中→进入开单步骤；已完结/已作废→直达完结结算（只读汇总）
       if ((rec.status ?? 1) === 0) enterOrders()
       else { treatPhase.value = 'orders'; activeStep.value = 3; loadSaved() }
@@ -768,6 +845,7 @@ const loadSaved = (): void => {
     }
   })
   reqSurgeryByRecord(treatRecordId.value).then(r => { savedSurgery.value = r || [] })
+  loadOrders()
 }
 
 // 阶段一：保存病历并开单（新建走 save；已建病历未完绪走 update 只改内容）
@@ -915,7 +993,77 @@ const treatTotal = (): string => {
   const sum = (recordForm.value.feeRegister || 0) + (recordForm.value.feeTreat || 0)
       + savedDrugSum() + savedPkgSum() + savedSurgerySum()
       + Number(feeDrug()) + Number(feePackage()) + Number(feeSurgery())
+      + savedLabSum() + savedImageSum() + Number(labTotalFee()) + Number(imageFee())
   return sum.toFixed(2)
+}
+
+// ───────── 检验/影像向导内嵌开单 ─────────
+const labGroups = computed(() => {
+  const set: string[] = []
+  tests.value.forEach(t => {
+    const g = t.testGroup || '其他'
+    if (!set.includes(g)) set.push(g)
+  })
+  return set
+})
+const labTestsOf = (g: string): LabTest[] => tests.value.filter(t => (t.testGroup || '其他') === g)
+const labTotalFee = (): string => {
+  const sum = labForm.testIds.reduce((s, id) => {
+    const t = tests.value.find(x => x.testId === id)
+    return s + (t?.testPrice ?? 0)
+  }, 0)
+  return sum.toFixed(2)
+}
+const imageFee = (): string => {
+  const it = imageList.value.find(x => x.itemId === imageForm.itemId)
+  return (it?.price ?? 0).toFixed(2)
+}
+const savedLabSum = (): number => savedLab.value.reduce((s, o) => s + (o.fee ?? 0), 0)
+const savedImageSum = (): number => savedImage.value.reduce((s, o) => s + (o.fee ?? 0), 0)
+
+const loadLabTests = (): void => { reqLabTestList().then(r => { tests.value = r || [] }) }
+const loadImageTests = (): void => { reqImgGroup().then(r => { imageList.value = r || [] }) }
+const loadOrders = (): void => {
+  if (!treatRecordId.value) return
+  reqLabByRecord(treatRecordId.value).then(r => {
+    savedLab.value = r || []
+    labCount.value = (r || []).length
+  })
+  reqImageByRecord(treatRecordId.value).then(r => {
+    savedImage.value = r || []
+    imageCount.value = (r || []).length
+  })
+}
+const submitLabOrder = (): void => {
+  if (labForm.testIds.length === 0) { ElMessage.warning('请至少勾选一项检验'); return }
+  labSaving.value = true
+  reqCreateLabOrder({ recordId: treatRecordId.value, orderNote: labForm.orderNote, testIds: [...labForm.testIds] })
+      .then(res => {
+        labSaving.value = false
+        if (res.code === 1) {
+          ElMessage.success('已开检验单并计入账单')
+          labForm.testIds = []
+          labForm.orderNote = ''
+          loadOrders()
+        } else ElMessage.error(res.msg || '开单失败')
+      })
+      .catch(() => { labSaving.value = false; ElMessage.error('开单失败') })
+}
+const submitImageOrder = (): void => {
+  if (!imageForm.itemId) { ElMessage.warning('请选择影像项目'); return }
+  imageSaving.value = true
+  reqCreateImageOrder({ recordId: treatRecordId.value, itemId: imageForm.itemId, examPart: imageForm.examPart, note: imageForm.note })
+      .then(res => {
+        imageSaving.value = false
+        if (res.code === 1) {
+          ElMessage.success('已开影像单并计入账单')
+          imageForm.itemId = null
+          imageForm.examPart = ''
+          imageForm.note = ''
+          loadOrders()
+        } else ElMessage.error(res.msg || '开单失败')
+      })
+      .catch(() => { imageSaving.value = false; ElMessage.error('开单失败') })
 }
 
 // 完结就诊：有未完成事项时确认后强制完结，完结后进入结算步骤
@@ -992,27 +1140,8 @@ const fillAi = (): void => {
 }
 
 // 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
-const printView = ref(false)
-// 兽用处方笺打印弹窗
-const rxView = ref(false)
-const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
-const printTpls = [
-  {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
-  {style: 'mono' as const, name: '黑白简化', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer},
-  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
-  {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
-]
-const printSrc = computed(() => printStyle.value === 'rx'
-    ? '/#/doctorPage/d-rx?recordId=' + treatRecordId.value
-    : '/#/doctorPage/d-recordPrint?recordId=' + treatRecordId.value + '&style=' + printStyle.value)
-const doFramePrint = (): void => {
-  const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
-  f?.contentWindow?.print()
-}
-// 导出真实 PDF：新窗口打开打印页（带 autopdf=1 自动触发下载）
-const exportPdfFile = (): void => {
-  window.open(printSrc.value + '&autopdf=1', '_blank')
-}
+// 打印选择弹窗（电子病历 / 兽用处方笺）
+const printChoice = ref(false)
 const goOrder = (path: string): void => {
   router.push('/doctorPage/' + path + '?recordId=' + treatRecordId.value)
 }
@@ -1087,6 +1216,10 @@ watch(() => form.value.clientId, (newValue): void => {
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
 .order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
 .treat-total { float: left; font-size: 15px; }
+
+/* 检验/影像向导内嵌开单 */
+.lab-group-title { margin: 6px 0; font-size: 12px; font-weight: 700; color: #1E6FA8; }
+.price { margin-left: 4px; font-size: 11px; color: #f56c6c; }
 
 /* 查体快捷标签 */
 .exam-tags {

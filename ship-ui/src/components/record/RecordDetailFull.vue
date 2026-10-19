@@ -163,45 +163,19 @@
     </template>
 
     <div class="rf-foot">
-      <el-button size="small" type="primary" @click="printView = true">打印预览</el-button>
-      <el-button size="small" @click="rxView = true">打印处方笺</el-button>
+      <el-button size="small" type="primary" @click="printChoice = true">打印</el-button>
     </div>
 
-    <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
-    <RxPrintDialog v-model="rxView" :record-id="props.recordId"/>
-
-    <!-- 打印预览模态：模板宫格选择 + 实时预览 + 打印/另存PDF -->
-    <el-dialog v-model="printView" append-to-body title="打印预览" top="4vh" width="94%" class="print-dlg">
-      <div class="pv-body">
-        <div class="pv-tpls">
-          <div v-for="t in printTpls" :key="t.style" :class="['pv-tpl', {active: printStyle === t.style}]" @click="printStyle = t.style">
-            <div class="pv-tpl-ico" :style="{background: t.color}">
-              <el-icon :size="22"><component :is="t.icon"/></el-icon>
-            </div>
-            <div class="pv-tpl-name">{{ t.name }}</div>
-            <div class="pv-tpl-desc">{{ t.desc }}</div>
-          </div>
-        </div>
-        <div class="pv-preview">
-          <iframe v-if="printSrc" :src="printSrc" class="pv-frame" title="打印预览"/>
-        </div>
-      </div>
-      <template #footer>
-        <span class="pv-tip">「导出 PDF 文件」直接下载；打印目标选“另存为 PDF”亦可</span>
-        <el-button @click="printView = false">关闭</el-button>
-        <el-button @click="doFramePrint">打印</el-button>
-        <el-button type="success" @click="exportPdfFile">导出 PDF 文件</el-button>
-      </template>
-    </el-dialog>
+    <!-- 统一打印入口：电子病历 / 兽用处方笺（国标） -->
+    <PrintChoiceDialog v-model="printChoice" :record-id="props.recordId"/>
   </div>
   <div v-else v-loading="true" class="rf-loading">加载中...</div>
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, ref} from "vue";
-import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
+import {onMounted, ref} from "vue";
 import {reqRecordFull} from "@/request/RecordApi";
-import RxPrintDialog from "@/components/record/RxPrintDialog.vue";
+import PrintChoiceDialog from "@/components/record/PrintChoiceDialog.vue";
 import {RecordFull} from "@/model/VO/RecordFull";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import {surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
@@ -223,30 +197,8 @@ const usageText = (p: any): string => {
   return p.usageInfo || '—'
 }
 
-const printView = ref(false)
-// 兽用处方笺打印弹窗
-const rxView = ref(false)
-const printStyle = ref<'std' | 'mono' | 'color' | 'rx'>('std')
-const printTpls = [
-  {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
-  {style: 'mono' as const, name: '黑白简化', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer},
-  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: 'var(--brand)', icon: Picture},
-  {style: 'rx' as const, name: '处方笺', desc: '国标处方笺', color: '#2BB6A8', icon: Tickets}
-]
-const printSrc = computed(() => {
-  const base = printStyle.value === 'rx'
-      ? '/#/doctorPage/d-rx?recordId=' + props.recordId
-      : '/#/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + printStyle.value
-  return base
-})
-const doFramePrint = (): void => {
-  const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
-  f?.contentWindow?.print()
-}
-// 导出真实 PDF：新窗口打开打印页（带 autopdf=1 自动触发下载）
-const exportPdfFile = (): void => {
-  window.open(printSrc.value + '&autopdf=1', '_blank')
-}
+// 打印选择弹窗（电子病历 / 兽用处方笺）
+const printChoice = ref(false)
 </script>
 
 <style lang="scss" scoped>
@@ -284,43 +236,6 @@ const exportPdfFile = (): void => {
   }
 
   .rf-foot { margin-top: 16px; text-align: right; }
-}
-
-/* 打印预览模态 */
-.print-dlg {
-  .pv-body {
-    display: flex;
-    gap: 16px;
-    height: 78vh;
-  }
-  .pv-tpls {
-    width: 190px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    overflow-y: auto;
-  }
-  .pv-tpl {
-    border: 2px solid #ebeef5;
-    border-radius: 10px;
-    padding: 14px 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all .2s;
-    &:hover { border-color: #c6e2ff; }
-    &.active { border-color: var(--brand); background: #f0f7fc; }
-    .pv-tpl-ico {
-      width: 40px; height: 40px; margin: 0 auto 8px;
-      border-radius: 10px; color: #fff;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .pv-tpl-name { font-size: 13px; font-weight: 700; color: #1F2D3D; }
-    .pv-tpl-desc { font-size: 11px; color: #909399; margin-top: 2px; }
-  }
-  .pv-preview { flex: 1; min-width: 0; border: 1px solid #ebeef5; border-radius: 8px; overflow: hidden; background: #f5f6fa; }
-  .pv-frame { width: 100%; height: 100%; border: none; }
-  .pv-tip { float: left; font-size: 12px; color: #909399; line-height: 32px; }
 }
 
 .rf-loading { min-height: 200px; }
