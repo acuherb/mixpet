@@ -87,35 +87,51 @@
         {{ scope.row.payStatus ? scope.row.payTime : scope.row.createTime }}
       </template>
     </el-table-column>
-    <el-table-column fixed="right" label="操作" width="220">
+    <el-table-column fixed="right" label="操作" width="150">
       <template #default="scope">
-        <el-button-group>
-          <el-button v-if="!scope.row.payStatus"
-                     circle title="余额收款（扣客户余额并发药）" type="primary" @click="payBill(scope.row, false)">余
+        <!-- 主操作：收款（未付）/ 发药核对（已付未发药） -->
+        <el-button v-if="!scope.row.payStatus" size="small" type="primary" @click="payChoice(scope.row)">收款</el-button>
+        <el-button v-if="scope.row.payStatus && !scope.row.dispenseStatus" size="small" type="danger"
+                   @click="dispenseBill(scope.row)">发药核对</el-button>
+        <!-- 次要操作折叠：打印/充值/退款/病历 -->
+        <el-dropdown style="margin-left: 6px" @command="(cmd: string) => onMore(cmd, scope.row)">
+          <el-button size="small">
+            更多<el-icon style="margin-left: 2px"><ArrowDown/></el-icon>
           </el-button>
-          <el-button v-if="!scope.row.payStatus"
-                     circle title="现金收款（只发药）" type="success" @click="payBill(scope.row, true)">现
-          </el-button>
-          <el-button v-if="!scope.row.payStatus"
-                     circle title="充值余额（余额不足时先充值）" type="warning" @click="recharge(scope.row)">充
-          </el-button>
-          <el-button v-if="scope.row.payStatus"
-                     circle title="打印小票（80mm收据，重打）" type="success" @click="printTicket(scope.row)">票
-          </el-button>
-          <el-button v-if="scope.row.payStatus"
-                     circle title="打印正规发票（A4）" type="warning" @click="printInvoice(scope.row)">发
-          </el-button>
-          <el-button v-if="scope.row.payStatus && !scope.row.dispenseStatus"
-                     circle title="发药核对（确认已将药品发给客户）" type="danger" @click="dispenseBill(scope.row)">药
-          </el-button>
-          <el-button v-if="scope.row.payStatus && !scope.row.refundStatus"
-                     circle size="small" title="退款冲正（退还余额/回滚库存）" type="warning" @click="refundBill(scope.row)">退
-          </el-button>
-          <el-button circle title="查看病历" type="info" @click="showRecord(scope.row)">历</el-button>
-        </el-button-group>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-if="scope.row.payStatus" command="ticket">打印小票</el-dropdown-item>
+              <el-dropdown-item v-if="scope.row.payStatus" command="invoice">打印发票</el-dropdown-item>
+              <el-dropdown-item v-if="!scope.row.payStatus" command="recharge">充值余额</el-dropdown-item>
+              <el-dropdown-item v-if="scope.row.payStatus && !scope.row.refundStatus" command="refund" divided>
+                退款冲正
+              </el-dropdown-item>
+              <el-dropdown-item command="record" divided>查看病历</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </template>
     </el-table-column>
   </el-table>
+
+  <!-- 收款方式选择弹窗（余额/现金，逻辑差异明示） -->
+  <el-dialog v-model="payView" append-to-body title="收款" width="92%" style="max-width: 420px">
+    <p style="margin: 0 0 12px">账单应付 <b style="color:#f56c6c">￥{{ payRow ? realMoneyOf(payRow) : '0.00' }}</b>
+      （客户余额 ￥{{ payRow?.clientBalance ?? 0 }}）</p>
+    <div class="pay-choice">
+      <div class="pay-card" @click="payBill(payRow!, false)">
+        <h4>余额收款</h4>
+        <p>扣客户余额，收款后自动发药扣库存</p>
+      </div>
+      <div class="pay-card" @click="payBill(payRow!, true)">
+        <h4>现金收款</h4>
+        <p>线下收现金，收款后自动发药扣库存</p>
+      </div>
+    </div>
+    <template #footer>
+      <el-button @click="payView = false">取消</el-button>
+    </template>
+  </el-dialog>
   <!--分页条-->
   <BackPage :total="billList.total" @changePu="changePuB"/>
   <!--病历详情弹窗（完整病例档案）-->
@@ -172,6 +188,7 @@ import {reqHospitalSetting} from "@/request/SettingApi";
 import {HospitalSetting} from "@/model/entiy/HospitalSetting";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
 import {useRoute} from "vue-router";
+import {ArrowDown} from "@element-plus/icons-vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 
 const route = useRoute()
@@ -322,16 +339,21 @@ const submitDispense = (): void => {
  └───────────────────────────────────┘
  */
 const refundBill = (row: BillDto): void => {
-  ElMessageBox.confirm(
-      `确认对该账单退款冲正？将${row.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存。`,
-      '退款确认',
-      {confirmButtonText: '确认退款', cancelButtonText: '取消', type: 'warning'}
-  ).then(() => {
+  // 退款必须「填原因 + 操作人 + 确认」三要素，防误退与财务纠纷
+  ElMessageBox.prompt(
+      `对该账单退款冲正？将${row.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存。请填退款原因：`,
+      '退款冲正',
+      {
+        confirmButtonText: '下一步', cancelButtonText: '取消', type: 'warning',
+        inputType: 'textarea', inputPlaceholder: '如：顾客退药/开单错误/重复收费（必填）',
+        inputPattern: /\S+/, inputErrorMessage: '请填写退款原因'
+      }
+  ).then(({value: reason}) => {
     ElMessageBox.prompt('输入退款操作人姓名', '退款', {
-      confirmButtonText: '确认', cancelButtonText: '取消',
+      confirmButtonText: '确认退款', cancelButtonText: '取消',
       inputPattern: /^.+$/, inputErrorMessage: '请输入操作人姓名'
-    }).then(({value}) => {
-      reqBillRefund(row.billId, value).then(res => {
+    }).then(({value: operator}) => {
+      reqBillRefund(row.billId, operator + '｜' + reason).then(res => {
         if (res.code === 1) {
           sendQuery()
           ElMessage.success('退款成功')
@@ -339,6 +361,21 @@ const refundBill = (row: BillDto): void => {
       })
     }).catch(() => ElMessage.info('取消退款'))
   }).catch(() => ElMessage.info('取消退款'))
+}
+/** 收款方式选择：余额/现金 */
+const payView = ref(false)
+const payRow = ref<BillDto | null>(null)
+const payChoice = (row: BillDto): void => {
+  payRow.value = row
+  payView.value = true
+}
+/** 更多操作分发 */
+const onMore = (cmd: string, row: BillDto): void => {
+  if (cmd === 'ticket') printTicket(row)
+  else if (cmd === 'invoice') printInvoice(row)
+  else if (cmd === 'recharge') recharge(row)
+  else if (cmd === 'refund') refundBill(row)
+  else if (cmd === 'record') showRecord(row)
 }
 
 const recharge = (row: BillDto): void => {
@@ -661,5 +698,22 @@ const delBatchB = (): void => {
 
 :deep(.unpaid-row) {
   background: #fdf6ec !important;
+}
+
+/* 收款方式选择 */
+.pay-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.pay-card {
+  border: 2px solid #ebeef5;
+  border-radius: 10px;
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  h4 { margin: 0 0 6px; font-size: 15px; color: #1F2D3D; }
+  p { margin: 0; font-size: 12px; color: #909399; line-height: 1.6; }
+  &:hover { border-color: var(--brand); background: #f0f7fc; }
 }
 </style>

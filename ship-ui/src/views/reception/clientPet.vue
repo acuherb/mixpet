@@ -48,6 +48,21 @@
       <template #header>
         <span style="font-weight: bold">{{ recordsPet?.petName }} 的就诊记录</span>
       </template>
+      <!-- 就诊统计：次数/累计费用/最近就诊（一眼看清就诊频率与花费） -->
+      <div v-if="records.length" class="record-stats">
+        <div class="rs-item">
+          <span class="rs-num">{{ records.length }}</span>
+          <span class="rs-lbl">累计就诊</span>
+        </div>
+        <div class="rs-item">
+          <span class="rs-num">￥{{ recordTotalFee() }}</span>
+          <span class="rs-lbl">累计费用</span>
+        </div>
+        <div class="rs-item">
+          <span class="rs-num rs-date">{{ recordLastDate() }}</span>
+          <span class="rs-lbl">最近就诊</span>
+        </div>
+      </div>
       <el-empty v-if="records.length === 0" description="暂无就诊记录"/>
       <div v-else class="record-list">
         <div v-for="r in records" :key="r.recordId" class="record-item" @click="openRecordDetail(r.recordId)">
@@ -323,6 +338,18 @@ const openRecords = (pet: Pet): void => {
     records.value = res?.records || []
   })
 }
+// 就诊统计：累计费用 / 最近就诊日期
+const recordTotalFee = (): string =>
+    records.value.reduce((s, r) => s + (r.totalMoney ?? 0), 0).toFixed(2)
+const recordLastDate = (): string => {
+  if (!records.value.length) return '—'
+  const latest = records.value
+      .map(r => r.createTime || '')
+      .filter(Boolean)
+      .sort()
+      .pop()
+  return latest ? latest.replace('T', ' ').slice(0, 10) : '—'
+}
 // 一页式健康档案
 const healthView = ref(false)
 const healthPetId = ref<number | null>(null)
@@ -497,6 +524,33 @@ onMounted(() => {
 }
 
 /* 就诊记录列表 */
+/* 就诊统计头 */
+.record-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+
+  .rs-item {
+    background: #fafbfc;
+    border: 1px solid #edf0f3;
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+
+    .rs-num {
+      display: block;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1F2D3D;
+      font-variant-numeric: tabular-nums;
+
+      &.rs-date { font-size: 15px; }
+    }
+    .rs-lbl { display: block; font-size: 11px; color: #909399; margin-top: 2px; }
+  }
+}
+
 .record-list {
   display: flex;
   flex-direction: column;

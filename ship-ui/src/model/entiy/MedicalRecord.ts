@@ -26,6 +26,8 @@ export interface Prescription {
     doseTip?: string;
     /** 前端态：用药天数（仅参与算量，不入库） */
     days?: number;
+    /** 前端态：自动算得的数量（与 quantity 不一致=医生手工改过，提示红色） */
+    doseQty?: number;
 }
 
 export const examplePrescription = (): Prescription => {

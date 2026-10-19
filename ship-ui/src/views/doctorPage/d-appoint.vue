@@ -97,7 +97,12 @@
           </el-select>
         </el-form-item>
 
-        <el-divider content-position="left">一、问诊 · 宠物为什么来医院？</el-divider>
+        <div class="step-head">
+          <el-divider content-position="left">一、问诊 · 宠物为什么来医院？</el-divider>
+          <el-button size="small" plain type="warning" @click="openAi">
+            <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
+          </el-button>
+        </div>
         <el-form-item label="主诉" prop="chiefComplaint">
           <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="主要症状 + 持续时间，如：呕吐2天，今日次数增加伴食欲下降（已自动带入挂号描述）" type="textarea"/>
         </el-form-item>
@@ -145,7 +150,12 @@
 
         <!-- 第二步：诊断与医嘱（含费用） -->
         <div v-show="activeStep === 1" class="treat-step">
-        <el-divider content-position="left">三、诊断与治疗</el-divider>
+        <div class="step-head">
+          <el-divider content-position="left">三、诊断与治疗</el-divider>
+          <el-button size="small" plain type="warning" @click="openAi">
+            <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
+          </el-button>
+        </div>
         <el-form-item label="诊断" prop="diagnosis">
           <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
         </el-form-item>
@@ -194,6 +204,12 @@
             <template #label>
               <span>处方<b v-if="savedRx.length" class="tab-num">{{ savedRx.length }}</b></span>
             </template>
+            <!-- 体重提示：按体重算量时医生抬头可见（未填提醒回第1步补） -->
+            <div class="rx-weight-bar">
+              <el-icon><InfoFilled/></el-icon>
+              <span v-if="recordForm.weight != null">当前宠物体重：<b>{{ recordForm.weight }} kg</b>，算量结果请结合体重核对</span>
+              <span v-else style="color:#E6A23C">尚未填写体重（算量依据），请到第 1 步「分诊与体征」补充</span>
+            </div>
             <el-table :data="prescriptions" border size="small">
               <el-table-column label="药品" min-width="180">
                 <template #default="scope">
@@ -208,7 +224,8 @@
               <el-table-column label="数量" min-width="120">
                 <template #default="scope">
                   <el-input-number v-model="scope.row.quantity" :max="99" :min="1" size="small" style="width: 90px"/>
-                  <div v-if="scope.row.doseTip" style="margin-top:2px;font-size:11px;line-height:1.35;color:#E6A23C">{{ scope.row.doseTip }}</div>
+                  <!-- 算量提示：与自动算量一致=绿色；医生改过数量=红色警示 -->
+                  <div v-if="scope.row.doseTip" :class="['dose-tip', {changed: scope.row.doseQty != null && scope.row.quantity !== scope.row.doseQty}]">{{ scope.row.doseTip }}</div>
                 </template>
               </el-table-column>
               <el-table-column label="频次(次/日)" width="105">
@@ -592,7 +609,7 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, MagicStick, Plus} from "@element-plus/icons-vue";
+import {Delete, InfoFilled, MagicStick, Plus} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
@@ -910,6 +927,7 @@ const appendExam = (tag: string): void => {
 const recalcDose = (row: Prescription): void => {
   if (row.singleDose == null || row.singleDose <= 0) return
   row.quantity = Math.max(1, Math.ceil(row.singleDose * (row.dailyTimes || 1) * (row.days || 1)))
+  row.doseQty = row.quantity
 }
 // 处方自动算量：药品配置了剂量规则时，算单次剂量并按 单次×频次×天数 填数量（医生可改）
 const doseCalc = (row: Prescription): void => {
@@ -1250,6 +1268,44 @@ watch(() => form.value.clientId, (newValue): void => {
 /* 检验/影像向导内嵌开单 */
 .lab-group-title { margin: 6px 0; font-size: 12px; font-weight: 700; color: #1E6FA8; }
 .price { margin-left: 4px; font-size: 11px; color: #f56c6c; }
+
+/* 步骤标题行：分区标题 + 右侧 AI 辅助入口 */
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .el-divider {
+    flex: 1;
+    margin: 12px 0 8px;
+  }
+}
+
+/* 处方体重提示条 */
+.rx-weight-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  background: #fdf6ec;
+  border: 1px solid #f5dab1;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8a6d3b;
+
+  b { color: #E6A23C; }
+}
+
+/* 算量提示：默认黄(算量依据)；医生改过数量=红(与算量不符) */
+.dose-tip {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #67C23A;
+
+  &.changed { color: #F56C6C; font-weight: 600; }
+}
 
 /* 查体快捷标签 */
 .exam-tags {
