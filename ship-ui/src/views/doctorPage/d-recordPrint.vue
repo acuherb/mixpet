@@ -13,30 +13,32 @@
       <span class="rp-hint">「导出 PDF 文件」直接下载电子病历；打印目标选“另存为 PDF”亦可</span>
     </div>
 
-    <!-- ═══════════ 国标病历（黑白规范，适合纸质归档；mono=黑白简化紧凑版） ═══════════ -->
-    <div v-if="full && (style === 'std' || style === 'mono')" :class="['rp-sheet', {'rp-mono': style === 'mono'}]">
+    <!-- ═══════════ 国标病历（黑白规范，适合纸质归档） ═══════════ -->
+    <div v-if="full && style === 'std'" class="rp-sheet">
       <div v-if="hosp.name" class="rp-hosp-name">{{ hosp.name }}</div>
       <div class="rp-title">宠物病历记录</div>
       <div class="rp-no">编号：No.{{ full.record.recordId }}<span style="float:right">{{ fmt(full.record.createTime) }}</span></div>
 
+      <!-- 前记：畜主 / 宠物 / 诊疗信息分三组，避免宠物属性混在畜主行 -->
       <table class="rp-table">
         <tbody>
           <tr>
             <td class="k">畜主</td><td class="v">{{ full.record.clientName }}</td>
+            <td class="k">病历号</td><td class="v">No.{{ full.record.recordId }}</td>
+          </tr>
+          <tr>
             <td class="k">宠物名</td><td class="v">{{ full.record.petName }}</td>
             <td class="k">品种</td><td class="v">{{ petVariety || '—' }}</td>
+            <td class="k">性别</td><td class="v">{{ petSex == null ? '—' : (petSex ? '公' : '母') }}</td>
           </tr>
           <tr>
-            <td class="k">性别</td><td class="v">{{ petSex == null ? '—' : (petSex ? '公' : '母') }}</td>
             <td class="k">年龄</td><td class="v">{{ petBirthday ? getAge(petBirthday) : '—' }}</td>
             <td class="k">体重</td><td class="v">{{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}</td>
+            <td class="k">芯片号</td><td class="v">{{ petChip || '—' }}</td>
           </tr>
           <tr>
-            <td class="k">芯片号</td><td class="v" colspan="3">{{ petChip || '—' }}</td>
             <td class="k">科室</td><td class="v">{{ full.record.departmentName || '—' }}</td>
-          </tr>
-          <tr>
-            <td class="k">接诊兽医</td><td class="v" colspan="3">{{ full.record.doctorName }}</td>
+            <td class="k">接诊兽医</td><td class="v">{{ full.record.doctorName }}</td>
             <td class="k">复诊日期</td><td class="v">{{ full.record.revisitDate || '—' }}</td>
           </tr>
         </tbody>
@@ -90,6 +92,44 @@
         </tbody>
       </table>
       <div class="rp-foot">本病历依据《兽医处方格式及应用规范》相关要求书写，仅限本院存档使用。</div>
+    </div>
+
+    <!-- ═══════════ 黑白简化（紧凑一页，针打友好：流式分区+精简列） ═══════════ -->
+    <div v-else-if="full && style === 'mono'" class="rp-sheet rp-mono">
+      <div class="rm-head">
+        <span class="rm-hosp">{{ hosp.name || '动物诊疗机构' }}</span>
+        <span class="rm-title">宠物病历记录（简化）</span>
+        <span class="rm-no">No.{{ full.record.recordId }} · {{ fmt(full.record.createTime) }}</span>
+      </div>
+      <div class="rm-line">
+        <b>畜主</b>{{ full.record.clientName }}｜<b>宠物</b>{{ full.record.petName }}（{{ petSex == null ? '—' : (petSex ? '公' : '母') }} · {{ petVariety || '—' }} · {{ petBirthday ? getAge(petBirthday) : '—' }} · {{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}）｜<b>科室</b>{{ full.record.departmentName || '—' }}｜<b>兽医</b>{{ full.record.doctorName }}
+      </div>
+      <div class="rm-line"><b>主诉：</b>{{ full.record.chiefComplaint || '—' }}</div>
+      <div class="rm-line"><b>现病史：</b>{{ full.record.presentIllness || '—' }}</div>
+      <div class="rm-line"><b>既往病史：</b>{{ full.record.pastHistory || '—' }}</div>
+      <div class="rm-line"><b>体格检查：</b>{{ full.record.physicalExam || '—' }}</div>
+      <div class="rm-line"><b>诊断：</b>{{ full.record.diagnosis || '—' }}</div>
+      <div class="rm-line"><b>治疗方案：</b>{{ full.record.treatment || '—' }}</div>
+      <div class="rm-line"><b>医嘱：</b>{{ full.record.advice || '—' }}（复诊：{{ full.record.revisitDate || '无需' }}）</div>
+      <!-- 处方：紧凑三列 -->
+      <table v-if="full.prescriptions.length" class="rm-table">
+        <thead><tr><th style="width:44%">药品</th><th style="width:12%">数量</th><th style="width:44%">用法</th></tr></thead>
+        <tbody>
+          <tr v-for="(p, i) in full.prescriptions" :key="i">
+            <td>{{ p.drugName }}</td><td>{{ p.quantity }}</td><td>{{ p.usageInfo || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div v-else class="rm-line"><b>处方：</b>无</div>
+      <!-- 检验/影像：仅摘要（异常项标红） -->
+      <div v-if="full.labOrders.length || full.imageOrders.length" class="rm-line">
+        <b>检验：</b>{{ full.labOrders.length }} 单（异常 {{ labAbnormalCount }} 项）｜<b>影像：</b>{{ full.imageOrders.length }} 单
+      </div>
+      <div class="rm-sign">
+        <span>执业兽医：{{ full.record.doctorName }}（签字）____________</span>
+        <span>日期：{{ fmt(full.record.createTime).slice(0, 10) }}</span>
+      </div>
+      <div class="rm-foot">简化版仅作针式打印快速留档，完整内容以国标病历/详情版为准。</div>
     </div>
 
     <!-- ═══════════ 彩色详情版（电子病例 / 发宠主） ═══════════ -->
@@ -271,6 +311,11 @@ const colorSections = computed(() => {
 
 const doPrint = (): void => window.print()
 
+// 黑白简化版：检验异常项计数（摘要行用）
+const labAbnormalCount = computed(() =>
+    (full.value?.labOrders || []).reduce(
+        (s, o) => s + (o.items || []).filter(it => it.isAbnormal).length, 0))
+
 // 导出真实 PDF 文件（html2pdf：当前模板纸张 → A4 PDF，文件名带病历号与模板名）
 const pdfing = ref(false)
 const exportPdf = (): void => {
@@ -310,6 +355,58 @@ const exportPdf = (): void => {
   padding: 24px 28px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
+/* ═══ 黑白简化版：紧凑一页（11px、窄行距、流式分区、单色） ═══ */
+.rp-mono {
+  padding: 16px 20px;
+
+  .rm-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 2px solid #000;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+
+    .rm-hosp { font-size: 12px; font-weight: 700; }
+    .rm-title { font-size: 15px; font-weight: 800; letter-spacing: 2px; }
+    .rm-no { font-size: 10px; color: #333; }
+  }
+  .rm-line {
+    font-size: 11px;
+    line-height: 1.55;
+    color: #111;
+    padding: 1px 0;
+    b { display: inline-block; min-width: 62px; font-weight: 700; }
+  }
+  .rm-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4px 0;
+
+    th, td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    th { background: #f2f2f2; text-align: center; }
+  }
+  .rm-sign {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #111;
+  }
+  .rm-foot {
+    margin-top: 6px;
+    font-size: 9px;
+    color: #666;
+    border-top: 1px dashed #999;
+    padding-top: 3px;
+  }
+}
+
 .rp-hosp-name {
   text-align: center;
   font-size: 15px;
@@ -365,23 +462,6 @@ const exportPdf = (): void => {
   text-align: center;
   color: #999;
   margin-top: 60px;
-}
-
-/* ═══ 黑白简化：灰度兜底 + 紧凑排版，适合针式打印机/普通纸归档 ═══ */
-.rp-sheet.rp-mono {
-  filter: grayscale(1);
-  padding: 16px 18px;
-
-  .rp-title { font-size: 20px; letter-spacing: 5px; }
-  .rp-table {
-    td, th { padding: 4px 6px; font-size: 12px; }
-  }
-  .rp-sec {
-    margin-bottom: 6px;
-    .rp-sec-body { font-size: 12px; line-height: 1.5; }
-    .rp-sec-tit { font-size: 13px; }
-  }
-  .rp-sign td { height: 34px; }
 }
 
 /* ═══ 彩色详情版 ═══ */
