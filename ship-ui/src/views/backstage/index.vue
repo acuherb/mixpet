@@ -61,7 +61,6 @@
             <span>系统设置</span>
           </template>
           <el-menu-item v-show="menuMatch('药品管理')" index="/backstage/y-drugList">药品管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('批量入库')" index="/backstage/y-drugInbound">批量入库</el-menu-item>
           <el-menu-item v-show="menuMatch('服务套餐')" index="/backstage/z-package">服务套餐</el-menu-item>
           <el-menu-item v-show="menuMatch('供应商管理')" index="/backstage/z-supplier">供应商管理</el-menu-item>
           <el-menu-item v-show="menuMatch('会员等级')" index="/backstage/z-memberLevel">会员等级</el-menu-item>
