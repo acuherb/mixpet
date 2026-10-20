@@ -142,36 +142,56 @@
   </el-dialog>
 
   <!--入库弹窗-->
-  <el-dialog v-model="inView" draggable title="药品入库" width="420px" :close-on-click-modal="false">
-    <el-form label-width="90px">
-      <el-form-item label="药品">
-        <span>{{ inDrug?.drugName }}（当前库存 {{ inDrug?.drugStock ?? 0 }}）</span>
-      </el-form-item>
-      <el-form-item label="入库数量">
-        <el-input-number v-model="inQty" :min="1" :max="99999" style="width: 100%"/>
-      </el-form-item>
-      <el-form-item label="成本价(元)">
-        <el-input-number v-model="inCostPrice" :min="0" :max="99999" :precision="2" :step="1" style="width: 100%"
-                         placeholder="本批进货单价，录入后更新药品当前进货价"/>
-      </el-form-item>
-      <el-form-item label="有效期至">
-        <el-date-picker v-model="inExpire" placeholder="可留空" style="width: 100%" type="date" value-format="YYYY-MM-DD"/>
-      </el-form-item>
-      <el-form-item label="供应商">
-        <el-select v-model="inSupplierId" clearable filterable placeholder="选择供应商（可不选）" style="width: 100%">
-          <el-option v-for="s in suppliers" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId"/>
-        </el-select>
-      </el-form-item>
+  <el-dialog v-model="inView" draggable title="药品入库" width="520px" :close-on-click-modal="false">
+    <el-form label-position="top">
+      <!-- 药品信息条：当前库存一眼可见 -->
+      <div class="in-drug-bar">
+        <span class="in-drug-name">{{ inDrug?.drugName }}</span>
+        <span v-if="inDrug?.drugSpec" class="in-drug-spec">{{ inDrug?.drugSpec }}</span>
+        <el-tag size="small" type="info" effect="plain">当前库存 {{ inDrug?.drugStock ?? 0 }}{{ inDrug?.drugUnit }}</el-tag>
+        <el-tag v-if="inCostPrice != null && inDrug?.drugPrice" size="small" effect="plain" style="margin-left:4px"
+                :type="Number(inCostPrice) < Number(inDrug.drugPrice) ? 'success' : 'warning'">
+          毛利/单位 ￥{{ (Number(inDrug.drugPrice) - Number(inCostPrice)).toFixed(2) }}
+        </el-tag>
+      </div>
+
+      <!-- 第一组：数量 + 成本价（采购必填两件套） -->
+      <div class="in-row">
+        <el-form-item label="入库数量" required>
+          <el-input-number v-model="inQty" :min="1" :max="99999" controls-position="right" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="成本价(元)" required>
+          <el-input-number v-model="inCostPrice" :min="0" :max="99999" :precision="2" :step="1"
+                           controls-position="right" placeholder="本批进货单价" style="width: 100%"/>
+        </el-form-item>
+      </div>
+
+      <!-- 第二组：有效期 + 供应商 -->
+      <div class="in-row">
+        <el-form-item label="有效期至">
+          <el-date-picker v-model="inExpire" placeholder="可留空" style="width: 100%" type="date" value-format="YYYY-MM-DD"/>
+        </el-form-item>
+        <el-form-item label="供应商">
+          <el-select v-model="inSupplierId" clearable filterable placeholder="选择供应商（可不选）" style="width: 100%">
+            <el-option v-for="s in suppliers" :key="s.supplierId" :label="s.supplierName" :value="s.supplierId"/>
+          </el-select>
+        </el-form-item>
+      </div>
+
       <el-form-item label="批号">
         <el-input v-model="inBatchNo" clearable maxlength="64" placeholder="药品批号（可不填）"/>
       </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="inNote" maxlength="128" placeholder="如：采购入库"/>
       </el-form-item>
+
+      <div class="in-tip">
+        成本价将更新药品当前进货价（财务报表毛利按最新进货价估算），并记入出入库台账留痕
+      </div>
     </el-form>
     <template #footer>
-      <el-button @click="inView = false">取消</el-button>
-      <el-button type="primary" @click="submitIn">确认入库</el-button>
+      <el-button round @click="inView = false">取消</el-button>
+      <el-button round type="primary" @click="submitIn">确认入库</el-button>
     </template>
   </el-dialog>
 
@@ -483,5 +503,36 @@ const rules = reactive<FormRules>({
 .sel-tip b {
   font-size: 16px;
   margin: 0 2px;
+}
+
+/* 入库弹窗：药品信息条 + 并排双列 + 提示 */
+.in-drug-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  background: #f5f7fa;
+  border-radius: 8px;
+
+  .in-drug-name { font-size: 15px; font-weight: 700; color: #1F2D3D; }
+  .in-drug-spec { font-size: 12px; color: #909399; }
+}
+.in-row {
+  display: flex;
+  gap: 16px;
+
+  .el-form-item { flex: 1; min-width: 0; }
+}
+.in-tip {
+  margin-top: 4px;
+  padding: 8px 12px;
+  background: #fdf6ec;
+  border: 1px solid #f5dab1;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8a6d3b;
+  line-height: 1.6;
 }
 </style>
