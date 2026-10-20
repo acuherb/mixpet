@@ -31,9 +31,10 @@
         <span v-else style="color:#c0c4cc">未配置项目</span>
       </template>
     </el-table-column>
-    <el-table-column label="状态" width="86">
+    <el-table-column label="状态" width="120">
       <template #default="scope">
-        <el-switch v-model="scope.row.active" size="small" @change="(val: any) => switchActive(scope.row, val)"/>
+        <el-switch v-model="scope.row.active" size="small" active-text="启用" inactive-text="停用"
+                   @change="(val: any) => switchActive(scope.row, val)"/>
       </template>
     </el-table-column>
     <el-table-column fixed="right" label="操作" width="120">
@@ -48,7 +49,7 @@
   <!--分页条-->
   <BackPage :total="list.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="720px" :close-on-click-modal="false">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="900px" :close-on-click-modal="false">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="套餐名" prop="packageName">
         <el-input v-model="form.packageName" clearable maxlength="64" placeholder="如：基础体检套餐"/>
@@ -64,39 +65,37 @@
         </el-form-item>
       </div>
 
-      <!-- 检查项目：套餐由现有检验/影像项目组合而成 -->
-      <el-form-item label="检查项目">
-        <div class="pkg-items">
-          <div class="pkg-items-head">
-            <span>勾选本套餐包含的检验/影像项目（{{ form.items?.length || 0 }} 项）</span>
-            <span class="pkg-sum">
-              项目原价合计 <b>￥{{ itemsOriginTotal().toFixed(2) }}</b>
-              <em>套餐价 ￥{{ (form.price ?? 0).toFixed(2) }}</em>
-              <em :class="{off: packageDiscount() > 0}">优惠 ￥{{ packageDiscount().toFixed(2) }}</em>
-            </span>
+      <!-- 检查项目：套餐由现有检验/影像项目组合而成（全宽，不占 label 位） -->
+      <div class="pkg-items">
+        <div class="pkg-items-head">
+          <span>检查项目 · 已选 {{ checkedLab.length + checkedImage.length }} 项</span>
+          <span class="pkg-sum">
+            项目原价合计 <b>￥{{ itemsOriginTotal().toFixed(2) }}</b>
+            <em>套餐价 ￥{{ (form.price ?? 0).toFixed(2) }}</em>
+            <em :class="{off: packageDiscount() > 0}">优惠 ￥{{ packageDiscount().toFixed(2) }}</em>
+          </span>
+        </div>
+        <div class="pkg-items-body">
+          <div class="pkg-group">
+            <div class="pkg-group-tit">检验项目</div>
+            <el-checkbox-group v-model="checkedLab" class="pkg-checks">
+              <el-checkbox v-for="t in labTests" :key="t.testId" :label="t.testId" class="pkg-check">
+                {{ t.testName }}<span class="pkg-price">￥{{ t.testPrice ?? 0 }}</span>
+              </el-checkbox>
+            </el-checkbox-group>
+            <el-empty v-if="!labTests.length" :image-size="40" description="暂无检验项（去检验项字典维护）"/>
           </div>
-          <div class="pkg-items-body">
-            <div class="pkg-group">
-              <div class="pkg-group-tit">检验项目</div>
-              <el-checkbox-group v-model="checkedLab" class="pkg-checks">
-                <el-checkbox v-for="t in labTests" :key="t.testId" :value="t.testId" class="pkg-check">
-                  {{ t.testName }}<span class="pkg-price">￥{{ t.testPrice ?? 0 }}</span>
-                </el-checkbox>
-              </el-checkbox-group>
-              <el-empty v-if="!labTests.length" :image-size="40" description="暂无检验项（去检验项字典维护）"/>
-            </div>
-            <div class="pkg-group">
-              <div class="pkg-group-tit">影像项目</div>
-              <el-checkbox-group v-model="checkedImage" class="pkg-checks">
-                <el-checkbox v-for="t in imageTests" :key="t.itemId" :value="t.itemId" class="pkg-check">
-                  {{ t.itemName }}<span class="pkg-price">￥{{ t.price ?? 0 }}</span>
-                </el-checkbox>
-              </el-checkbox-group>
-              <el-empty v-if="!imageTests.length" :image-size="40" description="暂无影像项（去影像项字典维护）"/>
-            </div>
+          <div class="pkg-group">
+            <div class="pkg-group-tit">影像项目</div>
+            <el-checkbox-group v-model="checkedImage" class="pkg-checks">
+              <el-checkbox v-for="t in imageTests" :key="t.itemId" :label="t.itemId" class="pkg-check">
+                {{ t.itemName }}<span class="pkg-price">￥{{ t.price ?? 0 }}</span>
+              </el-checkbox>
+            </el-checkbox-group>
+            <el-empty v-if="!imageTests.length" :image-size="40" description="暂无影像项（去影像项字典维护）"/>
           </div>
         </div>
-      </el-form-item>
+      </div>
 
       <el-form-item label="补充说明">
         <el-input v-model="form.content" :rows="2" maxlength="255" type="textarea" placeholder="如：含医生解读报告；项目清单以外的文字补充"/>
