@@ -39,24 +39,32 @@ public class ServicePackageController {
         return packageService.selectByPage(packageName, category, numPage, pageSize);
     }
 
-    /** 新增 */
+    /** 新增（可带 items 检查项目，主子表一个事务） */
     @PostMapping
     @Secured(RoleConst.MANAGER)
     public Result save(@RequestBody ServicePackage p) {
         if (StrUtil.isWhite(p.getPackageName())) return Result.error("套餐名不能为空");
         if (p.getPrice() != null && p.getPrice().compareTo(BigDecimal.ZERO) < 0) return Result.error("价格不能为负数");
         if (p.getActive() == null) p.setActive(true);
-        return Result.choice("添加", packageService.save(p));
+        return Result.choice("添加", packageService.saveWithItems(p));
     }
 
-    /** 修改 */
+    /** 修改（items 全量重写） */
     @PutMapping
     @Secured(RoleConst.MANAGER)
     public Result update(@RequestBody ServicePackage p) {
         if (p.getPackageId() == null) return Result.error("缺少套餐id");
         if (StrUtil.isWhite(p.getPackageName())) return Result.error("套餐名不能为空");
         if (p.getPrice() != null && p.getPrice().compareTo(BigDecimal.ZERO) < 0) return Result.error("价格不能为负数");
-        return Result.choice("修改", packageService.updateById(p));
+        return Result.choice("修改", packageService.saveWithItems(p));
+    }
+
+    /** 切换启用/停用（列表行内开关） */
+    @PutMapping("/status/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result switchStatus(@PathVariable Integer id, Boolean active) {
+        if (active == null) return Result.error("缺少状态参数");
+        return Result.choice("状态切换", packageService.switchActive(id, active));
     }
 
     /** 删除 */

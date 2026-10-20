@@ -342,6 +342,14 @@
               <el-table-column label="分类" width="80">
                 <template #default="scope">{{ pkgOf(scope.row.packageId)?.category || '—' }}</template>
               </el-table-column>
+              <el-table-column label="包含项目" min-width="140">
+                <template #default="scope">
+                  <span v-if="pkgOf(scope.row.packageId)?.items?.length" style="font-size:12px;color:#606266">
+                    {{ pkgOf(scope.row.packageId)!.items!.map((i: any) => i.itemName).join('、') }}
+                  </span>
+                  <span v-else style="color:#c0c4cc">—</span>
+                </template>
+              </el-table-column>
               <el-table-column label="价格(元)" width="90">
                 <template #default="scope">￥{{ pkgOf(scope.row.packageId)?.price ?? 0 }}</template>
               </el-table-column>

@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import java.util.List;
+
 import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -27,10 +29,13 @@ public class ServicePackage implements Serializable {
     private String category;
     /** 套餐价 */
     private BigDecimal price;
-    /** 包含内容（文本描述） */
+    /** 包含内容（文本描述，补充说明用） */
     private String content;
     /** 启停 */
     private Boolean active;
+    /** 包含的检查项目（非数据库字段，保存时一并写入子表） */
+    @TableField(exist = false)
+    private List<PackageItem> items;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -15,6 +15,9 @@ export const reqAddPackage = (data: ServicePackage): Promise<Res> =>
 // 修改
 export const reqUpdatePackage = (data: ServicePackage): Promise<Res> =>
     reqApi.put<string, Res>("package", data)
+// 切换启用/停用（列表行内开关）
+export const reqSwitchPackage = (id: number, active: boolean): Promise<Res> =>
+    reqApi.put<string, Res>("package/status/" + id, {}, {params: {active}})
 // 删除
 export const reqDelPackage = (id: number): Promise<Res> =>
     reqApi.delete<string, Res>("package/" + id)

@@ -8,6 +8,19 @@ export interface ServicePackage {
     price: number;
     content: string | null;
     active: boolean;
+    /** 包含的检查项目（检验/影像） */
+    items?: PackageItem[];
+}
+
+/** 套餐包含项目（快照） */
+export interface PackageItem {
+    id?: number;
+    packageId?: number;
+    /** lab 检验 / image 影像 */
+    itemType: 'lab' | 'image';
+    itemId: number;
+    itemName: string;
+    itemPrice?: number | null;
 }
 
 export const examplePackage = (): ServicePackage => ({
@@ -16,7 +29,8 @@ export const examplePackage = (): ServicePackage => ({
     category: '体检',
     price: 0,
     content: '',
-    active: true
+    active: true,
+    items: []
 })
 
 /** 套餐分类选项 */
