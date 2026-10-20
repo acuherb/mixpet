@@ -166,6 +166,21 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     }
 
     @Override
+    public void deductPoints(Integer clientId, BigDecimal amount) {
+        if (clientId == null || amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return;
+        Client client = clientService.getById(clientId);
+        if (client == null) return;
+        int pts = amount.multiply(pointsRate(client.getClientLevel())).setScale(0, RoundingMode.HALF_UP).intValue();
+        if (pts <= 0) return;
+        // 用 WHERE 条件保证不扣成负数（客户若已消费/兑换积分则只扣现有部分）
+        clientService.lambdaUpdate()
+                .eq(Client::getClientId, clientId)
+                .ge(Client::getClientPoints, pts)
+                .setSql("client_points = client_points - " + pts)
+                .update();
+    }
+
+    @Override
     public List<CountCardTemplate> listCardTemplates() {
         return cardTemplateMapper.selectList(com.baomidou.mybatisplus.core.toolkit.Wrappers
                 .<CountCardTemplate>lambdaQuery()

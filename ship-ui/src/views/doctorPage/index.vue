@@ -69,60 +69,8 @@
           <el-alert v-if="loadError" title="数据加载失败，请检查网络" type="error" show-icon :closable="false" style="margin-bottom:12px">
             <el-button size="small" type="primary" @click="reloadAll">重新加载</el-button>
           </el-alert>
-          <!-- 接诊队列：今日待接诊优先，其余预约按时间补足 -->
-          <div class="todo-sec">
-            <div class="todo-sec-tit">
-              <el-icon><Calendar/></el-icon>
-              <span>接诊队列</span>
-              <el-tag size="small" round effect="plain" type="warning">今日 {{ todayPending.length }}</el-tag>
-              <el-tag v-if="tomorrowCount > 0" size="small" round effect="plain" type="primary">明日 {{ tomorrowCount }}</el-tag>
-              <el-tag v-if="pendingAppoints.length > todayPending.length" size="small" round effect="plain">
-                待处理共 {{ pendingAppoints.length }}
-              </el-tag>
-            </div>
-            <div v-if="queueAppoints.length" class="todo-rows">
-              <div v-for="a in queueAppoints" :key="a.appointmentId" class="todo-row"
-                   @click="goTreat(a.appointmentId)">
-                <span class="tr-time">{{ moveT(a.appointmentDate) }}</span>
-                <span class="tr-pet">{{ a.petName }}</span>
-                <span class="tr-owner">{{ a.clientName }}</span>
-                <el-tag v-if="isToday(a.appointmentDate)" round size="small" type="danger" effect="light">今天</el-tag>
-                <el-tag v-else-if="isTomorrow(a.appointmentDate)" round size="small" type="primary" effect="light">明日</el-tag>
-                <span class="tr-info" :title="a.appointmentInfo || ''">{{ a.appointmentInfo || '—' }}</span>
-                <el-button size="small" round type="primary" @click.stop="goTreat(a.appointmentId)">去接诊</el-button>
-              </div>
-              <p v-if="pendingAppoints.length > queueAppoints.length" class="more-tip">
-                还有 {{ pendingAppoints.length - queueAppoints.length }} 条待处理挂号，点右上角「全部挂号」查看
-              </p>
-            </div>
-            <p v-else class="todo-empty">
-              <el-icon><CircleCheck/></el-icon>
-              暂无待处理的挂号
-            </p>
-          </div>
-
-          <!-- 接诊中的病历（未完结） -->
-          <div class="todo-sec">
-            <div class="todo-sec-tit">
-              <el-icon><Document/></el-icon>
-              <span>接诊中病历（未完结）</span>
-              <el-tag size="small" round effect="plain" type="danger">{{ treatingRecords.length }}</el-tag>
-            </div>
-            <div v-if="treatingRecords.length" class="todo-rows">
-              <div v-for="r in treatingRecords" :key="r.recordId" class="todo-row"
-                   @click="$router.push('/doctorPage/d-record')">
-                <span class="tr-pet">{{ r.petName }}</span>
-                <span class="tr-owner">{{ r.clientName }}</span>
-                <span class="tr-info" :title="r.diagnosis || ''">{{ r.diagnosis || '（未写诊断）' }}</span>
-                <span class="tr-time">{{ moveT(r.createTime || '') }}</span>
-                <el-button size="small" round type="warning" @click.stop="$router.push('/doctorPage/d-record')">去查看</el-button>
-              </div>
-            </div>
-            <p v-else class="todo-empty">
-              <el-icon><CircleCheck/></el-icon>
-              没有未完结的病历
-            </p>
-          </div>
+          <!-- 今日工作流：待接诊挂号 + 接诊中文案按时间混排成一条线 -->
+          <TodayTimeline :appoints="pendingAppoints" :records="treatingRecords" :go-treat="goTreat"/>
         </div>
       </div>
 
@@ -190,11 +138,11 @@
           </div>
           <div class="panel-body">
             <div class="todo-grid">
-              <div class="todo-item" @click="$router.push('/doctorPage/z-labResult?status=0')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-examResult?tab=lab&status=0')">
                 <span class="todo-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
                 <span class="todo-lbl">待出结果化验</span>
               </div>
-              <div class="todo-item" @click="$router.push('/doctorPage/z-imageResult?status=0')">
+              <div class="todo-item" @click="$router.push('/doctorPage/z-examResult?tab=image&status=0')">
                 <span class="todo-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
                 <span class="todo-lbl">待出报告影像</span>
               </div>
@@ -215,77 +163,111 @@
         </div>
       </div>
 
-      <!--预留功能位-->
+      <!--诊疗功能入口（带待办预览）-->
       <div class="future-grid">
-        <div class="future-card">
+        <div class="future-card has-todo">
           <router-link to="/doctorPage/d-lab" class="future-link">
             <span class="f-ico ico-lab"><el-icon><FirstAidKit/></el-icon></span>
             <div class="f-txt">
               <h4>化验管理</h4>
               <p>检验检查开单与查看</p>
             </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
+              <span class="preview-lbl">待出结果</span>
+            </div>
             <el-tag size="small" type="success" effect="plain">去开单</el-tag>
           </router-link>
         </div>
-        <div class="future-card">
-          <router-link to="/doctorPage/z-labResult" class="future-link">
+        <div class="future-card has-todo">
+          <router-link to="/doctorPage/z-examResult?tab=lab" class="future-link">
             <span class="f-ico ico-lab"><el-icon><Document/></el-icon></span>
             <div class="f-txt">
               <h4>化验结果录入</h4>
               <p>按检验单逐项填写结果</p>
             </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
+              <span class="preview-lbl">待录入</span>
+            </div>
             <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
           </router-link>
         </div>
-        <div class="future-card">
+        <div class="future-card has-todo">
           <router-link to="/doctorPage/z-hospital" class="future-link">
             <span class="f-ico ico-ward"><el-icon><HomeFilled/></el-icon></span>
             <div class="f-txt">
               <h4>住院管理</h4>
               <p>住院床位照护安排</p>
             </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: stat.inHospital > 0}">{{ stat.inHospital }}</span>
+              <span class="preview-lbl">在院</span>
+            </div>
             <el-tag size="small" type="success" effect="plain">去办理</el-tag>
           </router-link>
         </div>
-        <div class="future-card">
+        <div class="future-card has-todo">
           <router-link to="/doctorPage/d-image" class="future-link">
             <span class="f-ico ico-other"><el-icon><Camera/></el-icon></span>
             <div class="f-txt">
               <h4>影像检查</h4>
               <p>X光/B超/CT开单</p>
             </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
+              <span class="preview-lbl">待出报告</span>
+            </div>
             <el-tag size="small" type="success" effect="plain">去开单</el-tag>
           </router-link>
         </div>
-        <div class="future-card">
-          <router-link to="/doctorPage/z-imageResult" class="future-link">
+        <div class="future-card has-todo">
+          <router-link to="/doctorPage/z-examResult?tab=image" class="future-link">
             <span class="f-ico ico-other"><el-icon><Picture/></el-icon></span>
             <div class="f-txt">
               <h4>影像报告录入</h4>
               <p>按模板填写影像报告</p>
             </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
+              <span class="preview-lbl">待录入</span>
+            </div>
             <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
           </router-link>
         </div>
-        <!-- 运营协同：医生代收/查档案直达（无需进后台） -->
-        <div class="future-card">
+        <div class="future-card has-todo">
+          <router-link to="/doctorPage/z-immune" class="future-link">
+            <span class="f-ico ico-other"><el-icon><Bell/></el-icon></span>
+            <div class="f-txt">
+              <h4>免疫接种</h4>
+              <p>疫苗接种与记录</p>
+            </div>
+            <div class="f-preview">
+              <span class="preview-num" :class="{warn: stat.dueVaccine > 0}">{{ stat.dueVaccine }}</span>
+              <span class="preview-lbl">近30天应接种</span>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去查看</el-tag>
+          </router-link>
+        </div>
+        <!-- 运营协同：跳转后台（收银/档案由前台或管理员处理，医生偶尔查询） -->
+        <div class="future-card backstage-link">
           <router-link to="/backstage/y-billList" class="future-link">
             <span class="f-ico ico-cash"><el-icon><Money/></el-icon></span>
             <div class="f-txt">
-              <h4>收银台</h4>
-              <p>代收/查看账单，收银者自动留痕</p>
+              <h4>收银台 <el-tag size="small" type="info" effect="plain">后台</el-tag></h4>
+              <p>跳转至后台 · 代收/查看账单</p>
             </div>
-            <el-tag size="small" type="success" effect="plain">去收银</el-tag>
+            <el-tag size="small" type="info" effect="plain">跳转</el-tag>
           </router-link>
         </div>
-        <div class="future-card">
+        <div class="future-card backstage-link">
           <router-link to="/backstage/y-clientList" class="future-link">
             <span class="f-ico ico-client"><el-icon><User/></el-icon></span>
             <div class="f-txt">
-              <h4>客户管理</h4>
-              <p>顾客档案/宠物档案全院可查</p>
+              <h4>客户管理 <el-tag size="small" type="info" effect="plain">后台</el-tag></h4>
+              <p>跳转至后台 · 顾客/宠物档案</p>
             </div>
-            <el-tag size="small" type="success" effect="plain">去查询</el-tag>
+            <el-tag size="small" type="info" effect="plain">跳转</el-tag>
           </router-link>
         </div>
       </div>
@@ -295,20 +277,22 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Calendar, Camera, ChatDotRound, CircleCheck, Document, FirstAidKit, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, Camera, ChatDotRound, Document, FirstAidKit, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
 import {reqDoctorMsgGroup} from "@/request/MsgApi";
 import {reqRecordPage, reqRecordTodo} from "@/request/RecordApi";
+import {reqStatOverview} from "@/request/StatisticsApi";
 import {hospital} from "@/utils/hospital";
+import TodayTimeline from "@/components/doctor/TodayTimeline.vue";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
+import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqLogout} from "@/request/PowerApi";
 import {useRouter} from "vue-router";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {SwitchButton} from "@element-plus/icons-vue";
-import {moveT} from "@/utils/TimeUtil";
 import {Msg} from "@/model/entiy/Msg";
 
 const timeText = ref<string>('--:--:--')
@@ -336,30 +320,16 @@ const todayStr = (): string => {
   return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
 }
 const isToday = (d: string | null): boolean => !!d && d.slice(0, 10) === todayStr()
-// 明天/未来预约：医生提前可见，便于准备
-const tomorrowStr = (): string => {
-  const t = new Date()
-  t.setDate(t.getDate() + 1)
-  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
-}
-const isTomorrow = (d: string | null): boolean => !!d && d.slice(0, 10) === tomorrowStr()
 // 直达接诊：带挂号单 id 进接诊页，页面自动打开该单的接诊向导
 const goTreat = (appointmentId: number): void => {
   router.push('/doctorPage/d-appoint?appointmentId=' + appointmentId)
 }
-const tomorrowCount = computed(() => pendingAppoints.value.filter(a => isTomorrow(a.appointmentDate)).length)
+// 今日待接诊（时间线按时间混排，无需再截断队列）
 const todayPending = computed<AppointDto2[]>(() =>
     pendingAppoints.value
         .filter(a => isToday(a.appointmentDate))
         .sort((x, y) => (x.appointmentDate || '').localeCompare(y.appointmentDate || ''))
 )
-// 接诊队列：今日优先，其余预约按时间补足（最多 6 条）
-const queueAppoints = computed<AppointDto2[]>(() => {
-  const rest = pendingAppoints.value
-      .filter(a => !isToday(a.appointmentDate))
-      .sort((x, y) => (x.appointmentDate || '').localeCompare(y.appointmentDate || ''))
-  return [...todayPending.value, ...rest].slice(0, 6)
-})
 // 接诊中的病历（未完结，真实列表）
 const treatingRecords = ref<RecordDto[]>([])
 const loadTreating = (): void => {
@@ -378,6 +348,13 @@ const todoTotal = computed(() =>
 const groupList = ref<ChatGroup[]>([])
 // 诊疗待办：接诊后卡在中间环节的事项
 const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
+// 统计概览：住院/免疫等全局待办
+const stat = ref<StatOverview>({
+  todayRevenue: 0, monthRevenue: 0, pendingBills: 0, inHospital: 0,
+  pendingLab: 0, pendingImage: 0, dueVaccine: 0, todayAppoint: 0,
+  todayRecord: 0, clientTotal: 0, pendingDispense: 0, lowStock: 0,
+  expiringDrug: 0, revenueTrend: [], doctorTop: []
+})
 // 数据加载失败态（工作台关键数据，失败时提示重试）
 const loadError = ref(false)
 // 有未读的客户置顶
@@ -433,11 +410,13 @@ onMounted(() => {
   loadTreating()
   loadClients()
   reqRecordTodo().then(res => { if (res) todo.value = res })
+  reqStatOverview().then(res => { if (res) stat.value = res })
   // 每 60 秒刷新待办数据：检验/影像结果由护士录完后，医生的「待出结果」自动减少
   dataTimer = setInterval(() => {
     loadData()
     loadTreating()
     reqRecordTodo().then(res => { if (res) todo.value = res })
+    reqStatOverview().then(res => { if (res) stat.value = res })
   }, 60000)
   ws = new WebSocket(wsUrl)
   ws.onmessage = (ev) => {
@@ -1067,6 +1046,18 @@ onBeforeUnmount(() => {
     opacity: 1;
   }
 
+  /* 后台跳转卡片：边框变实线，透明度提高 */
+  &.backstage-link {
+    border-style: solid;
+    border-color: #C0C4CC;
+    opacity: .65;
+
+    &:hover {
+      opacity: 1;
+      border-color: var(--el-color-primary);
+    }
+  }
+
   .future-link {
     display: flex;
     align-items: center;
@@ -1120,6 +1111,42 @@ onBeforeUnmount(() => {
       margin: 3px 0 0;
       font-size: 12px;
       color: #909399;
+    }
+  }
+
+  /* 有待办预览的卡片 */
+  &.has-todo {
+    opacity: 1;
+    border-style: dashed;
+
+    &:hover {
+      border-color: var(--el-color-primary);
+    }
+  }
+
+  .f-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+    padding-left: 16px;
+    border-left: 1px solid #E8E8E8;
+
+    .preview-num {
+      font-size: 22px;
+      font-weight: 700;
+      color: #303133;
+      line-height: 1;
+
+      &.warn {
+        color: #E6A23C;
+      }
+    }
+
+    .preview-lbl {
+      font-size: 11px;
+      color: #909399;
+      margin-top: 4px;
     }
   }
 }

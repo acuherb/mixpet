@@ -17,6 +17,7 @@
           :collapse="isCollapse"
           :collapse-transition="false"
           :default-active="$route.path"
+          :accordion="true"
           active-text-color="#ffd04b"
           background-color="#545c64"
           router
@@ -29,7 +30,7 @@
         </el-menu-item>
 
         <!-- ═══ 运营管理（前台/护士/医生日常作业线；临床诊疗请在医生工作台） ═══ -->
-        <el-sub-menu index="g-ops" :title="isCollapse ? '运营管理' : ''">
+        <el-sub-menu index="g-ops">
           <template #title>
             <el-icon><Tickets/></el-icon>
             <span>运营管理</span>
@@ -44,7 +45,7 @@
         </el-sub-menu>
 
         <!-- ═══ 经营分析（院长/管理者） ═══ -->
-        <el-sub-menu v-if="isManager" index="g-stat" :title="isCollapse ? '经营分析' : ''">
+        <el-sub-menu v-if="isManager" index="g-stat">
           <template #title>
             <el-icon><DataBoard/></el-icon>
             <span>经营分析</span>
@@ -54,7 +55,7 @@
         </el-sub-menu>
 
         <!-- ═══ 系统设置（院长/管理者：定价规则/字典/组织/门面配置） ═══ -->
-        <el-sub-menu v-if="isManager" index="g-config" :title="isCollapse ? '系统设置' : ''">
+        <el-sub-menu v-if="isManager" index="g-config">
           <template #title>
             <el-icon><Setting/></el-icon>
             <span>系统设置</span>
@@ -72,12 +73,18 @@
           <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
           <el-menu-item v-show="menuMatch('公告管理')" index="/backstage/y-noticeList">公告管理</el-menu-item>
           <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
-          <el-menu-item-group title="组织管理">
-            <el-menu-item v-show="menuMatch('科室列表')" index="/backstage/x-departmentList">科室列表</el-menu-item>
-            <el-menu-item v-show="menuMatch('职务/职称')" index="/backstage/z-job">职务/职称</el-menu-item>
-            <el-menu-item v-show="menuMatch('医生列表')" index="/backstage/x-doctorList">医生列表</el-menu-item>
-            <el-menu-item v-show="menuMatch('医生排班')" index="/backstage/z-schedule">医生排班</el-menu-item>
-          </el-menu-item-group>
+        </el-sub-menu>
+
+        <!-- ═══ 组织管理（院长/管理者） ═══ -->
+        <el-sub-menu v-if="isManager" index="g-org">
+          <template #title>
+            <el-icon><OfficeBuilding/></el-icon>
+            <span>组织管理</span>
+          </template>
+          <el-menu-item v-show="menuMatch('科室列表')" index="/backstage/x-departmentList">科室列表</el-menu-item>
+          <el-menu-item v-show="menuMatch('职务/职称')" index="/backstage/z-job">职务/职称</el-menu-item>
+          <el-menu-item v-show="menuMatch('医生列表')" index="/backstage/x-doctorList">医生列表</el-menu-item>
+          <el-menu-item v-show="menuMatch('医生排班')" index="/backstage/z-schedule">医生排班</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>
@@ -88,7 +95,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Tickets, Setting, Search, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
+import {DataBoard, Tickets, Setting, Search, Expand, Fold, Menu as IconMenu, OfficeBuilding} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 

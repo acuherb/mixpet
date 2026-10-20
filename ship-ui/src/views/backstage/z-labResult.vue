@@ -53,6 +53,7 @@
     <el-table-column label="状态" width="90">
       <template #default="scope">
         <el-tag v-if="scope.row.status" size="small" type="success">已出结果</el-tag>
+        <el-tag v-else-if="isOverdue(scope.row)" size="small" type="danger">超时未检</el-tag>
         <el-tag v-else size="small" type="warning">待检验</el-tag>
       </template>
     </el-table-column>
@@ -113,7 +114,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from 'vue'
+import {onMounted, ref, defineEmits} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
@@ -124,6 +125,18 @@ import {reqLabByRecord, reqLabCancel, reqLabOrderPage, reqSaveLabResult} from "@
 import UpImg from "@/components/UpImg.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
+
+const emit = defineEmits<{
+  (e: 'pending-count', count: number): void
+}>()
+
+// 判断是否超过 24 小时未出结果（仅待检验单，createTime 为开单时间）
+const isOverdue = (row: LabOrderDto): boolean => {
+  if (row.status || !row.createTime) return false
+  const t = new Date(row.createTime).getTime()
+  if (isNaN(t)) return false
+  return Date.now() - t > 24 * 60 * 60 * 1000
+}
 
 /**
  ┌───────────────────────────────────┐
@@ -146,6 +159,13 @@ const sendQuery = (): void => {
     list.value = res
     // 预置明细为空对象，便于展开表格渲染
     res.records.forEach(r => { if (!r.items) r.items = [] })
+    // 向上层汇报待检验数量
+    emit('pending-count', res.records.filter(r => !r.status).length)
+    // 超期预警：有多张化验单超过 24 小时未录结果，弹一次性提示
+    const overdue = res.records.filter(isOverdue)
+    if (overdue.length) {
+      ElMessage.warning(`有 ${overdue.length} 张化验单开单超 24 小时仍未出结果，请优先处理`)
+    }
   })
 }
 const nowQuery = (): void => {

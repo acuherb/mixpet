@@ -104,6 +104,9 @@ import {RecordDto} from "@/model/DO/RecordDto";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
 
+// 是否默认只看当前登录医生的病历；后台全量病例中心传 false（缺省 true 仅医生端使用）
+const props = defineProps<{ defaultMine?: boolean }>()
+
 const q = reactive<{
   recordId?: number | null;
   petName?: string;
@@ -164,7 +167,15 @@ const openDetail = (row: RecordDto): void => {
   detailView.value = true
 }
 
-onMounted(load)
+// 医生端（defaultMine 缺省为 true）：进入即默认筛选当前登录医生与接诊中病历
+onMounted(() => {
+  const autoMine = props.defaultMine !== false
+  if (autoMine && myName.value) {
+    q.doctorName = myName.value
+    q.status = 0
+  }
+  load()
+})
 </script>
 
 <style lang="scss" scoped>

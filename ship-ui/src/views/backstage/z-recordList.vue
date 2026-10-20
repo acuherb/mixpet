@@ -1,7 +1,7 @@
 <template>
   <div>
     <PageHead>病例中心</PageHead>
-    <RecordCenter/>
+    <RecordCenter :default-mine="false"/>
   </div>
 </template>
 

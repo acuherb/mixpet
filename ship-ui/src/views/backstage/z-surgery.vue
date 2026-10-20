@@ -177,7 +177,7 @@ import BackOpCol from "@/components/row/BackOpCol.vue";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {Page} from "@/model/DO/Page";
-import {ElMessage, FormInstance, FormRules} from "element-plus";
+import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Surgery, surgeryStatusText, surgeryStatusType, SurgeryVo} from "@/model/entiy/Surgery";
 import {AnesthesiaRecord} from "@/model/entiy/AnesthesiaRecord";
 import {reqDictByType} from "@/request/DictApi";
@@ -189,8 +189,11 @@ const anesthesiaTypeOpts = ref<SysDict[]>([])
 reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
 reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
 import {RecordDto} from "@/model/DO/RecordDto";
-import {reqDoctorRecords} from "@/request/LabApi";
+import {reqDoctorRecords, reqLabByRecord} from "@/request/LabApi";
 import {reqConsentOne, reqCreateSurgery, reqSaveAnesthesia, reqSignConsent, reqSurgeryOne, reqSurgeryPage, reqUpdateSurgery} from "@/request/SurgeryApi";
+
+// 术前必查项目（如需调整为可在系统设置维护）
+const PRE_OP_CHECKS = ['血常规', '生化', '凝血']
 
 const route = useRoute()
 const qp = reactive({numPage: 1, pageSize: 15, status: null as number | null})
@@ -255,17 +258,38 @@ const openRecord = (row: Surgery): void => {
   })
 }
 const recordSubmit = (): void => {
-  if (!current.value) return
-  saving.value = true
-  const surgery: Surgery = {...current.value, ...rec.value}
-  reqUpdateSurgery(surgery).then(r1 => {
-    if (r1.code !== 1) { ElMessage.error(r1.msg || '保存失败'); return }
-    reqSaveAnesthesia(anesthesia.value).then(r2 => {
-      saving.value = false
-      if (r2.code === 1) { ElMessage.success('记录已保存'); recordView.value = false; sendQuery() }
-      else ElMessage.error(r2.msg || '麻醉记录保存失败')
-    })
-  }).catch(() => { saving.value = false })
+  const cur = current.value
+  if (!cur) return
+  const doSave = (): void => {
+    saving.value = true
+    const surgery: Surgery = {...cur, ...rec.value, surgeryId: cur.surgeryId}
+    reqUpdateSurgery(surgery).then(r1 => {
+      if (r1.code !== 1) { ElMessage.error(r1.msg || '保存失败'); return }
+      reqSaveAnesthesia(anesthesia.value).then(r2 => {
+        saving.value = false
+        if (r2.code === 1) { ElMessage.success('记录已保存'); recordView.value = false; sendQuery() }
+        else ElMessage.error(r2.msg || '麻醉记录保存失败')
+      })
+    }).catch(() => { saving.value = false })
+  }
+  if ((cur.status ?? 0) === 0 && (rec.value.status === 1 || rec.value.status === 2)) {
+    reqLabByRecord(cur.recordId).then(orders => {
+      if (!orders) { ElMessage.error('请确认已开具术前化验单'); return }
+      const finished = orders.filter(o => o.status).flatMap(o => o.items || []).map(i => i.itemName || '')
+      const missing = PRE_OP_CHECKS.filter(c => !finished.some(n => n.includes(c)))
+      if (missing.length) {
+        ElMessageBox.confirm(
+            `本台手术尚缺【${missing.join('、')}】未出结果，直接开始手术存在麻醉/手术风险。是否仍要继续？`,
+            '术前检查缺失预警',
+            {confirmButtonText: '仍要开始', cancelButtonText: '返回补齐', type: 'warning'}
+        ).then(() => doSave()).catch(() => ElMessage.info('已取消，请先补齐术前检查'))
+      } else {
+        doSave()
+      }
+    }).catch(() => { ElMessage.info('无法获取术前化验信息，已跳过校验'); doSave() })
+    return
+  }
+  doSave()
 }
 
 onMounted(() => {

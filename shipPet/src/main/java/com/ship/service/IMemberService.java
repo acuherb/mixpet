@@ -42,6 +42,9 @@ public interface IMemberService extends IService<MemberLevel> {
     /** 支付后累积积分 */
     void earnPoints(Integer clientId, BigDecimal amount);
 
+    /** 退款后按同等金额冲销积分（不足时不扣为负） */
+    void deductPoints(Integer clientId, BigDecimal amount);
+
     /** 次卡模板列表 */
     List<CountCardTemplate> listCardTemplates();
 

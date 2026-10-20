@@ -74,7 +74,7 @@
             <p class="t-value">{{ stat.pendingLab }}</p>
           </div>
         </div>
-        <el-link :underline="false" type="primary" @click="go('/backstage/z-labResult')">去处理 ›</el-link>
+        <el-link :underline="false" type="primary" @click="go('/backstage/z-examResult?tab=lab')">去处理 ›</el-link>
       </div>
       <div class="todo-card">
         <div class="t-head">
@@ -84,7 +84,7 @@
             <p class="t-value">{{ stat.pendingImage }}</p>
           </div>
         </div>
-        <el-link :underline="false" type="primary" @click="go('/backstage/z-imageResult')">去处理 ›</el-link>
+        <el-link :underline="false" type="primary" @click="go('/backstage/z-examResult?tab=image')">去处理 ›</el-link>
       </div>
       <div class="todo-card">
         <div class="t-head">

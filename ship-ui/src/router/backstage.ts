@@ -134,9 +134,13 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-labTest",
         component: () => import('@/views/backstage/z-labTest.vue')
     }, {
-        // 化验结果录入
+        // 医技结果录入：统一入口（化验+影像）
+        path: "z-examResult",
+        component: () => import('@/views/backstage/z-examResult.vue')
+    }, {
+        // 化验结果录入（兼容旧路径，重定向到统一入口）
         path: "z-labResult",
-        component: () => import('@/views/backstage/z-labResult.vue')
+        redirect: "/backstage/z-examResult?tab=lab"
     }, {
         // 住院管理
         path: "z-hospital",
@@ -146,9 +150,9 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-imageTest",
         component: () => import('@/views/backstage/z-imageTest.vue')
     }, {
-        // 影像报告录入
+        // 影像报告录入（兼容旧路径，重定向到统一入口）
         path: "z-imageResult",
-        component: () => import('@/views/backstage/z-imageResult.vue')
+        redirect: "/backstage/z-examResult?tab=image"
     }, {
         // 免疫档案
         path: "z-immune",

@@ -154,10 +154,12 @@
             <el-tag v-if="lab.status" size="small" type="success">已出结果</el-tag>
             <el-tag v-else size="small" type="warning">待检验</el-tag>
           </div>
-          <el-table :data="lab.items || []" border size="small" style="margin-bottom: 8px">
+          <el-table :data="lab.items || []" border size="small" style="margin-bottom: 8px" :row-class-name="labRowClass">
             <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip/>
             <el-table-column label="结果" width="110">
-              <template #default="s">{{ s.row.resultValue || '—' }}</template>
+              <template #default="s">
+                <span :class="{ 'abnormal-text': s.row.isAbnormal }">{{ s.row.resultValue || '—' }}</span>
+              </template>
             </el-table-column>
             <el-table-column label="参考范围" width="120" prop="refRange" show-overflow-tooltip/>
             <el-table-column label="单位" width="60" prop="itemUnit"/>
@@ -374,6 +376,11 @@ const surgeries = ref<Surgery[]>([])
 const revisits = ref<RecordDto[]>([])
 const router = useRouter()
 const route = useRoute()
+
+// 检验结果异常行样式
+const labRowClass = (row: any): string => {
+  return row.row.isAbnormal ? 'abnormal-row' : ''
+}
 // 顾客自助打印兽医处方笺（后端 Rx 接口已按归属校验，仅本人宠物）
 const printRx = (): void => {
   if (detail.value) router.push('/doctorPage/d-rx?recordId=' + detail.value.record.recordId)
@@ -684,6 +691,15 @@ onMounted(() => {
     .el-tag {
       margin-left: 6px;
     }
+  }
+
+  /* 检验结果异常标红 */
+  .abnormal-text {
+    color: #f56c6c;
+    font-weight: 600;
+  }
+  :deep(.abnormal-row) {
+    background-color: #fef0f0 !important;
   }
 }
 </style>

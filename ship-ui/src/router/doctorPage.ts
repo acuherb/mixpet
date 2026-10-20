@@ -38,14 +38,17 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "d-recordPrint",
         component: () => import('@/views/doctorPage/d-recordPrint.vue'),
     }, {
-        // 临床动作收拢到医生端（组件与后台共用，权限接口已对 DOCTOR 放开）：
-        // 化验结果录入（待出结果从这里进，不再落到开单页）
-        path: "z-labResult",
-        component: () => import('@/views/backstage/z-labResult.vue'),
+        // 医技结果录入：统一入口，内部分检验/影像两个页签
+        path: "z-examResult",
+        component: () => import('@/views/backstage/z-examResult.vue'),
     }, {
-        // 影像报告录入
+        // 保留原路径兼容（重定向到统一入口）
+        path: "z-labResult",
+        redirect: "/doctorPage/z-examResult?tab=lab"
+    }, {
+        // 保留原路径兼容（重定向到统一入口）
         path: "z-imageResult",
-        component: () => import('@/views/backstage/z-imageResult.vue'),
+        redirect: "/doctorPage/z-examResult?tab=image"
     }, {
         // 手术麻醉（手术记录）
         path: "z-surgery",

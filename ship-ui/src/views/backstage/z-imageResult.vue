@@ -87,7 +87,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onMounted, ref} from 'vue'
+import {computed, onMounted, ref, defineEmits} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
@@ -97,6 +97,10 @@ import {reqImageCancel, reqImageOrderPage, reqImageTestOne, reqSaveImageReport} 
 import UpImg from "@/components/UpImg.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
+
+const emit = defineEmits<{
+  (e: 'pending-count', count: number): void
+}>()
 
 const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 15, status: null})
 const statusFilter = ref<boolean | null>(null)
@@ -111,6 +115,8 @@ const sendQuery = (): void => {
   qp.value.status = (statusFilter.value === false || statusFilter.value === true) ? statusFilter.value : null
   reqImageOrderPage(qp.value).then(res => {
     list.value = res
+    // 向上层汇报待检查数量
+    emit('pending-count', res.records.filter(r => !r.status).length)
   })
 }
 const nowQuery = (): void => {
