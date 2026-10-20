@@ -45,9 +45,17 @@
       </el-form-item>
       <el-form-item label="疫苗" prop="drugId">
         <el-select v-model="form.drugId" filterable placeholder="选择疫苗（在药品列表按疫苗分类维护）" style="width: 100%">
-          <el-option v-for="v in vaccineDrugs" :key="v.drugId" :label="`${v.drugName}${v.intervalDays ? '（间隔'+v.intervalDays+'天）' : ''}`" :value="v.drugId"/>
+          <el-option v-for="v in vaccineDrugs" :key="v.drugId"
+                     :disabled="v.drugStock === 0"
+                     :label="`${v.drugName}（￥${v.drugPrice}/支 · 库存${v.drugStock}${v.intervalDays ? ' · 间隔'+v.intervalDays+'天' : ''}）`"
+                     :value="v.drugId"/>
         </el-select>
       </el-form-item>
+      <!-- 计费提示：疫苗即时入账并出库（方案B） -->
+      <div v-if="vaccineFee != null" class="fee-tip">
+        本单疫苗费 <b>￥{{ vaccineFee }}</b>：登记后计入该病历账单（收银台收款），疫苗即时出库；
+        无关联病历时仅记录档案、不计费。
+      </div>
       <el-form-item label="接种时间">
         <el-date-picker v-model="form.vaccinateTime" type="datetime" placeholder="选择时间" style="width: 100%"/>
       </el-form-item>
@@ -63,7 +71,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref} from 'vue'
+import {onMounted, reactive, ref, computed} from 'vue'
 import {useRoute} from 'vue-router'
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
@@ -82,6 +90,12 @@ const dueSoonFilter = ref<boolean | null>(null)
 const list = ref<Page<ImmuneRecord>>({records: [], total: 0})
 const vaccineDrugs = ref<Drug[]>([])
 const records = ref<RecordDto[]>([])
+// 选中疫苗的单价（计费提示用）
+const vaccineFee = computed(() => {
+  if (!form.drugId) return null
+  const v = vaccineDrugs.value.find(x => x.drugId === form.drugId)
+  return v?.drugPrice != null ? Number(v.drugPrice).toFixed(2) : null
+})
 
 const isDue = (row: ImmuneRecord): boolean =>
     !!row.nextTime && new Date(row.nextTime) <= new Date(new Date().getTime() + 30 * 86400000)
@@ -172,5 +186,18 @@ onMounted(() => {
 .due {
   color: #f56c6c;
   font-weight: 600;
+}
+/* 疫苗计费提示 */
+.fee-tip {
+  margin: 0 0 12px 90px;
+  padding: 8px 12px;
+  background: #fdf6ec;
+  border: 1px solid #f5dab1;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #8a6d3b;
+  line-height: 1.6;
+
+  b { color: #E6A23C; }
 }
 </style>

@@ -5,7 +5,7 @@
     <select id="selectBillPage" resultType="com.ship.model.dto.BillDto">
         SELECT
         b.bill_id, b.client_id, b.pet_id, b.record_id,
-        b.fee_register, b.fee_treat, b.fee_drug, b.fee_lab, b.fee_hospital, b.fee_image, b.fee_package, b.fee_surgery, b.total_money,
+        b.fee_register, b.fee_treat, b.fee_drug, b.fee_lab, b.fee_hospital, b.fee_image, b.fee_package, b.fee_surgery, b.fee_immune, b.total_money,
         b.discount, b.discount_money, b.real_money,
         b.pay_status, b.pay_type, b.pay_by, b.dispense_status, b.dispense_by, b.dispense_time,
         b.create_time,

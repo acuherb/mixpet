@@ -3,21 +3,26 @@ package com.ship.service.impl;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.ship.common.Result;
+import com.ship.mapper.BillMapper;
 import com.ship.mapper.DrugMapper;
 import com.ship.mapper.ImmuneRecordMapper;
 import com.ship.model.dto.ImmuneRecordDto;
+import com.ship.model.entity.Bill;
 import com.ship.model.entity.Doctor;
 import com.ship.model.entity.Drug;
 import com.ship.model.entity.ImmuneRecord;
 import com.ship.model.entity.MedicalRecord;
 import com.ship.model.vo.ImmuneVo;
 import com.ship.service.IImmuneRecordService;
+import com.ship.service.IDrugService;
 import com.ship.service.IMedicalRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,11 +33,16 @@ import java.util.List;
 public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, ImmuneRecord> implements IImmuneRecordService {
     private final IMedicalRecordService recordService;
     private final DrugMapper drugMapper;
+    private final BillMapper billMapper;
+    private final IDrugService drugService;
 
     @Autowired
-    public ImmuneRecordServiceImpl(IMedicalRecordService recordService, DrugMapper drugMapper) {
+    public ImmuneRecordServiceImpl(IMedicalRecordService recordService, DrugMapper drugMapper,
+                                   BillMapper billMapper, IDrugService drugService) {
         this.recordService = recordService;
         this.drugMapper = drugMapper;
+        this.billMapper = billMapper;
+        this.drugService = drugService;
     }
 
     @Override
@@ -68,6 +78,48 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
             next = vaccinate.plusDays(drug.getIntervalDays());
         }
 
+        // 疫苗即时出库（接种即消耗）：原子扣减，库存 0 拒绝登记（防打了没药可记）
+        int stock = drug.getDrugStock() == null ? 0 : drug.getDrugStock();
+        int affected = drugMapper.update(null, Wrappers.<Drug>lambdaUpdate()
+                .eq(Drug::getDrugId, drug.getDrugId())
+                .ge(Drug::getDrugStock, 1)
+                .setSql("drug_stock = drug_stock - 1"));
+        if (affected == 0) return Result.error("「" + drug.getDrugName() + "」库存不足（剩余 " + stock + "），无法登记接种");
+        drugService.logStockChange(drug.getDrugId(), drug.getDrugName(), 2, 1,
+                stock, stock - 1, "免疫接种出库");
+
+        // 计费：疫苗按药品定价计入该病历账单（未付账单累加/无则新建，模式同检验开单）
+        BigDecimal fee = drug.getDrugPrice() == null ? BigDecimal.ZERO : drug.getDrugPrice();
+        if (vo.getRecordId() != null && fee.compareTo(BigDecimal.ZERO) > 0) {
+            Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                    .eq(Bill::getRecordId, vo.getRecordId())
+                    .eq(Bill::getPayStatus, false)
+                    .last("limit 1"));
+            if (unpaid != null) {
+                billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                        .eq(Bill::getBillId, unpaid.getBillId())
+                        .setSql("fee_immune = fee_immune + " + fee.toPlainString())
+                        .setSql("total_money = total_money + " + fee.toPlainString()));
+            } else {
+                Bill bill = new Bill();
+                bill.setClientId(clientId);
+                bill.setPetId(petId);
+                bill.setRecordId(vo.getRecordId());
+                bill.setFeeRegister(BigDecimal.ZERO);
+                bill.setFeeTreat(BigDecimal.ZERO);
+                bill.setFeeDrug(BigDecimal.ZERO);
+                bill.setFeeLab(BigDecimal.ZERO);
+                bill.setFeeHospital(BigDecimal.ZERO);
+                bill.setFeePackage(BigDecimal.ZERO);
+                bill.setFeeSurgery(BigDecimal.ZERO);
+                bill.setFeeImmune(fee);
+                bill.setTotalMoney(fee);
+                bill.setPayStatus(false);
+                bill.setPayType(false);
+                billMapper.insert(bill);
+            }
+        }
+
         ImmuneRecord record = new ImmuneRecord();
         record.setRecordId(vo.getRecordId());
         record.setPetId(petId);
@@ -79,7 +131,12 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
         record.setVaccinateTime(vaccinate);
         record.setNextTime(next);
         record.setNote(vo.getNote());
-        return Result.choice("接种登记", this.save(record));
+        boolean ok = this.save(record);
+        if (ok) {
+            return Result.success("接种登记成功，疫苗费 ￥" + fee.toPlainString()
+                    + (vo.getRecordId() != null ? " 已计入病历 #" + vo.getRecordId() + " 账单" : ""));
+        }
+        return Result.error("登记失败");
     }
 
     @Override

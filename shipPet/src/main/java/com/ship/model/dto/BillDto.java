@@ -22,6 +22,7 @@ public class BillDto {
     private BigDecimal feeImage;
     private BigDecimal feePackage;
     private BigDecimal feeSurgery;
+    private BigDecimal feeImmune;
     private BigDecimal totalMoney;
     private Boolean payStatus;
     private Boolean payType;

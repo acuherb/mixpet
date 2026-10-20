@@ -189,6 +189,25 @@
           </div>
         </template>
         <p v-if="images.length === 0" style="color:#999">本次无影像检查</p>
+        <h4 style="margin: 14px 0 6px">免疫接种档案</h4>
+        <el-table :data="immunes" border size="small" style="margin-bottom: 8px">
+          <el-table-column label="疫苗" min-width="120" prop="drugName" show-overflow-tooltip/>
+          <el-table-column label="针次" prop="doseCnt" width="60"/>
+          <el-table-column label="接种时间" min-width="150">
+            <template #default="s">{{ (s.row.vaccinateTime || '').replace('T', ' ').slice(0, 16) }}</template>
+          </el-table-column>
+          <el-table-column label="下一针建议" min-width="150">
+            <template #default="s">{{ s.row.nextTime ? s.row.nextTime.replace('T', ' ').slice(0, 10) : '无' }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="80">
+            <template #default="s">
+              <el-tag v-if="isDue(s.row)" size="small" type="danger">待接种</el-tag>
+              <el-tag v-else size="small" type="success">正常</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p v-if="immunes.length === 0" style="color:#999">暂无疫苗接种记录</p>
+
         <h4 style="margin: 14px 0 6px">住院信息</h4>
         <template v-for="h in hospitals" :key="h.hospitalId">
           <div class="lab-hd">
@@ -318,6 +337,8 @@ import {reqHospitalByRecord} from "@/request/HospitalApi";
 import {ImageOrder} from "@/model/entiy/ImageOrder";
 import {HospitalDto} from "@/model/DO/HospitalDto";
 import {reqSurgeryByRecord} from "@/request/SurgeryApi";
+import {reqImmuneByPet} from "@/request/ImmuneApi";
+import {ImmuneRecord} from "@/model/entiy/ImmuneRecord";
 import {Surgery, surgeryStatusText, surgeryStatusType} from "@/model/entiy/Surgery";
 import {useRoute, useRouter} from 'vue-router';
 import PetHealthDialog from "@/components/PetHealthDialog.vue";
@@ -361,6 +382,11 @@ const openHealth = (pet: Pet): void => {
 }
 const detailVisible = ref(false)
 const detail = ref<RecordDetailVo | null>(null)
+// 免疫接种档案（顾客看自己宠物的疫苗记录）
+const immunes = ref<ImmuneRecord[]>([])
+// 是否临近接种（与后台 z-immune 同款口径：30 天内）
+const isDue = (row: ImmuneRecord): boolean =>
+    !!row.nextTime && new Date(row.nextTime) <= new Date(new Date().getTime() + 30 * 86400000)
 // 保存病历：跳打印页彩色详情版导出 PDF（顾客仅能导自己的病历，后端 /record/detail 有归属校验）
 const saveRecordPdf = (): void => {
   if (detail.value) window.open('/#/doctorPage/d-recordPrint?recordId=' + detail.value.record.recordId + '&style=color', '_blank')
@@ -393,6 +419,7 @@ const openRecordDetail = (recordId: number): void => {
   labs.value = []
   images.value = []
   hospitals.value = []
+  immunes.value = []
   surgeries.value = []
   revisits.value = []
   reqRecordOne(recordId).then(res => {
@@ -415,6 +442,12 @@ const openRecordDetail = (recordId: number): void => {
       reqSurgeryByRecord(recordId).then(list => {
         surgeries.value = list || []
       })
+      // 免疫接种档案（顾客可查自己宠物的疫苗记录；后端 /immune/pet 有归属校验）
+      if (res.record.petId) {
+        reqImmuneByPet(res.record.petId).then(list => {
+          immunes.value = list || []
+        })
+      }
     }
   })
 }

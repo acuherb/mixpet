@@ -25,6 +25,8 @@ export interface BillDto {
     payType: boolean | null;
     /** 收款操作人（收银者；历史账单为 null） */
     payBy?: string | null;
+    /** 疫苗费（免疫接种计入） */
+    feeImmune?: number | null;
     /** 发药状态 0未发 1已发 */
     dispenseStatus?: boolean;
     /** 发药核对人 */

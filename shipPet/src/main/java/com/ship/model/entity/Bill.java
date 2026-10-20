@@ -41,6 +41,8 @@ public class Bill implements Serializable {
     private BigDecimal totalMoney;
     /** 会员折扣率快照（建单时按客户等级，1=不打折） */
     private BigDecimal discount;
+    /** 疫苗费（免疫接种计入） */
+    private BigDecimal feeImmune;
     /** 优惠金额 = totalMoney × (1 - discount) */
     private BigDecimal discountMoney;
     /** 折后应付/实收 = totalMoney - discountMoney */
