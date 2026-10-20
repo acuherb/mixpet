@@ -64,6 +64,9 @@
     </el-dialog>
 
     <!--接诊弹窗：向导式（问诊检查 → 诊断医嘱 → 处置开单 → 完结结算）-->
+    <!-- 移动端简化提示 -->
+    <el-alert v-if="isMobile" :closable="false" show-icon type="warning" style="margin-bottom: 8px"
+              title="您正在使用移动设备，接诊向导已简化为快速查看模式。完整操作请使用电脑端。"/>
     <el-dialog v-model="treatView" :close-on-click-modal="false" top="4vh" width="94%" style="max-width: 800px">
       <template #header>
         <span style="font-weight: bold">接诊向导 · {{ stepTitles[activeStep] }}</span>
@@ -531,7 +534,7 @@
         <el-button @click="treatView = false">{{ orderLocked ? '关闭' : '取消' }}</el-button>
         <!-- 第一步/第二步：步骤导航 + 保存病历 -->
         <template v-if="activeStep <= 1">
-          <el-button v-if="activeStep === 0" @click="activeStep = 1">下一步：诊断医嘱</el-button>
+          <el-button v-if="activeStep === 0" @click="goNextStep">下一步：诊断医嘱</el-button>
           <el-button v-else @click="activeStep = 0">上一步</el-button>
           <el-button :loading="treatSubmitting" type="primary" @click="submitRecord">
             {{ treatRecordId > 0 ? '保存修改' : '保存病历并开单' }}
@@ -555,8 +558,7 @@
 
     <!-- AI 辅助抽屉：结构化建议 + 合规横幅 + 一键填入 -->
     <el-drawer v-model="aiDrawer" append-to-body size="540px" title="AI 辅助诊疗" v-loading="aiRequesting">
-      <el-alert :closable="false" show-icon type="warning"
-                title="本内容由 AI 生成，仅供参考，不作为诊断依据；请结合临床检查与专业判断使用"/>
+      <el-alert :closable="false" show-icon type="warning" title="AI 辅助内容仅供临床参考，非诊断结论；请以问诊、查体及检验/影像结果为准，相关医疗决策与法律责任由执业兽医本人承担"/>
       <template v-if="aiAdvice">
         <h4 class="ai-tit">鉴别诊断</h4>
         <el-table :data="aiAdvice.differentials" border size="small">
@@ -639,6 +641,11 @@ import {ImageOrder} from "@/model/entiy/ImageOrder";
 
 const router = useRouter()
 const route = useRoute()
+// 移动端检测
+const isMobile = ref(false)
+const checkMobile = (): void => { isMobile.value = window.innerWidth < 768 }
+window.addEventListener('resize', checkMobile)
+checkMobile()
 // 手术类型/麻醉方式字典（来自系统设置）
 const surgeryTypeOpts = ref<SysDict[]>([])
 const anesthesiaTypeOpts = ref<SysDict[]>([])
@@ -705,6 +712,25 @@ const petHistory = ref<PetHistory | null>(null)
 const loadPetHistory = (petId: number | null): void => {
   if (!petId) { petHistory.value = null; return }
   reqPetHistory(petId).then(res => { petHistory.value = res })
+}
+// 复诊强制关联历史：进入诊断步骤前，要求先核对既往病史
+const goNextStep = (): void => {
+  if (recordForm.value.triageLevel === 3) {
+    if (!petHistory.value) {
+      ElMessage.warning('复诊需先加载该宠物的历史病历')
+      const pid = treatAppoint.value?.petId
+      if (pid) loadPetHistory(pid)
+      return
+    }
+    const hasHistory = (petHistory.value.recentRecords && petHistory.value.recentRecords.length > 0)
+    if (!hasHistory) {
+      ElMessageBox.confirm(`该宠物标注「复诊」，但未找到其历史就诊记录。请确认是否继续（可改回普通门诊）？`, '复诊无既往病历',
+          {confirmButtonText: '仍按复诊继续', cancelButtonText: '返回修改', type: 'warning'}
+      ).then(() => { activeStep.value = 1 }).catch(() => ElMessage.info('可返回核对，或将分诊改为普通'))
+      return
+    }
+  }
+  activeStep.value = 1
 }
 const treatPhase = ref<'record' | 'orders'>('record')
 const treatRecordId = ref(0)
@@ -960,10 +986,38 @@ const pkgOf = (packageId: number): ServicePackage | undefined => packageList.val
 const addPrescription = (): void => { prescriptions.value.push(examplePrescription()) }
 const addPackage = (): void => { packages.value.push(examplePackage()) }
 
+// 常见配伍禁忌规则（药品名关键字命中即提示，属辅助风险提醒而非硬阻断）
+const drugConflicts: Array<[string, string]> = [
+  ['阿莫西林', '庆大霉素'], ['恩诺沙星', '甲硝唑'], ['甲硝唑', '头孢'],
+  ['多西环素', '青霉素'], ['卡托普利', '布洛芬'], ['布洛芬', '地塞米松'],
+  ['阿司匹林', '地塞米松'], ['奥美拉唑', '多潘立酮'],
+]
+// 检出一张处方内的配伍禁忌组合（药品名含关键字即命中，兼容"阿莫西林片"等带剂型名称）
+const findConflicts = (ps: Prescription[]): string[] => {
+  const names = ps.filter(p => p.drugId && p.drugId > 0).map(p => p.drugName || '').filter(Boolean)
+  const hits: string[] = []
+  drugConflicts.forEach(([a, b]) => {
+    if (names.some(n => n.includes(a)) && names.some(n => n.includes(b))) hits.push(`${a} 与 ${b}`)
+  })
+  return hits
+}
+
 // 分区保存
 const saveRx = (): void => {
   const ps = prescriptions.value.filter(p => p.drugId && p.drugId > 0)
   if (!ps.length) { ElMessage.warning('请先添加药品'); return }
+  // 配伍禁忌提示（辅助风险提醒，不阻断，确认后仍可保存）
+  const conflicts = findConflicts(ps)
+  if (conflicts.length) {
+    ElMessageBox.confirm(
+        `当前处方存在配伍禁忌：${conflicts.join('、')}。请确认是否仍按此开药？`,
+        '处方配伍禁忌提醒', {confirmButtonText: '仍要开药', cancelButtonText: '返回修改', type: 'error'}
+    ).then(() => { afterConflictCheck(ps) }).catch(() => ElMessage.info('已返回，请调整药品'))
+    return
+  }
+  afterConflictCheck(ps)
+}
+const afterConflictCheck = (ps: Prescription[]): void => {
   // 数量与「单次剂量×频次×天数」算量结果一致性校验（防计费数量与医嘱用量脱节）
   const mismatch = ps.filter(p => p.singleDose != null && p.singleDose > 0 &&
       p.quantity !== Math.ceil(p.singleDose * (p.dailyTimes || 1) * (p.days || 1)))
@@ -1431,6 +1485,15 @@ watch(() => form.value.clientId, (newValue): void => {
     overflow-y: auto;
     margin-bottom: 10px;
   }
+}
+/* 移动端接诊向导简化：隐藏复杂表单，只保留查看和关键操作 */
+@media (max-width: 768px) {
+  .treat-step { min-height: auto; }
+  .exam-tags { display: none; }
+  .rx-weight-bar { font-size: 11px; padding: 4px 8px; }
+  .settle-cards { grid-template-columns: 1fr; }
+  .settle-ops { flex-direction: column; }
+  .settle-ops .el-button { width: 100%; margin: 0; }
 }
 .summary-btns { margin-top: 16px; text-align: right; }
 </style>
