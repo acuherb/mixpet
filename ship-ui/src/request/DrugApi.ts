@@ -32,7 +32,7 @@ export const reqDrugWarning = (): Promise<Drug[]> =>
 export const reqDrugExpiring = (days: number): Promise<Drug[]> =>
     reqApi<string, Drug[]>("drug/expiring", {params: {days}})
 // 入库（增加库存并记台账，可带供应商/批号）
-export const reqDrugInbound = (data: { drugId: number; quantity: number; expireDate?: string; note?: string; supplierId?: number; batchNo?: string }): Promise<Res> =>
+export const reqDrugInbound = (data: { drugId: number; quantity: number; costPrice?: number; expireDate?: string; note?: string; supplierId?: number; batchNo?: string }): Promise<Res> =>
     reqApi.post<string, Res>("drug/inbound", {}, {params: data})
 // 批量入库（逐条独立提交、部分成功，返回逐行结果）
 export const reqDrugInboundBatch = (lines: InboundLine[]): Promise<InboundBatchVo> =>

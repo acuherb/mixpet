@@ -5,7 +5,7 @@
     <!-- 操作说明 -->
     <el-alert :closable="false" show-icon style="margin: 0 80px 12px" type="info">
       <template #title>
-        从 Excel 复制五列数据（<b>药品名 / 数量 / 批号 / 有效期 / 备注</b>），在下方粘贴框
+        从 Excel 复制六列数据（<b>药品名 / 数量 / 成本价 / 批号 / 有效期 / 备注</b>），在下方粘贴框
         <b>Ctrl+V</b> 即可批量填入；药品名自动匹配（匹配不到的行会标黄提示）；也可直接在表格中逐行填写。
       </template>
     </el-alert>
@@ -32,6 +32,12 @@
         <el-table-column label="数量" width="110">
           <template #default="scope">
             <el-input-number v-model="scope.row.quantity" :min="1" size="small" style="width: 90px"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="成本价(元)" width="130">
+          <template #default="scope">
+            <el-input-number v-model="scope.row.costPrice" :min="0" :max="99999" :precision="2" :step="1"
+                             controls-position="right" placeholder="本批进货单价" size="small" style="width: 110px"/>
           </template>
         </el-table-column>
         <el-table-column label="批号" width="130">
@@ -84,6 +90,8 @@ interface InRow {
   /** 粘贴时原始药品名（匹配失败时用于提示） */
   rawName?: string;
   quantity: number;
+  /** 本批成本价（元/单位，可空） */
+  costPrice: number | null;
   batchNo: string;
   expireDate: string | null;
   note: string;
@@ -95,10 +103,10 @@ const pasteText = ref('')
 const submitting = ref(false)
 
 const addRow = (): void => {
-  rows.value.push({drugId: null, quantity: 1, batchNo: '', expireDate: null, note: ''})
+  rows.value.push({drugId: null, quantity: 1, costPrice: null, batchNo: '', expireDate: null, note: ''})
 }
 
-/** 粘贴解析：Tab 分列、换行分行；五列 = 药品名/数量/批号/有效期/备注，药品名自动匹配 */
+/** 粘贴解析：Tab 分列、换行分行；六列 = 药品名/数量/成本价/批号/有效期/备注，药品名自动匹配 */
 const onPaste = (e: ClipboardEvent): void => {
   const text = e.clipboardData?.getData('text') || ''
   if (!text.trim()) return
@@ -107,13 +115,15 @@ const onPaste = (e: ClipboardEvent): void => {
   let matched = 0
   for (const line of lines) {
     const cols = line.split('\t').map(c => c.trim())
-    const [name, qty, batchNo, expireDate, note] = cols
+    const [name, qty, costPrice, batchNo, expireDate, note] = cols
     const drug = name ? drugList.value.find(d => d.drugName.includes(name) || name.includes(d.drugName)) : undefined
     if (drug) matched++
+    const cp = costPrice != null && costPrice !== '' ? Number(costPrice) : null
     rows.value.push({
       drugId: drug?.drugId ?? null,
       rawName: drug ? undefined : (name || undefined),
       quantity: Math.max(1, Number(qty) || 1),
+      costPrice: cp != null && !isNaN(cp) && cp >= 0 ? cp : null,
       batchNo: batchNo || '',
       expireDate: expireDate || null,
       note: note || ''
@@ -132,7 +142,7 @@ const submitAll = (): void => {
   rows.value.forEach((r, i) => {
     if (r.drugId && r.quantity > 0) picked.push({
       line: {
-        drugId: r.drugId, quantity: r.quantity,
+        drugId: r.drugId, quantity: r.quantity, costPrice: r.costPrice ?? undefined,
         batchNo: r.batchNo || undefined, expireDate: r.expireDate || undefined, note: r.note || undefined
       },
       rowIdx: i

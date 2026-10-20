@@ -147,6 +147,10 @@
       <el-form-item label="入库数量">
         <el-input-number v-model="inQty" :min="1" :max="99999" style="width: 100%"/>
       </el-form-item>
+      <el-form-item label="成本价(元)">
+        <el-input-number v-model="inCostPrice" :min="0" :max="99999" :precision="2" :step="1" style="width: 100%"
+                         placeholder="本批进货单价，录入后更新药品当前进货价"/>
+      </el-form-item>
       <el-form-item label="有效期至">
         <el-date-picker v-model="inExpire" placeholder="可留空" style="width: 100%" type="date" value-format="YYYY-MM-DD"/>
       </el-form-item>
@@ -361,6 +365,7 @@ reqSupplierList().then(r => { suppliers.value = r || [] })
 const inView = ref(false)
 const inDrug = ref<Drug | null>(null)
 const inQty = ref(1)
+const inCostPrice = ref<number | null>(null)
 const inExpire = ref<string | null>(null)
 const inSupplierId = ref<number | null>(null)
 const inBatchNo = ref('')
@@ -368,6 +373,8 @@ const inNote = ref('')
 const openIn = (row: Drug): void => {
   inDrug.value = row
   inQty.value = 1
+  // 默认带出当前进货价，便于在此基上改价
+  inCostPrice.value = row.costPrice != null ? Number(row.costPrice) : null
   inExpire.value = null
   inSupplierId.value = null
   inBatchNo.value = ''
@@ -379,6 +386,7 @@ const submitIn = (): void => {
   reqDrugInbound({
     drugId: inDrug.value.drugId,
     quantity: inQty.value,
+    costPrice: inCostPrice.value != null ? inCostPrice.value : undefined,
     expireDate: inExpire.value || undefined,
     note: inNote.value || undefined,
     supplierId: inSupplierId.value || undefined,

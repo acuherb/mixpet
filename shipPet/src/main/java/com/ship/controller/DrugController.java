@@ -99,11 +99,11 @@ public class DrugController {
         return drugService.listWarning();
     }
 
-    /** 入库：增加库存并记台账（可带供应商/批号），可同时更新有效期 */
+    /** 入库：增加库存并记台账（可带供应商/批号/成本价），可同时更新有效期 */
     @PostMapping("/inbound")
     @Secured(RoleConst.MANAGER)
-    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
-        return drugService.inbound(drugId, quantity, expireDate, note, supplierId, batchNo);
+    public Result inbound(Integer drugId, Integer quantity, BigDecimal costPrice, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
+        return drugService.inbound(drugId, quantity, costPrice, expireDate, note, supplierId, batchNo);
     }
 
     /**

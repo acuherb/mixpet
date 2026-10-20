@@ -18,6 +18,7 @@ import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import com.ship.model.vo.InboundBatchVo;
 import com.ship.model.vo.InboundLine;
@@ -97,16 +98,22 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
     }
 
     @Override
-    public Result inbound(Integer drugId, Integer quantity, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
+    public Result inbound(Integer drugId, Integer quantity, BigDecimal costPrice, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
         if (drugId == null || quantity == null || quantity <= 0) return Result.error("入库数量必须大于0");
+        if (costPrice != null && costPrice.compareTo(BigDecimal.ZERO) < 0)
+            return Result.error("成本价不能为负数");
         Drug drug = this.getById(drugId);
         if (drug == null) return Result.error("药品不存在");
         int before = drug.getDrugStock() == null ? 0 : drug.getDrugStock();
         int after = before + quantity;
         this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getDrugStock, after).update();
+        // 录了成本价：刷新药品当前进货价（报表毛利按当前进货价估算，取最新入库成本）
+        if (costPrice != null) {
+            this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getCostPrice, costPrice).update();
+        }
         if (expireDate != null)
             this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getExpireDate, expireDate).update();
-        // 记台账（含供应商/批号，便于追溯采购来源）
+        // 记台账（含供应商/批号/成本价，便于追溯采购来源与历史成本）
         String supplierName = null;
         if (supplierId != null) {
             Supplier s = supplierMapper.selectById(supplierId);
@@ -117,6 +124,7 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         r.setDrugName(drug.getDrugName());
         r.setChangeType(1);
         r.setQuantity(quantity);
+        r.setCostPrice(costPrice);
         r.setBeforeStock(before);
         r.setAfterStock(after);
         r.setOperator(currentOperator());
@@ -125,7 +133,8 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         r.setBatchNo(batchNo);
         r.setNote(note);
         drugRecordMapper.insert(r);
-        return Result.success("入库成功，当前库存 " + after);
+        return Result.success("入库成功，当前库存 " + after
+                + (costPrice != null ? "，成本价 ￥" + costPrice.toPlainString() + " 已更新" : ""));
     }
 
     @Override
@@ -137,7 +146,7 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         // 逐条独立提交（部分成功语义：一条失败不影响其他行；失败行由前端保留重试）
         for (int i = 0; i < lines.size(); i++) {
             InboundLine line = lines.get(i);
-            Result r = this.inbound(line.getDrugId(), line.getQuantity(), line.getExpireDate(),
+            Result r = this.inbound(line.getDrugId(), line.getQuantity(), line.getCostPrice(), line.getExpireDate(),
                     line.getNote(), line.getSupplierId(), line.getBatchNo());
             if (r.code() != null && r.code() == 1) {
                 success++;

@@ -40,6 +40,8 @@ public class DrugRecord implements Serializable {
     private String supplierName;
     /** 批号 */
     private String batchNo;
+    /** 本批入库成本价（元/单位，入库时录；发药/退款行为空） */
+    private java.math.BigDecimal costPrice;
     /** 备注 */
     private String note;
 

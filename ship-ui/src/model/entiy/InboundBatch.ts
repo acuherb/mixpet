@@ -4,6 +4,8 @@
 export interface InboundLine {
     drugId: number;
     quantity: number;
+    /** 本批成本价（元/单位，可空；录入则刷新药品当前进货价并记入台账） */
+    costPrice?: number;
     batchNo?: string;
     expireDate?: string;
     note?: string;
