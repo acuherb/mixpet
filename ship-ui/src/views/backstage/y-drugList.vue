@@ -494,7 +494,7 @@ const rules = reactive<FormRules>({
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .sel-tip {
   margin-right: 12px;
   font-size: 14px;

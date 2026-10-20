@@ -9,7 +9,7 @@
 <script lang="ts" setup>
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* 个人中心的展示页面 */
 .one-basePage {
   position: relative;

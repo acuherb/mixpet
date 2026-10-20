@@ -184,6 +184,6 @@ const showDetail = (row: FollowUpDto): void => { detailRow.value = row; detailVi
 onMounted(() => { sendQuery() })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .done-head { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #1f2d5a; }
 </style>

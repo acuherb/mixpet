@@ -112,7 +112,7 @@ const del = (row: DictRow): void => {
 onMounted(() => { loadDicts() })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .setting-wrap { display: flex; gap: 12px; align-items: flex-start; }
 .left { width: 180px; flex-shrink: 0; }
 .right { flex: 1; }

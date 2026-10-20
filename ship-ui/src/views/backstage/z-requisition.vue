@@ -111,7 +111,7 @@ const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 1
 const doPrint = (): void => window.print()
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .rx-page { padding: 20px; background: #f5f6fa; min-height: 100vh; }
 .rx-toolbar { max-width: 720px; margin: 0 auto 16px; text-align: right; }
 .rx-sheet {

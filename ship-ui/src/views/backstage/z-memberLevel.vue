@@ -96,6 +96,6 @@ const delOne = (id: number): void => {
 onMounted(() => { load() })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .tip { margin: 12px 0 0; font-size: 12px; color: #909399; }
 </style>

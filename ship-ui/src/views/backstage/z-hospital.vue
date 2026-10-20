@@ -542,7 +542,7 @@ const doneAdvice = (row: HospitalAdvice): void => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .filter-card {
   margin-bottom: 8px;
 }

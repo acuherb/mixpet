@@ -148,7 +148,7 @@ const usageText = (it: any): string => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* 小规格横版 210mm × 148mm（S1：先只做小规格） */
 @page {
   size: 210mm 148mm;

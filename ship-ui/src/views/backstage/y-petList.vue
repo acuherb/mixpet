@@ -744,7 +744,7 @@ const changePhoto = (val: string): void => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .sel-tip {
   margin-right: 12px;
   font-size: 14px;

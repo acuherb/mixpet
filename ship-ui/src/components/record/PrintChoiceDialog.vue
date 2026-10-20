@@ -172,7 +172,7 @@ const prepareAndPrint = (): void => {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 /* 一级选择卡片 */
 .pc-choice {
   display: grid;
