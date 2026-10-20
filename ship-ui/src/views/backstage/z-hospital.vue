@@ -28,11 +28,12 @@
         <el-tag v-else size="small" type="warning">住院中</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="180" fixed="right">
+    <el-table-column label="操作" width="240" fixed="right">
       <template #default="scope">
         <el-button v-if="!scope.row.status" size="small" type="primary" plain @click="dischargeOne(scope.row)">出院结算</el-button>
         <el-button v-else size="small" type="info" plain @click="showDetail(scope.row)">查看</el-button>
         <el-button size="small" plain round @click="openMonitor(scope.row)">监护</el-button>
+        <el-button v-if="!scope.row.status" size="small" plain round type="warning" @click="openAdvice(scope.row)">医嘱</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -121,6 +122,124 @@
     </el-timeline>
     <el-empty v-if="monitors.length===0" description="暂无监护记录"/>
   </el-drawer>
+
+  <!-- 住院医嘱抽屉：下达/从处方导入/停嘱/完成 -->
+  <el-drawer v-model="adviceView" :title="adviceTitle" size="640px">
+    <template #default>
+      <!-- 从本病历处方导入（与处方联动） -->
+      <div class="adv-import">
+        <el-button size="small" plain round type="success" :loading="importLoading" @click="loadRxImport">
+          <el-icon style="margin-right:4px"><Plus/></el-icon>从本病历处方导入
+        </el-button>
+        <span class="tip">把本次就诊已开处方快速转为住院医嘱（药品/剂量自动带入）</span>
+      </div>
+      <!-- 处方导入勾选区 -->
+      <div v-if="importList.length" class="adv-import-list">
+        <el-checkbox-group v-model="importChecks">
+          <div v-for="(p, i) in importList" :key="i" class="imp-row">
+            <el-checkbox :value="i">
+              {{ p.drugName }}（{{ p.drugSpec || '—' }}） 数量{{ p.quantity }}{{ p.drugUnit }} · {{ p.usageInfo || '—' }}
+            </el-checkbox>
+          </div>
+        </el-checkbox-group>
+        <div style="text-align:right;margin-top:8px">
+          <el-button size="small" @click="importList = []">取消</el-button>
+          <el-button size="small" type="primary" :loading="importSaving" @click="submitImport">导入所选（{{ importChecks.length }}）</el-button>
+        </div>
+      </div>
+
+      <!-- 下达医嘱表单 -->
+      <el-form v-if="adviceRow && !adviceRow.status" :model="adviceForm" label-width="76px" style="margin:12px 0">
+        <el-form-item label="类型">
+          <el-radio-group v-model="adviceForm.itemType">
+            <el-radio :value="1">药品</el-radio>
+            <el-radio :value="2">治疗</el-radio>
+            <el-radio :value="3">护理</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="项目">
+          <el-select v-if="adviceForm.itemType === 1" v-model="adviceForm.drugId" filterable clearable
+                     placeholder="选择药品（自动带名称/单位）" style="width:100%" @change="onAdviceDrugChange">
+            <el-option v-for="d in drugList" :key="d.drugId" :label="`${d.drugName}（￥${d.drugPrice}/${d.drugUnit}）`" :value="d.drugId"/>
+          </el-select>
+          <el-input v-else v-model="adviceForm.itemName" clearable maxlength="64" placeholder="如：皮下补液/每日创口换药"/>
+        </el-form-item>
+        <div style="display:flex;gap:10px">
+          <el-form-item label="单次剂量" style="flex:1">
+            <el-input v-model="adviceForm.dose" clearable maxlength="16" placeholder="如：0.5"/>
+          </el-form-item>
+          <el-form-item label="单位" style="width:120px">
+            <el-input v-model="adviceForm.doseUnit" clearable maxlength="8" placeholder="片/ml"/>
+          </el-form-item>
+          <el-form-item label="频次" style="width:150px">
+            <el-select v-model="adviceForm.frequency" clearable placeholder="选择" style="width:100%">
+              <el-option v-for="f in FREQS" :key="f" :label="f" :value="f"/>
+            </el-select>
+          </el-form-item>
+        </div>
+        <div style="display:flex;gap:10px">
+          <el-form-item label="途径" style="width:150px">
+            <el-select v-model="adviceForm.route" clearable placeholder="选择" style="width:100%">
+              <el-option v-for="r in ROUTES" :key="r" :label="r" :value="r"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="天数" style="width:130px">
+            <el-input-number v-model="adviceForm.days" :min="1" :max="365" controls-position="right" style="width:100%"/>
+          </el-form-item>
+          <el-form-item label="开始日期" style="flex:1">
+            <el-date-picker v-model="adviceForm.startDate" format="YYYY-MM-DD" placeholder="默认今天"
+                            style="width:100%" type="date" value-format="YYYY-MM-DD"/>
+          </el-form-item>
+        </div>
+        <el-form-item label="备注">
+          <el-input v-model="adviceForm.remark" :rows="2" clearable maxlength="255" placeholder="注意事项/观察点" type="textarea"/>
+        </el-form-item>
+        <el-form-item>
+          <el-button round type="primary" :loading="adviceSaving" @click="submitAdvice">下达医嘱</el-button>
+        </el-form-item>
+      </el-form>
+      <el-alert v-else title="该住院已出院，医嘱只读（不可再下达）" type="info" show-icon :closable="false" style="margin:12px 0"/>
+
+      <el-divider content-position="left">医嘱单（{{ advices.length }} 条）</el-divider>
+      <el-table :data="advices" border size="small">
+        <el-table-column label="项目" min-width="130">
+          <template #default="s">
+            {{ s.row.itemName }}
+            <el-tag size="small" type="info" effect="plain" style="margin-left:4px">
+              {{ ({1: '药品', 2: '治疗', 3: '护理'} as Record<number, string>)[s.row.itemType!] || '其他' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="剂量" width="100">
+          <template #default="s">{{ s.row.dose ? s.row.dose + (s.row.doseUnit || '') : '—' }}</template>
+        </el-table-column>
+        <el-table-column label="频次/途径" min-width="130" show-overflow-tooltip>
+          <template #default="s">{{ s.row.frequency || '—' }}<span v-if="s.row.route"> · {{ s.row.route }}</span></template>
+        </el-table-column>
+        <el-table-column label="天数" width="60">
+          <template #default="s">{{ s.row.days ?? '—' }}</template>
+        </el-table-column>
+        <el-table-column label="状态" width="88">
+          <template #default="s">
+            <el-tag v-if="s.row.status === 4" size="small" type="success">已完成</el-tag>
+            <el-tag v-else-if="s.row.status === 3" size="small" type="info">已停嘱</el-tag>
+            <el-tag v-else-if="s.row.status === 2" size="small" type="warning">执行中</el-tag>
+            <el-tag v-else size="small" type="danger">待执行</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="s">
+            <el-button v-if="s.row.status === 1 || s.row.status === 2" size="small" type="primary" link @click="doneAdvice(s.row)">完成</el-button>
+            <el-button v-if="s.row.status === 1 || s.row.status === 2" size="small" type="warning" link @click="stopAdvice(s.row)">停嘱</el-button>
+            <span v-if="s.row.status === 3" style="color:#909399;font-size:12px" :title="s.row.stopReason || ''">
+              停嘱：{{ s.row.stopReason || '—' }}
+            </span>
+          </template>
+        </el-table-column>
+        <template #empty><el-empty description="暂无医嘱，点上方下达或从处方导入"/></template>
+      </el-table>
+    </template>
+  </el-drawer>
 </template>
 
 <script lang="ts" setup>
@@ -132,7 +251,12 @@ import {HospitalDto} from "@/model/DO/HospitalDto";
 import {HospitalVo} from "@/model/VO/HospitalVo";
 import {Page} from "@/model/DO/Page";
 import {reqAddHospitalMonitor, reqDischargeHospital, reqHospitalMonitorList, reqHospitalPage, reqSaveHospital} from "@/request/HospitalApi";
-import {reqRecordPage} from "@/request/RecordApi";
+import {reqAddAdvice, reqAddAdviceBatch, reqAdviceByHospital, reqDoneAdvice, reqStopAdvice} from "@/request/HospitalAdviceApi";
+import {HospitalAdvice} from "@/model/entiy/HospitalAdvice";
+import {Prescription} from "@/model/entiy/MedicalRecord";
+import {Drug} from "@/model/entiy/Drug";
+import {reqDrugList} from "@/request/DrugApi";
+import {reqRecordPage, reqRecordOne} from "@/request/RecordApi";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {HospitalMonitor} from "@/model/entiy/HospitalMonitor";
 import {moveT} from "@/utils/TimeUtil";
@@ -278,6 +402,144 @@ onMounted(() => {
     modalView.value = true
   }
 })
+
+/**
+ ┌───────────────────────────────────┐
+ │=============住院医嘱单=============│
+ └───────────────────────────────────┘
+ */
+const FREQS = ['QD 每日一次', 'BID 每日两次', 'TID 每日三次', 'QID 每日四次', '持续', '必要时']
+const ROUTES = ['口服', '皮下注射', '肌肉注射', '静脉', '外用']
+
+const adviceView = ref(false)
+const adviceTitle = ref('住院医嘱')
+const adviceRow = ref<HospitalDto | null>(null)
+const advices = ref<HospitalAdvice[]>([])
+const adviceForm = ref<Partial<HospitalAdvice>>({itemType: 1, frequency: 'BID 每日两次', route: '口服'})
+const adviceSaving = ref(false)
+const drugList = ref<Drug[]>([])
+
+const openAdvice = (row: HospitalDto): void => {
+  adviceRow.value = row
+  adviceTitle.value = `住院医嘱 - ${row.petName}（${row.roomNo || '未分配床位'}）`
+  adviceForm.value = {itemType: 1, frequency: 'BID 每日两次', route: '口服'}
+  importList.value = []
+  importChecks.value = []
+  advices.value = []
+  adviceView.value = true
+  loadAdvices(row.hospitalId)
+  if (drugList.value.length === 0) reqDrugList().then(res => { drugList.value = res || [] })
+}
+const loadAdvices = (hospitalId: number): void => {
+  reqAdviceByHospital(hospitalId).then(res => { advices.value = res || [] })
+}
+// 选药品自动带名称/单位
+const onAdviceDrugChange = (drugId: number | null): void => {
+  const d = drugList.value.find(x => x.drugId === drugId)
+  if (d) {
+    adviceForm.value.drugId = d.drugId
+    adviceForm.value.itemName = d.drugName
+    adviceForm.value.doseUnit = d.drugUnit
+  } else {
+    adviceForm.value.itemName = ''
+  }
+}
+const submitAdvice = (): void => {
+  if (!adviceRow.value) return
+  const f = adviceForm.value
+  if (!f.itemName) { ElMessage.warning('请填写/选择医嘱项目'); return }
+  adviceSaving.value = true
+  reqAddAdvice({
+    hospitalId: adviceRow.value.hospitalId,
+    recordId: adviceRow.value.recordId,
+    itemType: f.itemType ?? 1,
+    drugId: f.drugId ?? null,
+    itemName: f.itemName!,
+    dose: f.dose ?? null,
+    doseUnit: f.doseUnit ?? null,
+    frequency: f.frequency ?? null,
+    route: f.route ?? null,
+    days: f.days ?? null,
+    startDate: f.startDate ?? null,
+    remark: f.remark ?? null
+  }).then(res => {
+    adviceSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success('医嘱已下达')
+      adviceForm.value = {itemType: f.itemType ?? 1, frequency: 'BID 每日两次', route: '口服'}
+      loadAdvices(adviceRow.value!.hospitalId)
+    } else ElMessage.error(res.msg || '下达失败')
+  }).catch(() => { adviceSaving.value = false })
+}
+
+/** 从本病历处方导入（与处方联动） */
+const importLoading = ref(false)
+const importSaving = ref(false)
+const importList = ref<Prescription[]>([])
+const importChecks = ref<number[]>([])
+const loadRxImport = (): void => {
+  if (!adviceRow.value) return
+  importLoading.value = true
+  reqRecordOne(adviceRow.value.recordId).then(res => {
+    importLoading.value = false
+    const ps = res?.prescriptions || []
+    if (!ps.length) { ElMessage.info('本病历暂未开处方'); return }
+    importList.value = ps
+    importChecks.value = ps.map((_, i) => i)
+  }).catch(() => { importLoading.value = false; ElMessage.error('拉取处方失败') })
+}
+const submitImport = (): void => {
+  if (!adviceRow.value || !importChecks.value.length) return
+  const row = adviceRow.value
+  const today = new Date().toISOString().slice(0, 10)
+  const list: HospitalAdvice[] = importChecks.value.map(i => {
+    const p = importList.value[i]
+    return {
+      hospitalId: row.hospitalId,
+      recordId: row.recordId,
+      itemType: 1,
+      drugId: p.drugId ?? null,
+      itemName: p.drugName ?? '',
+      dose: p.singleDose != null ? String(p.singleDose) : null,
+      doseUnit: p.singleDoseUnit ?? null,
+      frequency: p.dailyTimes ? `每日${p.dailyTimes}次` : null,
+      route: p.usageInfo || null,
+      days: p.days ?? null,
+      startDate: today,
+      remark: `由本病历处方导入（数量${p.quantity}${p.drugUnit || ''}）`
+    }
+  })
+  importSaving.value = true
+  reqAddAdviceBatch(list).then(res => {
+    importSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success(`已导入 ${list.length} 条医嘱`)
+      importList.value = []
+      importChecks.value = []
+      loadAdvices(row.hospitalId)
+    } else ElMessage.error(res.msg || '导入失败')
+  }).catch(() => { importSaving.value = false })
+}
+
+/** 停嘱 / 完成 */
+const stopAdvice = (row: HospitalAdvice): void => {
+  ElMessageBox.prompt('填写停嘱原因（医疗留痕，必填）：', '停嘱', {
+    confirmButtonText: '确认停嘱', cancelButtonText: '取消',
+    inputType: 'textarea', inputPlaceholder: '如：病情好转/出现不良反应/转治疗方案',
+    inputPattern: /\S+/, inputErrorMessage: '请填写停嘱原因'
+  }).then(({value}) => {
+    reqStopAdvice(row.adviceId!, value as string).then(res => {
+      if (res.code === 1) { ElMessage.success('已停嘱'); loadAdvices(row.hospitalId) }
+      else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+const doneAdvice = (row: HospitalAdvice): void => {
+  reqDoneAdvice(row.adviceId!).then(res => {
+    if (res.code === 1) { ElMessage.success('已完成'); loadAdvices(row.hospitalId) }
+    else ElMessage.error(res.msg || '操作失败')
+  })
+}
 </script>
 
 <style scoped>
@@ -288,5 +550,24 @@ onMounted(() => {
   margin-left: 16px;
   font-size: 12px;
   color: #909399;
+}
+
+/* 医嘱：处方导入区 */
+.adv-import {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+
+  .tip { margin-left: 8px; }
+}
+.adv-import-list {
+  border: 1px dashed #b3d8a8;
+  background: #f6fbf3;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+
+  .imp-row { padding: 3px 0; font-size: 13px; }
 }
 </style>
