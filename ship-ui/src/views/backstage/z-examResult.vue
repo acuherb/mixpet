@@ -13,7 +13,10 @@
         <LabResultPanel v-if="tab === 'lab'" @pending-count="labPending = $event"/>
       </el-tab-pane>
       <el-tab-pane label="影像报告">
-        <ImageResultPanel v-if="tab === 'image'"/>
+        <template #label>
+          <span>影像报告<el-badge v-if="imagePending > 0" :value="imagePending" type="warning" style="margin-left:6px"/></span>
+        </template>
+        <ImageResultPanel v-if="tab === 'image'" @pending-count="imagePending = $event"/>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -31,4 +34,6 @@ const route = useRoute()
 const tab = ref<'lab' | 'image'>(route.query.tab === 'image' ? 'image' : 'lab')
 // 检验待出结果数（子页 emit 回填，用于页签角标）
 const labPending = ref(0)
+// 影像待出报告数
+const imagePending = ref(0)
 </script>

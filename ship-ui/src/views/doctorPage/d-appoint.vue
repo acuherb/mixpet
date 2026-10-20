@@ -212,6 +212,11 @@
               <el-icon><InfoFilled/></el-icon>
               <span v-if="recordForm.weight != null">当前宠物体重：<b>{{ recordForm.weight }} kg</b>，算量结果请结合体重核对</span>
               <span v-else style="color:#E6A23C">尚未填写体重（算量依据），请到第 1 步「分诊与体征」补充</span>
+              <!-- 处方笺快捷打印：保存处方后直接打印，无需走到第 4 步 -->
+              <el-button v-if="treatRecordId > 0 && !orderLocked" size="small" plain round type="primary"
+                         style="margin-left:auto" @click="rxQuickView = true">
+                <el-icon style="margin-right:4px"><Printer/></el-icon>打印处方笺
+              </el-button>
             </div>
             <el-table :data="prescriptions" border size="small">
               <el-table-column label="药品" min-width="180">
@@ -594,6 +599,8 @@
     <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
     <!-- 统一打印入口：电子病历 / 兽用处方笺（国标） -->
     <PrintChoiceDialog v-model="printChoice" :record-id="treatRecordId"/>
+    <!-- 处方笺快捷打印（第3步保存处方后直接用，预设处方笺模式） -->
+    <PrintChoiceDialog v-model="rxQuickView" preset="rx" :record-id="treatRecordId"/>
 
   </div>
 </template>
@@ -611,7 +618,7 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, InfoFilled, MagicStick, Plus} from "@element-plus/icons-vue";
+import {Delete, InfoFilled, MagicStick, Plus, Printer} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
@@ -1235,6 +1242,8 @@ const fillAi = (): void => {
 // 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览
 // 打印选择弹窗（电子病历 / 兽用处方笺）
 const printChoice = ref(false)
+// 处方笺快捷打印弹窗（第3步处方区进入，直接进处方笺模式）
+const rxQuickView = ref(false)
 const goOrder = (path: string): void => {
   router.push('/doctorPage/' + path + '?recordId=' + treatRecordId.value)
 }

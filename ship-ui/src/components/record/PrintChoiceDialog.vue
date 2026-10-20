@@ -88,14 +88,19 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, reactive, ref} from 'vue'
+import {computed, reactive, ref, watch} from 'vue'
 import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
 import {reqRxSheet} from "@/request/RecordApi";
 import {reqRxPrintPrepare} from "@/request/RxApi";
 import {RxSheet} from "@/model/entiy/RxSheet";
 import {ElMessage} from "element-plus";
 
-const props = defineProps<{ recordId: number; modelValue: boolean }>()
+const props = defineProps<{
+  recordId: number
+  modelValue: boolean
+  /** 预设模式：rx=直接进处方笺（如接诊第3步保存处方后快捷打印），缺省电子病历 */
+  preset?: 'record' | 'rx'
+}>()
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>()
 // 双向显示控制（兼容写法：不用 defineModel，本项目 vue 3.2 运行时无 useModel 导出）
 const view = computed({
@@ -104,7 +109,11 @@ const view = computed({
 })
 
 /** 打印类型：record 电子病历 / rx 兽用处方笺 */
-const mode = ref<'record' | 'rx'>('record')
+const mode = ref<'record' | 'rx'>(props.preset === 'rx' ? 'rx' : 'record')
+// 每次打开重置为预设模式（避免上次选择残留）
+watch(() => props.modelValue, (v: boolean) => {
+  if (v) mode.value = props.preset === 'rx' ? 'rx' : 'record'
+})
 
 /*===== 电子病历：模板宫格（国标病历/黑白简化/彩色详情版） =====*/
 const style = ref<'std' | 'mono' | 'color'>('std')
