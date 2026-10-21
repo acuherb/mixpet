@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mix.mapper.ImageOrderMapper">
+    <!--申请单分页：联查宠物/客户/医生名和病历诊断；待检查在前-->
+    <select id="selectImageOrderPage" resultType="com.mix.model.dto.ImageOrderDto">
+        SELECT
+        o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
+        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
+        p.pet_name, c.client_name, d.doctor_name, r.diagnosis
+        FROM image_order o
+        LEFT JOIN pet p ON o.pet_id = p.pet_id
+        LEFT JOIN client c ON o.client_id = c.client_id
+        LEFT JOIN doctor d ON o.doctor_id = d.doctor_id
+        LEFT JOIN medical_record r ON o.record_id = r.record_id
+        WHERE o.is_del = 0
+        <if test="status != null">
+            AND o.status = #{status}
+        </if>
+        ORDER BY o.status ASC, o.create_time DESC
+    </select>
+
+    <!--某病历的申请单-->
+    <select id="selectByRecord" resultType="com.mix.model.dto.ImageOrderDto">
+        SELECT
+        o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
+        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM image_order o
+        LEFT JOIN pet p ON o.pet_id = p.pet_id
+        LEFT JOIN client c ON o.client_id = c.client_id
+        LEFT JOIN doctor d ON o.doctor_id = d.doctor_id
+        WHERE o.is_del = 0 AND o.record_id = #{recordId}
+        ORDER BY o.create_time DESC
+    </select>
+</mapper>

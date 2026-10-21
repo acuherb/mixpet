@@ -1,0 +1,60 @@
+spring:
+  profiles:
+    active: dev # 默认使用dev配置文件
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: ${DB_USER:mixpet} # mysql用户名
+    password: ${DB_PASSWORD:MixPet2024} # mysql密码
+  mail:
+    host: smtp.qq.com # 邮箱配置，账号与授权码在dev中
+    port: 587
+    default-encoding: UTF-8
+  servlet:
+    multipart:
+      max-file-size: 30MB # 让上传的文件可以为30MB
+---
+# 改变服务端口
+server:
+  port: 8085
+  # 设置报错时的路径
+  error:
+    path: /power/error
+  # 设置session过期时间为20分钟
+  servlet:
+    session:
+      timeout: 20m
+      cookie:
+        # CSRF 缓解：项目为前后端分离+Session 认证且全局关闭了 CSRF（自定义登录过滤器无 Token 机制），
+        # SameSite=Lax 阻止跨站 POST 自动携带会话 Cookie（同站导航不受影响）
+        same-site: Lax
+        http-only: true
+---
+# 设置日志输出
+logging:
+  pattern:
+    dateformat: MM-dd HH:mm
+---
+mybatis-plus:
+  global-config:
+    banner: true
+    db-config:
+      logic-delete-field: isDel
+      logic-not-delete-value: 0
+  mapper-locations: classpath:com/mix/mapper/*.xml
+---
+# 业务配置
+appointment:
+  max-per-day: 20 # 每位医生每日号源上限（同一医生同一自然日预约数）
+app:
+  default-password: ${APP_DEFAULT_PASSWORD:MixPet@Prod2026!} # 新建用户/管理员重置密码的默认口令；生产必须通过环境变量 APP_DEFAULT_PASSWORD 覆盖此默认值
+remember-me:
+  # 记住我 Cookie 的签名密钥（原为硬编码 "MixJade"，所有环境共用且入库有泄露风险）；
+  # 生产必须通过环境变量 REMEMBER_ME_KEY 覆盖。注意：更换密钥会使已发出的记住我 Cookie 全部失效（需重新登录）
+  key: ${REMEMBER_ME_KEY:MixPet@Remember2026}
+---
+# AI 辅助诊疗（旁路功能：enabled=false 一键关闭，不影响正常接诊）
+ai:
+  enabled: true # 功能开关
+  provider: mock # 模型提供方：mock(演示)/deepseek(上线期)
+  # apiKey 走环境变量 AI_API_KEY，不写入本文件、不提交

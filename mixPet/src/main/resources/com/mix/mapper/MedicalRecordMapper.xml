@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mix.mapper.MedicalRecordMapper">
+    <!--宠物的就诊史：联查宠物/客户/医生/科室名与账单费用-->
+    <select id="selectPetRecords" resultType="com.mix.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        LEFT JOIN department dep ON r.department_id = dep.department_id
+        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        WHERE r.is_del = 0
+        AND r.pet_id = #{petId}
+        ORDER BY r.create_time DESC
+    </select>
+
+    <!--单份病历详情（联查）-->
+    <select id="selectRecordOne" resultType="com.mix.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.present_illness, r.past_history, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
+        r.triage_level, r.weight, r.temperature, r.heart_rate, r.respiratory_rate, r.blood_pressure,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        LEFT JOIN department dep ON r.department_id = dep.department_id
+        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        WHERE r.is_del = 0
+        AND r.record_id = #{recordId}
+    </select>
+
+    <!--某医生的接诊病历：开化验单选择病历用-->
+    <select id="selectDoctorRecords" resultType="com.mix.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.create_time,
+        r.status, r.finish_time, r.cancel_reason,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        WHERE r.is_del = 0
+        AND r.doctor_id = #{doctorId}
+        ORDER BY r.create_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!--随访提醒：复诊日期在30天内（含逾期）的病历-->
+    <select id="selectDueRevisits" resultType="com.mix.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.pet_id, r.client_id, r.doctor_id, r.diagnosis, r.revisit_date, r.create_time,
+        r.status, r.finish_time, r.cancel_reason,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        WHERE r.is_del = 0 AND r.revisit_date IS NOT NULL
+        AND r.revisit_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        ORDER BY r.revisit_date ASC
+    </select>
+    <!--宠物近期用药：跨处方+病历，取最近10条-->
+    <select id="selectRecentRxByPet" resultType="com.mix.model.vo.PetHistoryRx">
+        SELECT p.drug_name AS drugName, p.usage_info AS usageInfo, r.create_time AS createTime
+        FROM prescription p
+        JOIN medical_record r ON p.record_id = r.record_id
+        WHERE r.pet_id = #{petId} AND r.is_del = 0
+        ORDER BY r.create_time DESC
+        LIMIT 10
+    </select>
+
+    <!--宠物近期检验异常项：跨化验明细+化验单+病历，取最近10条-->
+    <select id="selectAbnormalLabByPet" resultType="com.mix.model.vo.PetHistoryLab">
+        SELECT i.item_name AS itemName, i.result_value AS resultValue, i.ref_range AS refRange,
+               i.item_unit AS itemUnit, i.result_time AS resultTime
+        FROM lab_order_item i
+        JOIN lab_order o ON i.order_id = o.order_id
+        JOIN medical_record r ON o.record_id = r.record_id
+        WHERE r.pet_id = #{petId} AND i.is_abnormal = 1
+        ORDER BY i.result_time DESC
+        LIMIT 10
+    </select>
+    <!--病历多条件检索：联查宠物/客户/医生/科室名与账单费用-->
+    <select id="selectRecordPage" resultType="com.mix.model.dto.RecordDto">
+        SELECT
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.present_illness, r.past_history, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
+        r.triage_level, r.weight, r.temperature, r.heart_rate, r.respiratory_rate, r.blood_pressure,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
+        FROM medical_record r
+        LEFT JOIN pet p ON r.pet_id = p.pet_id
+        LEFT JOIN client c ON r.client_id = c.client_id
+        LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
+        LEFT JOIN department dep ON r.department_id = dep.department_id
+        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        WHERE r.is_del = 0
+        <if test="q.recordId != null"> AND r.record_id = #{q.recordId} </if>
+        <if test="q.petName != null and q.petName != ''"> AND p.pet_name LIKE CONCAT('%', #{q.petName}, '%') </if>
+        <if test="q.clientName != null and q.clientName != ''"> AND c.client_name LIKE CONCAT('%', #{q.clientName}, '%') </if>
+        <if test="q.doctorName != null and q.doctorName != ''"> AND d.doctor_name LIKE CONCAT('%', #{q.doctorName}, '%') </if>
+        <if test="q.diagnosis != null and q.diagnosis != ''"> AND r.diagnosis LIKE CONCAT('%', #{q.diagnosis}, '%') </if>
+        <if test="q.status != null"> AND r.status = #{q.status} </if>
+        <if test="q.startTime != null and q.startTime != ''"> AND r.create_time &gt;= #{q.startTime} </if>
+        <if test="q.endTime != null and q.endTime != ''"> AND r.create_time &lt;= #{q.endTime} </if>
+        ORDER BY r.create_time DESC
+    </select>
+</mapper>

@@ -1,0 +1,100 @@
+package com.mix.service;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.mix.model.dto.NoticeDto;
+import com.mix.model.entity.Notice;
+
+import java.util.List;
+
+/**
+ * <p>
+ * 公告表 服务类
+ * </p>
+ *
+ * @author MixJade
+ * @since 2023-01-02
+ */
+public interface INoticeService extends IService<Notice> {
+    /**
+     * 去掉冗余的图片
+     *
+     * @return 删除成功
+     */
+    boolean delImg();
+
+    /**
+     * 单个逻辑删除
+     *
+     * @param petId 宠物id
+     * @return 是否删除成功
+     */
+    boolean deleteById(Integer petId);
+
+    /**
+     * 批量逻辑删除
+     *
+     * @param idGroup 一组id
+     * @return 是否批量删除成功
+     */
+    boolean deleteByIds(List<Integer> idGroup);
+
+    /**
+     * 分页查询
+     *
+     * @param noticeName 公告名
+     * @param numPage    当前页码
+     * @param pageSize   当前一页的最大条数
+     * @return 数据的总长度，与分页查询结果
+     */
+    IPage<NoticeDto> selectByPage(String noticeName, int numPage, int pageSize);
+
+    /**
+     * 顾客端公告分页（仅顾客可见公告）
+     */
+    IPage<NoticeDto> selectNoticePagePublic(int numPage, int pageSize, String noticeName);
+
+    /**
+     * 读取公告文本内容
+     */
+    String getNoticeText(Integer noticeId);
+
+    /**
+     * 主页的公告查询
+     */
+    List<NoticeDto> selectFour();
+
+    /**
+     * 管理员添加公告
+     *
+     * @param noticeDto 公告内容，标题，创建人ID
+     * @return 添加成功
+     */
+    boolean addNotice(NoticeDto noticeDto);
+
+    /**
+     * 修改公告
+     *
+     * @param noticeDto 公告内容，标题，文件名，修改人ID
+     * @return 修改成功
+     */
+    boolean updateNotice(NoticeDto noticeDto);
+
+    /**
+     * 禁用公告
+     *
+     * @param noticeId 公告id
+     * @return 禁用成功
+     */
+    boolean disableNotice(Integer noticeId, boolean isDis);
+
+    /**
+     * 系统自动发布公告（如疫苗到期提醒），无需登录医生
+     *
+     * @param title   公告标题
+     * @param content 公告正文
+     * @return 是否成功
+     */
+    boolean createSystemNotice(String title, String content);
+
+}

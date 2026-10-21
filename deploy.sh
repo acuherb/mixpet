@@ -45,12 +45,12 @@ echo "==> [依赖检查]"
 for c in java mvn node npm; do command -v "$c" >/dev/null || { echo "缺少 $c，请先安装"; exit 1; }; done
 
 echo "==> [1/4] 构建前端"
-cd "$APP_DIR/ship-ui"
+cd "$APP_DIR/mix-ui"
 npm install
 npm run build
 
 echo "==> [2/4] 构建后端"
-cd "$APP_DIR/shipPet"
+cd "$APP_DIR/mixPet"
 mvn clean package -DskipTests
 
 echo "==> [3/4] 生成 nginx 站点配置"
@@ -69,7 +69,7 @@ nginx -t 2>&1 || echo "⚠️ nginx 未安装或配置有误，请安装 nginx �
 
 echo "==> [4/4] 启动后端"
 export DB_PASSWORD APP_DEFAULT_PASSWORD MAIL_USER MAIL_PASS PET_AVATAR PET_NOTICE PET_CHATIMG PET_REPORT
-JAR=$(ls "$APP_DIR/shipPet/target"/ship-*.jar 2>/dev/null | head -n1)
+JAR=$(ls "$APP_DIR/mixPet/target"/mix-*.jar 2>/dev/null | head -n1)
 [ -n "$JAR" ] || { echo "未找到后端 jar，构建可能失败"; exit 1; }
 nohup java -jar "$JAR" > /var/log/mixpet-backend.log 2>&1 &
 echo "    后端已启动 PID=$!  日志=/var/log/mixpet-backend.log"

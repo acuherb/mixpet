@@ -1,6 +1,6 @@
 -- 兽用处方笺打印补充表 + 留痕（农业农村部第734号《兽医处方格式及应用规范》）
 -- 处方正文仍以 prescription/medical_record 为准，本表只存「打印时才需要的补充字段 + 编号 + 留痕」
--- 适用数据库：pet_ship
+-- 适用数据库：pet_mix
 
 CREATE TABLE IF NOT EXISTS `rx_print_supplement` (
   `id`                BIGINT       NOT NULL AUTO_INCREMENT,

@@ -64,9 +64,9 @@ cd mixpet
 ```
 
 目录结构：
-- `shipPet/` — 后端（Spring Boot 3 + Java 17）
-- `ship-ui/` — 前端（Vue 3 + Vite）
-- `db-backup/` — SQL 脚本（基线 `pet_ship.sql` + 24 个增量迁移脚本）
+- `mixPet/` — 后端（Spring Boot 3 + Java 17）
+- `mix-ui/` — 前端（Vue 3 + Vite）
+- `db-backup/` — SQL 脚本（基线 `pet_mix.sql` + 24 个增量迁移脚本）
 - `avatar/` — 头像图片（WebP）
 - `notice/` — 公告配图
 - `chat/` — 聊天文件（其下分 `image/` 图片、`file/` 文件两子目录）
@@ -81,9 +81,9 @@ cd mixpet
 
 ```bash
 sudo mysql <<'EOF'
-CREATE DATABASE pet_ship CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE pet_mix CHARACTER SET utf8 COLLATE utf8_general_ci;
 CREATE USER 'mixpet'@'localhost' IDENTIFIED BY '你的密码';
-GRANT ALL PRIVILEGES ON pet_ship.* TO 'mixpet'@'localhost';
+GRANT ALL PRIVILEGES ON pet_mix.* TO 'mixpet'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 ```
@@ -93,13 +93,13 @@ EOF
 ### 3.2 导入数据
 
 ```bash
-mysql -u mixpet -p pet_ship < ~/公共/mixpet/db-backup/pet_ship.sql
+mysql -u mixpet -p pet_mix < ~/公共/mixpet/db-backup/pet_mix.sql
 ```
 
 ### 3.3 验证
 
 ```bash
-mysql -u mixpet -p pet_ship -e "SHOW TABLES;"
+mysql -u mixpet -p pet_mix -e "SHOW TABLES;"
 ```
 
 应看到 9 张表：`adopt`、`appointment`、`client`、`department`、`doctor`、`foster`、`msg`、`notice`、`pet`。
@@ -116,7 +116,7 @@ mysql -u mixpet -p pet_ship -e "SHOW TABLES;"
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/pet_ship?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: ${DB_USER:mixpet}
     password: ${DB_PASSWORD:MixPet2024}
 ```
@@ -128,7 +128,7 @@ spring:
     username: ${MAIL_USER:your_qq@qq.com}
     password: ${MAIL_PASS:your_auth_code}
 ---
-pet-ship:
+pet-mix:
   images-path: ${PET_AVATAR:/home/debian/公共/mixpet/avatar/}
   notice-path: ${PET_NOTICE:/home/debian/公共/mixpet/notice/}
   chatImg-path: ${PET_CHATIMG:/home/debian/公共/mixpet/chat/}
@@ -155,14 +155,14 @@ export PET_CHATIMG=/你的/路径/chat/
 ### 4.3 启动后端
 
 ```bash
-cd ~/公共/mixpet/shipPet
+cd ~/公共/mixpet/mixPet
 mvn spring-boot:run
 ```
 
 成功标志：
 ```
 Tomcat started on port(s): 8085 (http)
-Started ShipPetApplication in x.xx seconds
+Started mixPetApplication in x.xx seconds
 宠物医院管理系统2.0启动
 http://localhost:8085
 ```
@@ -184,7 +184,7 @@ npm config set registry https://registry.npmmirror.com
 新开一个终端（后端终端保持运行）：
 
 ```bash
-cd ~/公共/mixpet/ship-ui
+cd ~/公共/mixpet/mix-ui
 npm install
 ```
 
@@ -202,7 +202,7 @@ VITE v4.3.9  ready in xxx ms
 
 ### 5.4 局域网访问
 
-改 `ship-ui/vite.config.ts`，在 `server` 块加 `host: '0.0.0.0'`：
+改 `mix-ui/vite.config.ts`，在 `server` 块加 `host: '0.0.0.0'`：
 
 ```ts
 server: {
@@ -245,10 +245,10 @@ ip addr | grep "inet "
 ### 启动
 ```bash
 # 终端 1：后端
-cd ~/公共/mixpet/shipPet && mvn spring-boot:run
+cd ~/公共/mixpet/mixPet && mvn spring-boot:run
 
 # 终端 2：前端
-cd ~/公共/mixpet/ship-ui && npm run dev
+cd ~/公共/mixpet/mix-ui && npm run dev
 ```
 
 ### 停止
@@ -295,7 +295,7 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
    http://localhost:8085      (后端 Spring Boot)
         │
         ▼
-   MariaDB pet_ship           (本地数据库)
+   MariaDB pet_mix           (本地数据库)
 ```
 
 ---
@@ -303,11 +303,11 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
 ## 十、后续开发提示
 
 ### 10.1 重要路径
-- 后端代码：`shipPet/src/main/java/com/ship/`
-- 后端配置：`shipPet/src/main/resources/`
-- 前端代码：`ship-ui/src/`
-- 前端路由：`ship-ui/src/router/`
-- 前端 API 封装：`ship-ui/src/request/`
+- 后端代码：`mixPet/src/main/java/com/mix/`
+- 后端配置：`mixPet/src/main/resources/`
+- 前端代码：`mix-ui/src/`
+- 前端路由：`mix-ui/src/router/`
+- 前端 API 封装：`mix-ui/src/request/`
 
 ### 10.2 上线前安全加固清单（必改）
 > 以下任一项未做，都不要正式对外提供服务。本项目账号=手机号、由前台录入，**不开放自主注册**；黑名单/停用账号（`active=0`）在直接登录与 remember-me 两端均已被拦截，无需额外处理。
@@ -344,7 +344,7 @@ server {
 
     # 前端静态资源（npm run build 产物）
     location / {
-        root /home/debian/mixpet/ship-ui/dist;
+        root /home/debian/mixpet/mix-ui/dist;
         try_files $uri $uri/ /index.html;
     }
     # 后端 API（与 vite 代理一致的 /api 前缀）
@@ -396,10 +396,10 @@ sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw enable
 
 ### 10.4 备份数据库
 ```bash
-mysqldump -u mixpet -p pet_ship > ~/backup/pet_ship_$(date +%Y%m%d).sql
+mysqldump -u mixpet -p pet_mix > ~/backup/pet_mix_$(date +%Y%m%d).sql
 
 # crontab 每天凌晨 2 点
-0 2 * * * mysqldump -u mixpet -p'你的密码' pet_ship > ~/backup/pet_ship_$(date +\%Y\%m\%d).sql
+0 2 * * * mysqldump -u mixpet -p'你的密码' pet_mix > ~/backup/pet_mix_$(date +\%Y\%m\%d).sql
 ```
 
 ---

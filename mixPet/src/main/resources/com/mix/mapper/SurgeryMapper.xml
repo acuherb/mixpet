@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mix.mapper.SurgeryMapper">
+    <!--分页联查：宠物/客户/医生名-->
+    <select id="selectSurgeryPage" resultType="com.mix.model.dto.SurgeryDto">
+        SELECT s.surgery_id, s.record_id, s.pet_id, s.client_id, s.doctor_id,
+        s.surgery_name, s.surgery_type, s.anesthesia_type, s.scheduled_time, s.start_time, s.end_time,
+        s.surgeon, s.assistant, s.status, s.fee, s.create_time,
+        p.pet_name, c.client_name, d.doctor_name, m.diagnosis
+        FROM surgery s
+        LEFT JOIN pet p ON s.pet_id = p.pet_id
+        LEFT JOIN client c ON s.client_id = c.client_id
+        LEFT JOIN doctor d ON s.doctor_id = d.doctor_id
+        LEFT JOIN medical_record m ON s.record_id = m.record_id
+        WHERE s.is_del = 0
+        <if test="status != null">
+            AND s.status = #{status}
+        </if>
+        ORDER BY s.scheduled_time ASC, s.surgery_id DESC
+    </select>
+
+    <!--某病历的手术单-->
+    <select id="selectByRecord" resultType="com.mix.model.dto.SurgeryDto">
+        SELECT s.surgery_id, s.record_id, s.pet_id, s.client_id, s.doctor_id,
+        s.surgery_name, s.surgery_type, s.anesthesia_type, s.scheduled_time, s.start_time, s.end_time,
+        s.surgeon, s.assistant, s.status, s.preop_note, s.intraop_note, s.postop_note, s.fee, s.create_time,
+        p.pet_name, c.client_name, d.doctor_name
+        FROM surgery s
+        LEFT JOIN pet p ON s.pet_id = p.pet_id
+        LEFT JOIN client c ON s.client_id = c.client_id
+        LEFT JOIN doctor d ON s.doctor_id = d.doctor_id
+        WHERE s.is_del = 0 AND s.record_id = #{recordId}
+        ORDER BY s.surgery_id DESC
+    </select>
+
+    <!--单个手术单（联查名）-->
+    <select id="selectOneById" resultType="com.mix.model.dto.SurgeryDto">
+        SELECT s.surgery_id, s.record_id, s.pet_id, s.client_id, s.doctor_id,
+        s.surgery_name, s.surgery_type, s.anesthesia_type, s.scheduled_time, s.start_time, s.end_time,
+        s.surgeon, s.assistant, s.status, s.preop_note, s.intraop_note, s.postop_note, s.fee, s.create_time,
+        p.pet_name, c.client_name, d.doctor_name, m.diagnosis
+        FROM surgery s
+        LEFT JOIN pet p ON s.pet_id = p.pet_id
+        LEFT JOIN client c ON s.client_id = c.client_id
+        LEFT JOIN doctor d ON s.doctor_id = d.doctor_id
+        LEFT JOIN medical_record m ON s.record_id = m.record_id
+        WHERE s.is_del = 0 AND s.surgery_id = #{surgeryId}
+    </select>
+</mapper>

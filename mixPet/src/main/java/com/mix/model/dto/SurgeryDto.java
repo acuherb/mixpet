@@ -1,0 +1,19 @@
+package com.mix.model.dto;
+
+import com.mix.model.entity.AnesthesiaRecord;
+import com.mix.model.entity.Surgery;
+import lombok.Data;
+
+/**
+ * 手术单联查 DTO：宠物/客户/医生名 + 麻醉记录
+ */
+@Data
+public class SurgeryDto extends Surgery {
+    private String petName;
+    private String clientName;
+    private String doctorName;
+    /** 临床诊断（联查病历） */
+    private String diagnosis;
+    /** 麻醉记录（详情时带出） */
+    private AnesthesiaRecord anesthesia;
+}

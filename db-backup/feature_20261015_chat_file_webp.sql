@@ -1,5 +1,5 @@
 -- 聊天增强：发送文件 + 图片转 WebP + 目录结构调整（chat/image、chat/file）
--- 适用数据库：pet_ship
+-- 适用数据库：pet_mix
 -- 说明：
 --   1. msg_type  TEXT 文字 / IMAGE 图片 / FILE 文件
 --   2. msg_name  文件消息的原始文件名（仅 FILE 类型使用）

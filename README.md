@@ -69,11 +69,11 @@
 
 ```text
 mixpet/
-├── shipPet/              # 后端（Spring Boot 3 + Java 17）
+├── mixPet/              # 后端（Spring Boot 3 + Java 17）
 │   └── src/main/
-│       ├── java/com/ship/    # 代码
+│       ├── java/com/mix/    # 代码
 │       └── resources/        # 配置、Mapper XML
-├── ship-ui/              # 前端（Vue 3 + Vite + TS）
+├── mix-ui/              # 前端（Vue 3 + Vite + TS）
 │   └── src/
 │       ├── components/       # 组件
 │       ├── views/            # 页面（reception 顾客端 / doctorPage 医生端 / backstage 管理端）
@@ -104,26 +104,26 @@ mixpet/
 
 ```bash
 sudo mysql <<'EOF'
-CREATE DATABASE pet_ship CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE pet_mix CHARACTER SET utf8 COLLATE utf8_general_ci;
 CREATE USER 'mixpet'@'localhost' IDENTIFIED BY '你的密码';
-GRANT ALL PRIVILEGES ON pet_ship.* TO 'mixpet'@'localhost';
+GRANT ALL PRIVILEGES ON pet_mix.* TO 'mixpet'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-mysql -u mixpet -p pet_ship < db-backup/pet_ship.sql
+mysql -u mixpet -p pet_mix < db-backup/pet_mix.sql
 ```
 
 ### 2. 后端
 
 ```bash
-cd shipPet
+cd mixPet
 mvn spring-boot:run        # 监听 http://localhost:8085
 ```
 
 ### 3. 前端
 
 ```bash
-cd ship-ui
+cd mix-ui
 npm install
 npm run dev                # 访问 http://localhost:3120
 ```
@@ -187,7 +187,7 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 
 ## 数据库迁移说明
 
-`db-backup/` 下除原始基线 `pet_ship.sql` 外，还有按功能/日期命名的**增量迁移脚本**（18 个 `feature_*` + 早期模块脚本）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。近期新增：
+`db-backup/` 下除原始基线 `pet_mix.sql` 外，还有按功能/日期命名的**增量迁移脚本**（18 个 `feature_*` + 早期模块脚本）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。近期新增：
 
 | 脚本 | 内容 |
 | :--- | :--- |

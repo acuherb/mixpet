@@ -1,6 +1,6 @@
 -- AI 辅助诊疗留痕表（P2 Phase1：接口抽象 + Mock Provider）
 -- 留痕内容：谁触发、何时、入参摘要 hash、provider、生成内容 JSON，满足可追溯
--- 适用数据库：pet_ship
+-- 适用数据库：pet_mix
 
 CREATE TABLE IF NOT EXISTS `ai_advice` (
   `id`           BIGINT       NOT NULL AUTO_INCREMENT,

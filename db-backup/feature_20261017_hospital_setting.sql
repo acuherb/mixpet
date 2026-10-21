@@ -1,6 +1,6 @@
 -- 医院基础信息（单行配置 id=1）：名称/地址/电话/logo/营业时间/简介
 -- GET /setting/hospital 公开（打印页/顾客端读取）；PUT 仅 MANAGER
--- 适用数据库：pet_ship
+-- 适用数据库：pet_mix
 
 CREATE TABLE IF NOT EXISTS `hospital_setting` (
   `id`         TINYINT      NOT NULL DEFAULT 1,

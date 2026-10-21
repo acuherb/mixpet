@@ -1,5 +1,5 @@
 -- 就诊状态：medical_record 增加 status/finish_time/cancel_reason
--- 适用数据库：pet_ship
+-- 适用数据库：pet_mix
 -- 说明：status 0接诊中 1已完结 2已作废；新接诊默认 0，完结/作废后置位并记录时间/原因
 --       历史数据视为已完结（finish_time 取原 update_time），不影响既有查询
 

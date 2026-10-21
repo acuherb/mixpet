@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mix.mapper.DepartmentMapper">
+    <!--分页查询-->
+    <select id="selectDepartmentPage" resultType="com.mix.model.dto.DepartmentDto">
+        SELECT
+        de.department_id, department_name,
+        department_info, de.head_id,
+        d2.doctor_name AS head_name,
+        COUNT(DISTINCT dd.doctor_id) AS doctor_num
+        FROM department AS de
+        LEFT JOIN doctor_department dd ON de.department_id = dd.department_id
+        LEFT JOIN doctor d2 ON de.head_id = d2.doctor_id
+        WHERE de.is_del = 0
+        <if test="departmentName!=null and departmentName!=''">
+            <bind name="departmentName" value="'%'+departmentName+'%'"/>
+            and department_name like #{departmentName}
+        </if>
+        GROUP BY de.department_id
+    </select>
+    <!-- 【内联查询】名下有医生的科室，带上当前科室（经关系表）-->
+    <select id="selectNameHaveDoctor" resultType="com.mix.model.dto.NameDo">
+        SELECT DISTINCT de.department_id AS roleId,
+        de.department_name AS roleName
+        FROM department de,
+        doctor_department dd,
+        doctor d
+        WHERE dd.department_id = de.department_id
+        AND dd.doctor_id = d.doctor_id
+        AND d.is_del = 0
+        AND de.is_del = 0
+        <if test="departmentId!=null and departmentId!=''">
+            UNION
+            SELECT department_id AS roleId,
+            department_name AS roleName
+            FROM department
+            WHERE department_id = #{departmentId} AND is_del = 0
+        </if>
+    </select>
+    <!--更新科室，让主任可以为null-->
+    <update id="updateDepart">
+        UPDATE department
+        SET
+        <if test="departmentName!=null and departmentName!=''">
+            department_name=#{departmentName},
+        </if>
+        <if test="departmentInfo!=null and departmentInfo!=''">
+            department_info=#{departmentInfo},
+        </if>
+        <choose>
+            <when test="headId!='' and headId!=0">
+                head_id=#{headId},
+            </when>
+            <otherwise>
+                head_id=null,
+            </otherwise>
+        </choose>
+        update_time=#{updateTime}
+        WHERE department_id=#{departmentId}
+    </update>
+</mapper>

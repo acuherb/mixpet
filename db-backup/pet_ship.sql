@@ -5,7 +5,7 @@
  Source Server Type    : MySQL
  Source Server Version : 80033
  Source Host           : 127.0.0.1:3306
- Source Schema         : pet_ship
+ Source Schema         : pet_mix
 
  Target Server Type    : MySQL
  Target Server Version : 80033

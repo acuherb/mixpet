@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mix.mapper.StatisticsMapper">
+
+    <!--实收金额合计：pay_status=1 的账单按 update_time 记收款时间-->
+    <select id="sumRevenue" resultType="java.math.BigDecimal">
+        SELECT IFNULL(SUM(total_money), 0)
+        FROM bill
+        WHERE is_del = 0 AND pay_status = 1 AND update_time &gt;= #{start}
+    </select>
+
+    <!--近N日实收趋势-->
+    <select id="revenueTrend" resultType="com.mix.model.dto.RevenueTrend">
+        SELECT DATE(update_time) AS date, IFNULL(SUM(total_money), 0) AS amount
+        FROM bill
+        WHERE is_del = 0 AND pay_status = 1 AND update_time &gt;= #{start}
+        GROUP BY DATE(update_time)
+        ORDER BY date ASC
+    </select>
+
+    <!--医生接诊数 top（按病历归属）-->
+    <select id="doctorTop" resultType="com.mix.model.dto.NameCount">
+        SELECT d.doctor_name AS name, COUNT(m.record_id) AS count
+        FROM medical_record m
+        LEFT JOIN doctor d ON m.doctor_id = d.doctor_id
+        WHERE m.is_del = 0 AND m.doctor_id IS NOT NULL
+        GROUP BY m.doctor_id, d.doctor_name
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+</mapper>

@@ -24,7 +24,7 @@
 - 用途：面向小型宠物医院日常经营落地的全流程管理系统，本地 Debian 13 + MariaDB 11 自建，局域网访问
 - 技术栈：Java 17 + Spring Boot 3.1 + Spring Security 6 + MyBatis-Plus 3.5 | Vue 3 + Vite 4 + TS + Element Plus | WebSocket | WebP
 - 端口：后端 8085 / 前端 3120
-- 目录：shipPet/ 后端、ship-ui/ 前端、avatar/ 头像附件、notice/ 公告、chat/ 聊天文件（下设 image/ 与 file/）、db-backup/（含增量迁移脚本）
+- 目录：mixPet/ 后端、mix-ui/ 前端、avatar/ 头像附件、notice/ 公告、chat/ 聊天文件（下设 image/ 与 file/）、db-backup/（含增量迁移脚本）
 - 部署：见 DEPLOY.md；开发流程见 dev-tools/WORKFLOW.md
 - **本项目已从毕设演进为生产系统**：一切按"宠物医院能落地使用"标准开发，不允许占位/TODO/偷懒实现
 
@@ -199,7 +199,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 真正根因：`FieldFill.insertFill` 会无条件给所有实体 `set createTime + updateTime`；`RecordPackage`(接诊保存套餐)与 `DoctorDepart`(保存医生科室关系) 缺 `updateTime` 字段 → MyBatis 抛 `ReflectionException: There is no setter for property named 'updateTime'` → 事务回滚 → `ExceptionAdvice` 兜底成"系统繁忙"。
 - 首判曾误以为只缺 `record_package.update_time` 库列（commit 22a1802 补列，属不完整修复），实际必须补**实体字段**才根治。
 - 修复（commit e2986b2）：① `RecordPackage`/`DoctorDepart` 补 `updateTime` 字段(+getter/setter/@TableField)；② **加固 `FieldFill`：仅当 `metaObject.hasSetter` 存在才赋值**，杜绝今后任何实体再踩坑；③ `doctor_department` 补 `update_time` 列 + 迁移脚本 `fix_entity_update_time_20261013.sql`。
-- 排查：扫描全部实体，`createTime`/`updateTime` 现已齐全；重启后端验证 `Started ShipPetApplication` + `/department/name` 返回 200。
+- 排查：扫描全部实体，`createTime`/`updateTime` 现已齐全；重启后端验证 `Started mixPetApplication` + `/department/name` 返回 200。
 
 ### 安全与质量修复（2026-10-14，BUG 审查）
 - 背景：收到一份 29 项 BUG 审查报告。逐项核对真实代码后，发现**全局 `SecurityConfig` 是 `anyRequest().authenticated()`，仅 `rearEnd` 数组里的接口匿名放行**；报告里多数"无 @Secured 即匿名可访问"属**误判**（本就要求登录）。只有 `rearEnd` 中真正匿名暴露的是 `/doctor/page`（返回医生全字段敏感数据）。按"真实存在才修"处理。
@@ -218,7 +218,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **T2 检验/影像结果回写与报告挂接**：后端 `LabOrder`/`ImageOrder` 增 `reportFile` 字段；`LabResultVo`/`ImageReportVo` 增 `reportFile`，`saveResult`/`saveReport` 一并持久化；`LabOrderDto`/`ImageOrderDto` 透传，XML 分页/按病历查询补 `report_file` 列。前端结果录入页 `z-labResult.vue`/`z-imageResult.vue` 用 `UpImg` 组件上传报告附件并随结果保存、已录入可查看/移除。顾客端查询接口原本已存在（`/lab/record/{recordId}`、`/imageOrder/record/{recordId}`，带归属校验），结果+报告现已可回写。
   - 注：`UpImg` 组件 `photoNm` 为**必填** prop，使用时务必传 `:photo-nm`（本轮回填 `''`）。
 - **T3 发药核对流程**：`Bill` 补 `dispenseStatus`/`dispenseBy`/`dispenseTime`；`IBillService.dispense` + `BillServiceImpl.dispense`（未收款/已发药均拦截，记录核对人与时间）；`BillController.POST /bill/dispense` 加 `@Secured({NURSE,MANAGER,ADMIN})`。前端 `y-billList.vue` 操作列加"药"按钮（仅已收款未发药可见），状态列显示 待发药/已发药，弹窗输核对人姓名后确认。
-- **T4 免疫计划与到期提醒**：项目原本**无任何定时任务基础设施**，新增 `@EnableScheduling`（ShipPetApplication）+ `VaccineReminderScheduler`（`@Scheduled(cron="0 0 8 * * ?")` 每日 08:00）。扫描 `immune_record` 中 `next_time` 落在未来 7 天内的记录（去已删），按 客户/宠物 汇总，调用新增的 `INoticeService.createSystemNotice` 程序化生成系统公告（creatId=0，不经登录校验）。每日仅生成一条（按日期标题去重），异常被 catch 仅记日志不中断。
+- **T4 免疫计划与到期提醒**：项目原本**无任何定时任务基础设施**，新增 `@EnableScheduling`（mixPetApplication）+ `VaccineReminderScheduler`（`@Scheduled(cron="0 0 8 * * ?")` 每日 08:00）。扫描 `immune_record` 中 `next_time` 落在未来 7 天内的记录（去已删），按 客户/宠物 汇总，调用新增的 `INoticeService.createSystemNotice` 程序化生成系统公告（creatId=0，不经登录校验）。每日仅生成一条（按日期标题去重），异常被 catch 仅记日志不中断。
 - 验证：`mvn clean compile` 通过；前端 `npm run build`（vue-tsc + vite）通过（仅 chunk 体积警告）；后端重启后 `/bill/dispense` 端点注册并正确拦截匿名；新 DB 列已 `ALTER` 生效。四项均后端编译/运行 + 前端类型检查双重验证。
 - 已知边界：①T2 报告附件沿用 `/common/upload`（图片类型校验已在昨日加固），文件服务经 `/api/common/download?name=`；②T4 提醒依赖 `immune_record.next_time` 已被填写，若前台录入免疫时未填下一针时间则不会触发提醒（属前台录入规范问题）；③发药核对与收费解耦——收费即扣库存，发药核对为护士线下发药后的系统确认记录，二者不互斥。
 
@@ -236,7 +236,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **顾客端报告查看（补完 T2）**：顾客端 `clientPet.vue` 的就诊详情弹窗本就展示检验/影像**文字结果**，仅缺报告**附件链接**；为化验单/影像单各补一个"查看报告附件/影像附件"外链（`/api/common/download?name=` + `reportFile`）。至此"顾客端可查报告(含附件)"闭环。
 - **记住我加固**：`RememberService.processAutoLoginCookie` 原本既不验过期也不验签名（TODO 自认）。修复：①解析 cookie 内 `expiryTime`，过期即抛 `InvalidCookieException`；②先 `loadUserByUsername` 加载用户（`ClientDetails`/`DoctorDetails` 均过滤 `active=1`，停用/黑名单账号在此抛 `UsernameNotFoundException` 被拦截）；③用加载到的密码重算 `makeTokenSignature` 与 cookie 签名比对，防伪造/篡改，密码变更后自动失效需重登。
 - 说明：审计里"黑名单客户 remember-me 仍可登录"经核实不准确——自动登录本就调用 `loadUserByUsername`（含 active=1 过滤）；本轮补齐过期+签名后，停用/黑名单/改密均可被正确拦截。
-- 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `Started ShipPetApplication` + `/department/name` 200。
+- 验证：`mvn clean compile` 通过；`npm run build` 通过；重启后端 `Started mixPetApplication` + `/department/name` 200。
 - 仍待办（未做）：住院每日监护、手术知情同意书、顾客取消/改期预约+号源容量、复诊关联与随访、默认口令 `123456` 可配置化（`DoctorServiceImpl`/`ClientServiceImpl`/`ClientController`/`application.yml`）。
 
 ### 号源容量 + 顾客取消/改期预约 + 默认口令可配置（2026-10-14 夜）
@@ -386,7 +386,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 
 ### 聊天增强：发文件 + 图片转 WebP + 目录重构 + 手动清理（2026-10-15）
 - 背景（用户）：「医生登出放个人中心更顺手；系统管理/设置字典乱码待修（见下一节）；聊天只能发图不能发文件；发图变模糊；聊天数据要能定期清理」。
-- **目录重构**：`chatImg/` → `chat/`，下设 `image/`（图片）与 `file/`（文件）两子目录。配置 `pet-ship.chatImg-path` 默认值改 `chat/`；`ImgController` 构造确保两子目录存在，`/downChat?type=image|file` 按类型选子目录读取；历史 `chatImg` 已手动迁入 `chat/image`。
+- **目录重构**：`chatImg/` → `chat/`，下设 `image/`（图片）与 `file/`（文件）两子目录。配置 `pet-mix.chatImg-path` 默认值改 `chat/`；`ImgController` 构造确保两子目录存在，`/downChat?type=image|file` 按类型选子目录读取；历史 `chatImg` 已手动迁入 `chat/image`。
 - **图片转 WebP 高分辨率**：前端 `ImageUtil.compressImage` 最长边 512→1280、输出 `image/webp`（质量 0.85），解决以往发图模糊；后端 `getChatImgName` 保留前端扩展名（webp 存 .webp、降级原图存原扩展名），避免内容/扩展名不符。聊天图片、头像上传（`UpImg`）均走此压缩。
 - **头像裁剪兼容 WebP**：JDK 内置 ImageIO 不识别 WebP，此前 `/common/upload` 的 `resize()`（裁 128×128 方形）对 WebP 头像直接跳过。引入 `org.sejda.imageio:webp-imageio:0.1.6`（内置原生库，跨平台），`ImageIO.read/write` 即可处理 WebP，头像统一裁剪生效。
 - **发送文件**：`ImgController` 新增 `POST /common/upChatFile`（存 `chat/file`，返回 `{name: UUID+.ext, origin: 原文件名}`）与 `GET /common/downChat?type=file`（按扩展名返回 MIME，pdf/word/excel/txt 浏览器可在线预览，带 Content-Disposition）。上传大小上限 3MB→30MB（`application.yml`）。前端 `ChatPanel.vue` 加"发文件"上传按钮（doc/pdf/xlsx 常见格式），`chat.vue`/`d-chat.vue` 绑定 `sendFileMsg` 发送与 WebSocket 接收（携带 `msgType`/`msgName`）；`ChatMain.vue` 渲染文件卡片（图标+名+预览/下载）。
