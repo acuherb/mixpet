@@ -50,6 +50,10 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "z-imageResult",
         redirect: "/doctorPage/z-examResult?tab=image"
     }, {
+        // 挂号列表（前台同款表格视图，医生查登记明细直达，无需进后台）
+        path: "y-appointmentList",
+        component: () => import('@/views/backstage/y-appointmentList.vue'),
+    }, {
         // 手术麻醉（手术记录）
         path: "z-surgery",
         component: () => import('@/views/backstage/z-surgery.vue'),

@@ -249,6 +249,17 @@
             <el-tag size="small" type="success" effect="plain">去查看</el-tag>
           </router-link>
         </div>
+        <!-- 挂号列表：医生直达表格视图（登记明细/历史挂号，不用进后台） -->
+        <div class="future-card">
+          <router-link to="/doctorPage/y-appointmentList" class="future-link">
+            <span class="f-ico ico-appoint"><el-icon><Calendar/></el-icon></span>
+            <div class="f-txt">
+              <h4>挂号列表</h4>
+              <p>表格视图 · 登记明细/历史挂号检索</p>
+            </div>
+            <el-tag size="small" type="success" effect="plain">去查看</el-tag>
+          </router-link>
+        </div>
         <!-- 运营协同：跳转后台（收银/档案由前台或管理员处理，医生偶尔查询） -->
         <div class="future-card backstage-link">
           <router-link to="/backstage/y-billList" class="future-link">
@@ -1083,6 +1094,10 @@ onBeforeUnmount(() => {
 
     &.ico-cash {
       background: linear-gradient(135deg, #e6a23c, #f3c563);
+    }
+
+    &.ico-appoint {
+      background: linear-gradient(135deg, #1E6FA8, #4ba3e0);
     }
 
     &.ico-client {

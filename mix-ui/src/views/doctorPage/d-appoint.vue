@@ -20,9 +20,66 @@
           style="width: 170px; margin-left: 12px"
           type="date"
           value-format="YYYY-MM-DD"/>
+      <!-- 视图切换：列表(看全貌/挂号多时用) ↔ 卡片(移动端/美观)；选择本地记忆 -->
+      <el-radio-group v-model="viewMode" size="small" style="margin-left: 12px">
+        <el-radio-button value="list">列表</el-radio-button>
+        <el-radio-button value="card">卡片</el-radio-button>
+      </el-radio-group>
       <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
     </div>
-    <MyRow>
+    <!-- 列表视图：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
+    <el-table v-if="viewMode === 'list'"
+              :data="appointTab === 'pending' ? filteredPending : filteredDone"
+              max-height="calc(100vh - 260px)"
+              row-key="appointmentId"
+              size="small"
+              stripe>
+      <el-table-column label="就诊时间" prop="appointmentDate" sortable width="150">
+        <template #default="s">{{ moveT(s.row.appointmentDate) }}</template>
+      </el-table-column>
+      <el-table-column label="宠物" min-width="110">
+        <template #default="s">
+          {{ s.row.petName }}
+          <span style="color:#909399;font-size:11px">（{{ s.row.petVariety || '—' }}）</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="性别/年龄" width="100">
+        <template #default="s">
+          {{ s.row.petSex ? '公' : '母' }} · {{ s.row.petBirthday ? getAge(s.row.petBirthday) : '—' }}
+        </template>
+      </el-table-column>
+      <el-table-column label="主人" min-width="90" prop="clientName" show-overflow-tooltip/>
+      <el-table-column label="科室/医生" min-width="120" show-overflow-tooltip>
+        <template #default="s">{{ s.row.departmentName || '—' }} / {{ s.row.doctorName || '—' }}</template>
+      </el-table-column>
+      <el-table-column label="挂号描述" min-width="160" show-overflow-tooltip>
+        <template #default="s">
+          {{ s.row.appointmentInfo || '—' }}
+          <el-tag v-if="s.row.originRecordId" size="small" type="info" effect="plain" style="margin-left:4px">复诊</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="90">
+        <template #default="s">
+          <el-tag v-if="recordStatusMap[s.row.appointmentId] === 2" size="small" type="success">已完结</el-tag>
+          <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 3" size="small" type="info">已作废</el-tag>
+          <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning">接诊中</el-tag>
+          <el-tag v-else size="small" type="primary">待接诊</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column fixed="right" label="操作" width="150">
+        <template #default="s">
+          <el-button v-if="!s.row.isSuc" size="small" type="primary" link @click="openTreat(s.row)">接诊</el-button>
+          <el-button v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning" link @click="openTreat(s.row)">继续开单</el-button>
+          <el-button v-else size="small" type="info" link @click="openTreat(s.row)">查看</el-button>
+          <el-button v-if="!s.row.isSuc && isOverdue(s.row)" size="small" type="danger" link @click="markMiss(s.row)">标记爽约</el-button>
+        </template>
+      </el-table-column>
+      <template #empty>
+        <el-empty :image-size="60" description="暂无挂号单"/>
+      </template>
+    </el-table>
+    <!-- 卡片视图：美观/移动端友好 -->
+    <MyRow v-else>
       <AppointCard
           v-for="a in (appointTab === 'pending' ? filteredPending : filteredDone)"
           :key="a.appointmentId"
@@ -641,6 +698,7 @@ import {SysDict} from "@/model/entiy/SysDict";
 import {reqCreateSurgery, reqSurgeryByRecord} from "@/request/SurgeryApi";
 import {useRoute, useRouter} from 'vue-router';
 import {moveT} from "@/utils/TimeUtil";
+import {getAge} from "@/utils/TimeUtil";
 import {reqPetHistory} from "@/request/RecordApi";
 import PrintChoiceDialog from "@/components/record/PrintChoiceDialog.vue";
 import {reqMissAppoint} from "@/request/AppointApi";
@@ -672,6 +730,14 @@ const appoint = ref<AppointDto2[]>([])
 const appointTab = ref<'pending' | 'done'>('pending')
 const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc))
 const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc))
+// 挂号列表视图：list=表格(默认，一屏看全貌) / card=卡片(美观、移动端)；选择本地记忆
+// 窄屏(手机)首次进入默认卡片；用户选过则尊重记忆
+const viewMode = ref<'list' | 'card'>(
+    localStorage.getItem('mixpet-appoint-view') === 'card' || window.innerWidth < 768 ? 'card' : 'list')
+watch(viewMode, v => localStorage.setItem('mixpet-appoint-view', v))
+// 就诊时间已过（可标记爽约；与 AppointCard 同款口径）
+const isOverdue = (a: AppointDto2): boolean =>
+    !!a.appointmentDate && new Date(a.appointmentDate).getTime() < Date.now()
 /** 日期筛选（留空=全部）：按就诊日期过滤两个列表 */
 const appointDateFilter = ref<string>('')
 const filteredPending = computed(() =>
