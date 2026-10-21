@@ -15,6 +15,7 @@ import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.web.authentication.rememberme.AbstractRememberMeServices;
 import org.springframework.security.web.authentication.rememberme.InvalidCookieException;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -32,8 +33,9 @@ public class RememberService extends AbstractRememberMeServices {
     private final DoctorDetails doctorDetails;
 
     public RememberService(ClientDetails clientDetails,
-                           DoctorDetails doctorDetails) {
-        super("MixJade", clientDetails);
+                           DoctorDetails doctorDetails,
+                           @Value("${remember-me.key:MixJade}") String key) {
+        super(key, clientDetails);
         this.clientDetails = clientDetails;
         this.doctorDetails = doctorDetails;
     }

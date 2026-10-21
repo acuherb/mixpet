@@ -173,12 +173,9 @@
       <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
     </el-table>
     <p v-if="!dispenseRx.length" style="color:#909399;margin:8px 0">该账单无处方药品（纯诊疗/检验费用可直接核对发放）</p>
-    <el-form-item label="核对人" style="margin-top:12px">
-      <el-input v-model="dispenseUser" clearable maxlength="32" placeholder="核对人姓名（发药台账记录）" style="width: 220px"/>
-    </el-form-item>
     <template #footer>
       <span style="float:left;font-size:12px;color:#909399;line-height:32px">
-        已核对 {{ checkedCount }} / {{ dispenseRx.length }} 项
+        已核对 {{ checkedCount }} / {{ dispenseRx.length }} 项 · 发药人：当前登录人
       </span>
       <el-button @click="dispenseView = false">取消</el-button>
       <el-button :disabled="!allChecked" type="primary" @click="submitDispense">确认发放</el-button>
@@ -318,11 +315,9 @@ const dispenseView = ref(false)
 const dispenseRow = ref<BillDto | null>(null)
 const dispenseRx = ref<Prescription[]>([])
 const dispenseChecks = ref<boolean[]>([])
-const dispenseUser = ref('')
-// 打开发药核对：拉该账单处方明细，逐项勾选核对
+// 打开发药核对：拉该账单处方明细，逐项勾选核对（发药人取当前登录人，后端留痕）
 const dispenseBill = (row: BillDto): void => {
   dispenseRow.value = row
-  dispenseUser.value = ''
   dispenseRx.value = []
   dispenseChecks.value = []
   dispenseView.value = true
@@ -338,9 +333,9 @@ const checkedCount = computed(() => dispenseChecks.value.filter(Boolean).length)
 const allChecked = computed(() => dispenseRx.value.length === 0 || dispenseChecks.value.every(Boolean))
 const submitDispense = (): void => {
   if (!dispenseRow.value) return
-  if (!dispenseUser.value.trim()) { ElMessage.warning('请填写核对人姓名'); return }
   if (!allChecked.value) { ElMessage.warning('请逐项核对全部药品后再确认发放'); return }
-  reqBillDispense(dispenseRow.value.billId, dispenseUser.value.trim()).then(res => {
+  // 发药人取当前登录人（后端留痕，不再前端填写）
+  reqBillDispense(dispenseRow.value.billId).then(res => {
     if (res.code === 1) {
       dispenseView.value = false
       sendQuery()
@@ -354,27 +349,22 @@ const submitDispense = (): void => {
  └───────────────────────────────────┘
  */
 const refundBill = (row: BillDto): void => {
-  // 退款必须「填原因 + 操作人 + 确认」三要素，防误退与财务纠纷
+  // 退款必须「填原因 + 确认」两要素，操作人取当前登录人（后端留痕），防误退与财务纠纷
   ElMessageBox.prompt(
       `对该账单退款冲正？将${row.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存。请填退款原因：`,
       '退款冲正',
       {
-        confirmButtonText: '下一步', cancelButtonText: '取消', type: 'warning',
+        confirmButtonText: '确认退款', cancelButtonText: '取消', type: 'warning',
         inputType: 'textarea', inputPlaceholder: '如：顾客退药/开单错误/重复收费（必填）',
         inputPattern: /\S+/, inputErrorMessage: '请填写退款原因'
       }
   ).then(({value: reason}) => {
-    ElMessageBox.prompt('输入退款操作人姓名', '退款', {
-      confirmButtonText: '确认退款', cancelButtonText: '取消',
-      inputPattern: /^.+$/, inputErrorMessage: '请输入操作人姓名'
-    }).then(({value: operator}) => {
-      reqBillRefund(row.billId, operator + '｜' + reason).then(res => {
-        if (res.code === 1) {
-          sendQuery()
-          ElMessage.success('退款成功')
-        } else ElMessage.error(res.msg || '退款失败')
-      })
-    }).catch(() => ElMessage.info('取消退款'))
+    reqBillRefund(row.billId, reason).then(res => {
+      if (res.code === 1) {
+        sendQuery()
+        ElMessage.success('退款成功')
+      } else ElMessage.error(res.msg || '退款失败')
+    })
   }).catch(() => ElMessage.info('取消退款'))
 }
 /** 收款方式选择：余额/现金 */

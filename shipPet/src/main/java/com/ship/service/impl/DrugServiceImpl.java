@@ -105,8 +105,11 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
         Drug drug = this.getById(drugId);
         if (drug == null) return Result.error("药品不存在");
         int before = drug.getDrugStock() == null ? 0 : drug.getDrugStock();
+        // 原子累加库存（防并发入库丢失更新：不用先读后写，与发药扣减同款 setSql 模式）
+        this.lambdaUpdate().eq(Drug::getDrugId, drugId)
+                .setSql("drug_stock = COALESCE(drug_stock, 0) + " + quantity)
+                .update();
         int after = before + quantity;
-        this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getDrugStock, after).update();
         // 录了成本价：刷新药品当前进货价（报表毛利按当前进货价估算，取最新入库成本）
         if (costPrice != null) {
             this.lambdaUpdate().eq(Drug::getDrugId, drugId).set(Drug::getCostPrice, costPrice).update();

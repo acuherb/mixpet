@@ -72,10 +72,10 @@ public class BillController {
         return billService.dispense(billId, operator);
     }
 
-    /** 退款冲正：退还余额、回滚库存并记台账 */
+    /** 退款冲正：退还余额、回滚库存并记台账；操作人取登录态，原因必填 */
     @PutMapping("/refund/{billId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
-    public Result refund(@PathVariable Integer billId, String operator) {
-        return billService.refund(billId, operator);
+    public Result refund(@PathVariable Integer billId, String reason) {
+        return billService.refund(billId, reason);
     }
 }

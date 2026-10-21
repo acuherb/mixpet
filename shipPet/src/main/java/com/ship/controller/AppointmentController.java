@@ -15,6 +15,7 @@ import com.ship.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -90,7 +91,9 @@ public class AppointmentController {
                 .count();
     }
 
+    // 事务保证：号源校验(count)与 insert 在同一事务内，缩小并发竞态窗口（彻底方案需号源行锁表，后续迭代）
     @PostMapping
+    @Transactional(rollbackFor = Exception.class)
     @Secured(RoleConst.NURSE)
     public Result save(@RequestBody Appointment appointment) {
         Result checkAppoint = checkAppoint(appointment);
@@ -106,6 +109,7 @@ public class AppointmentController {
      * 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物
      */
     @PostMapping("/self")
+    @Transactional(rollbackFor = Exception.class)
     public Result saveSelf(@RequestBody Appointment appointment) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
         // 只能预约自己名下的宠物

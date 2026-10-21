@@ -7,6 +7,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
  * 用于判空、加密等字符串操作
  */
 public final class StrUtil {
+    /** BCrypt 编码器单例（线程安全，避免每次 new 的重复初始化开销） */
+    private static final BCryptPasswordEncoder ENCODER = new BCryptPasswordEncoder();
+
     /**
      * 判断字段是否为空
      *
@@ -28,10 +31,10 @@ public final class StrUtil {
      */
     public static boolean matches(String rawPwd, String encodedPwd) {
         if (rawPwd == null || encodedPwd == null) return false;
-        return new BCryptPasswordEncoder().matches(rawPwd, encodedPwd);
+        return ENCODER.matches(rawPwd, encodedPwd);
     }
 
     public static String tranPwd(String pwd) {
-        return new BCryptPasswordEncoder().encode(pwd);
+        return ENCODER.encode(pwd);
     }
 }

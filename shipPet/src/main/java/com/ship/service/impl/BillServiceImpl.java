@@ -99,9 +99,16 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 : "收款成功");
     }
 
+    /** 当前登录操作人姓名（发药/退款留痕，不信任前端传参——后台账号均为 Doctor 实体） */
+    private String currentOperator() {
+        return UserUtil.getUser() instanceof Doctor d ? d.getDoctorName() : null;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result dispense(Integer billId, String operator) {
+        // 操作人一律取当前登录人，忽略前端传参（防伪造他人名义发药）
+        operator = currentOperator();
         Bill bill = this.getById(billId);
         if (bill == null) return Result.error("账单不存在");
         if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单尚未收款，无法发药");
@@ -133,7 +140,10 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result refund(Integer billId, String operator) {
+    public Result refund(Integer billId, String reason) {
+        if (reason == null || reason.isBlank()) return Result.error("请填写退款原因");
+        // 操作人一律取当前登录人，忽略前端传参（防伪造他人名义退款）
+        String operator = currentOperator();
         Bill bill = this.getById(billId);
         if (bill == null) return Result.error("账单不存在");
         if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单未收款，无需退款");
@@ -169,6 +179,7 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .eq(Bill::getBillId, billId)
                 .set(Bill::getRefundStatus, true)
                 .set(Bill::getRefundBy, operator)
+                .set(Bill::getRefundReason, reason)
                 .set(Bill::getRefundTime, LocalDateTime.now())
                 .update();
         return Result.success("退款成功"

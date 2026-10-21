@@ -142,6 +142,8 @@ public class ClientController {
         if (clientService.existsByTel(client.getClientTel(), client.getClientId()))
             return Result.error("手机号已被其他用户使用");
         client.setClientUsername(client.getClientTel());
+        // 密码一律不走本接口（防前端塞明文密码被直接入库）；改密码走 /password 专门接口
+        client.setClientPassword(null);
         // 更换头像时删除旧头像文件
         Client oldClient = clientService.getById(client.getClientId());
         if (oldClient != null)
@@ -169,6 +171,8 @@ public class ClientController {
                 return Result.error("手机号已被其他用户使用");
             client.setClientId(client1.getClientId());
             client.setClientUsername(client.getClientTel());
+            // 密码一律不走本接口（防前端塞明文密码被直接入库）；改密码走 /password 专门接口
+            client.setClientPassword(null);
             // 更换头像时删除旧头像文件
             Client oldClient = clientService.getById(client1.getClientId());
             if (oldClient != null)

@@ -43,9 +43,11 @@ public class Bill implements Serializable {
     private BigDecimal discount;
     /** 疫苗费（免疫接种计入） */
     private BigDecimal feeImmune;
-    /** 优惠金额 = totalMoney × (1 - discount) */
+    /** 优惠金额 = totalMoney × (1 - discount)（DB 生成列：禁止写入，防 updateById 时报 Generated column 错） */
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private BigDecimal discountMoney;
-    /** 折后应付/实收 = totalMoney - discountMoney */
+    /** 折后应付/实收 = totalMoney - discountMoney（DB 生成列：禁止写入） */
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private BigDecimal realMoney;
     /** 0未付 1已付 */
     private Boolean payStatus;
@@ -63,6 +65,8 @@ public class Bill implements Serializable {
     private Boolean refundStatus;
     /** 退款操作人 */
     private String refundBy;
+    /** 退款原因（必填，与操作人分开留痕） */
+    private String refundReason;
     /** 退款时间 */
     private LocalDateTime refundTime;
 

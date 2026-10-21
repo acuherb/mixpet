@@ -330,15 +330,18 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .eq(Bill::getPayStatus, false)
                 .last("limit 1"));
         if (unpaid == null) return Result.error("未找到可冲减的未付账单（可能已收款，请走退款流程）");
+        // 先抢占作废权：仅「未作废」的行能被更新（affected=0 说明并发下已被他人作废，不再冲减账单）
+        int affected = prescriptionMapper.update(null, Wrappers.<Prescription>lambdaUpdate()
+                .eq(Prescription::getPrescriptionId, prescriptionId)
+                .eq(Prescription::getIsCancel, false)
+                .set(Prescription::getIsCancel, true));
+        if (affected == 0) return Result.error("该处方已作废");
         BigDecimal amount = (p.getDrugPrice() == null ? BigDecimal.ZERO : p.getDrugPrice())
                 .multiply(BigDecimal.valueOf(p.getQuantity() == null ? 0 : p.getQuantity()));
         billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
                 .eq(Bill::getBillId, unpaid.getBillId())
                 .setSql("fee_drug = fee_drug - " + amount.toPlainString())
                 .setSql("total_money = total_money - " + amount.toPlainString()));
-        prescriptionMapper.update(null, Wrappers.<Prescription>lambdaUpdate()
-                .eq(Prescription::getPrescriptionId, prescriptionId)
-                .set(Prescription::getIsCancel, true));
         return Result.success("处方已作废，费用已冲减");
     }
 

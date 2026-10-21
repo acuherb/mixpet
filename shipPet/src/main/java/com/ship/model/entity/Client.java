@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,7 +30,8 @@ public class Client implements Serializable {
     /** 用户账号 */
     private String clientUsername;
 
-    /** 用户密码 */
+    /** 用户密码：不出接口（@JsonIgnore），防前端拿到哈希离线爆破 */
+    @JsonIgnore
     private String clientPassword;
 
     /** 用户姓名 */

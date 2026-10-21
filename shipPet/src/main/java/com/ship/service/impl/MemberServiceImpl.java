@@ -117,12 +117,15 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
             return Result.error("该次卡已过期");
         if (card.getRemainTimes() == null || card.getRemainTimes() <= 0)
             return Result.error("该次卡已无剩余次数");
-        int remain = card.getRemainTimes() - 1;
-        clientCardMapper.update(null, com.baomidou.mybatisplus.core.toolkit.Wrappers
+        // 原子扣减+条件抢占（remain_times>0 才更新，防并发核销超扣成负数）
+        int affected = clientCardMapper.update(null, com.baomidou.mybatisplus.core.toolkit.Wrappers
                 .<ClientCountCard>lambdaUpdate()
                 .eq(ClientCountCard::getCardId, cardId)
-                .set(ClientCountCard::getRemainTimes, remain)
-                .set(ClientCountCard::getStatus, remain > 0));
+                .gt(ClientCountCard::getRemainTimes, 0)
+                .setSql("remain_times = remain_times - 1")
+                .setSql("status = (remain_times - 1) > 0"));
+        if (affected == 0) return Result.error("该次卡已无剩余次数");
+        int remain = card.getRemainTimes() - 1;
         return Result.success("核销成功，剩余 " + remain + " 次");
     }
 
@@ -144,11 +147,14 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
         int own = client.getClientPoints() == null ? 0 : client.getClientPoints();
         if (own < points) return Result.error("积分不足（当前 " + own + " 分）");
         BigDecimal money = BigDecimal.valueOf(points).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-        clientService.lambdaUpdate()
+        // 条件扣减（client_points >= points 才更新，防并发兑换扣成负数；上面预检只为提前给友好提示）
+        boolean ok = clientService.lambdaUpdate()
                 .eq(Client::getClientId, clientId)
+                .ge(Client::getClientPoints, points)
                 .setSql("client_points = client_points - " + points)
                 .setSql("client_balance = client_balance + " + money.toPlainString())
                 .update();
+        if (!ok) return Result.error("积分不足（当前 " + own + " 分）");
         return Result.success("兑换成功：" + points + " 分 → ￥" + money.toPlainString());
     }
 

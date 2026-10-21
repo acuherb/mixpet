@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -95,6 +96,8 @@ public class Doctor implements Serializable {
     /**
      * 医生密码
      */
+    /** 密码哈希：不出接口（@JsonIgnore），防前端拿到哈希离线爆破 */
+    @JsonIgnore
     private String doctorPassword;
 
     /**

@@ -13,9 +13,9 @@ export const reqClientBill = (): Promise<Bill[]> =>
 // 收款（payType: false余额 true现金）
 export const reqBillPay = (billId: number, payType: boolean): Promise<Res> =>
     reqApi.put<string, Res>(`bill/pay/${billId}`, {}, {params: {payType}})
-// 发药核对（护士确认发药）
-export const reqBillDispense = (billId: number, operator: string): Promise<Res> =>
-    reqApi.post<string, Res>(`bill/dispense/${billId}`, {}, {params: {operator}})
-// 退款冲正（退还余额、回滚库存）
-export const reqBillRefund = (billId: number, operator: string): Promise<Res> =>
-    reqApi.put<string, Res>(`bill/refund/${billId}`, {}, {params: {operator}})
+// 发药核对（发药人取当前登录人，后端留痕）
+export const reqBillDispense = (billId: number): Promise<Res> =>
+    reqApi.post<string, Res>(`bill/dispense/${billId}`)
+// 退款冲正（退还余额、回滚库存；原因必填，操作人取登录人）
+export const reqBillRefund = (billId: number, reason: string): Promise<Res> =>
+    reqApi.put<string, Res>(`bill/refund/${billId}`, {}, {params: {reason}})
