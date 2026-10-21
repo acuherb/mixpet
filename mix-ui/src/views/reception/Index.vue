@@ -10,8 +10,8 @@
           <span class="brand-name">{{ hosp.name || 'mixpet' }}</span>
         </router-link>
         <ul class="nav">
-          <li v-if="isLogin" class="drop">
-            <span class="user-trigger">
+          <li v-if="isLogin" class="drop" :class="{open: dropOpen}">
+            <span class="user-trigger" @click.stop="dropOpen = !dropOpen">
               <MyAvatar :name="user.clientPhoto"/>
               <span class="user-name">{{ user.clientName || '个人中心' }}</span>
               <span class="caret">▾</span>
@@ -172,6 +172,10 @@ const isLogin = ref<boolean>(false)
 const pageLoading = ref<boolean>(true)
 // 当前登录用户（顶栏展示头像与昵称）
 const user = ref<{ clientName: string, clientPhoto: string }>({clientName: '', clientPhoto: ''})
+// 顶栏用户菜单开合（点击展开；悬停由 CSS 兼顾）
+const dropOpen = ref<boolean>(false)
+// 点击页面其他区域时收起菜单
+const closeDrop = (): void => { dropOpen.value = false }
 
 onBeforeMount(() => {
   // 并行加载首页数据，完成后关闭 loading
@@ -209,6 +213,11 @@ const handleScroll = (): void => { showTop.value = (window.scrollY || 0) > 400 }
 const scrollTop = (): void => { window.scrollTo({top: 0, behavior: 'smooth'}) }
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  // 点击页面其他区域收起用户菜单
+  document.addEventListener('click', closeDrop)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeDrop)
 })
 
 /* 医院信息（全局单例，App 已加载；供 Hero 与品牌位展示） */
@@ -323,7 +332,13 @@ onBeforeUnmount(() => {
 /* 顶部导航 */
 .topbar {
   /* 菜单栏：淡品牌玻璃拟态（浅而柔和，滚动时内容透出；品牌色只做点缀） */
-  background: linear-gradient(135deg, var(--brand-soft) 0%, rgba(255, 255, 255, 0.86) 62%);
+  /* 光斑直接画进多层背景（不用伪元素）：既保留柔和光斑层次，
+     又不需要 overflow:hidden 裁剪——绝对定位的用户下拉菜单(.drop-list)才能伸出顶栏，
+     否则会被 overflow:hidden 齐刷刷剪掉（2026-10-20 回归教训） */
+  background:
+      radial-gradient(circle at 85% -60px, rgba(255, 255, 255, 0.16), transparent 55%),
+      radial-gradient(circle at 12% 90px, rgba(255, 255, 255, 0.11), transparent 55%),
+      linear-gradient(135deg, var(--brand-soft) 0%, rgba(255, 255, 255, 0.86) 62%);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.7);
@@ -331,31 +346,10 @@ onBeforeUnmount(() => {
   top: 0;
   z-index: 100;
   user-select: none;
-  overflow: hidden;
   /* 底部品牌渐变细线 + 柔和色晕：与内容区的过渡带 */
   box-shadow:
       0 1px 0 var(--brand-soft),
       0 12px 28px -12px var(--brand-soft);
-
-  &::before {
-    content: "";
-    position: absolute;
-    width: 280px; height: 280px; border-radius: 50%;
-    background: radial-gradient(circle, var(--brand), transparent 70%);
-    opacity: 0.07;
-    top: -150px; right: 6%;
-    pointer-events: none;
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    width: 220px; height: 220px; border-radius: 50%;
-    background: radial-gradient(circle, var(--brand), transparent 70%);
-    opacity: 0.05;
-    bottom: -130px; left: 10%;
-    pointer-events: none;
-  }
 }
 
 .topbar-inner {
@@ -505,10 +499,16 @@ onBeforeUnmount(() => {
     }
   }
 
-  &:hover .drop-list {
+  &:hover .drop-list,
+  &.open .drop-list {
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
+  }
+
+  &:hover .caret,
+  &.open .caret {
+    transform: rotate(180deg);
   }
 }
 
