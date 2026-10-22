@@ -126,6 +126,9 @@ public class SendMail {
 
     /**
      * 验证码邮件 HTML（table + inline style：桌面邮件客户端兼容性最好）
+     * 用 {{BRAND}}/{{HOSP}}/{{CODE}} 占位符 + replace 填充——邮件模板里 % 遍布 CSS
+     * （width="100%" 等），用 String.formatted 会被 % 转义炸出 IllegalFormatConversionException
+     * （2026-10-22 线上事故：Conversion = '"'），占位符方案从机制上杜绝
      */
     private String buildHtml(String code, String hospName, String brand) {
         return """
@@ -137,8 +140,8 @@ public class SendMail {
                   <tr><td align="center">
                     <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="width:560px;max-width:100%;">
                       <!-- 品牌头：渐变横幅 + 医院名 -->
-                      <tr><td style="background:linear-gradient(135deg,%s 0%%,#4ba3e0 100%%);border-radius:14px 14px 0 0;padding:26px 32px;">
-                        <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:1px;">%s</div>
+                      <tr><td style="background:linear-gradient(135deg,{{BRAND}} 0%,#4ba3e0 100%);border-radius:14px 14px 0 0;padding:26px 32px;">
+                        <div style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:1px;">{{HOSP}}</div>
                         <div style="font-size:12px;color:rgba(255,255,255,.82);margin-top:4px;">宠物医疗管理系统 · 邮箱验证</div>
                       </td></tr>
                       <!-- 主体白卡 -->
@@ -146,8 +149,8 @@ public class SendMail {
                         <div style="font-size:15px;color:#1F2D3D;line-height:1.8;">尊敬的用户，你好：</div>
                         <div style="font-size:14px;color:#606266;line-height:1.8;margin-top:8px;">你正在进行邮箱验证，请使用以下验证码完成操作：</div>
                         <!-- 验证码大字 -->
-                        <div style="margin:24px auto;text-align:center;background:#f5f8fb;border:1px dashed %s;border-radius:10px;padding:20px 0;">
-                          <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:%s;font-family:'Courier New',monospace;">%s</span>
+                        <div style="margin:24px auto;text-align:center;background:#f5f8fb;border:1px dashed {{BRAND}};border-radius:10px;padding:20px 0;">
+                          <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:{{BRAND}};font-family:'Courier New',monospace;">{{CODE}}</span>
                         </div>
                         <div style="font-size:12px;color:#909399;line-height:1.8;">
                           · 验证码 <b style="color:#E6A23C;">5 分钟</b>内有效，请尽快使用<br/>
@@ -158,13 +161,16 @@ public class SendMail {
                       <!-- 页脚 -->
                       <tr><td align="center" style="padding:20px 0 8px;font-size:11px;color:#a8abb2;line-height:1.8;">
                         本邮件由系统自动发送，请勿直接回复<br/>
-                        %s · mixpet 宠物医疗管理系统
+                        {{HOSP}} · mixpet 宠物医疗管理系统
                       </td></tr>
                     </table>
                   </td></tr>
                 </table>
                 </body>
                 </html>
-                """.formatted(brand, hospName, brand, brand, code, hospName);
+                """
+                .replace("{{BRAND}}", brand)
+                .replace("{{HOSP}}", hospName)
+                .replace("{{CODE}}", code);
     }
 }
