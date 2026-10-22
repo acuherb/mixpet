@@ -68,7 +68,9 @@ public class LoginController {
             String token = jwtUtil.generateVerifyCode(mail, null, code);
             // 同步写 Session：顾客端「绑定邮箱」走 Session 校验（与 JWT token 两条链路都覆盖）
             session.setAttribute(mail, code);
-            return Result.success(token);
+            // 必须用 data()：success(String) 会把 token 当 msg 塞进 msg 字段，前端取 res.data 得到 undefined
+            // （2026-10-22 线上事故：注册提交提示「请先获取验证码」）
+            return Result.data(token);
         }
         return Result.error("邮件发送失败");
     }
@@ -139,7 +141,8 @@ public class LoginController {
         if (code != null) {
             mailSendTime.merge(mail, now, (old, v) -> now);
             String token = jwtUtil.generateVerifyCode(mail, username, code);
-            return Result.success(token);
+            // 同 regMail：token 必须走 data 字段（success(String) 会把它当 msg）
+            return Result.data(token);
         }
         return Result.error("邮件发送失败");
     }

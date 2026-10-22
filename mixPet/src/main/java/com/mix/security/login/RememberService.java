@@ -34,8 +34,9 @@ public class RememberService extends AbstractRememberMeServices {
 
     public RememberService(ClientDetails clientDetails,
                            DoctorDetails doctorDetails,
-                           @Value("${remember-me.key:MixJade}") String key) {
-        super(key, clientDetails);
+                           @Value("${remember-me.key:}") String key) {
+        // 兜底：配置为空（如环境变量未注入）时用固定默认值，避免启动即抛 key cannot be empty
+        super(StringUtils.hasLength(key) ? key : "MixPetDefaultRememberKey", clientDetails);
         this.clientDetails = clientDetails;
         this.doctorDetails = doctorDetails;
     }
