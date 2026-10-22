@@ -8,6 +8,7 @@ import com.mix.model.vo.EmailVo;
 import com.mix.model.vo.PasswordVo;
 import com.mix.common.SendMail;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import com.mix.security.model.RoleConst;
 import com.mix.service.AvatarFileService;
 import com.mix.service.IClientService;
@@ -17,6 +18,7 @@ import com.mix.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -186,11 +188,7 @@ public class ClientController {
      */
     @PutMapping("/password")
     @Secured(RoleConst.CLIENT)
-    public Result updatePassword(@RequestBody PasswordVo vo) {
-        if (StrUtil.isWhite(vo.oldPwd()) || StrUtil.isWhite(vo.newPwd()))
-            return Result.error("原密码或新密码不能为空");
-        if (vo.newPwd().length() < 6)
-            return Result.error("新密码至少6位");
+    public Result updatePassword(@Valid @RequestBody PasswordVo vo) {
         if (UserUtil.getUser() instanceof Client current) {
             Client dbClient = clientService.getById(current.getClientId());
             if (dbClient == null) return Result.error("用户不存在");

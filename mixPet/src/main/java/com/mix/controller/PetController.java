@@ -14,8 +14,10 @@ import com.mix.model.vo.TransferVo;
 import com.mix.model.entity.PetTransfer;
 import com.mix.util.StrUtil;
 import com.mix.util.UserUtil;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/pet")
+@Validated
 public class PetController {
     private final IPetService petService;
     private final IPetTransferService petTransferService;

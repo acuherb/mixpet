@@ -9,6 +9,7 @@ import com.mix.security.model.RoleConst;
 import com.mix.service.AvatarFileService;
 import com.mix.service.IDoctorService;
 import com.mix.util.StrUtil;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
@@ -109,9 +110,7 @@ public class DoctorController {
 
     @PostMapping
     @Secured(RoleConst.ADMIN)
-    public Result save(@RequestBody DoctorDto doctor) {
-        if (StrUtil.isWhite(doctor.getUsername())) return Result.error("帐号不能为空");
-        if (StrUtil.isWhite(doctor.getDoctorName())) return Result.error("姓名不能为空");
+    public Result save(@Valid @RequestBody DoctorDto doctor) {
         return Result.choice("添加", doctorService.addDoctor(doctor));
     }
 

@@ -1,5 +1,6 @@
 package com.mix.model.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import com.mix.model.entity.Doctor;
 
 import java.util.List;
@@ -29,6 +30,16 @@ public class DoctorDto extends Doctor {
      * 执业兽医资格证号（处方笺用）
      */
     private String doctorCert;
+
+    @NotBlank(message = "账号不能为空")
+    public String getUsername() {
+        return super.getDoctorUsername();
+    }
+
+    @NotBlank(message = "姓名不能为空")
+    public String getDoctorName() {
+        return super.getDoctorName();
+    }
 
     public String getDepartmentName() {
         return departmentName;

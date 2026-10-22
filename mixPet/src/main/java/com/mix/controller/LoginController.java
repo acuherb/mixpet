@@ -10,6 +10,7 @@ import com.mix.security.model.RoleEnum;
 import com.mix.util.JwtUtil;
 import com.mix.util.StrUtil;
 import com.mix.util.UserUtil;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -77,7 +78,7 @@ public class LoginController {
     }
 
     @PostMapping("/register")
-    public Result register(@RequestBody RegisterVo registerVo) {
+    public Result register(@Valid @RequestBody RegisterVo registerVo) {
         if (StrUtil.isWhite(registerVo.tel())) return Result.error("手机号不能为空");
         if (!registerVo.tel().matches("^1[3-9]\\d{9}$")) return Result.error("手机号格式不正确");
         if (clientMapper.isExist(registerVo.tel()) > 0) return Result.error("该手机号已注册");
@@ -139,7 +140,7 @@ public class LoginController {
     }
 
     @PostMapping("/find")
-    public Result find(@RequestBody RegisterVo regVo) {
+    public Result find(@Valid @RequestBody RegisterVo regVo) {
         String username = regVo.username();
         String combined = regVo.code();
         if (StrUtil.isWhite(username)) return Result.error("账号不能为空");
