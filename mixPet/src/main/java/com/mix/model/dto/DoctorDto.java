@@ -32,11 +32,13 @@ public class DoctorDto extends Doctor {
     private String doctorCert;
 
     @NotBlank(message = "账号不能为空")
+    @Override
     public String getUsername() {
-        return super.getDoctorUsername();
+        return super.getUsername();
     }
 
     @NotBlank(message = "姓名不能为空")
+    @Override
     public String getDoctorName() {
         return super.getDoctorName();
     }
