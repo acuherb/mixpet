@@ -4,8 +4,8 @@ spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
-    username: ${DB_USER:mixpet} # mysql用户名
-    password: ${DB_PASSWORD:MixPet2024} # mysql密码
+    username: ${DB_USER:} # mysql用户名（生产必须设置环境变量）
+    password: ${DB_PASSWORD:} # mysql密码（生产必须设置环境变量）
   mail:
     host: smtp.qq.com # 邮箱配置，账号与授权码在dev中
     port: 587
@@ -47,11 +47,13 @@ mybatis-plus:
 appointment:
   max-per-day: 20 # 每位医生每日号源上限（同一医生同一自然日预约数）
 app:
-  default-password: ${APP_DEFAULT_PASSWORD:MixPet@Prod2026!} # 新建用户/管理员重置密码的默认口令；生产必须通过环境变量 APP_DEFAULT_PASSWORD 覆盖此默认值
+  # 新建用户/管理员重置密码的默认口令；生产必须通过环境变量 APP_DEFAULT_PASSWORD 设置（禁止硬编码）
+  default-password: ${APP_DEFAULT_PASSWORD:}
+  # JWT 验证码令牌密钥（生产必须通过环境变量设置，至少 32 字符）
+  verify-code-secret: ${VERIFY_CODE_SECRET:}
 remember-me:
-  # 记住我 Cookie 的签名密钥（原为硬编码 "MixJade"，所有环境共用且入库有泄露风险）；
-  # 生产必须通过环境变量 REMEMBER_ME_KEY 覆盖。注意：更换密钥会使已发出的记住我 Cookie 全部失效（需重新登录）
-  key: ${REMEMBER_ME_KEY:MixPet@Remember2026}
+  # 记住我 Cookie 的签名密钥（生产必须通过环境变量 REMEMBER_ME_KEY 设置，禁止硬编码）
+  key: ${REMEMBER_ME_KEY:}
 ---
 # AI 辅助诊疗（旁路功能：enabled=false 一键关闭，不影响正常接诊）
 ai:

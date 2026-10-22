@@ -73,6 +73,8 @@ const router = useRouter()
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 
+let verifyToken = ""
+
 const regVo = reactive<RegisterVo>({
   username: "",
   password: "",
@@ -108,21 +110,27 @@ const rules: FormRules = {
 }
 
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
-const sendMail = (): void => {
+const sendMail = async (): Promise<void> => {
   if (noMail(regVo.mail)) return;
-  mailBtn.dis = true;
-  let countDown = 30;
-  let intVal = setInterval(() => {
-    if (countDown === 0) {
-      clearInterval(intVal)
-      mailBtn.dis = false;
-      mailBtn.btnTxt = "发送验证码";
-      return
-    }
-    mailBtn.btnTxt = "等待中(" + countDown + ")";
-    countDown--;
-  }, 1000)
-  reqSendRegMail(regVo.mail)
+  try {
+    const token = await reqSendRegMail(regVo.mail)
+    verifyToken = token
+    ElMessage.success("验证码已发送到邮箱，请查收")
+    mailBtn.dis = true;
+    let countDown = 30;
+    const intVal = setInterval(() => {
+      if (countDown === 0) {
+        clearInterval(intVal)
+        mailBtn.dis = false;
+        mailBtn.btnTxt = "发送验证码";
+        return
+      }
+      mailBtn.btnTxt = "等待中(" + countDown + ")";
+      countDown--;
+    }, 1000)
+  } catch {
+    ElMessage.error("发送失败，请重试")
+  }
 }
 
 const toReg = async (): Promise<void> => {
@@ -131,12 +139,16 @@ const toReg = async (): Promise<void> => {
   } catch {
     return
   }
+  if (!verifyToken) {
+    ElMessage.error("请先获取验证码")
+    return
+  }
   submitting.value = true
-  regVo.username = regVo.tel  // 手机号即账号
-  reqRegister(regVo).then(res => {
+  regVo.username = regVo.tel
+  const payload = { ...regVo, code: verifyToken + "|" + regVo.code }
+  reqRegister(payload).then(res => {
     submitting.value = false
     if (res.code === 1) {
-      // 自助注册需管理员审核通过，不再自动登录
       ElMessage.success(res.msg || "注册成功，请等待管理员审核通过后登录")
       setTimeout(() => router.push("/login"), 1200)
     } else {

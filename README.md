@@ -134,11 +134,14 @@ npm run dev                # 访问 http://localhost:3120
 
 ```bash
 # 先按 DEPLOY.md 建库并导入基线，再补齐 24 个增量迁移脚本
-# 设置必要环境变量（至少 DB_PASSWORD / APP_DEFAULT_PASSWORD）
+# 设置必要环境变量（至少 DB_PASSWORD / APP_DEFAULT_PASSWORD / REMEMBER_ME_KEY / VERIFY_CODE_SECRET）
 export MIXPET_DIR=/opt/mixpet                 # 项目目录（建议纯英文路径）
 export MIXPET_DOMAIN=pet.你的诊所域名.com
-export DB_PASSWORD=你的强口令
-export APP_DEFAULT_PASSWORD=你的强口令
+export DB_USER=your_db_user
+export DB_PASSWORD=your_secure_password
+export APP_DEFAULT_PASSWORD=your_secure_default_password
+export REMEMBER_ME_KEY=your_32_char_secret_key_here!
+export VERIFY_CODE_SECRET=your_32_char_jwt_key_here!
 
 bash deploy.sh            # 构建 + 生成 nginx 配置 + 启动后端
 bash deploy.sh --tls      # 额外申请 Let's Encrypt 证书并启用 HTTPS/WSS
@@ -151,18 +154,22 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 
 ## 配置说明
 
-后端配置采用**环境变量写法**，换机部署不改代码：
+后端配置采用**环境变量写法**，换机部署不改代码。所有密钥类变量**生产必须设置**，禁止使用默认值。
 
 | 环境变量 | 默认值 | 说明 |
 | :--- | :--- | :--- |
-| `DB_USER` | `mixpet` | 数据库账号 |
-| `DB_PASSWORD` | `MixPet2024` | 数据库密码 |
-| `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱 |
-| `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码 |
+| `DB_USER` | *（无）* | 数据库账号，**生产必须设置** |
+| `DB_PASSWORD` | *（无）* | 数据库密码，**生产必须设置** |
+| `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱（开发可选） |
+| `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码（开发可选） |
 | `PET_AVATAR` | `~/公共/mixpet/avatar/` | 头像 / 报告附件存储路径 |
 | `PET_NOTICE` | `~/公共/mixpet/notice/` | 公告配图存储路径 |
 | `PET_CHATIMG` | `~/公共/mixpet/chat/` | 聊天文件存储路径 |
-| `APP_DEFAULT_PASSWORD` | `MixPet@Prod2026!` | 新建/重置账号默认口令，**生产务必用环境变量覆盖** |
+| `APP_DEFAULT_PASSWORD` | *（无）* | 新建/重置账号默认口令，**生产必须设置** |
+| `REMEMBER_ME_KEY` | *（无）* | 记住我 Cookie 签名密钥（至少 32 字符），**生产必须设置** |
+| `VERIFY_CODE_SECRET` | *（无）* | JWT 验证码令牌密钥（至少 32 字符），**生产必须设置** |
+
+> ⚠️ **安全提示**：以上所有默认值为空，生产部署时必须通过环境变量设置。建议复制 [.env.example](./.env.example) 并填入真实值后，在启动脚本中通过 `source` 加载。
 
 ---
 

@@ -51,7 +51,8 @@ const router = useRouter()
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 
-// 找回密码只需 账号/邮箱/验证码/新密码，其余字段占位（后端 find 不使用）
+let verifyToken = ""
+
 const findPwd = reactive<RegisterVo>({
   username: "",
   password: "",
@@ -80,21 +81,27 @@ const rules: FormRules = {
 }
 
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
-const sendMail = (): void => {
+const sendMail = async (): Promise<void> => {
   if (noMail(findPwd.mail)) return;
-  mailBtn.dis = true;
-  let countDown = 30;
-  let intVal = setInterval(() => {
-    if (countDown === 0) {
-      clearInterval(intVal)
-      mailBtn.dis = false;
-      mailBtn.btnTxt = "发送验证码";
-      return
-    }
-    mailBtn.btnTxt = "等待中(" + countDown + ")";
-    countDown--;
-  }, 1000)
-  reqSendFindMail(findPwd.mail, findPwd.username)
+  try {
+    const token = await reqSendFindMail(findPwd.mail, findPwd.username)
+    verifyToken = token
+    ElMessage.success("验证码已发送到邮箱，请查收")
+    mailBtn.dis = true;
+    let countDown = 30;
+    const intVal = setInterval(() => {
+      if (countDown === 0) {
+        clearInterval(intVal)
+        mailBtn.dis = false;
+        mailBtn.btnTxt = "发送验证码";
+        return
+      }
+      mailBtn.btnTxt = "等待中(" + countDown + ")";
+      countDown--;
+    }, 1000)
+  } catch {
+    ElMessage.error("发送失败，请重试")
+  }
 }
 
 const toFind = async (): Promise<void> => {
@@ -103,8 +110,13 @@ const toFind = async (): Promise<void> => {
   } catch {
     return
   }
+  if (!verifyToken) {
+    ElMessage.error("请先获取验证码")
+    return
+  }
   submitting.value = true
-  reqFindPwd(findPwd).then(res => {
+  const payload = { ...findPwd, code: verifyToken + "|" + findPwd.code }
+  reqFindPwd(payload).then(res => {
     submitting.value = false
     if (res.code === 1) {
       ElMessage.success("密码重置成功，请返回登录")
