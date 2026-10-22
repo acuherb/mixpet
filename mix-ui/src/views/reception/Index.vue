@@ -149,6 +149,7 @@ import {DoctorDto} from "@/model/DO/DoctorDto";
 import {FosterCardDto} from "@/model/DO/FosterCardDto";
 import {NoticeDto} from "@/model/DO/NoticeDto";
 import {reqLoginUser, reqLogout} from "@/request/PowerApi";
+import {clearPwdCheckFlag} from "@/router";
 import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
@@ -274,7 +275,7 @@ const myLogout = () => {
     confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
   }).then(() => {
     reqLogout().then(() => {
-      // 无论返回码，退出后重置前端登录态并回到未登录首页
+      clearPwdCheckFlag()
       isLogin.value = false
       totalUnread.value = 0
       if (ws) { ws.close(1000, '退出登录'); ws = null }

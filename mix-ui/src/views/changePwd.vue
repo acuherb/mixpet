@@ -30,6 +30,7 @@ import {reactive, ref} from "vue";
 import {useRouter} from "vue-router";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {reqUpdatePwd} from "@/request/ClientApi";
+import {clearPwdCheckFlag} from "@/router";
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -69,6 +70,7 @@ const submit = async () => {
   reqUpdatePwd({oldPwd: form.oldPwd, newPwd: form.newPwd}).then(res => {
     loading.value = false
     if (res.code === 1) {
+      clearPwdCheckFlag()
       ElMessage.success("密码修改成功")
       setTimeout(() => router.push("/reception"), 600)
     } else {

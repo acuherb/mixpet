@@ -29,6 +29,7 @@
 <script lang="ts" setup>
 /*=====三个角色的个人信息展示页面=====*/
 import {reqLogout} from "@/request/PowerApi";
+import {clearPwdCheckFlag} from "@/router";
 import {useRouter} from "vue-router";
 
 defineProps<{
@@ -55,6 +56,7 @@ const updatePwd = () => {
 const router = useRouter()
 const logout = (): void => {
   reqLogout().then(resp => {
+    clearPwdCheckFlag()
     if (resp.code === 204) router.push("/")
   })
 }

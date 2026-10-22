@@ -50,37 +50,39 @@ export const router = createRouter({
 
 /**
  * 首次登录强制改密守卫：顾客未改初始密码时，访问任何顾客端页面都重定向到 /changePwd。
- * 一次会话只查一次；改密成功后重新生效检查。
+ * sessionStorage 存储标记，页面刷新后仍生效；登出时由 logout 接口（或前端自行）清除。
  */
-let pwdCheckDone = false
+const PWD_CHECK_KEY = "mixpet_pwd_check_done"
 router.beforeEach(async (to) => {
-    // 顾客端"个人中心 / 聊天"需登录：未登录（或非顾客账号）引导到登录页
     if (to.path === "/reception/clientCenter"
         || to.path.startsWith("/reception/clientCenter/")
         || to.path.startsWith("/reception/chat")) {
         try {
             const role = await reqGetLogin()
             if (role !== RoleEnum.CLIENT) return "/login"
-        } catch (e) {
+        } catch {
             return "/login"
         }
     }
-    if (pwdCheckDone) return true
-    // 只管顾客端；登录/注册/改密等页面和后台/医生端不拦截（后台医生端各自有登录检查）
+    if (sessionStorage.getItem(PWD_CHECK_KEY)) return true
     if (!to.path.startsWith("/reception")) return true
-    pwdCheckDone = true
+    sessionStorage.setItem(PWD_CHECK_KEY, "1")
     try {
         const role = await reqGetLogin()
         if (role !== RoleEnum.CLIENT) return true
         const user = await reqLoginUser()
         if (user && user.clientPwdChanged === false) {
-            pwdCheckDone = false // 未改密，等改完再查
+            sessionStorage.removeItem(PWD_CHECK_KEY)
             return "/changePwd"
         }
-    } catch (e) {
-        // 未登录等异常交给 axios 401 拦截器处理
+    } catch {
+        // 未登录等异常由 axios 401 拦截器处理
     }
     return true
 })
+
+export function clearPwdCheckFlag() {
+    sessionStorage.removeItem(PWD_CHECK_KEY)
+}
 
 export default router

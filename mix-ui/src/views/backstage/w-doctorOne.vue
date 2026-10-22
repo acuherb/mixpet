@@ -189,6 +189,7 @@ import {Res} from "@/request/Res";
 import UpImg from "@/components/UpImg.vue";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
 import {reqLogout} from "@/request/PowerApi";
+import {clearPwdCheckFlag} from "@/router";
 import {Edit, Key, Document, SwitchButton} from "@element-plus/icons-vue";
 // 手机号只保留数字，最多 11 位
 const sanitizeTel = () => {
@@ -402,6 +403,7 @@ const doLogout = (): void => {
     confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
   }).then(() => {
     reqLogout().then(res => {
+      clearPwdCheckFlag()
       if (res.code === 204) router.push('/login')
     })
   }).catch(() => ElMessage.info('已取消'))

@@ -301,6 +301,7 @@ import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
 import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqLogout} from "@/request/PowerApi";
+import {clearPwdCheckFlag} from "@/router";
 import {useRouter} from "vue-router";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {SwitchButton} from "@element-plus/icons-vue";
@@ -459,6 +460,7 @@ const doLogout = (): void => {
     confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'
   }).then(() => {
     reqLogout().then(res => {
+      clearPwdCheckFlag()
       if (res.code === 204) router.push('/login')
     })
   }).catch(() => ElMessage.info('已取消'))
