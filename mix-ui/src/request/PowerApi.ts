@@ -16,8 +16,9 @@ export const reqGetLogin = (): Promise<RoleEnum> =>
 export const reqLoginUser = (): Promise<Client> =>
     reqApi<string, Client>("login/user")
 
-export const reqSendRegMail = (mail: string): Promise<string> =>
-    reqApi<string, string>("login/regMail?mail=" + mail)
+// 注册/绑定邮箱发送验证码（后端返回 Result，data 为验证 token）
+export const reqSendRegMail = (mail: string): Promise<Res> =>
+    reqApi<string, Res>("login/regMail?mail=" + mail)
 
 export const reqRegisExist = (regUse: string): Promise<Res> =>
     reqApi<string, Res>("login/isExist?regUse=" + regUse)

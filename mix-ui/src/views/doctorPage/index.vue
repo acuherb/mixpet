@@ -166,20 +166,6 @@
       <!--诊疗功能入口（带待办预览）-->
       <div class="future-grid">
         <div class="future-card has-todo">
-          <router-link to="/doctorPage/d-lab" class="future-link">
-            <span class="f-ico ico-lab"><el-icon><FirstAidKit/></el-icon></span>
-            <div class="f-txt">
-              <h4>化验管理</h4>
-              <p>检验检查开单与查看</p>
-            </div>
-            <div class="f-preview">
-              <span class="preview-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
-              <span class="preview-lbl">待出结果</span>
-            </div>
-            <el-tag size="small" type="success" effect="plain">去开单</el-tag>
-          </router-link>
-        </div>
-        <div class="future-card has-todo">
           <router-link to="/doctorPage/z-examResult?tab=lab" class="future-link">
             <span class="f-ico ico-lab"><el-icon><Document/></el-icon></span>
             <div class="f-txt">
@@ -205,20 +191,6 @@
               <span class="preview-lbl">在院</span>
             </div>
             <el-tag size="small" type="success" effect="plain">去办理</el-tag>
-          </router-link>
-        </div>
-        <div class="future-card has-todo">
-          <router-link to="/doctorPage/d-image" class="future-link">
-            <span class="f-ico ico-other"><el-icon><Camera/></el-icon></span>
-            <div class="f-txt">
-              <h4>影像检查</h4>
-              <p>X光/B超/CT开单</p>
-            </div>
-            <div class="f-preview">
-              <span class="preview-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
-              <span class="preview-lbl">待出报告</span>
-            </div>
-            <el-tag size="small" type="success" effect="plain">去开单</el-tag>
           </router-link>
         </div>
         <div class="future-card has-todo">
@@ -288,7 +260,7 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, Camera, ChatDotRound, Document, FirstAidKit, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, ChatDotRound, Document, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";

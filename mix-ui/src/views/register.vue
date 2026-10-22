@@ -18,7 +18,7 @@
           <el-input v-model="regVo.tel" clearable maxlength="11" placeholder="手机号即登录账号" @input="sanitizeTel"/>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="regVo.password" show-password placeholder="至少 5 位"/>
+          <el-input v-model="regVo.password" show-password placeholder="至少 6 位"/>
         </el-form-item>
         <el-form-item label="姓名" prop="name">
           <el-input v-model="regVo.name" clearable placeholder="真实姓名"/>
@@ -99,7 +99,7 @@ const rules: FormRules = {
   ],
   password: [
     {required: true, message: '请输入密码', trigger: 'blur'},
-    {min: 5, message: '密码至少 5 位', trigger: 'blur'}
+    {min: 6, message: '密码至少 6 位', trigger: 'blur'}
   ],
   name: [{required: true, message: '请输入姓名', trigger: 'blur'}],
   mail: [
@@ -112,25 +112,27 @@ const rules: FormRules = {
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
 const sendMail = async (): Promise<void> => {
   if (noMail(regVo.mail)) return;
-  try {
-    const token = await reqSendRegMail(regVo.mail)
-    verifyToken = token
-    ElMessage.success("验证码已发送到邮箱，请查收")
-    mailBtn.dis = true;
-    let countDown = 30;
-    const intVal = setInterval(() => {
-      if (countDown === 0) {
-        clearInterval(intVal)
-        mailBtn.dis = false;
-        mailBtn.btnTxt = "发送验证码";
-        return
-      }
-      mailBtn.btnTxt = "等待中(" + countDown + ")";
-      countDown--;
-    }, 1000)
-  } catch {
-    ElMessage.error("发送失败，请重试")
+  // 后端返回 Result（data=验证 token）；必须取 data——以前直接拿整个对象当 token，
+  // 注册时提交 "[object Object]|验证码" 导致邮箱注册链路一直失败
+  const res = await reqSendRegMail(regVo.mail)
+  if (res.code !== 1) {
+    ElMessage.error(res.msg || '验证码发送失败')
+    return
   }
+  verifyToken = res.data
+  ElMessage.success("验证码已发送到邮箱，请查收")
+  mailBtn.dis = true;
+  let countDown = 30;
+  const intVal = setInterval(() => {
+    if (countDown === 0) {
+      clearInterval(intVal)
+      mailBtn.dis = false;
+      mailBtn.btnTxt = "发送验证码";
+      return
+    }
+    mailBtn.btnTxt = "等待中(" + countDown + ")";
+    countDown--;
+  }, 1000)
 }
 
 const toReg = async (): Promise<void> => {
