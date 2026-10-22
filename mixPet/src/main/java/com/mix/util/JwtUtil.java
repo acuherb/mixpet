@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,8 +21,29 @@ public class JwtUtil {
     @Value("${app.verify-code-secret:}")
     private String secret;
 
+    /**
+     * 签名密钥：JJWT 要求 HMAC-SHA 密钥 ≥256bit(32字节)，否则抛 WeakKeyException 导致接口 500。
+     * 配置容错：任意长度/空配置都先经 SHA-256 归一成恰好 32 字节——
+     * ① 用户填短密钥不再炸（2026-10-22 线上事故：.env 填了 31 字节密钥，邮件发出后签 token 即崩）；
+     * ② ≥32 字节的规范密钥按原值截取，保持确定性（同一配置签出的 token 可跨重启校验）。
+     */
     private SecretKey getKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] raw;
+        try {
+            raw = Base64.getDecoder().decode(secret);
+        } catch (Exception notBase64) {
+            raw = secret.getBytes(StandardCharsets.UTF_8);
+        }
+        if (raw.length < 32) {
+            try {
+                raw = MessageDigest.getInstance("SHA-256").digest(raw);
+            } catch (Exception never) {
+                raw = "mixpet-verify-code-fallback-key".getBytes(StandardCharsets.UTF_8);
+            }
+        } else if (raw.length > 64) {
+            raw = java.util.Arrays.copyOf(raw, 64);
+        }
+        return Keys.hmacShaKeyFor(raw);
     }
 
     /**
