@@ -6,6 +6,7 @@ import com.mix.model.dto.HospitalDto;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.Doctor;
 import com.mix.model.entity.MedicalRecord;
+import com.mix.model.vo.HospitalFeeVo;
 import com.mix.model.vo.HospitalVo;
 import com.mix.security.model.RoleConst;
 import com.mix.service.IHospitalService;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -40,11 +42,26 @@ public class HospitalController {
         return Result.error("请登录医生账号");
     }
 
-    /** 出院结算（计住院费入账单） */
+    /** 出院结算（计住院费入账单；days 可手改结算天数，缺省按跨夜+1） */
     @PutMapping("/discharge/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
-    public Result discharge(@PathVariable Integer id) {
-        return hospitalService.discharge(id);
+    public Result discharge(@PathVariable Integer id, Integer days) {
+        return hospitalService.discharge(id, days);
+    }
+
+    /** 收取押金（累加；操作人取登录态） */
+    @PostMapping("/deposit/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    public Result addDeposit(@PathVariable Integer id, BigDecimal amount) {
+        Doctor doctor = UserUtil.getUser() instanceof Doctor d ? d : null;
+        return hospitalService.addDeposit(id, amount, doctor);
+    }
+
+    /** 费用预览：结算弹窗明细（分项小计/医嘱费/押金/应退） */
+    @GetMapping("/fee/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    public HospitalFeeVo feePreview(@PathVariable Integer id) {
+        return hospitalService.feePreview(id);
     }
 
     /** 住院列表分页（后台/医生） */

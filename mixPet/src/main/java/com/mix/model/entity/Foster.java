@@ -43,14 +43,44 @@ public class Foster implements Serializable {
     private Integer clientId;
 
     /**
-     * 寄养到期时间
+     * 寄养到期时间（预计接回日期）
      */
     private LocalDate fosterTerm;
 
     /**
-     * 寄养押金
+     * 入托日期
+     */
+    private LocalDate inDate;
+
+    /**
+     * 实际接回日期（接回结算时写）
+     */
+    private LocalDate backDate;
+
+    /**
+     * 寄养押金（登记时预估；接回时按 天数×(笼位+清洁+餐费) 结算）
      */
     private Integer fosterMoney;
+
+    /**
+     * 笼位费/天
+     */
+    private java.math.BigDecimal dailyFee;
+
+    /**
+     * 清洁费/天
+     */
+    private java.math.BigDecimal cleanFee;
+
+    /**
+     * 餐费/天
+     */
+    private java.math.BigDecimal mealFee;
+
+    /**
+     * 状态：0待入托 1寄养中 2已接回
+     */
+    private Integer status;
 
     /**
      * 订单备注
@@ -114,12 +144,60 @@ public class Foster implements Serializable {
         this.fosterTerm = fosterTerm;
     }
 
+    public LocalDate getInDate() {
+        return inDate;
+    }
+
+    public void setInDate(LocalDate inDate) {
+        this.inDate = inDate;
+    }
+
+    public LocalDate getBackDate() {
+        return backDate;
+    }
+
+    public void setBackDate(LocalDate backDate) {
+        this.backDate = backDate;
+    }
+
     public Integer getFosterMoney() {
         return fosterMoney;
     }
 
     public void setFosterMoney(Integer fosterMoney) {
         this.fosterMoney = fosterMoney;
+    }
+
+    public java.math.BigDecimal getDailyFee() {
+        return dailyFee;
+    }
+
+    public void setDailyFee(java.math.BigDecimal dailyFee) {
+        this.dailyFee = dailyFee;
+    }
+
+    public java.math.BigDecimal getCleanFee() {
+        return cleanFee;
+    }
+
+    public void setCleanFee(java.math.BigDecimal cleanFee) {
+        this.cleanFee = cleanFee;
+    }
+
+    public java.math.BigDecimal getMealFee() {
+        return mealFee;
+    }
+
+    public void setMealFee(java.math.BigDecimal mealFee) {
+        this.mealFee = mealFee;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     public String getFosterInfo() {
@@ -162,7 +240,13 @@ public class Foster implements Serializable {
                 ", petId = " + petId +
                 ", clientId = " + clientId +
                 ", fosterTerm = " + fosterTerm +
+                ", inDate = " + inDate +
+                ", backDate = " + backDate +
                 ", fosterMoney = " + fosterMoney +
+                ", dailyFee = " + dailyFee +
+                ", cleanFee = " + cleanFee +
+                ", mealFee = " + mealFee +
+                ", status = " + status +
                 ", fosterInfo = " + fosterInfo +
                 ", createTime = " + createTime +
                 ", updateTime = " + updateTime +

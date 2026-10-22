@@ -15,6 +15,7 @@ reqApi.interceptors.response.use(resp => {
     const data = resp?.data
     if (data && typeof data === "object" && data["code"] != undefined && data["code"] != null) {
         const code = data["code"]
+        const url = resp.config.url || ""
         if (code === 401) {
             location.href = "/#/login"
         } else if (code === 403) {
@@ -24,7 +25,9 @@ reqApi.interceptors.response.use(resp => {
             if (resultData && typeof resultData === "string" && resultData.includes(".")) {
                 return resultData;
             }
-            if (data["msg"]) ElMessage.success(data["msg"])
+            if (data["msg"] && !url.includes("regMail") && !url.includes("findMail")) {
+                ElMessage.success(data["msg"])
+            }
         } else if (code === 0) {
             ElMessage.error(data["msg"])
         }

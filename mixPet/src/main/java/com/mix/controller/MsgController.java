@@ -9,6 +9,8 @@ import com.mix.model.entity.Doctor;
 import com.mix.model.entity.Msg;
 import com.mix.service.IMsgService;
 import com.mix.util.UserUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/msg")
 public class MsgController {
+    private static final Logger log = LoggerFactory.getLogger(MsgController.class);
     private final IMsgService msgService;
     private final String chatPath;
 
@@ -86,6 +89,7 @@ public class MsgController {
         if (f.exists()) {
             boolean del = f.delete();
             if (!del) {
+                log.warn("文件删除失败，将标记下次JVM退出时删除: {}", f.getAbsolutePath());
                 f.deleteOnExit();
             }
         }

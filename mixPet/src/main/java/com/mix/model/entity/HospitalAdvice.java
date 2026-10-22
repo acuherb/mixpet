@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -40,6 +41,8 @@ public class HospitalAdvice implements Serializable {
     private String route;
     /** 计划天数 */
     private Integer days;
+    /** 临时费用（一次性：超量用药/额外治疗等，出院结算计入；已停嘱未执行的不计） */
+    private BigDecimal fee;
     /** 开始日期 YYYY-MM-DD */
     private String startDate;
     private String remark;

@@ -19,6 +19,8 @@ export interface HospitalAdvice {
     /** 途径：口服/注射/外用/静脉 */
     route?: string | null;
     days?: number | null;
+    /** 临时费用（一次性：超量用药/额外治疗等，出院结算计入；已停嘱未执行不计） */
+    fee?: number | null;
     /** 开始日期 YYYY-MM-DD */
     startDate?: string | null;
     remark?: string | null;

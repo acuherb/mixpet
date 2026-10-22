@@ -11,6 +11,14 @@ export interface HospitalDto {
     inTime: string | null;
     outTime: string | null;
     dailyFee: number | null;
+    /** 床位费/天 */
+    bedFee?: number | null;
+    /** 护理费/天 */
+    nursingFee?: number | null;
+    /** 输液费/天 */
+    infusionFee?: number | null;
+    /** 已收押金 */
+    deposit?: number | null;
     days: number | null;
     /** false住院中 true已出院 */
     status: boolean;

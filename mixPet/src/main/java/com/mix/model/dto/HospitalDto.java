@@ -19,6 +19,14 @@ public class HospitalDto {
     private LocalDateTime inTime;
     private LocalDateTime outTime;
     private BigDecimal dailyFee;
+    /** 床位费/天 */
+    private BigDecimal bedFee;
+    /** 护理费/天 */
+    private BigDecimal nursingFee;
+    /** 输液费/天 */
+    private BigDecimal infusionFee;
+    /** 已收押金 */
+    private BigDecimal deposit;
     private Integer days;
     private Boolean status;
     private String note;

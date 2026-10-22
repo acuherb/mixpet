@@ -83,25 +83,21 @@ const rules: FormRules = {
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
 const sendMail = async (): Promise<void> => {
   if (noMail(findPwd.mail)) return;
-  try {
-    const token = await reqSendFindMail(findPwd.mail, findPwd.username)
-    verifyToken = token
-    ElMessage.success("验证码已发送到邮箱，请查收")
-    mailBtn.dis = true;
-    let countDown = 30;
-    const intVal = setInterval(() => {
-      if (countDown === 0) {
-        clearInterval(intVal)
-        mailBtn.dis = false;
-        mailBtn.btnTxt = "发送验证码";
-        return
-      }
-      mailBtn.btnTxt = "等待中(" + countDown + ")";
-      countDown--;
-    }, 1000)
-  } catch {
-    ElMessage.error("发送失败，请重试")
-  }
+  const token = await reqSendFindMail(findPwd.mail, findPwd.username)
+  verifyToken = token
+  ElMessage.success("验证码已发送到邮箱，请查收")
+  mailBtn.dis = true;
+  let countDown = 30;
+  const intVal = setInterval(() => {
+    if (countDown === 0) {
+      clearInterval(intVal)
+      mailBtn.dis = false;
+      mailBtn.btnTxt = "发送验证码";
+      return
+    }
+    mailBtn.btnTxt = "等待中(" + countDown + ")";
+    countDown--;
+  }, 1000)
 }
 
 const toFind = async (): Promise<void> => {

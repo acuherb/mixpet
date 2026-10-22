@@ -30,8 +30,20 @@ public class HospitalRecord implements Serializable {
     private LocalDateTime inTime;
     /** 出院时间（出院时写） */
     private LocalDateTime outTime;
-    /** 日均住院费(元) */
+    /** 日均住院费(元) = 床位+护理+输液（保存时前端汇总，兼容旧数据） */
     private BigDecimal dailyFee;
+    /** 床位费/天 */
+    private BigDecimal bedFee;
+    /** 护理费/天 */
+    private BigDecimal nursingFee;
+    /** 输液费/天 */
+    private BigDecimal infusionFee;
+    /** 已收押金（多次收取累加） */
+    private BigDecimal deposit;
+    /** 最后押金收取人 */
+    private String depositBy;
+    /** 最后押金收取时间 */
+    private LocalDateTime depositTime;
     /** 住院天数（出院时结算） */
     private Integer days;
     /** 0住院中 1已出院 */

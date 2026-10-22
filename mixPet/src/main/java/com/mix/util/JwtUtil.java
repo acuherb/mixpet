@@ -23,11 +23,20 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateVerifyCode(String mail, String code) {
+    /**
+     * 生成验证码 Token
+     * @param mail     用于绑定验证码与邮箱，防止跨邮箱使用
+     * @param username 可选，用于找回密码场景绑定账号
+     * @param code     验证码
+     */
+    public String generateVerifyCode(String mail, String username, String code) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "verify_code");
         claims.put("mail", mail);
         claims.put("code", code);
+        if (username != null) {
+            claims.put("username", username);
+        }
         Date now = new Date();
         Date exp = new Date(now.getTime() + VERIFY_CODE_EXPIRE_MINUTES * 60 * 1000);
         return Jwts.builder()
@@ -38,31 +47,44 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String validateAndGetCode(String token) {
+    /**
+     * 验证 Token 并提取验证码（用于注册：只校验 mail）
+     * @param token 待验证的 JWT
+     * @param expectedMail 期望的邮箱（前端传回，用于绑定校验）
+     */
+    public String validateAndGetCode(String token, String expectedMail) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = parseClaims(token);
             if (!"verify_code".equals(claims.get("type"))) return null;
             if (claims.getExpiration().before(new Date())) return null;
+            if (!expectedMail.equals(claims.get("mail"))) return null;
             return claims.get("code", String.class);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public String getMailFromToken(String token) {
+    /**
+     * 验证 Token 并提取验证码（用于找回密码：校验 mail + username）
+     */
+    public String validateAndGetCode(String token, String expectedMail, String expectedUsername) {
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.get("mail", String.class);
+            Claims claims = parseClaims(token);
+            if (!"verify_code".equals(claims.get("type"))) return null;
+            if (claims.getExpiration().before(new Date())) return null;
+            if (!expectedMail.equals(claims.get("mail"))) return null;
+            if (!expectedUsername.equals(claims.get("username"))) return null;
+            return claims.get("code", String.class);
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }

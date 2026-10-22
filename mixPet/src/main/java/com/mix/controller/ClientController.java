@@ -35,6 +35,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/client")
 public class ClientController {
+    /** 充值单笔上限常量 */
+    private static final BigDecimal RECHARGE_MAX = new BigDecimal("100000");
     private final IClientService clientService;
     private final IMemberService memberService;
     private final AvatarFileService avatarFileService;
@@ -120,7 +122,7 @@ public class ClientController {
     public Result recharge(Integer clientId, BigDecimal money) {
         if (clientId == null) return Result.error("缺少客户id");
         if (money == null || money.compareTo(BigDecimal.ZERO) <= 0) return Result.error("充值金额必须大于0");
-        if (money.compareTo(new BigDecimal("100000")) > 0) return Result.error("单次充值不可超过10万元");
+        if (money.compareTo(RECHARGE_MAX) > 0) return Result.error("单次充值不可超过10万元");
         Client client = clientService.getById(clientId);
         if (client == null) return Result.error("客户不存在");
         // 会员等级充值返赠

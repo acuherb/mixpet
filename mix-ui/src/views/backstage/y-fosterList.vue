@@ -17,20 +17,36 @@
             @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="30"/>
     <el-table-column label="订单号" prop="fosterCode"/>
-    <el-table-column label="到期时间" prop="fosterTerm" sortable/>
-    <el-table-column label="定金" prop="fosterMoney" sortable/>
-    <el-table-column label="订单备注" prop="fosterInfo"/>
-    <el-table-column label="宠物名" prop="petName"/>
-    <el-table-column label="寄养人" prop="clientName"/>
-    <el-table-column label="是否过期" prop="fosterTerm" sortable>
+    <el-table-column label="入托/到期" min-width="170">
       <template #default="scope">
-        <el-tag v-if="calculateDays(scope.row.fosterTerm)==='已过期'" type="danger">已过期</el-tag>
-        <span v-else>{{ calculateDays(scope.row.fosterTerm) }}</span>
+        <span style="font-size:12px">{{ scope.row.inDate || '—' }} → {{ scope.row.fosterTerm || '—' }}</span>
       </template>
     </el-table-column>
-    <el-table-column fixed="right" label="操作">
+    <el-table-column label="状态" width="90">
+      <template #default="scope">
+        <el-tag v-if="scope.row.status === 2" size="small" type="success">已接回</el-tag>
+        <el-tag v-else-if="scope.row.status === 1" size="small" type="warning">寄养中</el-tag>
+        <el-tag v-else size="small" type="info">待入托</el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="费用/天" min-width="140">
+      <template #default="scope">
+        <span style="font-size:12px">笼位{{ n2(scope.row.dailyFee) }}｜清洁{{ n2(scope.row.cleanFee) }}｜餐{{ n2(scope.row.mealFee) }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="预估/结算" prop="fosterMoney" sortable width="100">
+      <template #default="scope">
+        <span :style="{color: scope.row.status === 2 ? '#67C23A' : '#E6A23C', fontWeight: 600}">￥{{ scope.row.fosterMoney }}</span>
+      </template>
+    </el-table-column>
+    <el-table-column label="宠物名" prop="petName" min-width="90" show-overflow-tooltip/>
+    <el-table-column label="寄养人" prop="clientName" min-width="90" show-overflow-tooltip/>
+    <el-table-column label="订单备注" prop="fosterInfo" min-width="110" show-overflow-tooltip/>
+    <el-table-column fixed="right" label="操作" width="180">
       <template #default="scope">
         <el-button-group>
+          <el-button v-if="(scope.row.status ?? 0) === 0" size="small" type="primary" @click="startFoster(scope.row)">开始寄养</el-button>
+          <el-button v-if="(scope.row.status ?? 0) === 1" size="small" type="success" @click="openBack(scope.row)">接回结算</el-button>
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row.fosterId)"/>
         </el-button-group>
@@ -40,47 +56,91 @@
   <!--分页条-->
   <BackPage :total="fosterList.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="640px" :close-on-click-modal="false">
     <!--表单-->
-    <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
-      <el-form-item label="订单备注" prop="fosterInfo">
-        <el-input v-model="form.fosterInfo" clearable placeholder="无"/>
-      </el-form-item>
-      <el-form-item label="到期时间" prop="fosterTerm">
-        <el-date-picker
-            v-model="form.fosterTerm"
-            format="YYYY-MM-DD"
-            placeholder="寄养截止日期"
-            type="date"
-            value-format="YYYY-MM-DD"
-        />
-      </el-form-item>
-      <el-form-item label="定金" prop="fosterMoney">
-        <el-input-number
-            v-model="form.fosterMoney"
-            :max="5000"
-            :min="100"
-            :step="100"
-        />
-      </el-form-item>
+    <el-form ref="myFormRef" :model="form" :rules="rules" label-width="96px">
       <el-form-item label="寄养人" prop="clientId">
-        <el-select v-model="form.clientId" filterable placeholder="选择用户" @change="form.petId=null">
+        <el-select v-model="form.clientId" filterable placeholder="选择用户" style="width:100%" @change="form.petId=null">
           <el-option v-for="d in clientNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
         </el-select>
       </el-form-item>
       <el-form-item label="宠物" prop="petId">
-        <el-select v-model="form.petId" filterable placeholder="选择宠物">
+        <el-select v-model="form.petId" filterable placeholder="选择宠物" style="width:100%">
           <el-option v-for="d in petNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
         </el-select>
+      </el-form-item>
+      <div style="display:flex;gap:12px">
+        <el-form-item label="入托日期" style="flex:1">
+          <el-date-picker v-model="form.inDate" format="YYYY-MM-DD" placeholder="默认今天"
+                          style="width:100%" type="date" value-format="YYYY-MM-DD"/>
+        </el-form-item>
+        <el-form-item label="预计接回" prop="fosterTerm" style="flex:1">
+          <el-date-picker v-model="form.fosterTerm" format="YYYY-MM-DD" placeholder="寄养截止日期"
+                          style="width:100%" type="date" value-format="YYYY-MM-DD"/>
+        </el-form-item>
+      </div>
+      <!-- 按天计费分项：日均 = 笼位 + 清洁 + 餐费 -->
+      <div style="display:flex;gap:12px">
+        <el-form-item label="笼位费/天" style="flex:1">
+          <el-input-number v-model="form.dailyFee" :min="0" :max="9999" :precision="2" :step="10"
+                           controls-position="right" style="width:100%"/>
+        </el-form-item>
+        <el-form-item label="清洁费/天" style="flex:1">
+          <el-input-number v-model="form.cleanFee" :min="0" :max="9999" :precision="2" :step="5"
+                           controls-position="right" style="width:100%"/>
+        </el-form-item>
+        <el-form-item label="餐费/天" style="flex:1">
+          <el-input-number v-model="form.mealFee" :min="0" :max="9999" :precision="2" :step="5"
+                           controls-position="right" style="width:100%"/>
+        </el-form-item>
+      </div>
+      <div class="foster-sum">
+        日均 <b>￥{{ dailySum().toFixed(2) }}</b> × 预计 <b>{{ planDays() }}</b> 天 = 预估 <b style="color:#E6A23C">￥{{ planTotal().toFixed(2) }}</b>
+        （接回时按实际天数结算，多退少补）
+      </div>
+      <el-form-item label="订单备注" prop="fosterInfo">
+        <el-input v-model="form.fosterInfo" clearable placeholder="无"/>
       </el-form-item>
     </el-form>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="modalView = false">取消</el-button>
-        <el-button type="primary" @click="formSubmit">
-          确认
-        </el-button>
+        <el-button round @click="modalView = false">取消</el-button>
+        <el-button round type="primary" @click="formSubmit">确认</el-button>
       </span>
+    </template>
+  </el-dialog>
+
+  <!--接回结算弹窗：按实际天数自动算，分项小计可核对，差额多退少补-->
+  <el-dialog v-model="backView" title="接回结算" draggable width="480px" :close-on-click-modal="false">
+    <div v-if="backRow" class="back-box">
+      <div class="back-row back-head">
+        <span>{{ backRow.petName }}（{{ backRow.clientName }}）· 订单 {{ backRow.fosterCode }}</span>
+      </div>
+      <div class="back-row"><span>入托日期</span><b>{{ backRow.inDate || '—' }}</b></div>
+      <div class="back-row"><span>实际接回日期（可改）</span>
+        <el-date-picker v-model="backDate" format="YYYY-MM-DD" placeholder="默认今天"
+                        size="small" style="width:140px" type="date" value-format="YYYY-MM-DD"/>
+      </div>
+      <div class="back-row"><span>实际寄养天数</span><b>{{ actualDays() }} 天</b></div>
+      <div class="back-row"><span>笼位费 ￥{{ n2(backRow.dailyFee) }}/天</span><b>￥{{ (n(backRow.dailyFee) * actualDays()).toFixed(2) }}</b></div>
+      <div class="back-row"><span>清洁费 ￥{{ n2(backRow.cleanFee) }}/天</span><b>￥{{ (n(backRow.cleanFee) * actualDays()).toFixed(2) }}</b></div>
+      <div class="back-row"><span>餐费 ￥{{ n2(backRow.mealFee) }}/天</span><b>￥{{ (n(backRow.mealFee) * actualDays()).toFixed(2) }}</b></div>
+      <div class="back-row back-total"><span>结算金额（可改）</span>
+        <el-input-number v-model="backMoney" :min="0" :max="99999" :precision="2" :step="10"
+                         controls-position="right" size="small" style="width:130px"/>
+      </div>
+      <div class="back-row" v-if="backRow.fosterMoney > 0">
+        <span>登记时预估/预付</span><b>￥{{ backRow.fosterMoney }}</b>
+      </div>
+      <div class="back-row" v-if="backRow.fosterMoney > 0">
+        <span>{{ backMoney >= backRow.fosterMoney ? '需补收' : '应退还' }}</span>
+        <b :style="{color: backMoney >= backRow.fosterMoney ? '#f56c6c' : '#67C23A'}">￥{{ Math.abs(backMoney - backRow.fosterMoney).toFixed(2) }}</b>
+      </div>
+      <div class="back-tip">确认后状态变为「已接回」，结算金额更新到订单；补收/退款请到收银台或线下办理</div>
+    </div>
+    <template #footer>
+      <el-button round @click="backView = false">取消</el-button>
+      <el-button round type="primary" :loading="backSaving" @click="submitBack">确认接回</el-button>
     </template>
   </el-dialog>
 </template>
@@ -130,21 +190,6 @@ const changePuB = (val: PageQuery) => {
   qp.numPage = val.numPage
   qp.pageSize = val.pageSize
   sendQuery()
-}
-// 数据格式化
-const calculateDays = (inputDate: string): string => {
-  const today = new Date();
-  const date = new Date(inputDate);
-  // 确保输入的是有效的日期
-  if (isNaN(date.getTime())) {
-    return '日期格式不对';
-  }
-  if (today < date) {
-    const diffTime = Math.abs(date.getTime() - today.getTime());
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + "天";
-  } else {
-    return '已过期';
-  }
 }
 // 数据总览
 const sendQuery = (): void => {
@@ -217,7 +262,14 @@ const modalView = ref(false)
 const modalTit = ref<"新增寄养" | "修改寄养">("修改寄养")
 // 添加
 const addRoleB = (): void => {
-  form.value = exampleFoster()
+  const f = exampleFoster()
+  f.inDate = todayStr()
+  f.status = 0
+  f.dailyFee = 60
+  f.cleanFee = 10
+  f.mealFee = 20
+  f.fosterMoney = 90
+  form.value = f
   myFormRef.value?.resetFields()
   reqClientNameHavePet(null).then(res => {
     clientNameL.value = res;
@@ -235,12 +287,90 @@ const showDialog = (row: Foster) => {
   form.value.fosterMoney = row.fosterMoney
   form.value.clientId = row.clientId
   form.value.petId = row.petId
+  form.value.inDate = row.inDate
+  form.value.dailyFee = row.dailyFee ?? 0
+  form.value.cleanFee = row.cleanFee ?? 0
+  form.value.mealFee = row.mealFee ?? 0
+  form.value.status = row.status
   // ===赋值完成===
   reqClientNameHavePet(form.value.clientId).then(res => {
     clientNameL.value = res;
   })
   modalView.value = true
   modalTit.value = "修改寄养"
+}
+
+/**
+ ┌───────────────────────────────────┐
+ │=========按天计费与状态流转==========│
+ └───────────────────────────────────┘
+ */
+const todayStr = (): string => {
+  const t = new Date()
+  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`
+}
+const n = (v: number | null | undefined): number => v == null ? 0 : Number(v)
+const n2 = (v: number | null | undefined): string => n(v).toFixed(2)
+// 日均 = 笼位 + 清洁 + 餐费
+const dailySum = (): number => n(form.value.dailyFee) + n(form.value.cleanFee) + n(form.value.mealFee)
+// 预计天数（入托→预计接回，至少1天）
+const planDays = (): number => {
+  if (!form.value.inDate || !form.value.fosterTerm) return 0
+  const a = new Date(form.value.inDate).getTime()
+  const b = new Date(form.value.fosterTerm).getTime()
+  if (isNaN(a) || isNaN(b) || b <= a) return 0
+  return Math.round((b - a) / 86400000)
+}
+const planTotal = (): number => dailySum() * planDays()
+
+/** 开始寄养：待入托 → 寄养中（记录实际入托日） */
+const startFoster = (row: FosterDto): void => {
+  ElMessageBox.confirm(`确认 ${row.petName} 今日入托？状态将变为「寄养中」。`, '开始寄养', {
+    confirmButtonText: '确认入托', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqUpdateFoster({...row, status: 1, inDate: row.inDate || todayStr()} as Foster).then(res => {
+      if (res.code === 1) { ElMessage.success('已开始寄养'); sendQuery() }
+      else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => ElMessage.info('已取消'))
+}
+
+/** 接回结算：按实际天数自动算金额（可改），差额多退少补 */
+const backView = ref(false)
+const backSaving = ref(false)
+const backRow = ref<FosterDto | null>(null)
+const backDate = ref(todayStr())
+const backMoney = ref(0)
+const openBack = (row: FosterDto): void => {
+  backRow.value = row
+  backDate.value = todayStr()
+  backView.value = true
+  // 默认结算金额 = 当前日均 × 已寄养天数（入托→今天）
+  const inD = row.inDate ? new Date(row.inDate).getTime() : Date.now()
+  const days = Math.max(1, Math.round((Date.now() - inD) / 86400000))
+  const perDay = n(row.dailyFee) + n(row.cleanFee) + n(row.mealFee)
+  backMoney.value = Math.round(perDay * days * 100) / 100
+}
+const actualDays = (): number => {
+  if (!backRow.value) return 0
+  const inD = backRow.value.inDate ? new Date(backRow.value.inDate).getTime() : Date.now()
+  const outD = backDate.value ? new Date(backDate.value).getTime() : Date.now()
+  if (isNaN(inD) || isNaN(outD)) return 1
+  return Math.max(1, Math.round((outD - inD) / 86400000))
+}
+const submitBack = (): void => {
+  if (!backRow.value) return
+  backSaving.value = true
+  reqUpdateFoster({
+    ...backRow.value, status: 2, backDate: backDate.value, fosterMoney: backMoney.value
+  } as Foster).then(res => {
+    backSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success(`接回成功，结算 ￥${backMoney.value.toFixed(2)}`)
+      backView.value = false
+      sendQuery()
+    } else ElMessage.error(res.msg || '操作失败')
+  }).catch(() => { backSaving.value = false })
 }
 
 /**
@@ -304,5 +434,58 @@ watch(() => form.value.clientId, (newValue): void => {
   margin: 0 2px;
 }
 
+/* 寄养登记：日均汇总条 */
+.foster-sum {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #f0f7fc;
+  border: 1px solid #c6e2ff;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1F2D3D;
+
+  b { color: var(--brand); }
+}
+
+/* 接回结算弹窗 */
+.back-box {
+  .back-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 2px;
+    font-size: 13px;
+    color: #606266;
+    border-bottom: 1px dashed #ebeef5;
+
+    b { color: #1F2D3D; font-variant-numeric: tabular-nums; }
+
+    &.back-head {
+      border-bottom: none;
+      padding-bottom: 2px;
+      font-weight: 700;
+      color: #1F2D3D;
+    }
+
+    &.back-total {
+      border-bottom: none;
+      padding-top: 10px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+  }
+
+  .back-tip {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #fdf6ec;
+    border: 1px solid #f5dab1;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #8a6d3b;
+    line-height: 1.6;
+  }
+}
 
 </style>

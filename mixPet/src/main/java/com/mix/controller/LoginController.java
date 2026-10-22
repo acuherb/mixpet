@@ -57,13 +57,14 @@ public class LoginController {
     @GetMapping("/regMail")
     public Result sendRegMail(String mail) {
         if (StrUtil.isWhite(mail)) return Result.error("邮箱不能为空");
+        long now = System.currentTimeMillis();
         Long lastTime = mailSendTime.get(mail);
-        if (lastTime != null && System.currentTimeMillis() - lastTime < 30 * 1000)
+        if (lastTime != null && now - lastTime < 30 * 1000)
             return Result.error("发送邮件需要间隔30s");
         String code = sendMail.sendQQEmail(mail);
         if (code != null) {
-            mailSendTime.put(mail, System.currentTimeMillis());
-            String token = jwtUtil.generateVerifyCode(mail, code);
+            mailSendTime.merge(mail, now, (old, v) -> now);
+            String token = jwtUtil.generateVerifyCode(mail, null, code);
             return Result.success(token);
         }
         return Result.error("邮件发送失败");
@@ -91,7 +92,7 @@ public class LoginController {
         String token = combined.substring(0, sepIdx);
         String userCode = combined.substring(sepIdx + 1);
 
-        String savedCode = jwtUtil.validateAndGetCode(token);
+        String savedCode = jwtUtil.validateAndGetCode(token, registerVo.mail());
         if (savedCode == null) return Result.error("验证码已过期，请重新获取");
         if (!savedCode.equalsIgnoreCase(userCode.toUpperCase())) {
             return Result.error("验证码不正确");
@@ -127,13 +128,14 @@ public class LoginController {
         if (StrUtil.isWhite(username)) return Result.error("账号不能为空");
         if (StrUtil.isWhite(mail)) return Result.error("邮箱不能为空");
         if (clientMapper.sureMail(username, mail) == 0) return Result.error("账号邮箱不匹配");
+        long now = System.currentTimeMillis();
         Long lastTime = mailSendTime.get(mail);
-        if (lastTime != null && System.currentTimeMillis() - lastTime < 30 * 1000)
+        if (lastTime != null && now - lastTime < 30 * 1000)
             return Result.error("发送邮件需要间隔30s");
         String code = sendMail.sendQQEmail(mail);
         if (code != null) {
-            mailSendTime.put(mail, System.currentTimeMillis());
-            String token = jwtUtil.generateVerifyCode(mail, code);
+            mailSendTime.merge(mail, now, (old, v) -> now);
+            String token = jwtUtil.generateVerifyCode(mail, username, code);
             return Result.success(token);
         }
         return Result.error("邮件发送失败");
@@ -152,7 +154,7 @@ public class LoginController {
         String token = combined.substring(0, sepIdx);
         String userCode = combined.substring(sepIdx + 1);
 
-        String savedCode = jwtUtil.validateAndGetCode(token);
+        String savedCode = jwtUtil.validateAndGetCode(token, regVo.mail(), regVo.username());
         if (savedCode == null) return Result.error("验证码已过期，请重新获取");
         if (!savedCode.equalsIgnoreCase(userCode.toUpperCase())) {
             return Result.error("验证码不正确");

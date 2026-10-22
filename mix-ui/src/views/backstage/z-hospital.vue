@@ -20,7 +20,18 @@
     <el-table-column label="主治医生" min-width="90" prop="doctorName" show-overflow-tooltip/>
     <el-table-column label="诊断" min-width="140" prop="diagnosis" show-overflow-tooltip/>
     <el-table-column label="入院时间" width="160" prop="inTime"/>
+    <el-table-column label="费用构成/天" min-width="150">
+      <template #default="scope">
+        <span style="font-size:12px">床位{{ num(scope.row.bedFee) }}｜护理{{ num(scope.row.nursingFee) }}｜输液{{ num(scope.row.infusionFee) }}</span>
+      </template>
+    </el-table-column>
     <el-table-column label="日均费(元)" prop="dailyFee" width="100"/>
+    <el-table-column label="押金(元)" width="100">
+      <template #default="scope">
+        <span v-if="(scope.row.deposit ?? 0) > 0" style="color:#67C23A;font-weight:600">￥{{ num(scope.row.deposit) }}</span>
+        <span v-else style="color:#c0c4cc">—</span>
+      </template>
+    </el-table-column>
     <el-table-column label="天数" prop="days" width="70"/>
     <el-table-column label="状态" width="90">
       <template #default="scope">
@@ -28,12 +39,13 @@
         <el-tag v-else size="small" type="warning">住院中</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="240" fixed="right">
+    <el-table-column label="操作" width="300" fixed="right">
       <template #default="scope">
-        <el-button v-if="!scope.row.status" size="small" type="primary" plain @click="dischargeOne(scope.row)">出院结算</el-button>
+        <el-button v-if="!scope.row.status" size="small" type="primary" plain @click="openDischarge(scope.row)">出院结算</el-button>
         <el-button v-else size="small" type="info" plain @click="showDetail(scope.row)">查看</el-button>
         <el-button size="small" plain round @click="openMonitor(scope.row)">监护</el-button>
         <el-button v-if="!scope.row.status" size="small" plain round type="warning" @click="openAdvice(scope.row)">医嘱</el-button>
+        <el-button v-if="!scope.row.status" size="small" plain round type="success" @click="collectDeposit(scope.row)">收押金</el-button>
       </template>
     </el-table-column>
   </el-table>
@@ -42,7 +54,7 @@
   <BackPage :total="list.total" @changePu="changePuB"/>
 
   <!--入院登记弹窗-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="560px" :close-on-click-modal="false">
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
       <el-form-item label="病历号" prop="recordId">
         <el-select v-model="form.recordId" filterable clearable placeholder="选择本次就诊病历" style="width: 100%">
@@ -53,16 +65,58 @@
       <el-form-item label="床位号">
         <el-input v-model="form.roomNo" clearable maxlength="32" placeholder="如：住院部A-01"/>
       </el-form-item>
-      <el-form-item label="日均费(元)" prop="dailyFee">
-        <el-input-number v-model="form.dailyFee" :max="99999" :min="0" :precision="2" :step="10" style="width: 100%"/>
-      </el-form-item>
+      <!-- 费用分项：日均 = 床位 + 护理 + 输液（三项单独立价，结算按天×日均） -->
+      <div style="display:flex;gap:10px">
+        <el-form-item label="床位费/天" style="flex:1">
+          <el-input-number v-model="form.bedFee" :max="99999" :min="0" :precision="2" :step="10" controls-position="right" style="width:100%"/>
+        </el-form-item>
+        <el-form-item label="护理费/天" style="flex:1">
+          <el-input-number v-model="form.nursingFee" :max="99999" :min="0" :precision="2" :step="5" controls-position="right" style="width:100%"/>
+        </el-form-item>
+        <el-form-item label="输液费/天" style="flex:1">
+          <el-input-number v-model="form.infusionFee" :max="99999" :min="0" :precision="2" :step="5" controls-position="right" style="width:100%"/>
+        </el-form-item>
+      </div>
+      <div class="daily-sum">
+        日均住院费：<b>￥{{ dailySum().toFixed(2) }}</b>/天（床位+护理+输液）
+      </div>
       <el-form-item label="备注">
         <el-input v-model="form.note" :rows="2" maxlength="255" placeholder="入院原因/注意事项" type="textarea"/>
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="modalView = false">取消</el-button>
-      <el-button type="primary" @click="formSubmit">确认入院</el-button>
+      <el-button round @click="modalView = false">取消</el-button>
+      <el-button round type="primary" @click="formSubmit">确认入院</el-button>
+    </template>
+  </el-dialog>
+
+  <!--出院结算弹窗：费用明细可核对，天数可调，押金应退一眼可见-->
+  <el-dialog v-model="dischargeView" title="出院结算" draggable width="520px" :close-on-click-modal="false">
+    <div v-if="fee" class="fee-box">
+      <div class="fee-row fee-head">
+        <span>{{ dischargeRow?.petName }}（{{ dischargeRow?.clientName }}）· {{ dischargeRow?.roomNo || '未分配床位' }}</span>
+      </div>
+      <div class="fee-row"><span>住院天数（可手改，提前出院按实际）</span>
+        <el-input-number v-model="feeDays" :min="1" :max="365" controls-position="right" size="small" style="width:100px"/>
+      </div>
+      <div class="fee-row"><span>床位费 ￥{{ num(fee.bedFee) }}/天</span><b>￥{{ num(fee.bedFee * feeDays) }}</b></div>
+      <div class="fee-row"><span>护理费 ￥{{ num(fee.nursingFee) }}/天</span><b>￥{{ num(fee.nursingFee * feeDays) }}</b></div>
+      <div class="fee-row"><span>输液费 ￥{{ num(fee.infusionFee) }}/天</span><b>￥{{ num(fee.infusionFee * feeDays) }}</b></div>
+      <div class="fee-row" v-if="fee.adviceFee > 0"><span>医嘱临时费用</span><b>￥{{ num(fee.adviceFee) }}</b></div>
+      <div class="fee-row fee-total"><span>费用总计</span><b style="color:#f56c6c">￥{{ num(fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) }}</b></div>
+      <el-divider style="margin:8px 0"/>
+      <div class="fee-row"><span>已收押金</span><b style="color:#67C23A">￥{{ num(fee.deposit) }}</b></div>
+      <div class="fee-row">
+        <span>{{ fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) >= 0 ? '应退押金' : '需补收（押金不足）' }}</span>
+        <b :style="{color: fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) >= 0 ? '#67C23A' : '#f56c6c'}">
+          ￥{{ num(Math.abs(fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee))) }}
+        </b>
+      </div>
+      <div class="fee-tip">确认后费用计入该病历账单（收银台收款）；押金差额请在线下/收银台办理退还或补收</div>
+    </div>
+    <template #footer>
+      <el-button round @click="dischargeView = false">取消</el-button>
+      <el-button round type="primary" :loading="discharging" @click="submitDischarge">确认结算并出院</el-button>
     </template>
   </el-dialog>
 
@@ -186,6 +240,10 @@
           <el-form-item label="天数" style="width:130px">
             <el-input-number v-model="adviceForm.days" :min="1" :max="365" controls-position="right" style="width:100%"/>
           </el-form-item>
+          <el-form-item label="临时费用(元)" style="width:140px">
+            <el-input-number v-model="adviceForm.fee" :min="0" :max="99999" :precision="2" :step="10"
+                             controls-position="right" placeholder="一次性费用" style="width:100%"/>
+          </el-form-item>
           <el-form-item label="开始日期" style="flex:1">
             <el-date-picker v-model="adviceForm.startDate" format="YYYY-MM-DD" placeholder="默认今天"
                             style="width:100%" type="date" value-format="YYYY-MM-DD"/>
@@ -219,6 +277,12 @@
         <el-table-column label="天数" width="60">
           <template #default="s">{{ s.row.days ?? '—' }}</template>
         </el-table-column>
+        <el-table-column label="临时费用" width="90">
+          <template #default="s">
+            <span v-if="(s.row.fee ?? 0) > 0" style="color:#E6A23C">￥{{ num(s.row.fee) }}</span>
+            <span v-else style="color:#c0c4cc">—</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="88">
           <template #default="s">
             <el-tag v-if="s.row.status === 4" size="small" type="success">已完成</el-tag>
@@ -249,8 +313,9 @@ import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 import {HospitalDto} from "@/model/DO/HospitalDto";
 import {HospitalVo} from "@/model/VO/HospitalVo";
+import {HospitalFeeVo} from "@/model/VO/HospitalFeeVo";
 import {Page} from "@/model/DO/Page";
-import {reqAddHospitalMonitor, reqDischargeHospital, reqHospitalMonitorList, reqHospitalPage, reqSaveHospital} from "@/request/HospitalApi";
+import {reqAddHospitalDeposit, reqAddHospitalMonitor, reqDischargeHospital, reqHospitalFee, reqHospitalMonitorList, reqHospitalPage, reqSaveHospital} from "@/request/HospitalApi";
 import {reqAddAdvice, reqAddAdviceBatch, reqAdviceByHospital, reqDoneAdvice, reqStopAdvice} from "@/request/HospitalAdviceApi";
 import {HospitalAdvice} from "@/model/entiy/HospitalAdvice";
 import {Prescription} from "@/model/entiy/MedicalRecord";
@@ -295,7 +360,7 @@ const nowQuery = (): void => {
  */
 const modalView = ref(false)
 const modalTit = ref('入院登记')
-const form = ref<HospitalVo>({recordId: 0, roomNo: '', dailyFee: 50, note: ''})
+const form = ref<HospitalVo>({recordId: 0, roomNo: '', dailyFee: 50, bedFee: 50, nursingFee: 0, infusionFee: 0, note: ''})
 const myFormRef = ref<FormInstance>()
 
 // 病历下拉（复用病例检索接口，避免手填填错串档）
@@ -306,7 +371,7 @@ const loadRecordOptions = (): void => {
       .then(res => { recordOptions.value = res?.records || [] })
 }
 const addRoleB = (): void => {
-  form.value = {recordId: 0, roomNo: '', dailyFee: 50, note: ''}
+  form.value = {recordId: 0, roomNo: '', dailyFee: 50, bedFee: 50, nursingFee: 0, infusionFee: 0, note: ''}
   myFormRef.value?.resetFields()
   loadRecordOptions()
   modalView.value = true
@@ -314,6 +379,8 @@ const addRoleB = (): void => {
 const formSubmit = (): void => {
   myFormRef.value?.validate((valid: boolean) => {
     if (valid) {
+      // 汇总日均费（三项之和）一并提交，后端按分项计价结算
+      form.value.dailyFee = dailySum()
       reqSaveHospital(form.value).then((res: Res) => {
         modalView.value = false
         if (res.code === 1) {
@@ -325,32 +392,69 @@ const formSubmit = (): void => {
   })
 }
 const rules = reactive<FormRules>({
-  "recordId": [{required: true, type: 'number', message: '请输入病历号', trigger: 'blur'}],
-  "dailyFee": [{required: true, message: '请输入日均费', trigger: 'blur'}]
+  "recordId": [{required: true, type: 'number', message: '请输入病历号', trigger: 'blur'}]
 })
 
 /**
  ┌───────────────────────────────────┐
- │=============出院结算与查看========═│
+ │=============出院结算与查看=========│
  └───────────────────────────────────┘
  */
-const dischargeOne = (row: HospitalDto): void => {
-  ElMessageBox.confirm(
-      `确认对 ${row.petName}（${row.clientName}）办理出院？住院费将自动计入账单待收费。`,
-      '出院结算',
-      {confirmButtonText: '结算', cancelButtonText: '取消', type: 'warning'}
-  ).then(() => {
-    reqDischargeHospital(row.hospitalId).then((res: Res) => {
-      if (res.code === 1) {
-        ElMessage.success(res.msg || '结算成功')
-        sendQuery()
+// 入院表单：日均 = 床位+护理+输液
+const dailySum = (): number =>
+    (form.value.bedFee ?? 0) + (form.value.nursingFee ?? 0) + (form.value.infusionFee ?? 0)
+const num = (v: number | null | undefined): string => (v == null ? 0 : Number(v)).toFixed(2)
+
+// 出院结算弹窗：拉费用明细，天数可手改
+const dischargeView = ref(false)
+const dischargeRow = ref<HospitalDto | null>(null)
+const fee = ref<HospitalFeeVo | null>(null)
+const feeDays = ref(1)
+const discharging = ref(false)
+const openDischarge = (row: HospitalDto): void => {
+  dischargeRow.value = row
+  dischargeView.value = true
+  fee.value = null
+  reqHospitalFee(row.hospitalId).then(res => {
+    fee.value = res
+    feeDays.value = res.days || 1
+  }).catch(() => ElMessage.error('费用明细拉取失败'))
+}
+const submitDischarge = (): void => {
+  if (!dischargeRow.value) return
+  discharging.value = true
+  reqDischargeHospital(dischargeRow.value.hospitalId, feeDays.value).then((res: Res) => {
+    discharging.value = false
+    if (res.code === 1) {
+      ElMessage.success(res.msg || '结算成功')
+      dischargeView.value = false
+      sendQuery()
+    } else ElMessage.error(res.msg || '结算失败')
+  }).catch(() => { discharging.value = false })
+}
+// 收押金（累加，操作人后端取登录态）
+const collectDeposit = (row: HospitalDto): void => {
+  ElMessageBox.prompt(
+      `对 ${row.petName}（当前已收 ￥${num(row.deposit)}）收取押金：`,
+      '收取押金',
+      {
+        confirmButtonText: '确认收取', cancelButtonText: '取消', inputType: 'number',
+        inputPlaceholder: '收取金额（元）',
+        inputPattern: /^[1-9]\d*(\.\d{1,2})?$/, inputErrorMessage: '请输入大于0的金额'
       }
+  ).then(({value}) => {
+    reqAddHospitalDeposit(row.hospitalId, Number(value)).then((res: Res) => {
+      if (res.code === 1) { ElMessage.success(res.msg || '收取成功'); sendQuery() }
+      else ElMessage.error(res.msg || '收取失败')
     })
-  }).catch(() => ElMessage.info('取消出院'))
+  }).catch(() => ElMessage.info('已取消'))
 }
 const showDetail = (row: HospitalDto): void => {
+  const perDay = num(row.bedFee) + '/' + num(row.nursingFee) + '/' + num(row.infusionFee)
   ElMessageBox.alert(
-      `住院 ${row.days ?? 0} 天，日均费 ￥${row.dailyFee ?? 0}，共住 ￥${((row.days ?? 0) * (row.dailyFee ?? 0)).toFixed(2)}。<br/>入院：${row.inTime}，出院：${row.outTime}<br/>备注：${row.note || '无'}`,
+      `住院 ${row.days ?? 0} 天，日均费 ￥${num(row.dailyFee)}（床位/护理/输液：${perDay}），共住 ￥${num((row.days ?? 0) * (row.dailyFee ?? 0))}。<br/>` +
+      `入院：${(row.inTime || '').replace('T', ' ')}，出院：${(row.outTime || '').replace('T', ' ')}<br/>` +
+      `押金：￥${num(row.deposit)}<br/>备注：${row.note || '无'}`,
       `住院详情 #${row.hospitalId}`,
       {confirmButtonText: '知道了', dangerouslyUseHTMLString: true}
   )
@@ -398,7 +502,7 @@ onMounted(() => {
   // 从就诊汇总跳转过来：预填病历号并打开入院登记
   const rid = Number(route.query.recordId)
   if (rid) {
-    form.value = {recordId: rid, roomNo: '', dailyFee: 50, note: ''}
+    form.value = {recordId: rid, roomNo: '', dailyFee: 50, bedFee: 50, nursingFee: 0, infusionFee: 0, note: ''}
     modalView.value = true
   }
 })
@@ -460,6 +564,7 @@ const submitAdvice = (): void => {
     frequency: f.frequency ?? null,
     route: f.route ?? null,
     days: f.days ?? null,
+    fee: f.fee ?? null,
     startDate: f.startDate ?? null,
     remark: f.remark ?? null
   }).then(res => {
@@ -569,5 +674,61 @@ const doneAdvice = (row: HospitalAdvice): void => {
   margin-bottom: 12px;
 
   .imp-row { padding: 3px 0; font-size: 13px; }
+}
+
+/* 入院登记：日均汇总条 */
+.daily-sum {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: #f0f7fc;
+  border: 1px solid #c6e2ff;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1F2D3D;
+
+  b { color: var(--brand); font-size: 15px; }
+}
+
+/* 出院结算弹窗：费用明细 */
+.fee-box {
+  .fee-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 2px;
+    font-size: 13px;
+    color: #606266;
+    border-bottom: 1px dashed #ebeef5;
+
+    b { color: #1F2D3D; font-variant-numeric: tabular-nums; }
+
+    &.fee-head {
+      border-bottom: none;
+      padding-bottom: 2px;
+      font-weight: 700;
+      color: #1F2D3D;
+    }
+
+    &.fee-total {
+      border-bottom: none;
+      padding-top: 10px;
+      font-size: 14px;
+      font-weight: 700;
+
+      b { font-size: 17px; }
+    }
+  }
+
+  .fee-tip {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: #fdf6ec;
+    border: 1px solid #f5dab1;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #8a6d3b;
+    line-height: 1.6;
+  }
 }
 </style>

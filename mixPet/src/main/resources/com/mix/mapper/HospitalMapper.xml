@@ -5,7 +5,7 @@
     <select id="selectHospitalPage" resultType="com.mix.model.dto.HospitalDto">
         SELECT
         h.hospital_id, h.record_id, h.pet_id, h.client_id, h.doctor_id,
-        h.room_no, h.in_time, h.out_time, h.daily_fee, h.days, h.status, h.note, h.create_time,
+        h.room_no, h.in_time, h.out_time, h.daily_fee, h.bed_fee, h.nursing_fee, h.infusion_fee, h.deposit, h.days, h.status, h.note, h.create_time,
         p.pet_name, c.client_name, d.doctor_name, r.diagnosis
         FROM hospital_record h
         LEFT JOIN pet p ON h.pet_id = p.pet_id
@@ -23,7 +23,7 @@
     <select id="selectByPet" resultType="com.mix.model.dto.HospitalDto">
         SELECT
         h.hospital_id, h.record_id, h.pet_id, h.client_id, h.doctor_id,
-        h.room_no, h.in_time, h.out_time, h.daily_fee, h.days, h.status, h.note, h.create_time,
+        h.room_no, h.in_time, h.out_time, h.daily_fee, h.bed_fee, h.nursing_fee, h.infusion_fee, h.deposit, h.days, h.status, h.note, h.create_time,
         p.pet_name, c.client_name, d.doctor_name
         FROM hospital_record h
         LEFT JOIN pet p ON h.pet_id = p.pet_id

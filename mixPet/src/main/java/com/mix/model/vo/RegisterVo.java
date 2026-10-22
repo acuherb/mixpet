@@ -10,7 +10,7 @@ import jakarta.validation.constraints.Pattern;
 public record RegisterVo(
         String username,
         @NotBlank(message = "密码不能为空")
-        @Pattern(regexp = ".{5,}", message = "密码至少5位")
+        @Pattern(regexp = ".{6,}", message = "密码至少6位")
         String password,
         @NotBlank(message = "姓名不能为空")
         String name,
