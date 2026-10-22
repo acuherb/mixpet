@@ -33,6 +33,12 @@ public class ImgController {
     // 允许上传的图片扩展名白名单
     private static final java.util.Set<String> ALLOWED_IMG_SUFFIX = java.util.Set.of(
             ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp");
+    // 危险扩展名黑名单：可被浏览器渲染执行（XSS）或为可执行脚本的類型一律拒收
+    // （聊天文件/报告文件允许任意业务扩展名，但这两个口子历史上放行过 html/svg，
+    //  而下载口支持 inline 预览——同源渲染即存储型 XSS，必须堵死）
+    private static final java.util.Set<String> DANGEROUS_SUFFIX = java.util.Set.of(
+            ".html", ".htm", ".xhtml", ".svg", ".xml", ".js", ".jsp", ".php",
+            ".asp", ".aspx", ".exe", ".sh", ".bat", ".cmd", ".msi", ".jar");
     // 修复微信/支付宝图片因 MIME 缺失（无扩展名）导致上传失败：识别出图片才走图片流程
     private final String basePath, chatPath, reportPath;
 
@@ -115,6 +121,11 @@ public class ImgController {
         String suffix = "";
         int dot = originalFilename.lastIndexOf(".");
         if (dot >= 0 && dot < originalFilename.length() - 1) suffix = originalFilename.substring(dot).toLowerCase();
+        // 危险扩展名拒收（防 inline 预览时被当 HTML/SVG 渲染执行）
+        if (DANGEROUS_SUFFIX.contains(suffix)) {
+            log.warn("拒绝上传危险类型文件：{}", originalFilename);
+            return null;
+        }
         String name = UUID.randomUUID() + suffix;
         String filePath = chatFileDir() + name;
         try {
@@ -177,6 +188,11 @@ public class ImgController {
         String suffix = "";
         int dot = originalFilename.lastIndexOf(".");
         if (dot >= 0 && dot < originalFilename.length() - 1) suffix = originalFilename.substring(dot).toLowerCase();
+        // 危险扩展名拒收（防 inline 预览时被当 HTML/SVG 渲染执行）
+        if (DANGEROUS_SUFFIX.contains(suffix)) {
+            log.warn("拒绝上传危险类型报告文件：{}", originalFilename);
+            return null;
+        }
         String name = UUID.randomUUID() + suffix;
         boolean asImg = ALLOWED_IMG_SUFFIX.contains(suffix);
         String dir = asImg ? reportImageDir() : reportFileDir();
@@ -217,10 +233,17 @@ public class ImgController {
             log.warn("未找到相应文件" + name);
             return;
         }
+        // 兜底：即使请求 inline 预览，危险扩展名（可能已被渲染执行的存量文件）也强制转附件下载
+        String lowerName = name.toLowerCase();
+        int dot = lowerName.lastIndexOf(".");
+        String suffix = dot >= 0 ? lowerName.substring(dot) : "";
+        if (DANGEROUS_SUFFIX.contains(suffix)) asAttachment = true;
         // 根据扩展名返回正确的 MIME 类型，浏览器可在线预览（pdf、txt、图片等）
         String mime = MediaTypeFactory.getMediaType(name)
                 .map(Object::toString)
                 .orElse("application/octet-stream");
+        // 附件下载统一用 octet-stream（防浏览器按扩展名猜出危险 MIME）
+        if (asAttachment) mime = "application/octet-stream";
         try (var fis = new FileInputStream(file); var ops = response.getOutputStream()) {
             response.setContentType(mime);
             if (asAttachment) {
