@@ -26,8 +26,9 @@ export const reqRegisExist = (regUse: string): Promise<Res> =>
 export const reqRegister = (data: RegisterVo): Promise<Res> =>
     reqApi.post<string, Res>("login/register", data)
 
-export const reqSendFindMail = (mail: string, username: string): Promise<string> =>
-    reqApi<string, string>("login/findMail?mail=" + mail + "&username=" + username)
+// 找回密码发送验证码（后端返回 Result，data 为验证 token）
+export const reqSendFindMail = (mail: string, username: string): Promise<Res> =>
+    reqApi<string, Res>("login/findMail?mail=" + mail + "&username=" + username)
 
 export const reqFindPwd = (data: RegisterVo): Promise<Res> =>
     reqApi.post<string, Res>("login/find", data)

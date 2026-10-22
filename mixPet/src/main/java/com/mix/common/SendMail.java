@@ -74,7 +74,7 @@ public class SendMail {
             MimeMessageHelper messageHelper = new MimeMessageHelper(message, true);
             messageHelper.setFrom(from);
             messageHelper.setTo(to);
-            messageHelper.setSubject("你好！世界");
+            messageHelper.setSubject("【验证码】邮箱验证 - mixpet 宠物医疗");
             String code = bornVerifyCode(4);
             // true 为 HTML 邮件
             String content = String.format("""
@@ -84,28 +84,24 @@ public class SendMail {
                        <meta charset="UTF-8">
                        <title>验证码邮件</title>
                     </head>
-                    <body>
+                    <body style="font-family:sans-serif">
                     <h2>尊敬的用户，你好：</h2>
-                    <p>&nbsp;&nbsp;兔年到，祝福到；</p>
-                    <p>短信问好，友人可安；祝愿朋友，财源滚滚；</p>
-                    <p>吉祥高照，鸿运当头；幸福围绕，健康相伴；</p>
-                    <p>一生平安，万事顺心；笑口常开，兔年快乐！</p>
-                    <br>
-                    <p>祝朋友2023兔年快乐!</p>
-                    <p>验证码：%s</p>
+                    <p>你正在进行邮箱验证，验证码为：</p>
+                    <p style="font-size:24px;font-weight:bold;letter-spacing:4px;color:#1E6FA8">%s</p>
+                    <p>验证码 5 分钟内有效，请勿转发他人。如非本人操作，请忽略本邮件。</p>
                     </body>
                     </html>""", code);
             messageHelper.setText(content, true);
             mailSender.send(message);
-            log.info("成功向" + to + "发送邮件");
+            log.info("成功向{}发送邮件", to);
             return code;
         } catch (MessagingException e) {
-            log.warn("邮件发送失败");
+            // 异常栈必须打全：STARTTLS 未配/授权码错误/网络不通都靠它定位
+            log.warn("邮件发送失败（检查 application.yml 的 mail 配置、.env 的 MAIL_USER/MAIL_PASS、QQ 邮箱 SMTP 服务是否开启）", e);
         } catch (MailSendException e) {
-            log.warn("发送邮件过于频繁");
+            log.warn("发送邮件过于频繁", e);
         } catch (MailAuthenticationException e) {
-            log.warn("发送者邮箱的授权服务已关闭");
-            System.err.println("我于2023年5月25日上传了代码，上传之后我关闭了我邮箱的POP3/SMTP服务");
+            log.warn("发送者邮箱认证失败（授权码错误或 SMTP 服务未开启）", e);
         }
         return null;
     }

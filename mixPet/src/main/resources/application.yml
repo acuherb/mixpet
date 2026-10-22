@@ -10,6 +10,13 @@ spring:
     host: smtp.qq.com # 邮箱配置，账号与授权码在dev中
     port: 587
     default-encoding: UTF-8
+    properties:
+      # QQ 邮箱 587 端口必须开启 STARTTLS，否则握手失败（表现为"发送失败"且收不到码）
+      mail.smtp.starttls.enable: true
+      mail.smtp.starttls.required: true
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   servlet:
     multipart:
       max-file-size: 30MB # 让上传的文件可以为30MB

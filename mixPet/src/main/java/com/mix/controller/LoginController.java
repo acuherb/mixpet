@@ -10,6 +10,7 @@ import com.mix.security.model.RoleEnum;
 import com.mix.util.JwtUtil;
 import com.mix.util.StrUtil;
 import com.mix.util.UserUtil;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -55,7 +56,7 @@ public class LoginController {
     }
 
     @GetMapping("/regMail")
-    public Result sendRegMail(String mail) {
+    public Result sendRegMail(String mail, HttpSession session) {
         if (StrUtil.isWhite(mail)) return Result.error("邮箱不能为空");
         long now = System.currentTimeMillis();
         Long lastTime = mailSendTime.get(mail);
@@ -65,6 +66,8 @@ public class LoginController {
         if (code != null) {
             mailSendTime.merge(mail, now, (old, v) -> now);
             String token = jwtUtil.generateVerifyCode(mail, null, code);
+            // 同步写 Session：顾客端「绑定邮箱」走 Session 校验（与 JWT token 两条链路都覆盖）
+            session.setAttribute(mail, code);
             return Result.success(token);
         }
         return Result.error("邮件发送失败");

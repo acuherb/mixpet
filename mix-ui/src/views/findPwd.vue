@@ -83,8 +83,13 @@ const rules: FormRules = {
 const mailBtn = reactive({btnTxt: "发送验证码", dis: false})
 const sendMail = async (): Promise<void> => {
   if (noMail(findPwd.mail)) return;
-  const token = await reqSendFindMail(findPwd.mail, findPwd.username)
-  verifyToken = token
+  // 后端返回 Result：必须判 code 并取 data（token）——旧版把整个对象当 token 且无条件提示"成功"
+  const res = await reqSendFindMail(findPwd.mail, findPwd.username)
+  if (res.code !== 1) {
+    ElMessage.error(res.msg || '验证码发送失败')
+    return
+  }
+  verifyToken = res.data
   ElMessage.success("验证码已发送到邮箱，请查收")
   mailBtn.dis = true;
   let countDown = 30;
