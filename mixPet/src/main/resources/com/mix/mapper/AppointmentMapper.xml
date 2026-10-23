@@ -12,6 +12,8 @@
         ${alias}.doctor_id,
         ${alias}.appointment_info,
         ${alias}.create_time,
+        ${alias}.is_suc,
+        ${alias}.miss,
     </sql>
     <!--分页查询-->
     <select id="selectAppointmentPage" resultType="com.mix.model.dto.AppointmentDto">
@@ -98,8 +100,7 @@
         c.pet_status,
         c.pet_sex,
         c.pet_birthday,
-        d.department_name,
-        a.is_suc
+        d.department_name
         FROM appointment a,
         client b,
         pet c,

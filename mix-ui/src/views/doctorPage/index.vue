@@ -268,7 +268,7 @@ const tick = () => {
 const doctorName = ref('医生')
 // 挂号预览
 const appoints = ref<AppointDto2[]>([])
-const pendingAppoints = computed<AppointDto2[]>(() => appoints.value.filter(a => !a.isSuc))
+const pendingAppoints = computed<AppointDto2[]>(() => appoints.value.filter(a => !a.isSuc && !a.miss))
 const router = useRouter()
 
 // 今日待接诊：就诊日期为今天且未处理，按时间先后排序

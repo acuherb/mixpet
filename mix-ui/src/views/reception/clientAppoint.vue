@@ -7,6 +7,8 @@
     <div v-for="a in appointList" :key="a.appointmentId" class="pa-card">
       <div class="card-tit">
         <span>单号：{{ a.appointmentId }}</span>
+        <el-tag v-if="a.miss" size="small" type="info" effect="dark">已爽约</el-tag>
+        <el-tag v-else-if="a.isSuc" size="small" type="success">已完成</el-tag>
       </div>
       <el-descriptions :column="3" :title="'就诊时间：'+ moveT(a.appointmentDate)" border>
         <el-descriptions-item
@@ -29,9 +31,12 @@
           {{ moveT(a.createTime || "") }}
         </el-descriptions-item>
       </el-descriptions>
-      <div v-if="!a.isSuc" class="card-ops">
+      <div v-if="!a.isSuc && !a.miss" class="card-ops">
         <el-button size="small" plain round type="primary" @click="openReschedule(a)">改期</el-button>
         <el-button size="small" plain round type="danger" @click="cancelAppoint(a)">取消预约</el-button>
+      </div>
+      <div v-else-if="a.miss" class="card-ops">
+        <span style="font-size:12px;color:#909399">该预约已爽约（就诊时间已过未到店），如需就诊请重新预约</span>
       </div>
     </div>
     <el-empty v-if="appointList.length===0" description="暂无挂号，点上方「预约挂号」预约就诊"/>

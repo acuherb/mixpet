@@ -135,6 +135,7 @@ public class AppointmentController {
         if (db == null) return Result.error("预约不存在");
         if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
         if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，不能改期");
+        if (Boolean.TRUE.equals(db.getMiss())) return Result.error("该预约已爽约，不能改期，请重新预约");
         // 锁定不可改字段，仅采纳新的就诊时间
         appointment.setAppointmentId(id);
         appointment.setClientId(db.getClientId());
@@ -159,6 +160,7 @@ public class AppointmentController {
         if (db == null) return Result.error("预约不存在");
         if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
         if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，无法取消");
+        if (Boolean.TRUE.equals(db.getMiss())) return Result.error("该预约已爽约，无需取消，请重新预约");
         return Result.choice("取消", appointmentService.lambdaUpdate()
                 .eq(Appointment::getAppointmentId, id)
                 .set(Appointment::getIsDel, System.currentTimeMillis())
@@ -166,8 +168,8 @@ public class AppointmentController {
     }
 
     /**
-     * 医生标记爽约（预约时间已过但顾客未到店）：逻辑删除同「取消」，队列不再占位；
-     * 仅允许操作「未处理」且就诊时间已过的挂号单
+     * 医生标记爽约（预约时间已过但顾客未到店）：记录保留（miss 状态位，不逻辑删除），
+     * 顾客端可见「已爽约」记录且不能再改期/取消；仅允许操作「未处理」且就诊时间已过的挂号单
      */
     @PutMapping("/miss/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
@@ -175,11 +177,12 @@ public class AppointmentController {
         Appointment db = appointmentService.getById(id);
         if (db == null) return Result.error("预约不存在");
         if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已接诊，不能标记爽约");
+        if (Boolean.TRUE.equals(db.getMiss())) return Result.error("该预约已标记爽约");
         if (db.getAppointmentDate() == null || db.getAppointmentDate().isAfter(LocalDateTime.now()))
             return Result.error("就诊时间未到，不能标记爽约");
         return Result.choice("标记爽约", appointmentService.lambdaUpdate()
                 .eq(Appointment::getAppointmentId, id)
-                .set(Appointment::getIsDel, System.currentTimeMillis())
+                .set(Appointment::getMiss, true)
                 .update());
     }
 

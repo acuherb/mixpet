@@ -70,6 +70,11 @@ public class Appointment implements Serializable {
     private Boolean isSuc;
 
     /**
+     * 是否爽约（医生标记：预约时间已过未到店；记录保留不删，顾客端可见）
+     */
+    private Boolean miss;
+
+    /**
      * 创建时间
      */
     @TableField(fill = FieldFill.INSERT)
@@ -148,6 +153,14 @@ public class Appointment implements Serializable {
 
     public void setIsSuc(Boolean isSuc) {
         this.isSuc = isSuc;
+    }
+
+    public Boolean getMiss() {
+        return miss;
+    }
+
+    public void setMiss(Boolean miss) {
+        this.miss = miss;
     }
 
     public LocalDateTime getCreateTime() {

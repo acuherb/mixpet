@@ -54,24 +54,54 @@
       </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="s">
-          <el-tag v-if="recordStatusMap[s.row.appointmentId] === 2" size="small" type="success">已完结</el-tag>
+          <el-tag v-if="s.row.miss" size="small" type="info" effect="dark">已爽约</el-tag>
+          <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 2" size="small" type="success">已完结</el-tag>
           <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 3" size="small" type="info">已作废</el-tag>
           <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning">接诊中</el-tag>
           <el-tag v-else size="small" type="warning">待接诊</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="150">
+      <el-table-column fixed="right" label="操作" width="210">
         <template #default="s">
-          <el-button v-if="!s.row.isSuc" size="small" type="primary" link @click="openTreat(s.row)">接诊</el-button>
-          <el-button v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning" link @click="openTreat(s.row)">继续开单</el-button>
-          <el-button v-else size="small" type="info" link @click="openTreat(s.row)">查看</el-button>
-          <el-button v-if="!s.row.isSuc && isOverdue(s.row)" size="small" type="danger" link @click="markMiss(s.row)">标记爽约</el-button>
+          <template v-if="!s.row.miss">
+            <el-button v-if="!s.row.isSuc" size="small" type="primary" link @click="openTreat(s.row)">接诊</el-button>
+            <el-button v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning" link @click="openTreat(s.row)">继续开单</el-button>
+            <el-button v-else size="small" type="info" link @click="openTreat(s.row)">查看</el-button>
+            <!-- 改期：患者打电话来换时间，不用切后台（管理员级直接改，跳过余号校验） -->
+            <el-button v-if="!s.row.isSuc" size="small" type="success" link @click="openReschedule(s.row)">改期</el-button>
+            <el-button v-if="!s.row.isSuc && isOverdue(s.row)" size="small" type="danger" link @click="markMiss(s.row)">标记爽约</el-button>
+          </template>
+          <span v-else style="color:#909399;font-size:12px">已爽约 · 不可操作</span>
         </template>
       </el-table-column>
       <template #empty>
         <el-empty :image-size="60" description="暂无挂号单"/>
       </template>
     </el-table>
+    <!--改期弹窗：医生直接改患者的就诊时间（管理员级，跳过余号校验）-->
+    <el-dialog v-model="rsView" title="改期" draggable width="420px" :close-on-click-modal="false">
+      <el-form v-if="rsRow" label-width="80px">
+        <el-form-item label="宠物">
+          <span>{{ rsRow.petName }}（{{ rsRow.clientName }}）</span>
+        </el-form-item>
+        <el-form-item label="原时间">
+          <span style="color:#909399">{{ moveT(rsRow.appointmentDate) }}</span>
+        </el-form-item>
+        <el-form-item label="新时间">
+          <el-date-picker
+              v-model="rsDate"
+              format="YYYY-MM-DD HH:mm"
+              placeholder="选择新的就诊时间"
+              style="width: 100%"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm:ss"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button round @click="rsView = false">取消</el-button>
+        <el-button round type="primary" :loading="rsSaving" @click="submitReschedule">确认改期</el-button>
+      </template>
+    </el-dialog>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
@@ -661,6 +691,7 @@ import PageHead from "@/components/row/PageHead.vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
+import {reqUpdateAppoint} from "@/request/AppointApi";
 import {computed, onMounted, reactive, ref, watch} from "vue";
 import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
@@ -710,13 +741,37 @@ reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
 reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
 
 const appoint = ref<AppointDto2[]>([])
-// 待处理/已处理 分类选项卡
+// 待处理/已处理 分类选项卡（爽约单归入已处理：记录保留可查，不再占待办位）
 const appointTab = ref<'pending' | 'done'>('pending')
-const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc))
-const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc))
+const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc && !a.miss))
+const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc || !!a.miss))
 // 就诊时间已过（可标记爽约）
 const isOverdue = (a: AppointDto2): boolean =>
     !!a.appointmentDate && new Date(a.appointmentDate).getTime() < Date.now()
+
+/** 改期：医生直接改就诊时间（传全对象过后端校验，updateById 只更新变化字段） */
+const rsView = ref(false)
+const rsSaving = ref(false)
+const rsRow = ref<AppointDto2 | null>(null)
+const rsDate = ref('')
+const openReschedule = (row: AppointDto2): void => {
+  rsRow.value = row
+  // 默认新时间 = 原时间（医生在此基础上挑）
+  rsDate.value = row.appointmentDate || ''
+  rsView.value = true
+}
+const submitReschedule = (): void => {
+  if (!rsRow.value || !rsDate.value) { ElMessage.warning('请选择新的就诊时间'); return }
+  rsSaving.value = true
+  reqUpdateAppoint({...rsRow.value, appointmentDate: rsDate.value} as Appoint).then(res => {
+    rsSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success('已改期，患者端同步可见')
+      rsView.value = false
+      queryAppoint()
+    } else ElMessage.error(res.msg || '改期失败')
+  }).catch(() => { rsSaving.value = false })
+}
 /** 日期筛选（留空=全部）：按就诊日期过滤两个列表 */
 const appointDateFilter = ref<string>('')
 const filteredPending = computed(() =>

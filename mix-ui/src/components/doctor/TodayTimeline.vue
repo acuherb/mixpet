@@ -11,6 +11,9 @@
           <el-tag v-if="it.state === 'pending'" size="small" round type="warning" effect="light">待接诊</el-tag>
           <el-tag v-else-if="it.state === 'treating'" size="small" round type="danger" effect="light">接诊中</el-tag>
           <el-tag v-else size="small" round type="info" effect="light">已处理</el-tag>
+          <!-- 非今天的挂号单给计划性标识（晚上看工作台也能分出明天/后续） -->
+          <el-tag v-if="it.state === 'pending' && it.dayTag === 'tomorrow'" size="small" round type="primary" effect="plain">明日</el-tag>
+          <el-tag v-else-if="it.state === 'pending' && it.dayTag === 'later'" size="small" round type="info" effect="plain">后续</el-tag>
         </div>
         <div class="tl-body">
           <span class="tl-pet">{{ it.petName }}</span>
@@ -49,10 +52,26 @@ interface TlItem {
   key: string
   time: string
   state: 'pending' | 'treating' | 'done'
+  /** 挂号单的计划性标识：today 今天 / tomorrow 明天 / later 更晚 */
+  dayTag: 'today' | 'tomorrow' | 'later'
   petName: string
   clientName: string
   info: string
   appointmentId: number
+}
+
+const pad = (n: number): string => n.toString().padStart(2, '0')
+const todayStr = (): string => {
+  const t = new Date()
+  return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`
+}
+const dayTagOf = (date: string | null): 'today' | 'tomorrow' | 'later' => {
+  if (!date) return 'later'
+  const d = date.slice(0, 10)
+  if (d === todayStr()) return 'today'
+  const t = new Date()
+  t.setDate(t.getDate() + 1)
+  return d === `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}` ? 'tomorrow' : 'later'
 }
 
 /** 合并排序：未处理挂号(按预约时间) + 接诊中文案(按接诊时间)，已处理挂号跳过 */
@@ -63,6 +82,7 @@ const items = computed<TlItem[]>(() => {
       key: 'a' + a.appointmentId,
       time: a.appointmentDate || '',
       state: 'pending',
+      dayTag: dayTagOf(a.appointmentDate),
       petName: a.petName || '',
       clientName: a.clientName || '',
       info: a.appointmentInfo || '',
@@ -74,6 +94,7 @@ const items = computed<TlItem[]>(() => {
       key: 'r' + r.recordId,
       time: r.createTime || '',
       state: 'treating',
+      dayTag: 'today',
       petName: r.petName || '',
       clientName: r.clientName || '',
       info: r.diagnosis || '（未写诊断）',

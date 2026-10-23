@@ -12,6 +12,25 @@
       <p class="hero-subtitle">
         预约挂号 · 在线咨询 · 宠物档案 · 全程陪伴
       </p>
+      <!-- 首屏直达入口：宣传语有的功能，首屏就要够得着（登录顾客直达挂号/咨询，未登录先去登录） -->
+      <div class="hero-actions">
+        <template v-if="isLogin">
+          <router-link to="/reception/clientCenter/clientAppoint">
+            <el-button round type="primary">预约挂号</el-button>
+          </router-link>
+          <router-link to="/reception/chat">
+            <el-button round plain>在线咨询</el-button>
+          </router-link>
+        </template>
+        <template v-else>
+          <router-link to="/login">
+            <el-button round type="primary">登录后预约挂号</el-button>
+          </router-link>
+          <router-link to="/register">
+            <el-button round plain>注册账号</el-button>
+          </router-link>
+        </template>
+      </div>
     </div>
     <!-- 向下滚动提示 -->
     <div class="scroll-cue" @click="scrollDown">
@@ -153,6 +172,21 @@ section {
   font-size: 16px;
   color: #606266;
   letter-spacing: 0.5px;
+}
+
+/* 首屏行动按钮 */
+.hero-actions {
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  :deep(.el-button) {
+    padding: 12px 28px;
+    font-size: 15px;
+  }
 }
 
 /* 向下滚动提示：一条细线缓慢下探 */
