@@ -85,8 +85,8 @@ public class ClientController {
 
     @GetMapping("/page")
     @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
-    public IPage<Client> getPage(int numPage, int pageSize, String clientName) {
-        return clientService.selectByPage(clientName, numPage, pageSize);
+    public IPage<Client> getPage(int numPage, int pageSize, String clientName, Integer auditStatus) {
+        return clientService.selectByPage(clientName, auditStatus, numPage, pageSize);
     }
 
     @PostMapping

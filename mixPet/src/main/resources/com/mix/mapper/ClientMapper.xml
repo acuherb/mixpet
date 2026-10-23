@@ -4,13 +4,18 @@
     <!--分页查询-->
     <select id="selectClientPage" resultType="com.mix.model.entity.Client">
         SELECT
-        client_id, client_username, client_name, client_gender, client_tel, client_tel2, client_email, client_pwd_changed, client_birthday, client_birthday_estimated, client_address, client_id_card, client_level, client_points, client_balance, client_source, client_blacklist, client_info, client_photo
+        client_id, client_username, client_name, client_gender, client_tel, client_tel2, client_email, client_pwd_changed, client_birthday, client_birthday_estimated, client_address, client_id_card, client_level, client_points, client_balance, client_source, client_blacklist, client_info, client_photo, audit_status, audit_reason, active
         FROM client
         WHERE is_del = 0
         <if test="clientName!=null and clientName!=''">
             <bind name="kw" value="'%'+clientName+'%'"/>
             and (client_name like #{kw} or client_tel like #{kw} or client_tel2 like #{kw} or client_id_card like #{kw} or client_username like #{kw})
         </if>
+        <!-- 审核状态筛选：0待审核 1已通过 2已拒绝（医生工作台「待审核顾客」直达用） -->
+        <if test="auditStatus!=null">
+            and audit_status = #{auditStatus}
+        </if>
+        order by client_id desc
     </select>
     <!-- 【子查询】名下有宠物的用户，带上当前用户-->
     <select id="selectNameHavePet" resultType="com.mix.model.dto.NameDo">

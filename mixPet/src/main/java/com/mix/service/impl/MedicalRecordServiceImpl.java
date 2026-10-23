@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
 import com.mix.mapper.BillMapper;
+import com.mix.mapper.ClientMapper;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.DrugMapper;
 import com.mix.mapper.FollowUpMapper;
@@ -73,6 +74,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final FollowUpMapper followUpMapper;
     private final HospitalMapper hospitalMapper;
     private final ImmuneRecordMapper immuneRecordMapper;
+    private final ClientMapper clientMapper;
 
     @Autowired
     public MedicalRecordServiceImpl(IAppointmentService appointmentService, DrugMapper drugMapper,
@@ -84,7 +86,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                                     LabOrderItemMapper labOrderItemMapper, ImageTestMapper imageTestMapper,
                                     ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper,
                                     IMemberService memberService, FollowUpMapper followUpMapper,
-                                    HospitalMapper hospitalMapper, ImmuneRecordMapper immuneRecordMapper) {
+                                    HospitalMapper hospitalMapper, ImmuneRecordMapper immuneRecordMapper,
+                                    ClientMapper clientMapper) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -104,6 +107,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.followUpMapper = followUpMapper;
         this.hospitalMapper = hospitalMapper;
         this.immuneRecordMapper = immuneRecordMapper;
+        this.clientMapper = clientMapper;
     }
 
     @Override
@@ -626,6 +630,9 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         long surgery = surgeryMapper.selectCount(Wrappers.<Surgery>lambdaQuery().eq(Surgery::getStatus, 0));
         // 待随访
         long follow = followUpMapper.selectCount(Wrappers.<FollowUp>lambdaQuery().eq(FollowUp::getStatus, false));
-        return new RecordTodoVo(treating, lab, image, surgery, follow);
+        // 待审核的自助注册顾客（audit_status=0，注册后等管理员放行）
+        long clientPending = clientMapper.selectCount(Wrappers.<Client>lambdaQuery()
+                .eq(Client::getAuditStatus, 0));
+        return new RecordTodoVo(treating, lab, image, surgery, follow, clientPending);
     }
 }

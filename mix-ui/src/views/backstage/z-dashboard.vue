@@ -109,6 +109,17 @@
     </div>
 
     <div class="todo-grid two">
+      <!-- 待审核顾客：自助注册待放行，点击直达客户管理自动筛选 -->
+      <div class="todo-card warn-card" @click="go('/backstage/y-clientList?audit=0')">
+        <div class="t-head">
+          <div class="t-ico bg-orange"><el-icon><UserFilled/></el-icon></div>
+          <div>
+            <p class="t-label">待审核顾客（自助注册）</p>
+            <p class="t-value">{{ todo.clientPending }}</p>
+          </div>
+        </div>
+        <el-link :underline="false" type="warning" @click="go('/backstage/y-clientList?audit=0')">去审核 ›</el-link>
+      </div>
       <div class="todo-card warn-card" @click="go('/backstage/y-drugList')">
         <div class="t-head">
           <div class="t-ico bg-orange"><el-icon><WarningFilled/></el-icon></div>
@@ -169,7 +180,7 @@ import {onMounted, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {
   Box, Calendar, CirclePlusFilled, DataLine, FirstAidKit, HomeFilled, Money, Picture,
-  Tickets, TrendCharts, Trophy, User, Wallet, WarningFilled
+  Tickets, TrendCharts, Trophy, User, UserFilled, Wallet, WarningFilled
 } from "@element-plus/icons-vue";
 import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqStatOverview} from "@/request/StatisticsApi";
@@ -194,7 +205,7 @@ const rankPct = (v: number): number =>
     Math.min(100, Math.round((v / Math.max(1, ...stat.value.doctorTop.map(d => d.count))) * 100))
 
 // 诊疗待办（卡壳就诊：接诊中/待出结果/待手术/待随访）
-const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
+const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0, clientPending: 0})
 
 onMounted(() => {
   reqStatOverview().then(res => {

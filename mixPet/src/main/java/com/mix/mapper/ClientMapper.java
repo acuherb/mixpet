@@ -21,7 +21,12 @@ import java.util.List;
  */
 @Mapper
 public interface ClientMapper extends BaseMapper<Client> {
-    IPage<Client> selectClientPage(IPage<Client> page, String clientName);
+    /**
+     * 客户分页：clientName 关键字 + auditStatus 审核状态筛选（0待审核 1已通过 2已拒绝，可空）
+     */
+    IPage<Client> selectClientPage(IPage<Client> page,
+                                   @Param("clientName") String clientName,
+                                   @Param("auditStatus") Integer auditStatus);
 
     @Select("SELECT client_id as roleId, client_name as roleName FROM client WHERE is_del=0")
     List<NameDo> selectName();

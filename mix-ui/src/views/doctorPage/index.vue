@@ -158,6 +158,11 @@
                 <span class="todo-num" :class="{warn: todo.treating > 0}">{{ todo.treating }}</span>
                 <span class="todo-lbl">接诊中病历</span>
               </div>
+              <!-- 待审核顾客：自助注册待放行，直达后台客户管理(自动筛待审核) -->
+              <div class="todo-item" @click="$router.push('/backstage/y-clientList?audit=0')">
+                <span class="todo-num" :class="{warn: todo.clientPending > 0}">{{ todo.clientPending }}</span>
+                <span class="todo-lbl">待审核顾客</span>
+              </div>
             </div>
           </div>
         </div>
@@ -244,13 +249,18 @@
           </router-link>
         </div>
         <div class="future-card backstage-link">
-          <router-link to="/backstage/y-clientList" class="future-link">
+          <router-link :to="todo.clientPending > 0 ? '/backstage/y-clientList?audit=0' : '/backstage/y-clientList'" class="future-link">
             <span class="f-ico ico-client"><el-icon><User/></el-icon></span>
             <div class="f-txt">
               <h4>客户管理 <el-tag size="small" type="info" effect="plain">后台</el-tag></h4>
               <p>跳转至后台 · 顾客/宠物档案</p>
             </div>
-            <el-tag size="small" type="info" effect="plain">跳转</el-tag>
+            <!-- 待审核顾客数（有待审核时红字提示，点击进入自动筛选） -->
+            <div v-if="todo.clientPending > 0" class="f-preview">
+              <span class="preview-num warn">{{ todo.clientPending }}</span>
+              <span class="preview-lbl">待审核</span>
+            </div>
+            <el-tag v-else size="small" type="info" effect="plain">跳转</el-tag>
           </router-link>
         </div>
       </div>
@@ -331,7 +341,7 @@ const todoTotal = computed(() =>
 // 在线咨询客户列表（医生谈过话的所有客户，含各自的未读数）
 const groupList = ref<ChatGroup[]>([])
 // 诊疗待办：接诊后卡在中间环节的事项
-const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0})
+const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0, clientPending: 0})
 // 统计概览：住院/免疫等全局待办
 const stat = ref<StatOverview>({
   todayRevenue: 0, monthRevenue: 0, pendingBills: 0, inHospital: 0,

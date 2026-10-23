@@ -2,7 +2,13 @@
   <div class="list-page">
   <!--操作框-->
   <BackOpCol role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
-    <el-input v-model="qp.clientName" clearable placeholder="姓名 / 手机号 / 身份证" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
+    <el-input v-model="qp.clientName" clearable placeholder="姓名 / 手机号 / 身份证" size="large" style="width: 220px" @input="debQuery" @keyup.enter="nowQuery"/>
+    <!-- 审核状态筛选：待审核置顶显示，医生工作台「待审核顾客」直达时自动选中 -->
+    <el-select v-model="qp.auditStatus" clearable placeholder="审核状态" size="large" style="width: 140px; margin-left: 12px" @change="nowQuery">
+      <el-option label="待审核" :value="0"/>
+      <el-option label="已通过" :value="1"/>
+      <el-option label="已拒绝" :value="2"/>
+    </el-select>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -237,6 +243,7 @@
 <script lang="ts" setup>
 
 import {onMounted, reactive, ref} from 'vue'
+import {useRoute} from 'vue-router'
 
 const ageInput = ref<string>('')
 const onDialogOpen = () => {
@@ -278,10 +285,6 @@ import MyAvatar from "@/components/show/MyAvatar.vue";
  │=============生命周期相关============│
  └───────────────────────────────────┘
  */
-onMounted(() => {
-  sendQuery()
-})
-
 /**
  ┌───────────────────────────────────┐
  │=============表格查询相关============│
@@ -290,8 +293,17 @@ onMounted(() => {
 // 查询的参数
 const qp: YClientList = reactive({
   clientName: '',
+  auditStatus: null,
   numPage: 1,
   pageSize: 15
+})
+// 支持 URL 直达：/backstage/y-clientList?audit=0（医生工作台「待审核顾客」入口）
+// 落到页面自动筛选待审核，不用手工翻页找
+const route = useRoute()
+onMounted(() => {
+  const audit = Number(route.query.audit)
+  if (audit === 0 || audit === 1 || audit === 2) qp.auditStatus = audit
+  sendQuery()
 })
 // 列表展示
 const clientList = ref<Page<Client>>({records: [], total: 0})

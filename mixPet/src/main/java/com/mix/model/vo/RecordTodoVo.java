@@ -14,6 +14,8 @@ public record RecordTodoVo(
         /** 待进行/待记录的手术数 */
         long surgeryPending,
         /** 待随访数 */
-        long followPending
+        long followPending,
+        /** 待审核的自助注册顾客数（audit_status=0） */
+        long clientPending
 ) {
 }

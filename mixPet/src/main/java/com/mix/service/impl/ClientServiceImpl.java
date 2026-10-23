@@ -46,8 +46,8 @@ public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> impleme
     }
 
     @Override
-    public IPage<Client> selectByPage(String clientName, int numPage, int pageSize) {
-        return baseMapper.selectClientPage(new Page<>(numPage, pageSize), clientName);
+    public IPage<Client> selectByPage(String clientName, Integer auditStatus, int numPage, int pageSize) {
+        return baseMapper.selectClientPage(new Page<>(numPage, pageSize), clientName, auditStatus);
     }
 
     @Override

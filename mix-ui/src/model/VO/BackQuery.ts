@@ -15,6 +15,8 @@ export interface YPetList extends PageQuery {
 // 用户列表的查询参数
 export interface YClientList extends PageQuery {
     clientName: string
+    /** 审核状态筛选：0待审核 1已通过 2已拒绝（空=全部） */
+    auditStatus?: number | null
 }
 
 // 医生列表的查询参数

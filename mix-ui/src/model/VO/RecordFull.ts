@@ -117,4 +117,6 @@ export interface RecordTodo {
     surgeryPending: number;
     /** 待随访数 */
     followPending: number;
+    /** 待审核的自助注册顾客数 */
+    clientPending: number;
 }
