@@ -72,10 +72,18 @@ public class BillController {
         return billService.dispense(billId, operator);
     }
 
-    /** 退款冲正：退还余额、回滚库存并记台账；操作人取登录态，原因必填 */
+    /** 退款冲正：退还余额、回滚库存并记台账；操作人取登录态，原因必填。
+     *  prescriptionIds 为空=整单退（兼容旧行为）；传了=部分退（只退选中医嘱行，
+     *  行标记 is_cancel 防重复退，小票/发药自动排除；覆盖全部未退行时等价整单退） */
     @PutMapping("/refund/{billId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
-    public Result refund(@PathVariable Integer billId, String reason) {
-        return billService.refund(billId, reason);
+    public Result refund(@PathVariable Integer billId,
+                         @RequestBody java.util.Map<String, Object> body) {
+        String reason = body.get("reason") == null ? null : String.valueOf(body.get("reason"));
+        @SuppressWarnings("unchecked")
+        List<Integer> ids = body.get("prescriptionIds") instanceof List<?> l
+                ? l.stream().map(o -> Integer.valueOf(String.valueOf(o))).toList()
+                : null;
+        return billService.refund(billId, reason, ids);
     }
 }

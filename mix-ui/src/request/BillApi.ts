@@ -17,5 +17,6 @@ export const reqBillPay = (billId: number, payType: boolean): Promise<Res> =>
 export const reqBillDispense = (billId: number): Promise<Res> =>
     reqApi.post<string, Res>(`bill/dispense/${billId}`)
 // 退款冲正（退还余额、回滚库存；原因必填，操作人取登录人）
-export const reqBillRefund = (billId: number, reason: string): Promise<Res> =>
-    reqApi.put<string, Res>(`bill/refund/${billId}`, {}, {params: {reason}})
+// prescriptionIds 为空=整单退；传了=部分退（只退选中医嘱行）
+export const reqBillRefund = (billId: number, reason: string, prescriptionIds?: number[]): Promise<Res> =>
+    reqApi.put<string, Res>(`bill/refund/${billId}`, {reason, prescriptionIds: prescriptionIds ?? []})

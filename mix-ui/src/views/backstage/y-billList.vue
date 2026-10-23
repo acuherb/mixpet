@@ -181,6 +181,52 @@
       <el-button :disabled="!allChecked" type="primary" @click="submitDispense">确认发放</el-button>
     </template>
   </el-dialog>
+
+  <!--退款冲正：可选处方行部分退（默认全选=整单退）；应退金额实时计算-->
+  <el-dialog v-model="refundView" append-to-body title="退款冲正" width="92%" style="max-width: 560px"
+             :close-on-click-modal="false">
+    <el-alert :closable="false" show-icon style="margin-bottom:10px" type="warning"
+              :title="`将${refundRow?.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存；操作人：当前登录人`"/>
+    <div v-if="refundRow" class="refund-head">
+      <span>账单 #{{ refundRow.billId }} · {{ refundRow.petName }}（{{ refundRow.clientName }}）</span>
+      <span>待退总额 ￥{{ refundRow.totalMoney }}</span>
+    </div>
+    <!-- 处方行勾选（无处方行的单：整单退） -->
+    <div v-if="refundRx.length" class="refund-rx">
+      <div class="refund-rx-head">
+        <span>选择要退的药品行（{{ refundChecks.length }}/{{ refundRx.length }}）</span>
+        <el-button size="small" link type="primary" @click="selectAllRefund">全选</el-button>
+        <el-button size="small" link @click="refundChecks = []">全不选</el-button>
+      </div>
+      <el-checkbox-group v-model="refundChecks" class="refund-checks">
+        <div v-for="p in refundRx" :key="p.prescriptionId" class="refund-check">
+          <el-checkbox :label="p.prescriptionId">
+            {{ p.drugName }}（{{ p.drugSpec || '—' }}） ×{{ p.quantity }}{{ p.drugUnit }}
+            <span class="refund-fee">￥{{ ((p.drugPrice ?? 0) * (p.quantity ?? 0)).toFixed(2) }}</span>
+          </el-checkbox>
+        </div>
+      </el-checkbox-group>
+      <div class="refund-total">
+        <span>应退金额（{{ refundIsFull() ? '整单' : '部分' }}）</span>
+        <b :style="{color: '#f56c6c'}">￥{{ refundFee().toFixed(2) }}</b>
+      </div>
+      <div class="refund-tip">部分退：勾选行标记已退、库存回滚、账单金额相应扣减；剩余行照常发药收款</div>
+    </div>
+    <el-form v-else label-width="70px" style="margin-top:8px">
+      <el-form-item label="说明">
+        <span style="color:#909399;font-size:12px">该单无处方药品，退款将冲正整单金额</span>
+      </el-form-item>
+    </el-form>
+    <el-form label-width="70px" style="margin-top:10px">
+      <el-form-item label="退款原因" required>
+        <el-input v-model="refundReason" :rows="2" maxlength="120" placeholder="如：顾客退药/开单错误/重复收费（必填，财务留痕）" type="textarea"/>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button round @click="refundView = false">取消</el-button>
+      <el-button round type="danger" :loading="refundSaving" @click="submitRefund">确认退款</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script lang="ts" setup>
@@ -348,24 +394,57 @@ const submitDispense = (): void => {
  │=============退款冲正==============│
  └───────────────────────────────────┘
  */
+// 退款弹窗：可选处方行部分退（不勾选=整单退，兼容旧行为）；应退金额实时计算
+const refundView = ref(false)
+const refundRow = ref<BillDto | null>(null)
+const refundRx = ref<Prescription[]>([])
+const refundChecks = ref<number[]>([])
+const refundReason = ref('')
+const refundSaving = ref(false)
 const refundBill = (row: BillDto): void => {
-  // 退款必须「填原因 + 确认」两要素，操作人取当前登录人（后端留痕），防误退与财务纠纷
-  ElMessageBox.prompt(
-      `对该账单退款冲正？将${row.payType ? '退还现金（请线下退）' : '退还余额'}并回滚已扣库存。请填退款原因：`,
-      '退款冲正',
-      {
-        confirmButtonText: '确认退款', cancelButtonText: '取消', type: 'warning',
-        inputType: 'textarea', inputPlaceholder: '如：顾客退药/开单错误/重复收费（必填）',
-        inputPattern: /\S+/, inputErrorMessage: '请填写退款原因'
-      }
-  ).then(({value: reason}) => {
-    reqBillRefund(row.billId, reason).then(res => {
-      if (res.code === 1) {
-        sendQuery()
-        ElMessage.success('退款成功')
-      } else ElMessage.error(res.msg || '退款失败')
-    })
-  }).catch(() => ElMessage.info('取消退款'))
+  refundRow.value = row
+  refundReason.value = ''
+  refundChecks.value = []
+  refundRx.value = []
+  refundView.value = true
+  // 拉该单未退处方行（后端 selectByRecord 已过滤 is_cancel；无处方行的单走整单退）
+  reqRecordOne(row.recordId || 0).then(res => {
+    refundRx.value = res?.prescriptions || []
+    // 默认全选（多数场景是整单退；要部分退就取消勾选）
+    selectAllRefund()
+  }).catch(() => ElMessage.error('拉取处方明细失败'))
+}
+// 全选/全不选（模板调用，prescriptionId 非空过滤）
+const selectAllRefund = (): void => {
+  refundChecks.value = refundRx.value
+      .map(p => p.prescriptionId)
+      .filter((id): id is number => id != null)
+}
+// 应退金额 = 勾选行 单价×数量
+const refundFee = (): number =>
+    refundRx.value.filter(p => p.prescriptionId != null && refundChecks.value.includes(p.prescriptionId))
+        .reduce((s, p) => s + (p.drugPrice ?? 0) * (p.quantity ?? 0), 0)
+// 是否整单退（无处方行，或勾选了全部行）
+const refundIsFull = (): boolean =>
+    refundRx.value.length === 0 || refundChecks.value.length === refundRx.value.length
+const submitRefund = (): void => {
+  if (!refundRow.value) return
+  if (!refundReason.value.trim()) { ElMessage.warning('请填写退款原因'); return }
+  if (refundRx.value.length > 0 && refundChecks.value.length === 0) {
+    ElMessage.warning('请至少勾选一行要退的药品（不勾选任何行请直接关闭，改用整单退需全选）')
+    return
+  }
+  refundSaving.value = true
+  // 整单退传空数组（走后端兼容路径）；部分退传勾选行 id
+  const ids = refundIsFull() ? [] : refundChecks.value
+  reqBillRefund(refundRow.value.billId, refundReason.value.trim(), ids).then(res => {
+    refundSaving.value = false
+    if (res.code === 1) {
+      ElMessage.success(res.msg || '退款成功')
+      refundView.value = false
+      sendQuery()
+    } else ElMessage.error(res.msg || '退款失败')
+  }).catch(() => { refundSaving.value = false })
 }
 /** 收款方式选择：余额/现金 */
 const payView = ref(false)
@@ -725,5 +804,64 @@ const delBatchB = (): void => {
   h4 { margin: 0 0 6px; font-size: 15px; color: #1F2D3D; }
   p { margin: 0; font-size: 12px; color: #909399; line-height: 1.6; }
   &:hover { border-color: var(--brand); background: #f0f7fc; }
+}
+
+/* 退款冲正弹窗 */
+.refund-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1F2D3D;
+}
+.refund-rx {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 10px 12px;
+
+  .refund-rx-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: #606266;
+    margin-bottom: 6px;
+  }
+
+  .refund-checks { display: flex; flex-direction: column; gap: 2px; }
+
+  .refund-check {
+    margin: 0;
+    width: 100%;
+    font-size: 13px;
+
+    .refund-fee { color: #E6A23C; font-size: 12px; margin-left: 8px; }
+  }
+
+  .refund-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #ebeef5;
+    font-size: 14px;
+    font-weight: 700;
+
+    b { font-size: 17px; }
+  }
+
+  .refund-tip {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #909399;
+    line-height: 1.6;
+  }
 }
 </style>

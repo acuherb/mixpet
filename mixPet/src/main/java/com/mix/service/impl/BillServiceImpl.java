@@ -140,7 +140,7 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result refund(Integer billId, String reason) {
+    public Result refund(Integer billId, String reason, List<Integer> prescriptionIds) {
         if (reason == null || reason.isBlank()) return Result.error("请填写退款原因");
         // 操作人一律取当前登录人，忽略前端传参（防伪造他人名义退款）
         String operator = currentOperator();
@@ -149,10 +149,34 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
         if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单未收款，无需退款");
         if (Boolean.TRUE.equals(bill.getRefundStatus())) return Result.error("该账单已退款，请勿重复操作");
         boolean wasBalance = bill.getPayType() == null || !bill.getPayType();
+        // 选中要退的处方行：不传=整单退（该单所有未取消行）；传了=部分退（归属+未退过滤，防越权/重复退）
+        List<Prescription> allActive = prescriptionMapper.selectByRecord(bill.getRecordId());
+        List<Prescription> picked;
+        boolean partial;
+        if (prescriptionIds != null && !prescriptionIds.isEmpty()) {
+            picked = prescriptionMapper.selectBatchIds(prescriptionIds).stream()
+                    .filter(p -> p.getRecordId().equals(bill.getRecordId()))
+                    .filter(p -> !Boolean.TRUE.equals(p.getIsCancel()))
+                    .toList();
+            if (picked.isEmpty()) return Result.error("所选处方行不存在、不属于本单，或已退款/已作废");
+            partial = true;
+        } else {
+            picked = allActive;
+            partial = false;
+        }
+        // 退款金额 = 选中行 单价×数量 之和（药品零售价部分）
+        BigDecimal refundFee = picked.stream()
+                .map(p -> (p.getDrugPrice() == null ? BigDecimal.ZERO : p.getDrugPrice())
+                        .multiply(BigDecimal.valueOf(p.getQuantity() == null ? 0 : p.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (refundFee.compareTo(BigDecimal.ZERO) <= 0) return Result.error("退款金额必须大于0");
+        // 选中行标记已退（is_cancel=true）：防重复退，且小票/发票/发药核对（selectByRecord 过滤 is_cancel）自动排除
+        prescriptionMapper.update(null, com.baomidou.mybatisplus.core.toolkit.Wrappers.<Prescription>lambdaUpdate()
+                .in(Prescription::getPrescriptionId, picked.stream().map(Prescription::getPrescriptionId).toList())
+                .set(Prescription::getIsCancel, true));
         // 回滚库存 + 记台账（仅「已发药核对」才扣过库存，需回库；已作废/未发药处方未扣，无需回滚）
         if (Boolean.TRUE.equals(bill.getDispenseStatus())) {
-            List<Prescription> prescriptions = prescriptionMapper.selectByRecord(bill.getRecordId());
-            for (Prescription p : prescriptions) {
+            for (Prescription p : picked) {
                 if (p.getDrugId() == null) continue;
                 Drug drug = drugMapper.selectById(p.getDrugId());
                 int before = (drug != null && drug.getDrugStock() != null) ? drug.getDrugStock() : 0;
@@ -163,27 +187,42 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                         before, before + p.getQuantity(), "退款回库");
             }
         }
-        // 余额支付才退还余额（现金收款无余额变动）；退还金额=折后实收
+        // 账单冲减：药品费与总价减去退款金额（非药品费用不动）
+        this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .setSql("fee_drug = fee_drug - " + refundFee.toPlainString())
+                .setSql("total_money = total_money - " + refundFee.toPlainString())
+                .update();
+        // 余额支付才退还余额（现金收款无余额变动，提示线下退）
         if (wasBalance) {
             Client client = clientService.getById(bill.getClientId());
             if (client != null) {
                 clientService.lambdaUpdate()
                         .eq(Client::getClientId, client.getClientId())
-                        .setSql("client_balance = client_balance + " + payable(bill).toPlainString())
+                        .setSql("client_balance = client_balance + " + refundFee.toPlainString())
                         .update();
             }
         }
-        // 冲销收款时累积的会员积分（按同等折后实收反算，不足时不扣为负）
-        memberService.deductPoints(bill.getClientId(), payable(bill));
-        this.lambdaUpdate()
-                .eq(Bill::getBillId, billId)
-                .set(Bill::getRefundStatus, true)
-                .set(Bill::getRefundBy, operator)
-                .set(Bill::getRefundReason, reason)
-                .set(Bill::getRefundTime, LocalDateTime.now())
-                .update();
-        return Result.success("退款成功"
+        // 冲销收款时累积的会员积分（按退款金额反算，不足时不扣为负）
+        memberService.deductPoints(bill.getClientId(), refundFee);
+        // 选中行覆盖了该单全部未退行 → 等价整单退，置退款状态；否则账单保持有效（金额已减）
+        boolean fullRefund = !partial || picked.size() == allActive.size();
+        if (fullRefund) {
+            this.lambdaUpdate()
+                    .eq(Bill::getBillId, billId)
+                    .set(Bill::getRefundStatus, true)
+                    .set(Bill::getRefundBy, operator)
+                    .set(Bill::getRefundReason, reason)
+                    .set(Bill::getRefundTime, LocalDateTime.now())
+                    .update();
+        }
+        return Result.success(fullRefund
+                ? "退款成功：￥" + refundFee.toPlainString()
                 + (Boolean.TRUE.equals(bill.getDispenseStatus()) ? "，库存已回滚" : "")
-                + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）"));
+                + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）")
+                : "部分退款成功：退 ￥" + refundFee.toPlainString() + "（" + picked.size() + "/" + allActive.size() + " 行）"
+                + (Boolean.TRUE.equals(bill.getDispenseStatus()) ? "，库存已回滚" : "")
+                + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）")
+                + "；账单余额 ￥" + bill.getTotalMoney().subtract(refundFee).toPlainString() + " 待收");
     }
 }
