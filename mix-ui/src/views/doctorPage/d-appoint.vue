@@ -20,16 +20,10 @@
           style="width: 170px; margin-left: 12px"
           type="date"
           value-format="YYYY-MM-DD"/>
-      <!-- 视图切换：列表(看全貌/挂号多时用) ↔ 卡片(移动端/美观)；选择本地记忆 -->
-      <el-radio-group v-model="viewMode" size="small" style="margin-left: 12px">
-        <el-radio-button value="list">列表</el-radio-button>
-        <el-radio-button value="card">卡片</el-radio-button>
-      </el-radio-group>
       <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
     </div>
-    <!-- 列表视图：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
-    <el-table v-if="viewMode === 'list'"
-              :data="appointTab === 'pending' ? filteredPending : filteredDone"
+    <!-- 挂号列表：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
+    <el-table :data="appointTab === 'pending' ? filteredPending : filteredDone"
               max-height="calc(100vh - 260px)"
               row-key="appointmentId"
               size="small"
@@ -78,14 +72,6 @@
         <el-empty :image-size="60" description="暂无挂号单"/>
       </template>
     </el-table>
-    <!-- 卡片视图：美观/移动端友好 -->
-    <MyRow v-else>
-      <AppointCard
-          v-for="a in (appointTab === 'pending' ? filteredPending : filteredDone)"
-          :key="a.appointmentId"
-          :a="a"
-          :status="recordStatusMap[a.appointmentId]" @toSuc="openTreat(a)" @toMiss="markMiss(a)"/>
-    </MyRow>
     <!--添加的模态框-->
     <el-dialog v-model="modalView" title="新增挂号" draggable width="60%">
       <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
@@ -672,9 +658,7 @@
 
 <script lang="ts" setup>
 import PageHead from "@/components/row/PageHead.vue";
-import MyRow from "@/components/row/MyRow.vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
-import AppointCard from "@/components/card/AppointCard.vue";
 import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {computed, onMounted, reactive, ref, watch} from "vue";
@@ -730,12 +714,7 @@ const appoint = ref<AppointDto2[]>([])
 const appointTab = ref<'pending' | 'done'>('pending')
 const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc))
 const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc))
-// 挂号列表视图：list=表格(默认，一屏看全貌) / card=卡片(美观、移动端)；选择本地记忆
-// 窄屏(手机)首次进入默认卡片；用户选过则尊重记忆
-const viewMode = ref<'list' | 'card'>(
-    localStorage.getItem('mixpet-appoint-view') === 'card' || window.innerWidth < 768 ? 'card' : 'list')
-watch(viewMode, v => localStorage.setItem('mixpet-appoint-view', v))
-// 就诊时间已过（可标记爽约；与 AppointCard 同款口径）
+// 就诊时间已过（可标记爽约）
 const isOverdue = (a: AppointDto2): boolean =>
     !!a.appointmentDate && new Date(a.appointmentDate).getTime() < Date.now()
 /** 日期筛选（留空=全部）：按就诊日期过滤两个列表 */

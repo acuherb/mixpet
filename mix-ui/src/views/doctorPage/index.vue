@@ -226,17 +226,6 @@
             <el-tag size="small" type="success" effect="plain">去查看</el-tag>
           </router-link>
         </div>
-        <!-- 挂号列表：医生直达表格视图（登记明细/历史挂号，不用进后台） -->
-        <div class="future-card">
-          <router-link to="/doctorPage/y-appointmentList" class="future-link">
-            <span class="f-ico ico-appoint"><el-icon><Calendar/></el-icon></span>
-            <div class="f-txt">
-              <h4>挂号列表</h4>
-              <p>表格视图 · 登记明细/历史挂号检索</p>
-            </div>
-            <el-tag size="small" type="success" effect="plain">去查看</el-tag>
-          </router-link>
-        </div>
       </div>
     </main>
   </div>
