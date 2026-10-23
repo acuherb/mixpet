@@ -29,7 +29,7 @@
         <div class="head-info">
           <div class="name-row">
             <span class="d-name">{{ doctor.doctorName || '未设置' }}</span>
-            <el-tag round effect="light" type="primary">{{ doctor.jobName || '未设职称' }}</el-tag>
+            <el-tag round effect="light" type="info">{{ doctor.jobName || '未设职称' }}</el-tag>
             <el-tag round effect="plain" :type="isAdmin ? 'danger' : 'success'">{{ permName(doctor.authLv) }}</el-tag>
             <el-tag v-for="dn in (doctor.departmentNames && doctor.departmentNames.length ? doctor.departmentNames : (doctor.departmentName ? [doctor.departmentName] : []))" :key="dn" round effect="plain">{{ dn }}</el-tag>
           </div>

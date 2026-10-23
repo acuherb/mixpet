@@ -182,18 +182,9 @@ $danger: #f56c6c;
   border: 2px dashed $info;
   width: 128px;
   height: 128px;
-  /*响应式定位*/
-  @media (min-width: 768px) {
-    position: absolute;
-    right: 15%;
-    top: 15%;
-  }
-  @media (max-width: 768px) {
-    position: relative;
-    left: 50%;
-    margin-left: -64px;
-    margin-bottom: 10px;
-  }
+  /* 默认流式布局：本组件复用多处（头像/报告附件/logo），历史上的绝对定位
+     (right/top %) 会让上传框飞离所在容器——相对弹窗 wrapper 或视口定位，
+     表现为化验/影像录入弹窗里附件框盖住表格与输入框（2026-10-23 用户报障） */
   /*悬停改变边框及加号颜色*/
   &:hover {
     border-color: $primary;

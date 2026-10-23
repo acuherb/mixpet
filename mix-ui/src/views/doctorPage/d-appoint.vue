@@ -57,7 +57,7 @@
           <el-tag v-if="recordStatusMap[s.row.appointmentId] === 2" size="small" type="success">已完结</el-tag>
           <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 3" size="small" type="info">已作废</el-tag>
           <el-tag v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning">接诊中</el-tag>
-          <el-tag v-else size="small" type="primary">待接诊</el-tag>
+          <el-tag v-else size="small" type="warning">待接诊</el-tag>
         </template>
       </el-table-column>
       <el-table-column fixed="right" label="操作" width="150">
