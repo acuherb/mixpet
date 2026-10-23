@@ -58,11 +58,24 @@
               <p>今天要看诊的病人，与尚未完结的就诊</p>
             </div>
           </div>
-          <router-link to="/doctorPage/d-appoint">
-            <el-button type="primary" round>
-              全部挂号<el-icon style="margin-left:4px"><ArrowRight/></el-icon>
-            </el-button>
-          </router-link>
+          <!-- 收银相关并入今日待办：待就诊（去接诊）+ 待收费（去收银），红字=有待处理 -->
+          <div class="ph-quick">
+            <router-link to="/doctorPage/d-appoint">
+              <el-button round plain :type="todayPending.length > 0 ? 'warning' : 'info'">
+                待就诊 <b class="qnum" :class="{hot: todayPending.length > 0}">{{ todayPending.length }}</b>
+              </el-button>
+            </router-link>
+            <router-link to="/backstage/y-billList">
+              <el-button round plain :type="stat.pendingBills > 0 ? 'danger' : 'info'">
+                待收费 <b class="qnum" :class="{hot: stat.pendingBills > 0}">{{ stat.pendingBills }}</b>
+              </el-button>
+            </router-link>
+            <router-link to="/doctorPage/d-appoint">
+              <el-button type="primary" round>
+                全部挂号<el-icon style="margin-left:4px"><ArrowRight/></el-icon>
+              </el-button>
+            </router-link>
+          </div>
         </div>
 
         <div class="panel-body">
@@ -170,15 +183,16 @@
 
       <!--诊疗功能入口（带待办预览）-->
       <div class="future-grid">
+        <!-- 医技结果录入统一入口：化验+影像合并为一张卡（进去后页签切换，不再分两个入口） -->
         <div class="future-card has-todo">
-          <router-link to="/doctorPage/z-examResult?tab=lab" class="future-link">
+          <router-link to="/doctorPage/z-examResult" class="future-link">
             <span class="f-ico ico-lab"><el-icon><Document/></el-icon></span>
             <div class="f-txt">
-              <h4>化验结果录入</h4>
-              <p>按检验单逐项填写结果</p>
+              <h4>医技结果录入</h4>
+              <p>化验结果 / 影像报告统一录入</p>
             </div>
             <div class="f-preview">
-              <span class="preview-num" :class="{warn: todo.labPending > 0}">{{ todo.labPending }}</span>
+              <span class="preview-num" :class="{warn: todo.labPending + todo.imagePending > 0}">{{ todo.labPending + todo.imagePending }}</span>
               <span class="preview-lbl">待录入</span>
             </div>
             <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
@@ -196,20 +210,6 @@
               <span class="preview-lbl">在院</span>
             </div>
             <el-tag size="small" type="success" effect="plain">去办理</el-tag>
-          </router-link>
-        </div>
-        <div class="future-card has-todo">
-          <router-link to="/doctorPage/z-examResult?tab=image" class="future-link">
-            <span class="f-ico ico-other"><el-icon><Picture/></el-icon></span>
-            <div class="f-txt">
-              <h4>影像报告录入</h4>
-              <p>按模板填写影像报告</p>
-            </div>
-            <div class="f-preview">
-              <span class="preview-num" :class="{warn: todo.imagePending > 0}">{{ todo.imagePending }}</span>
-              <span class="preview-lbl">待录入</span>
-            </div>
-            <el-tag size="small" type="warning" effect="plain">去录入</el-tag>
           </router-link>
         </div>
         <div class="future-card has-todo">
@@ -237,32 +237,6 @@
             <el-tag size="small" type="success" effect="plain">去查看</el-tag>
           </router-link>
         </div>
-        <!-- 运营协同：跳转后台（收银/档案由前台或管理员处理，医生偶尔查询） -->
-        <div class="future-card backstage-link">
-          <router-link to="/backstage/y-billList" class="future-link">
-            <span class="f-ico ico-cash"><el-icon><Money/></el-icon></span>
-            <div class="f-txt">
-              <h4>收银台 <el-tag size="small" type="info" effect="plain">后台</el-tag></h4>
-              <p>跳转至后台 · 代收/查看账单</p>
-            </div>
-            <el-tag size="small" type="info" effect="plain">跳转</el-tag>
-          </router-link>
-        </div>
-        <div class="future-card backstage-link">
-          <router-link :to="todo.clientPending > 0 ? '/backstage/y-clientList?audit=0' : '/backstage/y-clientList'" class="future-link">
-            <span class="f-ico ico-client"><el-icon><User/></el-icon></span>
-            <div class="f-txt">
-              <h4>客户管理 <el-tag size="small" type="info" effect="plain">后台</el-tag></h4>
-              <p>跳转至后台 · 顾客/宠物档案</p>
-            </div>
-            <!-- 待审核顾客数（有待审核时红字提示，点击进入自动筛选） -->
-            <div v-if="todo.clientPending > 0" class="f-preview">
-              <span class="preview-num warn">{{ todo.clientPending }}</span>
-              <span class="preview-lbl">待审核</span>
-            </div>
-            <el-tag v-else size="small" type="info" effect="plain">跳转</el-tag>
-          </router-link>
-        </div>
       </div>
     </main>
   </div>
@@ -270,7 +244,7 @@
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, ChatDotRound, Document, HomeFilled, Money, Picture, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, ChatDotRound, Document, HomeFilled, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
@@ -658,6 +632,21 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #F0F2F7;
   flex-wrap: wrap;
   gap: 12px;
+
+  /* 今日待办快捷入口：待就诊 / 待收费 / 全部挂号 */
+  .ph-quick {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+
+    .qnum {
+      font-size: 15px;
+      margin-left: 2px;
+
+      &.hot { color: #F56C6C; }
+    }
+  }
 
   .ph-tit {
     display: flex;
