@@ -11,7 +11,7 @@
     <!-- 操作栏 -->
     <div class="bk-bar">
       <el-button :icon="Download" round type="primary" :loading="creating" @click="doCreate">立即备份</el-button>
-      <span class="bk-tip">备份文件保存在服务器 db-backup/runtime/ 目录</span>
+      <span class="bk-tip">每天凌晨 2:00 自动备份（保留最近 7 份，仅清理 auto_ 前缀文件）；备份保存在服务器 db-backup/runtime/</span>
     </div>
 
     <!-- 备份列表 -->

@@ -64,8 +64,12 @@ remember-me:
   # （IDE/CI/冒烟）直接抛 key cannot be empty 启动失败——2026-10-22 事故）
   key: ${REMEMBER_ME_KEY:MixPet@Remember2026}
 # 数据备份/还原（管理后台「数据备份」页）：.sql 落盘目录，换机器用 BACKUP_DIR 覆盖
+# auto-enabled 每日 02:00 自动备份开关；auto-keep 自动备份保留份数（0=不清理；
+# 只清理 auto_ 前缀，手动备份与还原前快照 pre_restore_ 永不自动删）
 backup:
   dir: ${BACKUP_DIR:/home/debian/公共/mixpet/db-backup/runtime/}
+  auto-enabled: ${BACKUP_AUTO_ENABLED:true}
+  auto-keep: ${BACKUP_AUTO_KEEP:7}
 ---
 # AI 辅助诊疗（旁路功能：enabled=false 一键关闭，不影响正常接诊）
 ai:
