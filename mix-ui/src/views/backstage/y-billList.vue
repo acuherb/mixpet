@@ -558,6 +558,8 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
   .total{font-size:14px; font-weight:bold;}
   .center{text-align:center; margin-top:10px; font-size:11px;}
   @media print {body{margin:0; width:72mm;}}
+  /* 80mm 热敏小票：声明纸张尺寸，打印对话框选『80mm 纸』时边距与宽度即正确 */
+  @page {size: 80mm auto; margin: 0;}
 </style></head>
 <body>
   <h1>${hosp?.name || '宠物医院管理系统'}</h1>
@@ -723,6 +725,8 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: H
   .sign{display:flex; justify-content:space-between; margin-top:6px; font-size:12px;}
   .foot{margin-top:16px; font-size:11px; color:#333; text-align:center; border-top:1px solid #999; padding-top:6px;}
   @media print{body{margin:0; padding:10mm;}}
+  /* A4 发票：声明 A4 纸张 */
+  @page {size: A4; margin: 0;}
 </style></head>
 <body>
   <div class="head">

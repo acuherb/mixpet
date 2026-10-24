@@ -447,6 +447,8 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 ## 10. 关键运维约定（新增）
 - **一键启停**：`~/公共/mixpet/dev-tools/start.sh`（.env 自动加载+locale 保命+限堆+错峰+就绪检测）、`stop.sh`；双端验证 `dev-tools/check.sh`。
 - **数据备份**：管理后台「系统设置→数据备份」（仅超管）一键备份/下载；还原四道闸（ADMIN 接口层+二次确认+还原前自动快照+互斥锁）；备份落 db-backup/runtime/（gitignore）。
+- **定时备份**：每日 02:00 自动备份（auto_ 前缀保留最近 7 份，只清 auto_）；开关 backup.auto-enabled / 份数 backup.auto-keep。
+- **审计留痕**：高危写操作 10 接口 AOP 埋点，操作人登录态取；后台「操作日志」页管理者以上可查。
 - **.env 管理**：根目录 `.env`（本机真值，不入库）← 模板 `.env.example`（入库）；start.sh 按 $HOME/.env → 项目 .env → .env.example 加载；12 个环境变量与 yml 占位符一一对应（README 配置表）。
 - **数据库**：运行库 `pet_mix`（旧库 pet_ship 保留待删）；增量脚本按 db-backup/INDEX.md 字典序执行，必带 --default-character-set=utf8mb4。
 - **启动类**：`com.mix.MixPetApplication`（就绪日志 `Started MixPetApplication`，grep 注意大小写）。
@@ -459,3 +461,10 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 安全：凭据经 MYSQL_PWD 环境变量传子进程（不进命令行防 ps 泄露）；库名/主机/端口从 JDBC URL 解析；文件名白名单 `[A-Za-z0-9_.-]+.sql`（禁路径字符）；备份落 `db-backup/runtime/`（gitignore，含全库数据勿入库），目录可 BACKUP_DIR 覆盖；还原后返回当前表数供核对。
 - **隔离验证（不碰运行库）**：用户授权临时库 pet_restore_test → 真实备份 130K/43 表 → 还原进临时库 exit 0 → 43 表与运行库一致 → 中文数据完整（普通/银卡/金卡/钻石、犬瘟热初诊——乱码修复数据也在备份里）→ 临时库与验证文件已清理。
 - 遗留：pet_restore_test 授权未回收（库已删，无害）；定时自动备份（方案 C）未做，需要再说。
+
+### 上线前三件半补齐（2026-10-24）
+- **① 定时自动备份**（commit 7bab7a6）：BackupScheduler 每日 02:00（与疫苗/预约提醒错峰）自动 dump；保留策略 auto_ 前缀只留最近 N 份（默认 7，只清理 auto_，手动备份与 pre_restore_ 快照永不自动删）；backup.auto-enabled/auto-keep 可配（环境变量 BACKUP_AUTO_ENABLED/BACKUP_AUTO_KEEP）；失败仅记日志不中断其他任务。
+- **② 操作审计日志**（commit 36e205d）：audit_log 表 + @AuditLog 注解 + AOP 环绕切面（成功执行后记日志，审计异常不反噬主业务）；操作人/角色**一律登录态取**（Doctor.authLv→ADMIN/MANAGER/DOCTOR/NURSE/LOSER）防伪造；IP 取 X-Forwarded-For→RemoteAddr。埋点 10 个高危接口：收款/发药/退款、数据备份/删除/还原（标注毁库）、顾客审核、药品入库、标记爽约、处方作废。后台「系统设置→操作日志」页（管理者以上，/auditLog/page 限 ADMIN+MANAGER，未登录 401 实测）。**踩坑**：Boot3 的 starter-web 不再传递 aspectjweaver，pom 需显式加 spring-boot-starter-aop；Wrappers 包名是 core.toolkit 不是 core.conditions。
+- **③ 手机端回归**：playwright 390×844 viewport 扫 **52 个路由（顾客端/医生端/后台全量）零页面级横向溢出**（表格内横滚为设计内形态，不计）；关键页无 <24px 触达按钮。未发现需修的响应式缺陷（el-table max-height+fixed 列与 flex-wrap 模式全域一致）。
+- **半件（小票打印）**：打印窗口补 `@page` 声明——小票 `size: 80mm auto; margin: 0`（原只有 72mm 宽适配，浏览器打印对话框选 80mm 纸即正确）、A4 发票 `size: A4`。**边界**：真实 ESC/POS 热敏打印机指令集打印需打印机型号+打印服务，超出纯 Web 能力，未做（文档已说明）。
+- 期间处理：vite dev server 曾被误伤挂掉（start.sh 重启恢复）；npm build 在内存紧张时放后台跑（用户机器 4G 内存，OOM 是老问题，限堆已做）。
