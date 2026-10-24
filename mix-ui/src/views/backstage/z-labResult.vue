@@ -73,42 +73,56 @@
   <BackPage :total="list.total" @changePu="changePuB"/>
 
   <!--结果录入/查看弹窗-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="620px">
-    <div v-if="current" class="order-head">
-      单号 #{{ current.orderId }} · 宠物：{{ current.petName }} · 客户：{{ current.clientName }}
-    </div>
-    <el-table :data="itemForms" size="small" border>
-      <el-table-column label="检验项" min-width="150" prop="itemName"/>
-      <el-table-column label="参考范围" width="120" prop="refRange"/>
-      <el-table-column label="结果值" width="150">
-        <template #default="scope">
-          <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值" @blur="autoAbnormal(scope.row)"/>
-          <span v-else>{{ scope.row.resultValue || '—' }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="异常" width="90">
-        <template #default="scope">
-          <el-switch v-if="!readonly" v-model="scope.row.isAbnormal" active-text="是" inactive-text="否"/>
-          <el-tag v-else-if="scope.row.isAbnormal" size="small" type="danger">异常</el-tag>
-          <el-tag v-else size="small" type="success">正常</el-tag>
-        </template>
-      </el-table-column>
-    </el-table>
-    <el-form class="result-form" label-width="70px">
-      <el-form-item label="小结">
-        <el-input v-model="resultNote" :rows="2" maxlength="255" :disabled="readonly" placeholder="化验结论，可留空" type="textarea"/>
-      </el-form-item>
-      <el-form-item label="报告附件">
-        <UpImg v-if="!current?.reportFile" :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
-        <div v-else style="display: flex; align-items: center; gap: 10px">
-          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">查看报告附件</el-link>
-          <el-button v-if="!readonly" link type="danger" @click="removeReport">移除</el-button>
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="640px">
+    <div v-if="current" class="case-doc">
+      <!-- 文档头：单号 + 宠物/客户 -->
+      <div class="case-head">
+        <div class="case-hosp">化验单 <span class="case-sub">#{{ current.orderId }}</span></div>
+        <div class="case-meta">宠物：{{ current.petName }} · 客户：{{ current.clientName }}</div>
+      </div>
+      <!-- 结果表：现代样式 -->
+      <div class="case-sec">
+        <div class="case-sec-tit">检 验 结 果</div>
+        <el-table :data="itemForms" size="small" class="case-table">
+          <el-table-column label="检验项" min-width="150" prop="itemName"/>
+          <el-table-column label="参考范围" width="120" prop="refRange"/>
+          <el-table-column label="结果值" width="150">
+            <template #default="scope">
+              <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值" @blur="autoAbnormal(scope.row)"/>
+              <span v-else :class="{ 'abnormal-text': scope.row.isAbnormal }">{{ scope.row.resultValue || '—' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="异常" width="90">
+            <template #default="scope">
+              <el-switch v-if="!readonly" v-model="scope.row.isAbnormal" active-text="是" inactive-text="否"/>
+              <el-tag v-else-if="scope.row.isAbnormal" size="small" type="danger">异常</el-tag>
+              <el-tag v-else size="small" type="success">正常</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      <!-- 小结与附件 -->
+      <div class="case-sec">
+        <div class="case-sec-tit">小 结 与 附 件</div>
+        <div class="case-para">
+          <label>小结</label>
+          <p v-if="readonly">{{ resultNote || '—' }}</p>
+          <el-input v-else v-model="resultNote" :rows="2" maxlength="255" placeholder="化验结论，可留空" type="textarea"/>
         </div>
-      </el-form-item>
-    </el-form>
+        <div class="case-file" v-if="current?.reportFile">
+          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">
+            <el-icon><Paperclip/></el-icon> 查看报告附件
+          </el-link>
+          <el-button v-if="!readonly" link type="danger" size="small" @click="removeReport">移除</el-button>
+        </div>
+        <div v-else-if="!readonly" class="case-file">
+          <UpImg :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
+        </div>
+      </div>
+    </div>
     <template #footer>
-      <el-button @click="modalView = false">关闭</el-button>
-      <el-button v-if="!readonly" type="primary" @click="formSubmit">保存结果</el-button>
+      <el-button round @click="modalView = false">关闭</el-button>
+      <el-button v-if="!readonly" round type="primary" @click="formSubmit">保存结果</el-button>
     </template>
   </el-dialog>
 </template>
@@ -294,6 +308,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 现代病历文档样式（与顾客端就诊详情同一套） */
+@import "@/styles/case-doc.scss";
+
 .filter-card {
   margin-bottom: 8px;
 }

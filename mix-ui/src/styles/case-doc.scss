@@ -1,0 +1,200 @@
+/**
+ * 现代病历文档（case-doc）
+ * 用于：顾客端就诊详情 / 化验结果录入与查看 / 影像报告录入与查看
+ * 与法定单据 rx-modern 同一设计语言：品牌渐变头(取 --brand)/体征 chips/卡片分区/
+ * 段落(标签+内容)/现代表格/附件卡/费用条
+ */
+/* ===== 现代病历文档（顾客端就诊详情，2026-10-24） ===== */
+.case-doc {
+  border: 1px solid #EBEEF5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+
+  /* 文档头：品牌渐变（跟随系统主题色 --brand） */
+  .case-head {
+    background: linear-gradient(135deg, var(--brand) 0%, #4ba3e0 100%);
+    padding: 16px 20px;
+    color: #fff;
+
+    .case-hosp {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+
+      .case-sub {
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.8);
+        margin-left: 6px;
+        letter-spacing: 2px;
+      }
+    }
+
+    .case-meta {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.85);
+      margin-top: 4px;
+    }
+  }
+
+  /* 体征 chips */
+  .case-vitals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #F8FAFC;
+    border-bottom: 1px solid #F0F2F7;
+
+    .vital {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: #fff;
+      border: 1px solid #EBEEF5;
+      border-radius: 999px;
+      font-size: 12px;
+      color: #1F2D3D;
+      font-weight: 500;
+
+      b {
+        font-weight: 400;
+        color: #909399;
+        font-size: 11px;
+      }
+    }
+  }
+
+  /* 分区 */
+  .case-sec {
+    padding: 14px 20px;
+
+    & + .case-sec { border-top: 1px solid #F0F2F7; }
+
+    .case-sec-tit {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 3px;
+      color: #909399;
+      margin-bottom: 10px;
+
+      &::before {
+        content: "";
+        width: 3px;
+        height: 12px;
+        border-radius: 2px;
+        background: var(--brand);
+      }
+    }
+  }
+
+  /* 段落：标签 + 内容 */
+  .case-para {
+    display: flex;
+    gap: 12px;
+    padding: 5px 0;
+    font-size: 13px;
+    line-height: 1.8;
+
+    label {
+      flex-shrink: 0;
+      width: 64px;
+      color: #909399;
+      font-size: 12px;
+      text-align: right;
+      padding-top: 1px;
+    }
+
+    p {
+      margin: 0;
+      color: #1F2D3D;
+      flex: 1;
+      min-width: 0;
+      white-space: pre-wrap;
+    }
+
+    /* 诊断高亮 */
+    &.hl {
+      background: #F0F7FC;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin: 4px 0;
+
+      p { font-weight: 600; color: var(--brand); }
+    }
+  }
+
+  /* 子表头（化验单/影像单/住院/手术） */
+  .case-sub-hd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #606266;
+    margin: 8px 0 6px;
+  }
+
+  /* 现代表格：圆角细线斑马纹 */
+  .case-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #EBEEF5;
+    border-radius: 8px;
+    overflow: hidden;
+
+    th, td { border-bottom: 1px solid #F0F2F7; font-size: 12px; }
+    th { background: #F5F7FA; color: #606266; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+  }
+
+  /* 附件卡片 */
+  .case-file {
+    margin: 6px 0 10px;
+
+    .el-link {
+      font-size: 12px;
+
+      .el-icon { margin-right: 4px; }
+    }
+  }
+
+  .case-empty {
+    font-size: 12px;
+    color: #a8abb2;
+    margin: 4px 0 0;
+  }
+
+  .case-ops {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 20px 0;
+  }
+
+  /* 费用合计条 */
+  .case-total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 12px 20px;
+    background: #F8FAFC;
+    border-top: 1px solid #F0F2F7;
+    font-size: 13px;
+    color: #606266;
+
+    b {
+      font-size: 20px;
+      color: var(--brand);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+}
+

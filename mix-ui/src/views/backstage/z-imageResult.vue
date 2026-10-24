@@ -48,40 +48,59 @@
   <BackPage :total="list.total" @changePu="changePuB"/>
 
   <!--报告录入/查看弹窗-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="560px" :close-on-click-modal="false">
-    <div v-if="current" class="order-head">
-      单号 #{{ current.orderId }} · {{ current.itemName }} · 宠物：{{ current.petName }}
-      <el-tag v-if="hasTpl && !readonly" size="small" type="success" effect="plain" style="margin-left:8px">模板录入</el-tag>
-    </div>
-    <el-form label-width="70px">
-      <!-- 有报告模板：按预置项结构化填写 -->
-      <template v-if="hasTpl && !readonly">
-        <el-form-item v-for="(label, i) in tplLabels" :key="i" :label="label">
-          <el-input v-model="tplValues[i]" :rows="2" maxlength="500" type="textarea" :placeholder="`请填写${label}`"/>
-        </el-form-item>
-        <el-form-item label="补充说明">
-          <el-input v-model="extraText" :rows="2" maxlength="1000" placeholder="其他需要说明的情况（选填）" type="textarea"/>
-        </el-form-item>
-      </template>
-      <!-- 无模板：自由文本录入 -->
-      <el-form-item v-else-if="!readonly" label="影像报告">
-        <el-input v-model="extraText" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
-      </el-form-item>
-      <!-- 查看模式：直接展示报告文本 -->
-      <el-form-item v-else label="影像报告">
-        <div class="report-view">{{ current?.result || '（无报告内容）' }}</div>
-      </el-form-item>
-      <el-form-item label="报告附件">
-        <UpImg v-if="!current?.reportFile" :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
-        <div v-else style="display: flex; align-items: center; gap: 10px">
-          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">查看报告附件</el-link>
-          <el-button v-if="!readonly" link type="danger" @click="removeReport">移除</el-button>
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="640px" :close-on-click-modal="false">
+    <div v-if="current" class="case-doc">
+      <!-- 文档头：单号 + 项目/宠物 -->
+      <div class="case-head">
+        <div class="case-hosp">影像单 <span class="case-sub">#{{ current.orderId }}</span></div>
+        <div class="case-meta">{{ current.itemName }} · 宠物：{{ current.petName }}</div>
+      </div>
+      <!-- 报告内容 -->
+      <div class="case-sec">
+        <div class="case-sec-tit">
+          影 像 报 告
+          <el-tag v-if="hasTpl && !readonly" size="small" type="success" effect="plain" style="margin-left:8px">模板录入</el-tag>
         </div>
-      </el-form-item>
-    </el-form>
+        <!-- 有报告模板：按预置项结构化填写 -->
+        <template v-if="hasTpl && !readonly">
+          <div class="case-para" v-for="(label, i) in tplLabels" :key="i">
+            <label>{{ label }}</label>
+            <el-input v-model="tplValues[i]" :rows="2" maxlength="500" type="textarea" :placeholder="`请填写${label}`"/>
+          </div>
+          <div class="case-para">
+            <label>补充说明</label>
+            <el-input v-model="extraText" :rows="2" maxlength="1000" placeholder="其他需要说明的情况（选填）" type="textarea"/>
+          </div>
+        </template>
+        <!-- 无模板：自由文本录入 -->
+        <div class="case-para" v-else-if="!readonly">
+          <label>报告内容</label>
+          <el-input v-model="extraText" :rows="6" maxlength="2000" placeholder="描述影像所见及诊断结论" type="textarea"/>
+        </div>
+        <!-- 查看模式：直接展示报告文本 -->
+        <div class="case-para" v-else>
+          <label>报告内容</label>
+          <p>{{ current?.result || '（无报告内容）' }}</p>
+        </div>
+      </div>
+      <!-- 附件 -->
+      <div class="case-sec">
+        <div class="case-sec-tit">报 告 附 件</div>
+        <div class="case-file" v-if="current?.reportFile">
+          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">
+            <el-icon><Paperclip/></el-icon> 查看报告附件
+          </el-link>
+          <el-button v-if="!readonly" link type="danger" size="small" @click="removeReport">移除</el-button>
+        </div>
+        <div v-else-if="!readonly" class="case-file">
+          <UpImg :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
+        </div>
+        <p v-else class="case-empty">暂无附件</p>
+      </div>
+    </div>
     <template #footer>
-      <el-button @click="closeModal">关闭</el-button>
-      <el-button v-if="!readonly" type="primary" @click="formSubmit">提交报告</el-button>
+      <el-button round @click="closeModal">关闭</el-button>
+      <el-button v-if="!readonly" round type="primary" @click="formSubmit">提交报告</el-button>
     </template>
   </el-dialog>
 </template>
@@ -235,6 +254,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 现代病历文档样式（与顾客端就诊详情同一套） */
+@import "@/styles/case-doc.scss";
+
 .filter-card {
   margin-bottom: 8px;
 }

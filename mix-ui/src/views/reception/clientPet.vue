@@ -88,144 +88,189 @@
     <!--一页式健康档案-->
     <PetHealthDialog v-model="healthView" :pet-id="healthPetId"/>
 
-    <!--病历详情弹窗（顾客视角，脱敏）-->
-    <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 560px">
+    <!--病历详情弹窗（顾客视角，脱敏；现代病历文档样式 .case-*）-->
+    <el-dialog v-model="detailVisible" title="病历详情" top="6vh" width="94%" style="max-width: 680px">
       <template #footer>
         <el-button round @click="saveRecordPdf">保存病历（PDF）</el-button>
         <el-button round @click="viewRx">查看处方笺</el-button>
         <el-button round type="primary" @click="detailVisible = false">关闭</el-button>
       </template>
       <template v-if="detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="宠物">{{ detail.record.petName }}</el-descriptions-item>
-          <el-descriptions-item label="就诊时间">{{ (detail.record.createTime || '').replace('T', ' ').slice(0, 16) }}</el-descriptions-item>
-          <el-descriptions-item label="体重">{{ detail.record.weight != null ? detail.record.weight + 'kg' : '—' }}</el-descriptions-item>
-          <el-descriptions-item label="血压">{{ detail.record.bloodPressure || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="体温(℃)">{{ detail.record.temperature ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item label="心率(次/分)">{{ detail.record.heartRate ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item label="呼吸(次/分)">{{ detail.record.respiratoryRate ?? '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="主诉">{{ detail.record.chiefComplaint || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="现病史">{{ detail.record.presentIllness || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="既往病史">{{ detail.record.pastHistory || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="体格检查">{{ detail.record.physicalExam || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="诊断">{{ detail.record.diagnosis || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="治疗方案">{{ detail.record.treatment || '—' }}</el-descriptions-item>
-          <el-descriptions-item :span="2" label="医嘱">{{ detail.record.advice || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="接诊医生">{{ detail.record.doctorName }}</el-descriptions-item>
-          <el-descriptions-item label="科室">{{ detail.record.departmentName }}</el-descriptions-item>
-          <el-descriptions-item label="复诊日期">{{ detail.record.revisitDate || '无需复诊' }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.record.originRecordId" :span="2" label="关联就诊">
-            复诊（初诊/上次病历 #{{ detail.record.originRecordId }}{{ detail.record.originDiagnosis ? '，诊断：' + detail.record.originDiagnosis : '' }}）
-          </el-descriptions-item>
-          <el-descriptions-item label="费用合计">￥{{ detail.record.totalMoney ?? 0 }}</el-descriptions-item>
-        </el-descriptions>
-        <div v-if="revisits.length" style="margin-top:10px">
-          <h4 style="margin: 6px 0">复诊记录</h4>
-          <el-table :data="revisits" border size="small">
-            <el-table-column label="就诊时间" min-width="150">
-              <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 16) }}</template>
-            </el-table-column>
-            <el-table-column label="诊断" min-width="160" prop="diagnosis" show-overflow-tooltip/>
-          </el-table>
-        </div>
-        <div class="no-print" style="text-align: right; margin-bottom: 6px">
-          <el-button size="small" plain round type="warning" @click="bookRevisit">预约复诊</el-button>
-          <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
-        </div>
-        <h4 style="margin: 12px 0 6px">处方用药</h4>
-        <el-table :data="detail.prescriptions" border size="small">
-          <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
-          <el-table-column label="数量" width="60">
-            <template #default="scope">{{ scope.row.quantity }}{{ scope.row.drugUnit }}</template>
-          </el-table-column>
-          <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
-        </el-table>
-        <p v-if="detail.prescriptions.length === 0" style="color:#999">本次未开处方</p>
-        <h4 style="margin: 14px 0 6px">套餐服务</h4>
-        <el-table :data="detail.packages" border size="small">
-          <el-table-column label="套餐" min-width="140" prop="packageName" show-overflow-tooltip/>
-          <el-table-column label="价格(元)" width="90" prop="price"/>
-        </el-table>
-        <p v-if="!detail.packages || detail.packages.length === 0" style="color:#999">本次无套餐</p>
-        <h4 style="margin: 14px 0 6px">化验结果</h4>
-        <template v-for="lab in labs" :key="lab.orderId">
-          <div class="lab-hd">
-            化验单 #{{ lab.orderId }} · 费用 ￥{{ lab.fee }}
-            <el-tag v-if="lab.status" size="small" type="success">已出结果</el-tag>
-            <el-tag v-else size="small" type="warning">待检验</el-tag>
+        <div class="case-doc">
+          <!-- 文档头：宠物 + 就诊时间 + 医生 -->
+          <div class="case-head">
+            <div class="case-hosp">{{ detail.record.petName }} <span class="case-sub">就诊病历</span></div>
+            <div class="case-meta">
+              {{ (detail.record.createTime || '').replace('T', ' ').slice(0, 16) }} · 接诊医生 {{ detail.record.doctorName }} · {{ detail.record.departmentName }}
+            </div>
           </div>
-          <el-table :data="lab.items || []" border size="small" style="margin-bottom: 8px" :row-class-name="labRowClass">
-            <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip/>
-            <el-table-column label="结果" width="110">
-              <template #default="s">
-                <span :class="{ 'abnormal-text': s.row.isAbnormal }">{{ s.row.resultValue || '—' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="参考范围" width="120" prop="refRange" show-overflow-tooltip/>
-            <el-table-column label="单位" width="60" prop="itemUnit"/>
-            <el-table-column label="异常" width="70">
-              <template #default="s">
-                <el-tag v-if="s.row.isAbnormal" size="small" type="danger">异常</el-tag>
-                <el-tag v-else-if="s.row.resultValue" size="small" type="success">正常</el-tag>
-                <span v-else>—</span>
-              </template>
-            </el-table-column>
-          </el-table>
-          <div v-if="lab.reportFile" style="margin-bottom:8px">
-            <el-link type="primary" :href="'/api/common/downReport?name=' + lab.reportFile" target="_blank">查看检查报告附件</el-link>
-          </div>
-        </template>
-        <p v-if="labs.length === 0" style="color:#999">本次无化验项目</p>
-        <h4 style="margin: 14px 0 6px">影像检查</h4>
-        <template v-for="img in images" :key="img.orderId">
-          <div class="lab-hd">
-            {{ img.itemName }}（{{ img.groupName || '—' }}）· 部位：{{ img.examPart || '—' }} · 费用 ￥{{ img.fee }}
-            <el-tag v-if="img.status" size="small" type="success">已出报告</el-tag>
-            <el-tag v-else size="small" type="warning">待检查</el-tag>
-          </div>
-          <div class="lab-note" style="margin-bottom:8px">报告：{{ img.result || '尚未出报告' }}</div>
-          <div v-if="img.reportFile" style="margin-bottom:8px">
-            <el-link type="primary" :href="'/api/common/downReport?name=' + img.reportFile" target="_blank">查看影像报告附件</el-link>
-          </div>
-        </template>
-        <p v-if="images.length === 0" style="color:#999">本次无影像检查</p>
-        <h4 style="margin: 14px 0 6px">免疫接种档案</h4>
-        <el-table :data="immunes" border size="small" style="margin-bottom: 8px">
-          <el-table-column label="疫苗" min-width="120" prop="drugName" show-overflow-tooltip/>
-          <el-table-column label="针次" prop="doseCnt" width="60"/>
-          <el-table-column label="接种时间" min-width="150">
-            <template #default="s">{{ (s.row.vaccinateTime || '').replace('T', ' ').slice(0, 16) }}</template>
-          </el-table-column>
-          <el-table-column label="下一针建议" min-width="150">
-            <template #default="s">{{ s.row.nextTime ? s.row.nextTime.replace('T', ' ').slice(0, 10) : '无' }}</template>
-          </el-table-column>
-          <el-table-column label="状态" width="80">
-            <template #default="s">
-              <el-tag v-if="isDue(s.row)" size="small" type="danger">待接种</el-tag>
-              <el-tag v-else size="small" type="success">正常</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
-        <p v-if="immunes.length === 0" style="color:#999">暂无疫苗接种记录</p>
 
-        <h4 style="margin: 14px 0 6px">住院信息</h4>
-        <template v-for="h in hospitals" :key="h.hospitalId">
-          <div class="lab-hd">
-            病房 {{ h.roomNo || '—' }} · 日均 ￥{{ h.dailyFee }} · {{ h.days ?? 0 }} 天
-            <el-tag v-if="h.status" size="small" type="info">已出院</el-tag>
-            <el-tag v-else size="small" type="warning">住院中</el-tag>
+          <!-- 体征 chips -->
+          <div class="case-vitals">
+            <span class="vital"><b>体重</b>{{ detail.record.weight != null ? detail.record.weight + ' kg' : '—' }}</span>
+            <span class="vital"><b>体温</b>{{ detail.record.temperature != null ? detail.record.temperature + ' ℃' : '—' }}</span>
+            <span class="vital"><b>心率</b>{{ detail.record.heartRate != null ? detail.record.heartRate + ' 次/分' : '—' }}</span>
+            <span class="vital"><b>呼吸</b>{{ detail.record.respiratoryRate != null ? detail.record.respiratoryRate + ' 次/分' : '—' }}</span>
+            <span class="vital"><b>血压</b>{{ detail.record.bloodPressure || '—' }}</span>
           </div>
-        </template>
-        <p v-if="hospitals.length === 0" style="color:#999">本次无住院记录</p>
-        <h4 style="margin: 14px 0 6px">手术/麻醉</h4>
-        <template v-for="su in surgeries" :key="su.surgeryId">
-          <div class="lab-hd">
-            {{ su.surgeryName }}（{{ su.surgeryType || '—' }}）· 麻醉：{{ su.anesthesiaType || '—' }} · 费用 ￥{{ su.fee }}
-            <el-tag :type="surgeryStatusType(su.status)" size="small">{{ surgeryStatusText(su.status) }}</el-tag>
+
+          <!-- 病历正文分区 -->
+          <div class="case-sec">
+            <div class="case-sec-tit">病 史 与 诊 断</div>
+            <div class="case-para"><label>主诉</label><p>{{ detail.record.chiefComplaint || '—' }}</p></div>
+            <div class="case-para"><label>现病史</label><p>{{ detail.record.presentIllness || '—' }}</p></div>
+            <div class="case-para"><label>既往病史</label><p>{{ detail.record.pastHistory || '—' }}</p></div>
+            <div class="case-para"><label>体格检查</label><p>{{ detail.record.physicalExam || '—' }}</p></div>
+            <div class="case-para hl"><label>诊断</label><p>{{ detail.record.diagnosis || '—' }}</p></div>
+            <div class="case-para"><label>治疗方案</label><p>{{ detail.record.treatment || '—' }}</p></div>
+            <div class="case-para"><label>医嘱</label><p>{{ detail.record.advice || '—' }}</p></div>
+            <div class="case-para" v-if="detail.record.originRecordId">
+              <label>关联就诊</label>
+              <p>复诊（初诊/上次病历 #{{ detail.record.originRecordId }}{{ detail.record.originDiagnosis ? '，诊断：' + detail.record.originDiagnosis : '' }}）</p>
+            </div>
+            <div class="case-para"><label>复诊日期</label><p>{{ detail.record.revisitDate || '无需复诊' }}</p></div>
           </div>
-          <div class="lab-note" style="margin-bottom:8px" v-if="su.postopNote">术后：{{ su.postopNote }}</div>
-        </template>
-        <p v-if="surgeries.length === 0" style="color:#999">本次无手术</p>
+
+          <!-- 复诊记录 -->
+          <div class="case-sec" v-if="revisits.length">
+            <div class="case-sec-tit">复 诊 记 录</div>
+            <el-table :data="revisits" border size="small" class="case-table">
+              <el-table-column label="就诊时间" min-width="150">
+                <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 16) }}</template>
+              </el-table-column>
+              <el-table-column label="诊断" min-width="160" prop="diagnosis" show-overflow-tooltip/>
+            </el-table>
+          </div>
+
+          <div class="no-print case-ops">
+            <el-button size="small" plain round type="warning" @click="bookRevisit">预约复诊</el-button>
+            <el-button size="small" type="primary" @click="printRx">打印处方笺</el-button>
+          </div>
+
+          <!-- 处方用药 -->
+          <div class="case-sec">
+            <div class="case-sec-tit">处 方 用 药</div>
+            <el-table :data="detail.prescriptions" border size="small" class="case-table">
+              <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
+              <el-table-column label="数量" width="70">
+                <template #default="scope">{{ scope.row.quantity }}{{ scope.row.drugUnit }}</template>
+              </el-table-column>
+              <el-table-column label="用法" min-width="120" prop="usageInfo" show-overflow-tooltip/>
+            </el-table>
+            <p v-if="detail.prescriptions.length === 0" class="case-empty">本次未开处方</p>
+          </div>
+
+          <!-- 套餐服务 -->
+          <div class="case-sec" v-if="detail.packages && detail.packages.length">
+            <div class="case-sec-tit">套 餐 服 务</div>
+            <el-table :data="detail.packages" border size="small" class="case-table">
+              <el-table-column label="套餐" min-width="140" prop="packageName" show-overflow-tooltip/>
+              <el-table-column label="价格(元)" width="90" prop="price"/>
+            </el-table>
+          </div>
+
+          <!-- 化验结果 -->
+          <div class="case-sec" v-if="labs.length">
+            <div class="case-sec-tit">化 验 结 果</div>
+            <template v-for="lab in labs" :key="lab.orderId">
+              <div class="case-sub-hd">
+                化验单 #{{ lab.orderId }} · 费用 ￥{{ lab.fee }}
+                <el-tag v-if="lab.status" size="small" type="success" effect="light">已出结果</el-tag>
+                <el-tag v-else size="small" type="warning" effect="light">待检验</el-tag>
+              </div>
+              <el-table :data="lab.items || []" border size="small" class="case-table" :row-class-name="labRowClass">
+                <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip/>
+                <el-table-column label="结果" width="110">
+                  <template #default="s">
+                    <span :class="{ 'abnormal-text': s.row.isAbnormal }">{{ s.row.resultValue || '—' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="参考范围" width="120" prop="refRange" show-overflow-tooltip/>
+                <el-table-column label="单位" width="60" prop="itemUnit"/>
+                <el-table-column label="异常" width="70">
+                  <template #default="s">
+                    <el-tag v-if="s.row.isAbnormal" size="small" type="danger">异常</el-tag>
+                    <el-tag v-else-if="s.row.resultValue" size="small" type="success">正常</el-tag>
+                    <span v-else>—</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div v-if="lab.reportFile" class="case-file">
+                <el-link type="primary" :href="'/api/common/downReport?name=' + lab.reportFile" target="_blank">
+                  <el-icon><Paperclip/></el-icon> 查看检查报告附件
+                </el-link>
+              </div>
+            </template>
+          </div>
+
+          <!-- 影像检查 -->
+          <div class="case-sec" v-if="images.length">
+            <div class="case-sec-tit">影 像 检 查</div>
+            <template v-for="img in images" :key="img.orderId">
+              <div class="case-sub-hd">
+                {{ img.itemName }}（{{ img.groupName || '—' }}）· 部位：{{ img.examPart || '—' }} · 费用 ￥{{ img.fee }}
+                <el-tag v-if="img.status" size="small" type="success" effect="light">已出报告</el-tag>
+                <el-tag v-else size="small" type="warning" effect="light">待检查</el-tag>
+              </div>
+              <div class="case-para"><label>报告</label><p>{{ img.result || '尚未出报告' }}</p></div>
+              <div v-if="img.reportFile" class="case-file">
+                <el-link type="primary" :href="'/api/common/downReport?name=' + img.reportFile" target="_blank">
+                  <el-icon><Paperclip/></el-icon> 查看影像报告附件
+                </el-link>
+              </div>
+            </template>
+          </div>
+
+          <!-- 免疫接种档案 -->
+          <div class="case-sec" v-if="immunes.length">
+            <div class="case-sec-tit">免 疫 接 种 档 案</div>
+            <el-table :data="immunes" border size="small" class="case-table">
+              <el-table-column label="疫苗" min-width="120" prop="drugName" show-overflow-tooltip/>
+              <el-table-column label="针次" prop="doseCnt" width="60"/>
+              <el-table-column label="接种时间" min-width="150">
+                <template #default="s">{{ (s.row.vaccinateTime || '').replace('T', ' ').slice(0, 16) }}</template>
+              </el-table-column>
+              <el-table-column label="下一针建议" min-width="150">
+                <template #default="s">{{ s.row.nextTime ? s.row.nextTime.replace('T', ' ').slice(0, 10) : '无' }}</template>
+              </el-table-column>
+              <el-table-column label="状态" width="80">
+                <template #default="s">
+                  <el-tag v-if="isDue(s.row)" size="small" type="danger">待接种</el-tag>
+                  <el-tag v-else size="small" type="success">正常</el-tag>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
+          <!-- 住院信息 -->
+          <div class="case-sec" v-if="hospitals.length">
+            <div class="case-sec-tit">住 院 信 息</div>
+            <template v-for="h in hospitals" :key="h.hospitalId">
+              <div class="case-sub-hd">
+                病房 {{ h.roomNo || '—' }} · 日均 ￥{{ h.dailyFee }} · {{ h.days ?? 0 }} 天
+                <el-tag v-if="h.status" size="small" type="info" effect="light">已出院</el-tag>
+                <el-tag v-else size="small" type="warning" effect="light">住院中</el-tag>
+              </div>
+            </template>
+          </div>
+
+          <!-- 手术/麻醉 -->
+          <div class="case-sec" v-if="surgeries.length">
+            <div class="case-sec-tit">手 术 / 麻 醉</div>
+            <template v-for="su in surgeries" :key="su.surgeryId">
+              <div class="case-sub-hd">
+                {{ su.surgeryName }}（{{ su.surgeryType || '—' }}）· 麻醉：{{ su.anesthesiaType || '—' }} · 费用 ￥{{ su.fee }}
+                <el-tag :type="surgeryStatusType(su.status)" size="small" effect="light">{{ surgeryStatusText(su.status) }}</el-tag>
+              </div>
+              <div class="case-para" v-if="su.postopNote"><label>术后</label><p>{{ su.postopNote }}</p></div>
+            </template>
+          </div>
+
+          <!-- 费用合计 -->
+          <div class="case-total">
+            费用合计 <b>￥{{ detail.record.totalMoney ?? 0 }}</b>
+          </div>
+        </div>
       </template>
     </el-dialog>
 
@@ -327,7 +372,7 @@ import {reqAddSelfPet, reqClientPet} from "@/request/PetApi";
 import {reqReturnPet} from "@/request/AdoptApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import UpImg from "@/components/UpImg.vue";
-import {Plus} from "@element-plus/icons-vue";
+import {Paperclip, Plus} from "@element-plus/icons-vue";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
 import {reqPetRecords, reqRecordOne, reqRecordRevisits} from "@/request/RecordApi";
 import {reqLabByRecord} from "@/request/LabApi";
@@ -735,4 +780,7 @@ onMounted(() => {
     background-color: #fef0f0 !important;
   }
 }
+
+@import "@/styles/case-doc.scss";
+
 </style>
