@@ -1,88 +1,41 @@
 # db-backup 目录说明
 
-本目录存放**特性 SQL 脚本**（建表/加列/索引/数据修复），按日期/功能命名，**已全部在开发库执行过**。
+本目录存放**数据库基线**与**历史迁移脚本存档**。2026-10-24 起改为「单基线 + 归档」结构，新环境部署**只需一条命令**。
 
-## 使用约定
+## 结构
 
-1. **新库部署**：先导基线 `pet_mix.sql`，再按**文件名字典序**执行全部特性脚本（幂等脚本可重复执行）；
-2. **执行方式**：
-   ```bash
-   MYSQL_PWD='<密码>' mysql -h127.0.0.1 -P3306 --default-character-set=utf8mb4 -u<用户> <库名> < <脚本>
-   ```
-3. **字符集**：务必带 `--default-character-set=utf8mb4`（含中文的脚本在错误 charset 下会写入乱码——历史上 sys_dict 就这样乱过）；
-4. 生产库迁移前先 `mysqldump` 备份；
-5. 脚本命名：`feature_<日期>_<功能>.sql` 新功能 / `fix_<日期>_<问题>.sql` 数据修复 / `*_module.sql` 早期模块建表。
+```
+db-backup/
+├── pet_mix.sql      # 当前基线：全库 43 表 + 演示数据（2026-10-24 重压）
+├── runtime/         # 管理后台「数据备份」页落盘处（gitignore，勿入库勿外传）
+└── archive/         # 历史增量脚本存档（51 个，按日期/功能命名）
+```
 
-## 脚本索引（按功能，共 51 个特性脚本 + 1 基线）
+## 新环境部署（一条命令）
 
-### 基线
-| 脚本 | 内容 |
+```bash
+# 建库（utf8mb4）后：
+MYSQL_PWD='<密码>' mysql -h127.0.0.1 -P3306 --default-character-set=utf8mb4 -u<用户> <库名> < pet_mix.sql
+```
+
+- 基线**含演示数据**（14 客户 / 16 药品 / 会员等级 / 供应商等），开箱即用；
+- **正式上线前**按 DEPLOY.md 10.2 的 TRUNCATE 清单清场，并到后台重置演示账号密码；
+- 基线为 2026-10-24 运行库全量 dump（`mysqldump --single-transaction --routines --triggers --hex-blob`），已经隔离库还原验证（43 表一致、中文完好）。
+
+## 发版压基线约定（重要，防目录再乱）
+
+1. **平时**：新增字段/表仍写独立脚本放**本目录根下**（命名 `feature_<日期>_<功能>.sql`），立即执行到运行库；
+2. **每次发版**（或存量脚本攒到 10 个左右）：用管理后台「数据备份」或 `mysqldump` 重压一份 `pet_mix.sql`，把此前根下的脚本**整体移入 `archive/`**；
+3. `archive/` 只增不移出（git 历史可追溯每一列的来历），主目录永远保持「1 基线 + 最近一批增量」；
+4. `fix_*` 类一次性数据修复脚本随归档一起进 `archive/`（对新库无意义，留档备查）。
+
+## archive/ 存档索引（51 个，2026-10-24 归档时快照）
+
+| 分组 | 脚本 |
 |---|---|
-| `pet_mix.sql` | 全库基线（建库后第一个执行；旧名 `pet_ship.sql` 为 ship→mix 替换前基线，仅存档） |
+| 基础模块建表 | `lab_module` / `hospital_module` / `image_module` / `immune_module` / `surgery_module` / `package_module` / `rx_prescription_module` / `job_module` / `vaccine_merge_into_drug` / `doctor_department` |
+| 工作流增强 10-14~17 | `feature_20261014_workflow` / `_hospital_monitor` / `_refund_inventory` / `_revisit_followup` / `_schedule` / `_surgery_consent` / `_sys_dict` / `feature_20261015_bill_discount` / `_finance_report` / `_member_card` / `_record_template` / `_supplier_inventory` / `_chat_file_webp` / `feature_20261016_image_report_tpl` / `_chat_read` / `_client_audit` / `_notice_sort` / `feature_20261017_ai_advice` / `_brand_color` / `_client_audit_reason` / `_drug_dose_rule` / `_followup_isdel` / `_hospital_setting` / `_medical_record_bp` / `_prescription_dose_fields` / `_record_present_illness` / `_record_status` / `feature_20261018_rx_print` |
+| 计费细化 10-19~21 | `feature_20261019_bill_pay_by` / `feature_20261020_bill_fee_immune` / `_drug_inbound_cost` / `_hospital_advice` / `_is_del_default_fix` / `_package_item` / `feature_20261021_bill_refund_reason` |
+| 一次性数据修复 | `fix_entity_update_time_20261013`（实体缺 update_time 列）/ `fix_20261021_double_encoded_text`（会员等级与病历模板中文双重编码回转） |
 
-### 一、基础模块建表（早期 module 脚本）
-| 脚本 | 内容 |
-|---|---|
-| `lab_module.sql` | 化验/检验：`lab_test`/`lab_order`/`lab_order_item` + bill 加 `fee_lab` |
-| `hospital_module.sql` | 住院：`hospital_record` + bill 加 `fee_hospital`（须先于 image 执行） |
-| `image_module.sql` | 影像：`image_test`/`image_order` + bill 加 `fee_image` |
-| `immune_module.sql` | 免疫接种：`immune_record` + bill 加 `fee_immune` |
-| `surgery_module.sql` | 手术麻醉：`surgery`/`anesthesia_record` + bill 加 `fee_surgery` |
-| `package_module.sql` | 服务套餐：`service_package`/`record_package` + bill 加 `fee_package` |
-| `rx_prescription_module.sql` | 国标处方笺：doctor 加 `doctor_cert`（执业资格证号） |
-| `job_module.sql` | 职务/职称字典：`job` 表 + doctor 加 `job_id` + 按 auth_lv 播种 |
-| `vaccine_merge_into_drug.sql` | 疫苗字典合并进药品：drug 加 3 字段、数据迁移、删 vaccine 表 |
-| `doctor_department.sql` | 医生多科室：`doctor_department` 中间表 |
-
-### 二、工作流/功能增强（2026-10-14 ~ 16）
-| 脚本 | 内容 |
-|---|---|
-| `feature_20261014_workflow.sql` | 接诊分诊结构化：`triage_level`/体重/体温/心率/呼吸 |
-| `feature_20261014_hospital_monitor.sql` | 住院每日监护：`hospital_monitor` 表 |
-| `feature_20261014_refund_inventory.sql` | 退款冲正+库存台账：notice_type、drug 两列、`drug_record` 表、bill 三列、三表 `is_cancel` |
-| `feature_20261014_revisit_followup.sql` | 复诊关联+随访：两表加 `origin_record_id`、建 `follow_up` |
-| `feature_20261014_schedule.sql` | 医生排班：`doctor_schedule` 表 |
-| `feature_20261014_surgery_consent.sql` | 手术知情同意书：`surgery_consent` 表 |
-| `feature_20261014_sys_dict.sql` | 统一设置中心：`sys_dict` 表 + 6 类字典种子 |
-| `feature_20261015_bill_discount.sql` | 会员折扣：bill 加 `discount` + 两个 MariaDB 生成列（优惠/实收） |
-| `feature_20261015_finance_report.sql` | 财务报表：drug 加 `cost_price`（进货价） |
-| `feature_20261015_member_card.sql` | 会员/次卡/积分：`member_level`/`count_card_template`/`client_count_card` |
-| `feature_20261015_record_template.sql` | 电子病历模板：`record_template` 表 |
-| `feature_20261015_supplier_inventory.sql` | 供应商+采购入库：`supplier` 表 + drug_record 加 3 列 |
-| `feature_20261015_chat_file_webp.sql` | 聊天文件化：msg 加 `msg_type`/`msg_name` + 历史图片回填 |
-| `feature_20261016_image_report_tpl.sql` | 影像报告模板：image_test 加模板字段 |
-| `feature_20261016_chat_read.sql` | 聊天已读：`is_read`/`read_time` + msg_content 扩 1000 |
-| `feature_20261016_client_audit.sql` | 顾客注册审核：client 加 `audit_status`（历史置通过） |
-| `feature_20261016_notice_sort.sql` | 公告排序权重：notice 加 `sort` |
-| `feature_20261017_ai_advice.sql` | AI 辅助建议预留字段 |
-| `feature_20261017_brand_color.sql` | 品牌主题色：hospital_setting 加 `brand_color` |
-| `feature_20261017_client_audit_reason.sql` | 审核拒绝原因：client 加 `audit_reason` |
-| `feature_20261017_drug_dose_rule.sql` | 处方剂量规则：drug 加剂量相关字段 |
-| `feature_20261017_followup_isdel.sql` | follow_up 补 `is_del` 逻辑删除 |
-| `feature_20261017_record_status.sql` | 就诊状态：medical_record 加 `status`/`finish_time`/`cancel_reason` |
-
-### 三、套餐结构化 + 计费细化（2026-10-20 ~ 22）
-| 脚本 | 内容 |
-|---|---|
-| `feature_20261020_package_item.sql` | 套餐可选项目：`package_item` 子表（检验/影像快照） |
-| `feature_20261020_bill_fee_immune.sql` | bill 补 `fee_immune` 分项（免疫计费） |
-| `feature_20261020_bill_pay_by.sql` | bill 加收款人 `pay_by`/`pay_time`（操作人留痕） |
-| `feature_20261020_drug_inbound_cost.sql` | 入库成本链路：drug_record 加成本字段 |
-| `feature_20261020_hospital_advice.sql` | 住院医嘱单：`hospital_advice` 表 |
-| `feature_20261020_is_del_default_fix.sql` | 存量表补 `is_del` 默认值（逻辑删除一致性） |
-| `feature_20261021_bill_refund_reason.sql` | bill 加 `refund_reason`（退款原因独立留痕） |
-| `feature_20261022_query_indexes.sql` | 高频查询索引：bill(record_id+pay_status)/client(client_tel)/medical_record(doctor_id)（幂等） |
-| `feature_20261022_hospital_foster_billing.sql` | 住院分项计价+押金、医嘱临时费用；寄养按天计费+状态流转（幂等） |
-| `feature_20261023_appointment_miss.sql` | 挂号爽约改状态位：appointment 加 `miss`（记录保留不删，幂等） |
-
-### 四、数据修复
-| 脚本 | 内容 |
-|---|---|
-| `fix_entity_update_time_20261013.sql` | 补 `doctor_department.update_time` 列（实体缺字段导致保存崩） |
-| `fix_20261021_double_encoded_text.sql` | 修复 member_level/record_template 的中文双重编码乱码（latin1→utf8mb4 回转） |
-
-## 与运行库的关系
-
-开发中新增字段/表都以独立脚本保存并**立即执行到运行库**（`pet_mix`）；`deploy.sh` 不执行数据库迁移——新环境部署须按本索引补齐全部脚本。
-
-> `runtime/` 子目录是管理后台「数据备份」页的落盘处（全库 .sql，含敏感数据，已被 .gitignore 拦截，勿入库、勿外传）。
+> `pet_ship.sql`（ship→mix 替换前的旧基线快照，仅 9 表）同日在 archive/ 内留档，新环境**不要**使用。

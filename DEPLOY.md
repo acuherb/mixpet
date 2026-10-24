@@ -92,11 +92,13 @@ EOF
 
 > 如果 `utf8_general_ci` 报错，改用 `utf8mb3` 和 `utf8mb3_general_ci`。
 
-### 3.2 导入数据
+### 3.2 导入数据（单基线，含演示数据）
 
 ```bash
-mysql -u mixpet -p pet_mix < ~/公共/mixpet/db-backup/pet_mix.sql
+mysql --default-character-set=utf8mb4 -u mixpet -p pet_mix < ~/公共/mixpet/db-backup/pet_mix.sql
 ```
+
+> 基线为 2026-10-24 重压的全量快照（43 表 + 演示数据），**一条命令完成**，无需再跑增量脚本；历史增量脚本已归档至 `db-backup/archive/`（留档追溯用）。正式上线前按 10.2 清场。
 
 ### 3.3 验证
 

@@ -90,7 +90,7 @@ mixpet/
 ├── notice/               # 公告配图
 ├── chat/                 # 聊天文件（image/ 图片、file/ 文件）
 ├── report/               # 报告附件存储（image/ 与 file/ 子目录）
-├── db-backup/             # SQL 脚本（基线 + 51 个增量迁移，索引见 INDEX.md）
+├── db-backup/             # 单基线 pet_mix.sql（43表+演示数据）+ archive/ 历史脚本存档（INDEX.md 有发版压基线约定）
 ├── dev-tools/             # 开发辅助（start.sh 一键启停 / stop.sh / check.sh 等，见 WORKFLOW.md）
 ├── deploy.sh             # 一键部署脚本（构建 + nginx 反代 + 启动）
 ├── .env                  # 本机环境变量（不入库；模板 .env.example）
@@ -120,11 +120,8 @@ GRANT ALL PRIVILEGES ON pet_mix.* TO 'mixpet'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
-# 基线 + 全部 51 个增量脚本（按文件名顺序，缺一不可）
-mysql -u mixpet -p pet_mix < db-backup/pet_mix.sql
-for f in $(ls db-backup/*.sql | grep -v pet_mix.sql | sort); do
-  mysql --default-character-set=utf8mb4 -u mixpet -p pet_mix < "$f"
-done
+# 单基线导入（43 表 + 演示数据，开箱即用；正式上线前按 DEPLOY.md 10.2 清场）
+mysql --default-character-set=utf8mb4 -u mixpet -p pet_mix < db-backup/pet_mix.sql
 ```
 
 ### 2. 配置环境变量
@@ -208,22 +205,13 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 
 ## 数据库迁移说明
 
-`db-backup/` 下除原始基线 `pet_mix.sql` 外，还有按功能/日期命名的**增量迁移脚本**（51 个，完整索引见 [`db-backup/INDEX.md`](./db-backup/INDEX.md)）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。近期新增：
+`db-backup/` 采用「**单基线 + 归档**」结构（2026-10-24 起）：
 
-| 脚本 | 内容 |
-| :--- | :--- |
-| `feature_20261020_package_item.sql` | 套餐结构化：可选检查项目子表（检验/影像快照组合定价） |
-| `feature_20261020_bill_fee_immune.sql` | bill 补免疫费分项 |
-| `feature_20261020_bill_pay_by.sql` | bill 收款人/收款时间留痕 |
-| `feature_20261020_drug_inbound_cost.sql` | 入库成本链路（药品毛利） |
-| `feature_20261020_hospital_advice.sql` | 住院医嘱单表 |
-| `feature_20261020_is_del_default_fix.sql` | 存量表逻辑删除默认值一致性 |
-| `feature_20261021_bill_refund_reason.sql` | 退款原因独立列 |
-| `feature_20261022_query_indexes.sql` | 高频查询索引补齐（幂等） |
-| `feature_20261022_hospital_foster_billing.sql` | 住院分项计价+押金+医嘱临时费；寄养按天计费+状态流转（幂等） |
-| `feature_20261023_appointment_miss.sql` | 挂号爽约状态位（记录保留可查，幂等） |
+- `pet_mix.sql`——当前基线（全量 43 表 + 演示数据），新环境**一条命令**导入；
+- `archive/`——历史增量脚本存档（51 个，留档追溯，不参与部署）；
+- 平时新增字段/表仍写独立脚本（`feature_<日期>_<功能>.sql`）放根下并立即执行到运行库；**每次发版重压基线、旧脚本整体进 archive**——主目录永远保持「1 基线 + 最近增量」（完整约定见 [`db-backup/INDEX.md`](./db-backup/INDEX.md)）。
 
-重导全新环境时，请按文件名顺序补齐全部增量；运行 `deploy.sh` 前也须先建库并补齐全部增量脚本——脚本本身不执行数据库迁移。
+运行 `deploy.sh` 前先建库并导入基线——脚本本身不执行数据库迁移。
 
 ---
 
