@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.model.entity.Client;
 import com.mix.model.dto.NameDo;
@@ -280,6 +281,7 @@ public class ClientController {
      */
     @PutMapping("/audit/{id}")
     @Secured(RoleConst.MANAGER)
+    @AuditLog(module = "client", action = "audit", target = "顾客审核")
     public Result audit(@PathVariable Integer id, Integer status, String reason) {
         if (status == null || (status != 1 && status != 2)) return Result.error("审核状态不正确");
         Client db = clientService.getById(id);

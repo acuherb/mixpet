@@ -165,5 +165,9 @@ export const backstage: RouteRecordRaw[] = [
         // 数据备份/还原（仅超管 ADMIN 可见可操作）
         path: "z-backup",
         component: () => import('@/views/backstage/z-backup.vue')
+    }, {
+        // 操作日志（高危写操作留痕，管理者以上可查）
+        path: "z-auditLog",
+        component: () => import('@/views/backstage/z-auditLog.vue')
     }
 ]

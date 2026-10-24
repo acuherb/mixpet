@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.model.dto.AppointmentDto;
 import com.mix.model.entity.Appointment;
@@ -173,6 +174,7 @@ public class AppointmentController {
      */
     @PutMapping("/miss/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    @AuditLog(module = "appointment", action = "miss", target = "标记爽约")
     public Result markMiss(@PathVariable Integer id) {
         Appointment db = appointmentService.getById(id);
         if (db == null) return Result.error("预约不存在");

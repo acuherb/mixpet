@@ -53,6 +53,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
+        <!-- AOP（审计日志切面 @AuditLog；starter-web 在 Boot3 不再传递 aspectjweaver，需显式引入） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
         <!-- SpringSecurity的snakeyaml版本为1.33，引入这个消除警告-->
         <dependency>
             <groupId>org.yaml</groupId>

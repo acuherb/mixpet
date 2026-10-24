@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.model.entity.Drug;
 import com.mix.model.entity.DrugRecord;
@@ -102,6 +103,7 @@ public class DrugController {
     /** 入库：增加库存并记台账（可带供应商/批号/成本价），可同时更新有效期 */
     @PostMapping("/inbound")
     @Secured(RoleConst.MANAGER)
+    @AuditLog(module = "drug", action = "inbound", target = "药品入库")
     public Result inbound(Integer drugId, Integer quantity, BigDecimal costPrice, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
         return drugService.inbound(drugId, quantity, costPrice, expireDate, note, supplierId, batchNo);
     }

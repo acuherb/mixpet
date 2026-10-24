@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.mix.common.Result;
 import com.mix.model.dto.RecordDto;
@@ -129,6 +130,7 @@ public class MedicalRecordController {
     /** 作废单条处方：冲减未付账单药费 */
     @PutMapping("/prescription/cancel/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    @AuditLog(module = "record", action = "cancelRx", target = "处方作废")
     public Result cancelPrescription(@PathVariable Integer id) {
         return recordService.cancelPrescription(id);
     }

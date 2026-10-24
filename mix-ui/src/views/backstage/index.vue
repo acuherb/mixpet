@@ -74,6 +74,8 @@
           <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
           <!-- 数据备份/还原：仅超管（毁库操作，后端 /backup/restore 也限 ADMIN） -->
           <el-menu-item v-if="isAdmin" v-show="menuMatch('数据备份')" index="/backstage/z-backup">数据备份</el-menu-item>
+          <!-- 操作日志：高危写操作留痕（管理者以上可查） -->
+          <el-menu-item v-show="menuMatch('操作日志')" index="/backstage/z-auditLog">操作日志</el-menu-item>
         </el-sub-menu>
 
         <!-- ═══ 组织管理（院长/管理者） ═══ -->

@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.mix.common.Result;
+import com.mix.annotation.AuditLog;
 import com.mix.model.vo.BackupFileVo;
 import com.mix.security.model.RoleConst;
 import com.mix.service.IBackupService;
@@ -44,6 +45,7 @@ public class BackupController {
     /** 立即备份（全库 mysqldump） */
     @PostMapping("/create")
     @Secured({RoleConst.ADMIN, RoleConst.MANAGER})
+    @AuditLog(module = "backup", action = "create", target = "数据备份")
     public Result create() {
         try {
             String name = backupService.create("mixpet_");
@@ -69,6 +71,7 @@ public class BackupController {
     /** 删除备份文件 */
     @DeleteMapping("/{name}")
     @Secured({RoleConst.ADMIN, RoleConst.MANAGER})
+    @AuditLog(module = "backup", action = "delete", target = "删除备份")
     public Result delete(@PathVariable String name) {
         return Result.choice("删除", backupService.delete(name));
     }
@@ -76,6 +79,7 @@ public class BackupController {
     /** 受控还原（仅 ADMIN）：需二次输入文件名确认；还原前自动快照当前数据 */
     @PostMapping("/restore")
     @Secured(RoleConst.ADMIN)
+    @AuditLog(module = "backup", action = "restore", target = "数据还原(毁库)")
     public Result restore(@RequestBody Map<String, String> body) {
         try {
             String msg = backupService.restore(body.get("name"), body.get("confirmName"));

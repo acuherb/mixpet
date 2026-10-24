@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.model.dto.BillDto;
 import com.mix.model.entity.Bill;
@@ -61,6 +62,7 @@ public class BillController {
      */
     @PutMapping("/pay/{billId}")
     @Secured(RoleConst.NURSE)
+    @AuditLog(module = "bill", action = "pay", target = "账单收款")
     public Result pay(@PathVariable Integer billId, Boolean payType) {
         return billService.pay(billId, payType != null && payType);
     }
@@ -68,6 +70,7 @@ public class BillController {
     /** 发药核对：护士确认发药（需先收款） */
     @PostMapping("/dispense/{billId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    @AuditLog(module = "bill", action = "dispense", target = "发药核对")
     public Result dispense(@PathVariable Integer billId, String operator) {
         return billService.dispense(billId, operator);
     }
@@ -77,6 +80,7 @@ public class BillController {
      *  行标记 is_cancel 防重复退，小票/发药自动排除；覆盖全部未退行时等价整单退） */
     @PutMapping("/refund/{billId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    @AuditLog(module = "bill", action = "refund", target = "退款冲正")
     public Result refund(@PathVariable Integer billId,
                          @RequestBody java.util.Map<String, Object> body) {
         String reason = body.get("reason") == null ? null : String.valueOf(body.get("reason"));
