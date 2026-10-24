@@ -64,13 +64,15 @@ cd mixpet
 ```
 
 目录结构：
-- `mixPet/` — 后端（Spring Boot 3 + Java 17）
+- `mixPet/` — 后端（Spring Boot 3 + Java 17，启动类 `com.mix.MixPetApplication`）
 - `mix-ui/` — 前端（Vue 3 + Vite）
-- `db-backup/` — SQL 脚本（基线 `pet_mix.sql` + 24 个增量迁移脚本）
+- `db-backup/` — SQL 脚本（基线 `pet_mix.sql` + 51 个增量迁移脚本，索引见 `db-backup/INDEX.md`）
+- `dev-tools/` — 开发辅助脚本（`start.sh` 一键启停 / `stop.sh` / `check.sh` 双端验证等，说明见 `dev-tools/WORKFLOW.md`）
 - `avatar/` — 头像图片（WebP）
 - `notice/` — 公告配图
 - `chat/` — 聊天文件（其下分 `image/` 图片、`file/` 文件两子目录）
 - `report/` — 报告附件（其下分 `image/` 与 `file/` 两子目录）
+- `.env` — 本机环境变量（**不入库**，复制 `.env.example` 生成；`start.sh` 自动加载）
 - `deploy.sh` — 一键部署脚本（构建 + nginx 反代 + 启动）
 
 ---
@@ -102,7 +104,7 @@ mysql -u mixpet -p pet_mix < ~/公共/mixpet/db-backup/pet_mix.sql
 mysql -u mixpet -p pet_mix -e "SHOW TABLES;"
 ```
 
-应看到 9 张表：`adopt`、`appointment`、`client`、`department`、`doctor`、`foster`、`msg`、`notice`、`pet`。
+应看到全部业务表（约 40+ 张：adopt/appointment/client/department/doctor/foster/msg/notice/pet/medical_record/prescription/bill/drug/lab_*/image_*/hospital_*/immune_record/surgery*/package*/follow_up/member_*/sys_dict/job/doctor_department/supplier/drug_record/record_template 等，以实际 `SHOW TABLES` 为准）。
 
 ---
 
@@ -110,59 +112,68 @@ mysql -u mixpet -p pet_mix -e "SHOW TABLES;"
 
 ### 4.1 配置说明
 
-后端配置已改为**环境变量写法**，本地开发不用改代码，默认值就是本机路径和测试账号。
+后端配置采用**环境变量写法**，本地开发不改代码，密钥类变量通过 `.env` 文件加载。
 
-`application.yml`：
+`application.yml` 关键项（默认值为空=必须由环境变量提供）：
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    username: ${DB_USER:mixpet}
-    password: ${DB_PASSWORD:MixPet2024}
-```
-
-`application-dev.yml`：
-```yaml
-spring:
+    url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
+    username: ${DB_USER:}
+    password: ${DB_PASSWORD:}
   mail:
-    username: ${MAIL_USER:your_qq@qq.com}
-    password: ${MAIL_PASS:your_auth_code}
----
-pet-mix:
-  images-path: ${PET_AVATAR:/home/debian/公共/mixpet/avatar/}
-  notice-path: ${PET_NOTICE:/home/debian/公共/mixpet/notice/}
-  chatImg-path: ${PET_CHATIMG:/home/debian/公共/mixpet/chat/}
+    host: smtp.qq.com        # 587 端口已配 STARTTLS（QQ 邮箱必须）
+    port: 587
+app:
+  default-password: ${APP_DEFAULT_PASSWORD:}   # 新建/重置账号默认口令
+remember-me:
+  key: ${REMEMBER_ME_KEY:}                     # 记住我 Cookie 签名密钥（≥32 字符）
+appointment:
+  max-per-day: 20                              # 每医生每日号源上限（非敏感，可直接改默认）
 ```
 
-### 4.2 换机器时怎么配
+### 4.2 环境变量（.env）
 
-**方式 A（推荐）：设环境变量**，不改代码。
+复制模板生成本机配置（**`.env` 含密码/授权码/密钥，已被 .gitignore 拦截，不会入库**）：
 
 ```bash
-export DB_USER=mixpet
-export DB_PASSWORD=你的数据库密码
-export MAIL_USER=你的QQ邮箱
-export MAIL_PASS=你的QQ邮箱授权码
-export PET_AVATAR=/你的/路径/avatar/
-export PET_NOTICE=/你的/路径/notice/
-export PET_CHATIMG=/你的/路径/chat/
+cp .env.example .env
+# 编辑 .env 填入真实值，至少：DB_USER / DB_PASSWORD / APP_DEFAULT_PASSWORD /
+#   REMEMBER_ME_KEY（≥32字符）/ VERIFY_CODE_SECRET（≥32字符）
+# 需要邮箱验证码再填：MAIL_USER（QQ邮箱）/ MAIL_PASS（16位SMTP授权码，非QQ密码）
 ```
 
-写进 `~/.bashrc` 可永久生效。
+| 变量 | 用途 |
+|---|---|
+| `DB_USER` / `DB_PASSWORD` | 数据库账号密码（必须） |
+| `APP_DEFAULT_PASSWORD` | 新建/重置账号默认口令（必须） |
+| `REMEMBER_ME_KEY` / `VERIFY_CODE_SECRET` | 签名密钥，≥32 字符（必须） |
+| `MAIL_USER` / `MAIL_PASS` | 注册验证码/找回密码发信（QQ 邮箱 SMTP） |
+| `PET_AVATAR` / `PET_NOTICE` / `PET_CHATIMG` | 头像/公告/聊天文件存储目录（默认即本机路径） |
 
-**方式 B**：直接改 `application*.yml` 里的默认值。
+> `start.sh` 会按 `$HOME/.env` → 项目 `.env` → `.env.example` 顺序自动加载；手动 `mvn spring-boot:run` 前先 `set -a; source .env; set +a`。
 
-### 4.3 启动后端
+### 4.3 启动后端（推荐：一键脚本）
+
+`dev-tools/start.sh` 自动完成：加载 `.env` → 中文路径 locale 保命（项目在「公共」目录，mvn 的 JVM 不设 UTF-8 会 `InvalidPathException` 挂掉）→ 限堆启动后端（400m/512m，内存紧张机器防 OOM）→ **后端就绪后再起前端**（错开编译高峰）→ 就绪检测（进程早退立即报）：
 
 ```bash
-cd ~/公共/mixpet/mixPet
-mvn spring-boot:run
+~/公共/mixpet/dev-tools/start.sh     # 后端 8085 + 前端 3120，日志在 /tmp/pet-*.log
+~/公共/mixpet/dev-tools/stop.sh      # 停止
+```
+
+手动启动（等价最小步骤）：
+```bash
+cd ~/公共/mixpet
+set -a; source .env; set +a          # 加载环境变量
+export LANG=C.UTF-8 LC_ALL=C.UTF-8   # 中文路径保命
+cd mixPet && mvn spring-boot:run
 ```
 
 成功标志：
 ```
 Tomcat started on port(s): 8085 (http)
-Started mixPetApplication in x.xx seconds
+Started MixPetApplication in x.xx seconds
 宠物医院管理系统2.0启动
 http://localhost:8085
 ```
@@ -228,7 +239,7 @@ ip addr | grep "inet "
 
 ## 六、登录账号
 
-> **初始登录流程**：系统初始只有管理员 `admin` 可登录；顾客、医生账号均由管理员在后台录入/创建（不开放自主注册）。顾客新建后默认密码 `123456`，**首次登录强制改密**（前端 `/changePwd` 守卫，改后才能用）。顾客端**账号即手机号**：录入时登录账号自动取手机号（`ClientServiceImpl.addClient`）；基线演示库预置顾客 `ying`、医生 `yun` 便于体验。
+> **初始登录流程**：系统初始只有管理员 `admin` 可登录；医生账号由管理员在后台创建；顾客账号有两种来源：① 管理员后台录入（默认口令取 `APP_DEFAULT_PASSWORD`，**首次登录强制改密**，前端 `/changePwd` 守卫）；② **顾客现场自助注册**（手机号即账号、密码自设、邮箱验证码校验），注册后为**待审核**状态——管理员在后台「客户管理」或医生工作台待办看到「待审核顾客」卡片，审核通过才能登录（拒绝需填原因，顾客登录时可见）。基线演示库预置顾客 `ying`、医生 `yun` 便于直接体验。
 
 | 角色 | 登录标识 | 密码 | 入口 |
 | :--- | :--- | :--- | :--- |
@@ -236,23 +247,38 @@ ip addr | grep "inet "
 | 顾客 | 手机号（演示库预置 `ying`） | `123456` | 顾客端「手机号 + 密码」登录，**首次须改密** |
 | 医生 | `yun` | `123456` | 点登录卡片上的**猫猫头**（由管理员创建） |
 
-其他账号可从后台「用户管理」「医生管理」中查看，密码都是 `123456`。
+> 邮件验证码依赖 `.env` 的 `MAIL_USER`/`MAIL_PASS`（QQ 邮箱已开启 POP3/SMTP 服务、授权码非 QQ 密码）；未配置时注册/找回密码的验证码步骤不可用。
 
 ---
 
 ## 七、日常启停
 
-### 启动
+### 启动（推荐一键）
+
 ```bash
-# 终端 1：后端
-cd ~/公共/mixpet/mixPet && mvn spring-boot:run
+~/公共/mixpet/dev-tools/start.sh   # 先后端（就绪后）再前端，关终端不死
+```
+
+成功输出：`后端 PID: xxxx` → `✅ 后端就绪 (xx 秒)` → `✅ 前端就绪`，浏览器开 http://localhost:3120。
+
+### 手动启动（双终端）
+
+```bash
+# 终端 1：后端（先加载 .env + 中文路径 locale）
+cd ~/公共/mixpet && set -a; source .env; set +a; export LANG=C.UTF-8 LC_ALL=C.UTF-8
+cd mixPet && mvn spring-boot:run
 
 # 终端 2：前端
 cd ~/公共/mixpet/mix-ui && npm run dev
 ```
 
 ### 停止
-在各终端按 `Ctrl+C`。
+
+```bash
+~/公共/mixpet/dev-tools/stop.sh    # 一键停（按端口清理，无残留）
+```
+
+或各终端按 `Ctrl+C`。
 
 ---
 
@@ -269,7 +295,12 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
 ### 8.3 邮件验证码发不出去
 - 必须是 QQ 邮箱，且开启 **POP3/SMTP 服务**
 - 填的是**16 位授权码**，不是 QQ 密码
-- 检查垃圾邮件箱
+- 检查垃圾邮件箱（发件人显示为医院名，主题「【医院名】邮箱验证码」）
+- **仍失败看后端日志真因**：`tail -20 /tmp/pet-backend.log`——发送失败会打完整异常栈（STARTTLS 握手失败 / 认证失败 / 超时分别有不同栈），按栈排查：
+  - `MailAuthenticationException` → 授权码错或 SMTP 服务没开；
+  - 连接超时 → 网络/防火墙（587 出站）；
+  - 前端提示与事实不符（如“发送失败”但收到邮件）→ 多为前端拦截器/ token 链路问题，看浏览器 Network 响应体。
+- 已内置防护：STARTTLS（QQ 587 必需）、5 秒连接超时、JWT 密钥任意长度容错（短密钥不再 500）
 
 ### 8.4 前端接口 404
 - 检查后端是否在跑（`http://localhost:8085`）

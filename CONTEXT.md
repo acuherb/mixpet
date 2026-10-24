@@ -399,3 +399,54 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - 背景：系统管理/系统设置里各种字典值显示为 `Xå…‰` 之类乱码。
 - 根因：`sys_dict` 表历史数据在导入时被 latin1 连接双重编码（"X光"的 `E5 85 89` 逐字节转成 `C3A5 E280A6 E280B0`→`Xå…‰`）；JDBC 连接串缺 `characterEncoding=utf8`。
 - 修复：`application.yml` url 补 `characterEncoding=utf8`（防新数据再乱码）；存量 26 条用 `CONVERT(CAST(CONVERT(dict_key USING latin1) AS BINARY) USING utf8mb4)` 逆向还原。科室/职称等其他表中文正常，未受影响。
+### 邮件验证码链路 + 界面现代化批次（2026-10-16 ~ 17）
+- 顾客端绑定/改邮箱（PUT /client/email，Session 验证码校验）、注册邮箱验证（JWT token 双链路：注册/找回走 token，绑定走 Session）、找回密码页改邮箱找回（findPwd.vue）。
+- 品牌主题色：hospital_setting 加 brand_color，注入 CSS 变量 --brand/--brand-soft，顶栏/横幅/按钮/宫格全局联动，后台可配。
+- 处方剂量规则（drug 加剂量字段）、AI 辅助建议预留（ai_advice，无外部依赖仅结构）；顾客注册审核补拒绝原因（audit_reason，登录可见）；就诊状态（medical_record.status 0/1/2 软检查）；follow_up 补 is_del。
+
+### 医生工作台与界面重构批次（2026-10-18 ~ 20）
+- 医生工作台重设计：待办驱动（今日待办/诊疗待办/在线咨询三区+时间线混排）、宫格仅留临床相关入口；接诊向导 4 步闭环（问诊检查→诊断医嘱→处置开单+补开→完结结算）。
+- 界面走查整改：顶栏玻璃拟态（曾因 overflow:hidden 裁掉用户下拉菜单，10-21 修复：光斑改 radial-gradient、删 overflow）；化验/影像开单入口收拢（常规开单只在向导内，d-lab/d-image 降级补开/打印）；医技结果录入统一页 z-examResult（曾因 el-tab-pane 漏 name 致激活态落空 pane 整片空白，10-23 修复）。
+- 套餐结构化：package_item 子表，套餐=检验/影像项目组合定价（原价合计 vs 套餐价 vs 优惠实时显示），行内启停。
+- bill 计费细化：fee_immune 免疫分项、pay_by/pay_time 收款留痕、入库成本链路（药品毛利）。
+
+### ship→mix 全面替换（2026-10-21，commit 851e11c）
+- 用户执行全量替换（347 文件 1466 处）+ 手动改顶层目录；AI 收尾堵漏：①包物理目录 java/com/ship→com/mix、resources/com/ship→com/mix（sed 不动目录，不改 Spring 扫不到 Bean 启动即崩）；②启动类文件名 ShipPetApplication.java→MixPetApplication.java+类名规范化（替换出的小写类名编译必错）；③数据库 pet_ship→pet_mix（建库+授权+mysqldump 迁移 43 表，原库保留作回滚）；④验证：source 零 ship 残留、mvn clean compile、npm run build、临时端口启动冒烟（登录/账单/Mapper 新路径/新字段全通过）。
+- start.sh 三修（中文路径 locale 保命+就绪检测类名 MixPetApplication+限堆错峰），后升级 .env 加载为 set -a; source。
+
+### 安全审计 13 项 + 数据/乱码修复（2026-10-21 ~ 22）
+- 并发安全 5：药品入库原子累加（原先读后写丢更新）、处方作废条件更新抢占（is_cancel=false+affected，防并发重复冲减）、次卡核销原子扣减（remain_times>0 抢占）、积分兑换条件扣减（client_points>=points）、挂号两入口加事务（count+insert 同事务）。
+- 安全 6：Client/Doctor 密码字段 @JsonIgnore；发药/退款操作人改登录态取（防伪造，退款原因单列 refund_reason）；Session Cookie SameSite=Lax+HttpOnly（缓解全局关 CSRF）；记住我密钥/默认口令外置（remember-me.key/APP_DEFAULT_PASSWORD）；BCrypt 单例；update 清空密码字段。
+- Bill 生成列标注 insert/updateStrategy=NEVER。不成立 2 项：批量入库无事务=有意设计；setSql 拼接=值全数值型字段（注入不可行）。
+- 数据修复：member_level/record_template 中文双重编码乱码回转（全库扫描仅此两表）。
+- 上传安全：聊天/报告文件黑名单（html/svg/xml/js 拒收）+ 输出兜底（inline 遇黑名单强制 octet-stream，防存量脏数据 XSS）；高频查询索引补齐（bill record_id+pay_status / client_tel / record doctor_id）。
+
+### 邮件验证码五连坑（2026-10-22 当晚连环修复）
+1. QQ 邮箱 587 缺 STARTTLS → yml 补 mail.smtp.starttls.enable/required+超时（提示失败但收不到）；
+2. .env 的 VERIFY_CODE_SECRET 31 字节 < JJWT 要求的 32 → JwtUtil 密钥容错（任意长度 SHA-256 归一，不再 WeakKeyException 500）；
+3. 邮件模板 String.formatted 的 % 未转义（width="100%"）→ Conversion='"' 异常 → 模板改 {{占位符}}+replace（机制上杜绝 % 地狱）；
+4. Result 无 data 字段，success(token) 把 token 塞进 msg → 补 data() 工厂；
+5. axios 拦截器历史分支「data 含 . 的字符串直接返回」把 JWT token 截胡成裸串 → register 拿到非 Res 对象 → 双提示（发送失败+请先获取验证码）→ 删除该分支（Result.data 唯一生产者是验证码接口，无正当消费者）。
+- 顺带：RememberMe 空密钥启动崩（全量替换把 yml 默认值抹空）→ 非空兜底+构造器判空双保险；邮件品牌化（医院名发件人+品牌色卡片）；顾客端绑定邮箱断链（regMail 只写 JWT 不写 Session）→ 双链路都写。
+
+### 住院/寄养计费体系（2026-10-22，commit 4655b70）
+- 住院：日均费拆 床位/护理/输液 三项单价；出院结算弹窗明细可核对+天数可手改；医嘱临时费用（hospital_advice.fee，已停嘱未执行不计）；押金管理（deposit 累加+收取人+应退/需补收）。
+- 寄养：in_date 入托日+笼位/清洁/餐费分项按天计费；状态流转 待入托→寄养中→已接回（back_date）；接回结算按实际天数自动算+金额可改+多退少补。
+- SQL 幂等；存量日均费拆入床位费保持口径。
+
+### 双视角走查 5 项整改（2026-10-23）
+- ①爽约无感知：逻辑删除改 miss 状态位——记录保留，顾客端灰色「已爽约」+禁改期取消（后端 self 同步拦截）；医生端归入已处理 tab；顺带修存量 bug：AppointmentMapper 公共 SQL 漏查 is_suc（顾客端已就诊单也显示改期/取消）。
+- ②首页挂号直达：WindRoll 首屏 CTA（登录：预约挂号/在线咨询；未登录：登录后预约/注册）。
+- ③医生端改期：d-appoint 行内按钮+弹窗，患者端同步可见。
+- ④时间线明日标识：pending 条目打 今日/明日/后续 tag。
+- ⑤退款部分退：refund 加 prescriptionIds——不传=整单退（兼容），传了=按行退（is_cancel 防重复+账单冲减+余额退+积分反扣+库存回滚仅已发药选中行）；覆盖全部未退行自动升级整单退；前端勾选行+实时应退金额。
+- 挂号入口去重：撤医生端宫格挂号列表卡（前台表格归后台），d-appoint 固定列表（卡片模式用户实测无额外价值）。
+- UpImg 修复：组件历史绝对定位让上传框飞离容器（化验录入弹窗附件框盖输入框、头像飞出页面）→ 改默认流式，10 处使用处受益。
+- .gitignore 补 .env（此前未入库纯属从未 git add，一次 git add . 就会把密码/授权码/密钥推远端）。
+
+## 10. 关键运维约定（新增）
+- **一键启停**：`~/公共/mixpet/dev-tools/start.sh`（.env 自动加载+locale 保命+限堆+错峰+就绪检测）、`stop.sh`；双端验证 `dev-tools/check.sh`。
+- **.env 管理**：根目录 `.env`（本机真值，不入库）← 模板 `.env.example`（入库）；start.sh 按 $HOME/.env → 项目 .env → .env.example 加载；12 个环境变量与 yml 占位符一一对应（README 配置表）。
+- **数据库**：运行库 `pet_mix`（旧库 pet_ship 保留待删）；增量脚本按 db-backup/INDEX.md 字典序执行，必带 --default-character-set=utf8mb4。
+- **启动类**：`com.mix.MixPetApplication`（就绪日志 `Started MixPetApplication`，grep 注意大小写）。
+- **中文路径「公共」**：任何脚本/CI/新 shell 启动 mvn 前必须 `export LANG=C.UTF-8 LC_ALL=C.UTF-8`（否则 InvalidPathException）。

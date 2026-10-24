@@ -6,9 +6,17 @@ PROJ="$HOME/公共/mixpet"
 BK_LOG="/tmp/pet-backend.log"   # 后端统一日志
 FT_LOG="/tmp/pet-frontend.log"  # 前端统一日志
 
-# 加载环境变量（优先用已有的 /home/debian/.env，或项目根目录的 .env.example）
+# 加载环境变量（优先用已有的 $HOME/.env > 项目根目录 .env > .env.example）
 for f in "$HOME/.env" "$PROJ/.env" "$PROJ/.env.example"; do
-  [ -f "$f" ] && echo "加载环境变量: $f" && export $(grep -v '^#' "$f" | xargs) 2>/dev/null; break
+  if [ -f "$f" ]; then
+    echo "加载环境变量: $f"
+    # set -a 让后续任何变量赋值自动 export，再用 source 加载 .env 文件
+    set -a
+    # shellcheck disable=SC1090
+    source "$f"
+    set +a
+    break
+  fi
 done
 
 # 中文路径保命：项目在「公共」目录下，mvn/JVM 默认 locale 非 UTF-8 时

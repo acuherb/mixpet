@@ -41,25 +41,31 @@
 - 预约挂号（号源容量校验、可改期/取消、复诊关联）
 - 在线咨询（文字 + 图片 WebP + 文件、留言，双向已读未读 + 新消息提醒）
 - 就诊记录（病历 / 处方 / 检验 / 影像 / 住院 / 手术 / 套餐详情）
+- 挂号**爽约可见**：医生标记爽约后记录保留（灰色「已爽约」），不再凭空消失，可重新预约
+- 首页直达：登录顾客首屏「预约挂号 / 在线咨询」按钮（未登录引导登录注册）
 - 余额充值、会员卡 / 次卡 / 积分兑换
 
 ### 医生端
-- 处理台：诊疗待办看板（待出结果化验 / 待出报告影像 / 待手术 / 待随访 / 接诊中病历）/ 挂号预览 / 在线咨询（客户列表 + 新咨询实时提醒）
-- 接诊：病历建档（含分诊体征、**宠物病史侧栏**：过敏史/既往病史/历次就诊/用药/检验异常）、开处方、开检验 / 影像单、安排手术 / 套餐
-- 就诊状态：接诊中 / 已完结 / 已作废，未完绪病历可修改，完结前软检查未完成事项（待出结果/待手术/待随访）
-- 化验 / 影像结果录入、住院监护、手术与麻醉记录、知情同意书
+- 处理台：诊疗待办看板（待出结果化验 / 待出报告影像 / 待手术 / 待随访 / 接诊中病历 / **待审核顾客**）/ 挂号预览 / 在线咨询（客户列表 + 新咨询实时提醒）
+- **今日待办**：待就诊 / 待收费（收银从旁路跳转改为待办驱动）/ 全部挂号，工作流时间线混排待接诊与接诊中（明日/后续单有标识）
+- 接诊向导（4 步闭环）：问诊检查 → 诊断医嘱 → 处置开单（处方/化验/影像/套餐/手术/住院，含补开）→ 完结结算
+- 化验/影像：**统一「医技结果录入」入口**（页签切换检验/影像，常规开单只在向导内）、申请单打印
+- 挂号管理：**列表/卡片双视图**（列表一屏看全貌，选择记忆）、行内**改期**（患者电话改时间不切后台）、标记爽约（记录保留可查）
+- 住院监护、手术与麻醉记录、知情同意书
 - 病例中心：病历多条件检索 + 全量病例档案（一页看全：病历/处方/套餐/化验含明细/影像/住院/手术/免疫/随访/复诊链）
 - 国标兽医处方笺 / 检验申请单 / 影像申请单打印
 - 复诊计划、随访记录（病历号下拉选择，杜绝手填串档）
 
 ### 管理后台
-- 经营看板 + 财务报表（收入构成 / 医生 Top / 药品毛利 / 环比）
+- 经营看板 + 数据中心（收入构成 / 医生 Top / 药品毛利 / 环比 / **待审核顾客卡**）
 - 收费 / 发药核对 / 退款 / 质检作废 / 收银小票 + A4 发票打印（病历弹窗为完整病例档案）
+- **退款支持按处方行部分退**（勾选行 + 实时应退金额，退哪些、剩哪些一目了然）
 - 药品与库存：进销存、低库存 / 近效期预警、采购入库（供应商 / 批号）
-- 客户运营：客档管理、会员等级、次卡模板、随访提醒、**注册顾客审核（通过 / 拒绝，审核通过才能登录）**
-- 诊疗管理：住院、手术、检验项 / 影像项字典、病历模板、疫苗驱虫、**病例中心（检索 + 全量档案）**
+- 客户运营：客档管理、会员等级、次卡模板、随访提醒、**注册顾客审核（工作台/看板待办提醒 + 客户管理审核状态筛选直达）**
+- 诊疗管理：住院（**床位/护理/输液分项计价 + 押金收取累计 + 医嘱临时费用 + 结算明细可核对**）、手术、检验项 / 影像项字典、病历模板、疫苗驱虫、病例中心（检索 + 全量档案）
+- **寄养管理**：按天计费（笼位/清洁/餐费分项 + 预估）、状态流转（待入托→寄养中→已接回）、接回结算按实际天数多退少补
 - 组织管理：科室、医生（多科室 / 职称 / 权限）、医生排班
-- 系统管理：统一设置中心（化验分组 / 药品分类 / 单位等字典）、聊天数据清理（保留天数可设 0 全删）、**公告排序权重设置**
+- 系统管理：统一设置中心（化验分组 / 药品分类 / 单位等字典）、聊天数据清理（保留天数可设 0 全删）、公告排序权重设置
 - 自动提醒：复诊 / 疫苗到期、预约就诊前、疫苗提醒（每日定时生成系统公告）
 - 资源清理：每日凌晨自动清理无引用头像 / 冗余公告 / 聊天图片，更换头像即时删旧文件
 
@@ -71,7 +77,7 @@
 mixpet/
 ├── mixPet/              # 后端（Spring Boot 3 + Java 17）
 │   └── src/main/
-│       ├── java/com/mix/    # 代码
+│       ├── java/com/mix/    # 代码（启动类 MixPetApplication）
 │       └── resources/        # 配置、Mapper XML
 ├── mix-ui/              # 前端（Vue 3 + Vite + TS）
 │   └── src/
@@ -84,9 +90,13 @@ mixpet/
 ├── notice/               # 公告配图
 ├── chat/                 # 聊天文件（image/ 图片、file/ 文件）
 ├── report/               # 报告附件存储（image/ 与 file/ 子目录）
-├── db-backup/             # SQL 脚本（含各功能增量迁移脚本）
+├── db-backup/             # SQL 脚本（基线 + 51 个增量迁移，索引见 INDEX.md）
+├── dev-tools/             # 开发辅助（start.sh 一键启停 / stop.sh / check.sh 等，见 WORKFLOW.md）
 ├── deploy.sh             # 一键部署脚本（构建 + nginx 反代 + 启动）
-└── DEPLOY.md             # 完整本地部署教程
+├── .env                  # 本机环境变量（不入库；模板 .env.example）
+├── CONTEXT.md            # 项目上下文与迭代日志（AI 协作约定）
+├── DEPLOY.md             # 完整本地部署教程
+└── README.md             # 本文件
 ```
 
 ---
@@ -110,23 +120,26 @@ GRANT ALL PRIVILEGES ON pet_mix.* TO 'mixpet'@'localhost';
 FLUSH PRIVILEGES;
 EOF
 
+# 基线 + 全部 51 个增量脚本（按文件名顺序，缺一不可）
 mysql -u mixpet -p pet_mix < db-backup/pet_mix.sql
+for f in $(ls db-backup/*.sql | grep -v pet_mix.sql | sort); do
+  mysql --default-character-set=utf8mb4 -u mixpet -p pet_mix < "$f"
+done
 ```
 
-### 2. 后端
+### 2. 配置环境变量
 
 ```bash
-cd mixPet
-mvn spring-boot:run        # 监听 http://localhost:8085
+cp .env.example .env    # 填入 DB_USER/DB_PASSWORD/APP_DEFAULT_PASSWORD/REMEMBER_ME_KEY/VERIFY_CODE_SECRET
 ```
 
-### 3. 前端
+### 3. 一键启动（推荐）
 
 ```bash
-cd mix-ui
-npm install
-npm run dev                # 访问 http://localhost:3120
+~/公共/mixpet/dev-tools/start.sh    # 后端 8085 就绪后自动起前端 3120；stop.sh 停止
 ```
+
+或手动：`cd mixPet && set -a; source ../.env; set +a && mvn spring-boot:run` + `cd mix-ui && npm run dev`
 
 ### 4. 一键部署（生产环境）
 
@@ -162,9 +175,9 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 | `DB_PASSWORD` | *（无）* | 数据库密码，**生产必须设置** |
 | `MAIL_USER` | `your_qq@qq.com` | 发件 QQ 邮箱（开发可选） |
 | `MAIL_PASS` | `your_auth_code` | QQ 邮箱 SMTP 授权码（开发可选） |
-| `PET_AVATAR` | `~/公共/mixpet/avatar/` | 头像 / 报告附件存储路径 |
-| `PET_NOTICE` | `~/公共/mixpet/notice/` | 公告配图存储路径 |
-| `PET_CHATIMG` | `~/公共/mixpet/chat/` | 聊天文件存储路径 |
+| `PET_AVATAR` | `/home/debian/公共/mixpet/avatar/` | 头像 / 报告附件存储路径 |
+| `PET_NOTICE` | `/home/debian/公共/mixpet/notice/` | 公告配图存储路径 |
+| `PET_CHATIMG` | `/home/debian/公共/mixpet/chat/` | 聊天文件存储路径 |
 | `APP_DEFAULT_PASSWORD` | *（无）* | 新建/重置账号默认口令，**生产必须设置** |
 | `REMEMBER_ME_KEY` | *（无）* | 记住我 Cookie 签名密钥（至少 32 字符），**生产必须设置** |
 | `VERIFY_CODE_SECRET` | *（无）* | JWT 验证码令牌密钥（至少 32 字符），**生产必须设置** |
@@ -194,17 +207,22 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 
 ## 数据库迁移说明
 
-`db-backup/` 下除原始基线 `pet_mix.sql` 外，还有按功能/日期命名的**增量迁移脚本**（18 个 `feature_*` + 早期模块脚本）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。近期新增：
+`db-backup/` 下除原始基线 `pet_mix.sql` 外，还有按功能/日期命名的**增量迁移脚本**（51 个，完整索引见 [`db-backup/INDEX.md`](./db-backup/INDEX.md)）。开发过程中新增的字段/表都以独立脚本保存并执行到运行库，便于留档与追查。近期新增：
 
 | 脚本 | 内容 |
 | :--- | :--- |
-| `feature_20261016_chat_read.sql` | 聊天已读/未读（`is_read`/`read_time`，历史置已读）+ `msg_content` 扩至 varchar(1000) |
-| `feature_20261016_client_audit.sql` | 顾客注册审核（`audit_status`，历史顾客置通过） |
-| `feature_20261016_notice_sort.sql` | 公告排序权重（`sort`，历史按 id 回填） |
-| `feature_20261017_record_status.sql` | 就诊状态（`status`/`finish_time`/`cancel_reason`，历史置已完结） |
-| `feature_20261017_followup_isdel.sql` | 随访表补 `is_del` 逻辑删除列 |
+| `feature_20261020_package_item.sql` | 套餐结构化：可选检查项目子表（检验/影像快照组合定价） |
+| `feature_20261020_bill_fee_immune.sql` | bill 补免疫费分项 |
+| `feature_20261020_bill_pay_by.sql` | bill 收款人/收款时间留痕 |
+| `feature_20261020_drug_inbound_cost.sql` | 入库成本链路（药品毛利） |
+| `feature_20261020_hospital_advice.sql` | 住院医嘱单表 |
+| `feature_20261020_is_del_default_fix.sql` | 存量表逻辑删除默认值一致性 |
+| `feature_20261021_bill_refund_reason.sql` | 退款原因独立列 |
+| `feature_20261022_query_indexes.sql` | 高频查询索引补齐（幂等） |
+| `feature_20261022_hospital_foster_billing.sql` | 住院分项计价+押金+医嘱临时费；寄养按天计费+状态流转（幂等） |
+| `feature_20261023_appointment_miss.sql` | 挂号爽约状态位（记录保留可查，幂等） |
 
-重导全新环境时，请按日期顺序补齐各项增量；运行 `deploy.sh` 前也须先建库并补齐全部增量脚本——脚本本身不执行数据库迁移。
+重导全新环境时，请按文件名顺序补齐全部增量；运行 `deploy.sh` 前也须先建库并补齐全部增量脚本——脚本本身不执行数据库迁移。
 
 ---
 
