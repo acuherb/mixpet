@@ -446,7 +446,16 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 
 ## 10. 关键运维约定（新增）
 - **一键启停**：`~/公共/mixpet/dev-tools/start.sh`（.env 自动加载+locale 保命+限堆+错峰+就绪检测）、`stop.sh`；双端验证 `dev-tools/check.sh`。
+- **数据备份**：管理后台「系统设置→数据备份」（仅超管）一键备份/下载；还原四道闸（ADMIN 接口层+二次确认+还原前自动快照+互斥锁）；备份落 db-backup/runtime/（gitignore）。
 - **.env 管理**：根目录 `.env`（本机真值，不入库）← 模板 `.env.example`（入库）；start.sh 按 $HOME/.env → 项目 .env → .env.example 加载；12 个环境变量与 yml 占位符一一对应（README 配置表）。
 - **数据库**：运行库 `pet_mix`（旧库 pet_ship 保留待删）；增量脚本按 db-backup/INDEX.md 字典序执行，必带 --default-character-set=utf8mb4。
 - **启动类**：`com.mix.MixPetApplication`（就绪日志 `Started MixPetApplication`，grep 注意大小写）。
 - **中文路径「公共」**：任何脚本/CI/新 shell 启动 mvn 前必须 `export LANG=C.UTF-8 LC_ALL=C.UTF-8`（否则 InvalidPathException）。
+
+### 数据备份与受控还原（2026-10-24，commit 7393b79）
+- 背景：此前有意暂缓「恢复有毁库风险，不做网页一键恢复」（CONTEXT 早期决策）；用户确认需求真实后按方案 B 落地（A 只备份 / B 备份+受控还原 / C 加定时，用户选 B）。
+- 功能：管理后台「系统设置→数据备份」页（菜单仅超管 ADMIN 可见）——一键全库备份（mysqldump --single-transaction --routines --triggers --hex-blob + utf8mb4）、列表（文件名/大小/时间/手动备份 vs 还原前快照标签）、下载、删除。
+- 还原四道闸：①`@Secured(ADMIN)` 接口层硬拦截（MANAGER 只能备份/下载，前端藏菜单只是第一层）；②二次完整输入目标文件名确认；③**还原前自动为当前数据创建快照**（pre_restore_ 前缀，结果不符用它再还原回退）；④备份/还原 AtomicBoolean 互斥。
+- 安全：凭据经 MYSQL_PWD 环境变量传子进程（不进命令行防 ps 泄露）；库名/主机/端口从 JDBC URL 解析；文件名白名单 `[A-Za-z0-9_.-]+.sql`（禁路径字符）；备份落 `db-backup/runtime/`（gitignore，含全库数据勿入库），目录可 BACKUP_DIR 覆盖；还原后返回当前表数供核对。
+- **隔离验证（不碰运行库）**：用户授权临时库 pet_restore_test → 真实备份 130K/43 表 → 还原进临时库 exit 0 → 43 表与运行库一致 → 中文数据完整（普通/银卡/金卡/钻石、犬瘟热初诊——乱码修复数据也在备份里）→ 临时库与验证文件已清理。
+- 遗留：pet_restore_test 授权未回收（库已删，无害）；定时自动备份（方案 C）未做，需要再说。

@@ -66,7 +66,7 @@ cd mixpet
 目录结构：
 - `mixPet/` — 后端（Spring Boot 3 + Java 17，启动类 `com.mix.MixPetApplication`）
 - `mix-ui/` — 前端（Vue 3 + Vite）
-- `db-backup/` — SQL 脚本（基线 `pet_mix.sql` + 51 个增量迁移脚本，索引见 `db-backup/INDEX.md`）
+- `db-backup/` — SQL 脚本（基线 `pet_mix.sql` + 51 个增量迁移脚本，索引见 `db-backup/INDEX.md`；其下 `runtime/` 为管理后台数据备份落盘处，**含全库数据，勿入库**）
 - `dev-tools/` — 开发辅助脚本（`start.sh` 一键启停 / `stop.sh` / `check.sh` 双端验证等，说明见 `dev-tools/WORKFLOW.md`）
 - `avatar/` — 头像图片（WebP）
 - `notice/` — 公告配图
@@ -150,6 +150,7 @@ cp .env.example .env
 | `REMEMBER_ME_KEY` / `VERIFY_CODE_SECRET` | 签名密钥，≥32 字符（必须） |
 | `MAIL_USER` / `MAIL_PASS` | 注册验证码/找回密码发信（QQ 邮箱 SMTP） |
 | `PET_AVATAR` / `PET_NOTICE` / `PET_CHATIMG` | 头像/公告/聊天文件存储目录（默认即本机路径） |
+| `BACKUP_DIR` | 数据备份 .sql 落盘目录（默认 `项目/db-backup/runtime/`） |
 
 > `start.sh` 会按 `$HOME/.env` → 项目 `.env` → `.env.example` 顺序自动加载；手动 `mvn spring-boot:run` 前先 `set -a; source .env; set +a`。
 
@@ -349,7 +350,7 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
    - 存量演示账号 `admin` / `yun` / `ying` 等的密码仍是 `123456`，必须登录后到「用户管理 / 医生管理」逐个**重置密码**，或让对应用户自行改密。
 3. **邮件授权码**：`application-dev.yml` 的 `MAIL_USER` / `MAIL_PASS` 改成自己的 QQ 邮箱与 16 位授权码（或用环境变量 `MAIL_USER` / `MAIL_PASS`）。
 4. **配置 HTTPS + WSS**：见下方「nginx 反代配置」。上线后前端 WebSocket 必须走 `wss`（见「前端改动」）。
-5. **定期备份**：见 10.4。
+5. **定期备份**：用管理后台「系统设置 → 数据备份」（见 10.4）每周备份并下载外传；熟悉命令行亦可 crontab 自动化。
 
 **当前已知安全项状态**（生产评估用）：
 - CSRF：当前全局关闭（前后端分离 + 自定义登录过滤器，重开需前端配合 XSRF-TOKEN，暂保持；后续如要启用再单独评估）。
@@ -426,12 +427,23 @@ sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw enable
 - **数据库**：可与后端同机部署
 
 ### 10.4 备份数据库
+
+**方式一（推荐）：管理后台界面备份/还原**——「系统设置 → 数据备份」（仅超管可见）：
+
+- **一键备份**：全库 `mysqldump`（含例程/触发器，utf8mb4），文件存服务器 `db-backup/runtime/`，可下载到本机/U盘；
+- **受控还原**：仅超管可调 + **需完整输入目标文件名二次确认** + **还原前自动为当前数据创建快照**（`pre_restore_` 前缀，结果不符预期时用它再还原即可回退）+ 备份/还原互斥；
+- 备份文件含全库数据（账号密码哈希），**妥善保管、定期外传**（本机硬盘坏了备份也白搭）。
+
+**方式二：命令行备份（服务器本机/脚本化场景）**
+
 ```bash
 mysqldump -u mixpet -p pet_mix > ~/backup/pet_mix_$(date +%Y%m%d).sql
 
 # crontab 每天凌晨 2 点
 0 2 * * * mysqldump -u mixpet -p'你的密码' pet_mix > ~/backup/pet_mix_$(date +\%Y\%m\%d).sql
 ```
+
+> 命令行还原（危险，务必先备份当前库）：`mysql -u mixpet -p pet_mix < 备份文件.sql`。
 
 ---
 
