@@ -161,5 +161,9 @@ export const backstage: RouteRecordRaw[] = [
         // 聊天数据清理
         path: "z-chatClean",
         component: () => import('@/views/backstage/z-chatClean.vue')
+    }, {
+        // 数据备份/还原（仅超管 ADMIN 可见可操作）
+        path: "z-backup",
+        component: () => import('@/views/backstage/z-backup.vue')
     }
 ]

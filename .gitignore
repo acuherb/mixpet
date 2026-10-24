@@ -49,3 +49,6 @@ report/
 
 # playwright-cli 调试产物（页面快照/console 日志，实测时生成，勿入库）
 .playwright-cli/
+
+# 数据备份运行时文件（管理后台生成的全库 .sql，含敏感数据，勿入库）
+db-backup/runtime/

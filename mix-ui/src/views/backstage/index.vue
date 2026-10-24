@@ -72,6 +72,8 @@
           <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
           <el-menu-item v-show="menuMatch('公告管理')" index="/backstage/y-noticeList">公告管理</el-menu-item>
           <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
+          <!-- 数据备份/还原：仅超管（毁库操作，后端 /backup/restore 也限 ADMIN） -->
+          <el-menu-item v-if="isAdmin" v-show="menuMatch('数据备份')" index="/backstage/z-backup">数据备份</el-menu-item>
         </el-sub-menu>
 
         <!-- ═══ 组织管理（院长/管理者） ═══ -->
@@ -107,6 +109,8 @@ const doctorNow = reactive({
 // 是否管理者（MANAGER=6 / ADMIN=8）：经营分析与系统设置组对其可见
 // 临床诊疗（接诊/化验/影像/手术/住院/免疫/随访）已收拢医生工作台，后台不再挂入口
 const isManager = computed(() => doctorNow.authLv >= 6)
+// 是否超管（ADMIN=8）：数据备份/还原等毁库操作仅其可见可为
+const isAdmin = computed(() => doctorNow.authLv >= 8)
 
 // 侧边栏折叠
 const isCollapse = ref(localStorage.getItem('asideCollapse') === '1')

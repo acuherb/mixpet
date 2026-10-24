@@ -63,6 +63,9 @@ remember-me:
   # 保留非空兜底默认值：此前默认值被替换为空，导致不走 start.sh 的启动方式
   # （IDE/CI/冒烟）直接抛 key cannot be empty 启动失败——2026-10-22 事故）
   key: ${REMEMBER_ME_KEY:MixPet@Remember2026}
+# 数据备份/还原（管理后台「数据备份」页）：.sql 落盘目录，换机器用 BACKUP_DIR 覆盖
+backup:
+  dir: ${BACKUP_DIR:/home/debian/公共/mixpet/db-backup/runtime/}
 ---
 # AI 辅助诊疗（旁路功能：enabled=false 一键关闭，不影响正常接诊）
 ai:
