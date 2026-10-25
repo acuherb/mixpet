@@ -166,61 +166,85 @@
       <el-form ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
         <!-- 第一步：问诊与检查（模板/主诉/现病史/既往史/查体/体征） -->
         <div v-show="activeStep === 0" class="treat-step">
-        <el-divider content-position="left">病历模板（一键填充，可再修改）</el-divider>
-        <el-form-item label="选择模板">
-          <el-select v-model="tplId" clearable filterable placeholder="选择模板一键填充（可再修改）" style="width: 100%" @change="applyTpl">
-            <el-option v-for="t in templates" :key="t.templateId" :label="`${t.name}${t.category ? '（' + t.category + '）' : ''}`" :value="t.templateId"/>
-          </el-select>
-        </el-form-item>
+        <!-- 病历模板：一键填充条（醒目浅色卡） -->
+        <div class="rec-tpl-bar">
+          <div class="rec-tpl-ico"><el-icon><Notebook/></el-icon></div>
+          <div class="rec-tpl-main">
+            <div class="rec-tpl-tit">病历模板 · 一键填充</div>
+            <el-select v-model="tplId" clearable filterable placeholder="选择模板（填充后仍可修改）" style="width: 100%" @change="applyTpl">
+              <el-option v-for="t in templates" :key="t.templateId" :label="`${t.name}${t.category ? '（' + t.category + '）' : ''}`" :value="t.templateId"/>
+            </el-select>
+          </div>
+        </div>
 
         <div class="step-head">
-          <el-divider content-position="left">一、问诊 · 宠物为什么来医院？</el-divider>
+          <div class="step-tit"><span class="step-no">一</span>问诊 · 宠物为什么来医院？</div>
           <el-button size="small" plain type="warning" @click="openAi">
             <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
           </el-button>
         </div>
-        <el-form-item label="主诉" prop="chiefComplaint">
-          <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="主要症状 + 持续时间，如：呕吐2天，今日次数增加伴食欲下降（已自动带入挂号描述）" type="textarea"/>
-        </el-form-item>
-        <el-form-item label="现病史">
-          <el-input v-model="recordForm.presentIllness" :rows="3" maxlength="1000" placeholder="按时间顺序记录：何时开始 → 初期表现 → 加重/减轻 → 伴随症状 → 是否治疗及用药效果。如：2日前开始间断呕吐，最初每日约1次…今日加重至3次，伴食欲下降" type="textarea"/>
-        </el-form-item>
-        <el-form-item label="既往病史">
-          <el-input v-model="recordForm.pastHistory" :rows="2" maxlength="1000" placeholder="过去重要的医疗信息：既往疾病 / 手术 / 长期用药 / 过敏 / 类似发作史（可参考右侧病史卡与宠物档案）" type="textarea"/>
-        </el-form-item>
+        <!-- 问诊卡片组：主诉重点卡 + 现病史/既往史 -->
+        <div class="rec-card key">
+          <div class="rec-card-tit">主诉 <em>主要症状 + 持续时间</em></div>
+          <el-form-item prop="chiefComplaint" label-width="0">
+            <el-input v-model="recordForm.chiefComplaint" :rows="2" maxlength="255" placeholder="如：呕吐2天，今日次数增加伴食欲下降（已自动带入挂号描述）" type="textarea"/>
+          </el-form-item>
+        </div>
+        <div class="rec-card">
+          <div class="rec-card-tit">现病史 <em>何时开始 → 表现 → 加重/减轻 → 伴随症状 → 治疗经过</em></div>
+          <el-form-item label-width="0">
+            <el-input v-model="recordForm.presentIllness" :rows="3" maxlength="1000" placeholder="如：2日前开始间断呕吐，最初每日约1次…今日加重至3次，伴食欲下降" type="textarea"/>
+          </el-form-item>
+        </div>
+        <div class="rec-card">
+          <div class="rec-card-tit">既往病史 <em>既往疾病 / 手术 / 长期用药 / 过敏 / 类似发作史</em></div>
+          <el-form-item label-width="0">
+            <el-input v-model="recordForm.pastHistory" :rows="2" maxlength="1000" placeholder="可参考右侧病史卡与宠物档案" type="textarea"/>
+          </el-form-item>
+        </div>
 
-        <el-divider content-position="left">二、检查 · 医生检查发现了什么？</el-divider>
-        <el-form-item label="体格检查">
-          <el-input v-model="recordForm.physicalExam" :rows="2" maxlength="255" placeholder="视触叩听等检查发现，如：体温39.2℃，心率120，精神沉郁，黏膜苍白" type="textarea"/>
-          <!-- 查体快捷标签：点击即填入，实现"半勾选式"录入 -->
-          <div class="exam-tags">
-            <span v-for="t in examTags" :key="t" class="exam-tag" @click="appendExam(t)">{{ t }}</span>
-          </div>
-        </el-form-item>
+        <div class="step-head">
+          <div class="step-tit"><span class="step-no">二</span>检查 · 医生检查发现了什么？</div>
+        </div>
+        <div class="rec-card">
+          <div class="rec-card-tit">体格检查 <em>视触叩听等检查发现</em></div>
+          <el-form-item label-width="0">
+            <el-input v-model="recordForm.physicalExam" :rows="2" maxlength="255" placeholder="如：体温39.2℃，心率120，精神沉郁，黏膜苍白" type="textarea"/>
+            <!-- 查体快捷标签：点击即填入，实现"半勾选式"录入 -->
+            <div class="exam-tags">
+              <span v-for="t in examTags" :key="t" class="exam-tag" @click="appendExam(t)">{{ t }}</span>
+            </div>
+          </el-form-item>
+        </div>
 
-        <el-divider content-position="left">分诊与体征</el-divider>
-        <el-form-item label="分诊级别">
-          <el-select v-model="recordForm.triageLevel" placeholder="选择分诊级别" style="width: 160px">
-            <el-option :value="1" label="急诊"/>
-            <el-option :value="2" label="普通"/>
-            <el-option :value="3" label="复诊"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="体重(kg)">
-          <el-input-number v-model="recordForm.weight" :max="200" :min="0" :precision="2" :step="0.1" style="width: 150px"/>
-        </el-form-item>
-        <el-form-item label="体温(℃)">
-          <el-input-number v-model="recordForm.temperature" :max="45" :min="30" :precision="1" :step="0.1" style="width: 150px"/>
-        </el-form-item>
-        <el-form-item label="心率(次/分)">
-          <el-input-number v-model="recordForm.heartRate" :max="400" :min="0" :step="5" style="width: 150px"/>
-        </el-form-item>
-        <el-form-item label="呼吸(次/分)">
-          <el-input-number v-model="recordForm.respiratoryRate" :max="200" :min="0" :step="2" style="width: 150px"/>
-        </el-form-item>
-        <el-form-item label="血压(mmHg)">
-          <el-input v-model="recordForm.bloodPressure" clearable maxlength="16" placeholder="如：120/80" style="width: 150px"/>
-        </el-form-item>
+        <!-- 分诊与体征：网格排布（告别一列竖排） -->
+        <div class="step-head">
+          <div class="step-tit"><span class="step-no">三</span>分诊与体征</div>
+        </div>
+        <div class="rec-vitals">
+          <el-form-item label="分诊级别" class="vital-item">
+            <el-select v-model="recordForm.triageLevel" placeholder="选择级别" style="width: 100%">
+              <el-option :value="1" label="急诊"/>
+              <el-option :value="2" label="普通"/>
+              <el-option :value="3" label="复诊"/>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="体重(kg)" class="vital-item">
+            <el-input-number v-model="recordForm.weight" :max="200" :min="0" :precision="2" :step="0.1" controls-position="right" style="width: 100%"/>
+          </el-form-item>
+          <el-form-item label="体温(℃)" class="vital-item">
+            <el-input-number v-model="recordForm.temperature" :max="45" :min="30" :precision="1" :step="0.1" controls-position="right" style="width: 100%"/>
+          </el-form-item>
+          <el-form-item label="心率(次/分)" class="vital-item">
+            <el-input-number v-model="recordForm.heartRate" :max="400" :min="0" :step="5" controls-position="right" style="width: 100%"/>
+          </el-form-item>
+          <el-form-item label="呼吸(次/分)" class="vital-item">
+            <el-input-number v-model="recordForm.respiratoryRate" :max="200" :min="0" :step="2" controls-position="right" style="width: 100%"/>
+          </el-form-item>
+          <el-form-item label="血压(mmHg)" class="vital-item">
+            <el-input v-model="recordForm.bloodPressure" clearable maxlength="16" placeholder="如：120/80"/>
+          </el-form-item>
+        </div>
 
         </div>
 
@@ -698,7 +722,7 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, InfoFilled, MagicStick, Plus, Printer} from "@element-plus/icons-vue";
+import {Delete, InfoFilled, MagicStick, Notebook, Plus, Printer} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
@@ -1613,4 +1637,148 @@ watch(() => form.value.clientId, (newValue): void => {
   .settle-ops .el-button { width: 100%; margin: 0; }
 }
 .summary-btns { margin-top: 16px; text-align: right; }
+
+/* ===== 电子病历录入（问诊与检查）现代样式 2026-10-24 ===== */
+
+/* 病历模板一键填充条 */
+.rec-tpl-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(135deg, #f0f7fc 0%, #f8fbff 100%);
+  border: 1px solid #c6e2ff;
+  border-radius: 12px;
+
+  .rec-tpl-ico {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--brand) 0%, #4ba3e0 100%);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 20px;
+  }
+
+  .rec-tpl-main {
+    flex: 1;
+    min-width: 0;
+
+    .rec-tpl-tit {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: var(--brand);
+      margin-bottom: 4px;
+    }
+  }
+}
+
+/* 步骤标题（替换 el-divider） */
+.step-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 10px;
+
+  .step-tit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1F2D3D;
+
+    .step-no {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: linear-gradient(135deg, var(--brand) 0%, #4ba3e0 100%);
+      color: #fff;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+  }
+}
+
+/* 问诊卡片组 */
+.rec-card {
+  background: #fff;
+  border: 1px solid #EBEEF5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: border-color .15s;
+
+  &:focus-within { border-color: #c6e2ff; }
+
+  /* 主诉：重点卡（品牌浅底+左侧色条） */
+  &.key {
+    background: #F8FBFF;
+    border-left: 3px solid var(--brand);
+  }
+
+  .rec-card-tit {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1F2D3D;
+    margin-bottom: 6px;
+
+    em {
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 400;
+      color: #a8abb2;
+    }
+  }
+
+  /* 卡片内表单去掉 label 占位（label-width:0 后无残留） */
+  .el-form-item { margin-bottom: 0; }
+}
+
+/* 体征网格：3列（窄屏2列） */
+.rec-vitals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 14px;
+  padding: 12px 14px;
+  background: #F8FAFC;
+  border: 1px solid #EBEEF5;
+  border-radius: 12px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* 网格内表单项：标签顶部显示 */
+  .vital-item {
+    margin-bottom: 0;
+
+    :deep(.el-form-item__label) {
+      position: static;
+      display: block;
+      text-align: left;
+      padding: 0 0 4px;
+      font-size: 11px;
+      color: #909399;
+      line-height: 1.4;
+    }
+
+    :deep(.el-form-item__content) {
+      margin-left: 0 !important;
+    }
+  }
+}
+
 </style>
