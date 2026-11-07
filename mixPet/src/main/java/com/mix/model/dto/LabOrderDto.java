@@ -26,6 +26,15 @@ public class LabOrderDto {
     private String reportFile;
     private LocalDateTime createTime;
 
+    /** 标本与时间轴、危急值与复核信息 */
+    private String specimenType;
+    private LocalDateTime collectTime;
+    private LocalDateTime receiveTime;
+    private String reviewBy;
+    private LocalDateTime reviewAt;
+    private Boolean criticalFlag;
+    private Integer resultRevision;
+
     private String petName;
     private String clientName;
     private String doctorName;

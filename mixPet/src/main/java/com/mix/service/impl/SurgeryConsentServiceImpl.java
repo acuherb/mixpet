@@ -2,6 +2,7 @@ package com.mix.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.ClientMapper;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.MedicalRecordMapper;
@@ -48,12 +49,12 @@ public class SurgeryConsentServiceImpl extends ServiceImpl<SurgeryConsentMapper,
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result sign(SurgeryConsentVo vo, String operator) {
-        if (vo == null || vo.getSurgeryId() == null) return Result.error("缺少手术单id");
+        if (vo == null || vo.getSurgeryId() == null) throw new BizException("缺少手术单id");
         Surgery s = surgeryMapper.selectById(vo.getSurgeryId());
-        if (s == null) return Result.error("手术单不存在");
-        if (s.getStatus() != null && s.getStatus() == 3) return Result.error("手术已取消，无需签同意书");
-        if (!Boolean.TRUE.equals(vo.getAgree())) return Result.error("需畜主同意并签字");
-        if (vo.getSigner() == null || vo.getSigner().isBlank()) return Result.error("请填写签字人（畜主）姓名");
+        if (s == null) throw new BizException("手术单不存在");
+        if (s.getStatus() != null && s.getStatus() == 3) throw new BizException("手术已取消，无需签同意书");
+        if (!Boolean.TRUE.equals(vo.getAgree())) throw new BizException("需畜主同意并签字");
+        if (vo.getSigner() == null || vo.getSigner().isBlank()) throw new BizException("请填写签字人（畜主）姓名");
         SurgeryConsent exist = this.lambdaQuery().eq(SurgeryConsent::getSurgeryId, vo.getSurgeryId()).one();
         SurgeryConsent c = exist != null ? exist : new SurgeryConsent();
         c.setSurgeryId(s.getSurgeryId());

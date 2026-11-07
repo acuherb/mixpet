@@ -104,7 +104,6 @@ import {RxSheet} from "@/model/entiy/RxSheet";
 import {useBrand} from "@/utils/UseBrand";
 import {getAge} from "@/utils/TimeUtil";
 import {ElMessage} from "element-plus";
-import html2pdf from 'html2pdf.js';
 
 const route = useRoute()
 const router = useRouter()
@@ -129,6 +128,9 @@ onMounted(() => {
     rx.value = res
     loading.value = false
     if (res && res.copies === 3) pages.value = allCopies
+  }).catch(() => {
+    loading.value = false
+    ElMessage.error('处方笺加载失败，请重试')
   })
   // auto=1：从打印预检弹窗进入，自动触发打印（window.open 同链路，一般不被拦截）
   if (route.query.auto === '1') setTimeout(() => window.print(), 500)
@@ -136,19 +138,27 @@ onMounted(() => {
   if (route.query.pdf === '1') setTimeout(() => exportPdf(), 500)
 })
 
-// 导出真实 PDF（小规格横版 210×148mm）
+// 导出真实 PDF（小规格横版 210×148mm）：html2pdf 按需动态加载，不进首屏 chunk
 const pdfing = ref(false)
-const exportPdf = (): void => {
+const exportPdf = async (): Promise<void> => {
   const el = document.querySelector('.rx-sheet') as HTMLElement | null
-  if (!el || !rx.value) return
+  const sheet = rx.value
+  if (!el || !sheet) return
   pdfing.value = true
-  html2pdf().set({
-    margin: 2,
-    filename: `处方笺-${rx.value.printNo || rx.value.rxNo || rx.value.recordId}.pdf`,
-    image: {type: 'jpeg', quality: 0.95},
-    html2canvas: {scale: 2},
-    jsPDF: {unit: 'mm', format: [210, 148], orientation: 'landscape'}
-  }).from(el).save().catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
+  try {
+    const {default: html2pdf} = await import('html2pdf.js')
+    await html2pdf().set({
+      margin: 2,
+      filename: `处方笺-${sheet.printNo || sheet.rxNo || sheet.recordId}.pdf`,
+      image: {type: 'jpeg', quality: 0.95},
+      html2canvas: {scale: 2},
+      jsPDF: {unit: 'mm', format: [210, 148], orientation: 'landscape'}
+    }).from(el).save()
+  } catch {
+    ElMessage.error('PDF 导出失败')
+  } finally {
+    pdfing.value = false
+  }
 }
 
 const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)

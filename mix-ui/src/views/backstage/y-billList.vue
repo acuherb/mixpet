@@ -116,7 +116,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item v-if="scope.row.payStatus" command="ticket">打印小票</el-dropdown-item>
-              <el-dropdown-item v-if="scope.row.payStatus" command="invoice">打印发票</el-dropdown-item>
+              <el-dropdown-item v-if="scope.row.payStatus" command="invoice">打印收费凭证</el-dropdown-item>
               <el-dropdown-item v-if="!scope.row.payStatus" command="recharge">充值余额</el-dropdown-item>
               <el-dropdown-item v-if="scope.row.payStatus && !scope.row.refundStatus" command="refund" divided>
                 退款冲正
@@ -518,6 +518,10 @@ const printTicket = async (row: BillDto, justPaidType?: boolean, justPaid = fals
 
 const money = (v: number | null | undefined): string => (v ?? 0).toFixed(2)
 
+/** 打印 HTML 转义：客户姓名/药品名等可录入内容必须转义，防注入与单据错乱 */
+const ESC_MAP: Record<string, string> = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}
+const esc = (v: unknown): string => String(v ?? '').replace(/[&<>"']/g, c => ESC_MAP[c] || c)
+
 const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
   // 支付方式文案
   const payTypeText = row.payType ? '现金' : '余额'
@@ -525,8 +529,8 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
   // 处方明细行
   const drugRows = prescriptions.map(p => `
     <tr>
-      <td>${p.drugName || ''}${p.drugSpec ? ' ' + p.drugSpec : ''}</td>
-      <td class="r">${p.quantity}${p.drugUnit || ''}</td>
+      <td>${esc(p.drugName || '')}${p.drugSpec ? ' ' + esc(p.drugSpec) : ''}</td>
+      <td class="r">${p.quantity}${esc(p.drugUnit || '')}</td>
       <td class="r">${money(p.drugPrice)}</td>
     </tr>`).join('')
   const drugSection = prescriptions.length > 0 ? `
@@ -562,13 +566,13 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
   @page {size: 80mm auto; margin: 0;}
 </style></head>
 <body>
-  <h1>${hosp?.name || '宠物医院管理系统'}</h1>
-  <div class="sub">收费小票${hosp?.phone ? ' · ' + hosp.phone : ''}</div>
+  <h1>${esc(hosp?.name || '宠物医院管理系统')}</h1>
+  <div class="sub">收费小票${esc(hosp?.phone ? ' · ' + hosp.phone : '')}</div>
   <hr class="line">
-  <div class="row"><span class="k">账单号</span><span>${row.billId}</span></div>
-  <div class="row"><span class="k">客户</span><span>${row.clientName || ''}${row.clientTel ? ' (' + row.clientTel + ')' : ''}</span></div>
-  <div class="row"><span class="k">宠物</span><span>${row.petName || ''}</span></div>
-  <div class="row"><span class="k">医生</span><span>${row.doctorName || ''}</span></div>
+  <div class="row"><span class="k">账单号</span><span>${esc(row.billId)}</span></div>
+  <div class="row"><span class="k">客户</span><span>${esc((row.clientName || '') + (row.clientTel ? ' (' + row.clientTel + ')' : ''))}</span></div>
+  <div class="row"><span class="k">宠物</span><span>${esc(row.petName || '')}</span></div>
+  <div class="row"><span class="k">医生</span><span>${esc(row.doctorName || '')}</span></div>
   <hr class="line">
   <div class="row"><span>挂号费</span><span>￥${money(row.feeRegister)}</span></div>
   <div class="row"><span>诊疗费</span><span>￥${money(row.feeTreat)}</span></div>
@@ -583,9 +587,9 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
   <hr class="line">
   <div class="row total"><span>合计</span><span>￥${money(row.totalMoney)}</span></div>
   <hr class="line">
-  <div class="row"><span class="k">支付方式</span><span>${payTypeText}</span></div>
-  <div class="row"><span class="k">支付时间</span><span>${payTime}</span></div>
-  <div class="row"><span class="k">收银员</span><span>${row.payBy || '____'}</span></div>
+  <div class="row"><span class="k">支付方式</span><span>${esc(payTypeText)}</span></div>
+  <div class="row"><span class="k">支付时间</span><span>${esc(payTime)}</span></div>
+  <div class="row"><span class="k">收银员</span><span>${esc(row.payBy || '____')}</span></div>
   <div class="center">谢谢惠顾，祝宠物早日康复！<br>（本小票仅作收据凭证）</div>
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`
@@ -599,13 +603,19 @@ const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: Hos
 }
 
 /** 在独立窗口打印 HTML */
-const openPrintWindow = (_title: string, html: string): void => {
+const openPrintWindow = (title: string, html: string): void => {
   const w = window.open('', '_blank', 'width=820,height=960')
-  if (w) {
-    w.document.write(html)
-    w.document.close()
-  } else {
+  if (!w) {
     ElMessage.warning('浏览器拦截了弹窗，请允许本站弹出窗口')
+    return
+  }
+  try {
+    w.opener = null
+    w.document.write(html.replace('<title>', '<title>' + title + ' · '))
+    w.document.close()
+  } catch {
+    ElMessage.error('打印页面打开失败，请重试')
+    try { w.close() } catch { /* 忽略 */ }
   }
 }
 
@@ -647,8 +657,8 @@ const moneyCN = (n: number | null | undefined): string => {
  ┌───────────────────────────────────┐
  │=============打印正式发票============│
  └───────────────────────────────────┘
- * A4 增值税普通发票版式（870 主要内容打印，非税务联网）
- * 仅对已结算账单可用
+ * A4 收费凭证（院内收据，非税务发票），仅对已结算账单可用
+ * 不含税务票据的代码、号码、密码区与税率税额等要素，避免被当作正式发票使用
  */
 const printInvoice = async (row: BillDto): Promise<void> => {
   if (!row.payStatus) {
@@ -698,18 +708,16 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: H
   const totalMoney = row.totalMoney || 0
   const trs = rows.map(r => `
     <tr>
-      <td class="l">${r[0]}</td>
-      <td class="c">${r[2]}</td>
-      <td class="c">${r[1]}</td>
-      <td class="r">★</td>
+      <td class="l">${esc(r[0])}</td>
+      <td class="c">${esc(r[2])}</td>
+      <td class="c">${esc(r[1])}</td>
       <td class="r">${money(r[3])}</td>
-      <td class="r">****</td>
       <td class="r">${money(r[3])}</td>
-      <td class="r">0.00</td>
+      <td class="r">—</td>
     </tr>`).join('')
   const html = `<!DOCTYPE html>
 <html lang="zh">
-<head><meta charset="UTF-8"><title>发票</title>
+<head><meta charset="UTF-8"><title>收费凭证</title>
 <style>
   body{font-family: SimSun, serif; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 10mm; color:#000; box-sizing:border-box;}
   .head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:6px;}
@@ -725,42 +733,42 @@ const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: H
   .sign{display:flex; justify-content:space-between; margin-top:6px; font-size:12px;}
   .foot{margin-top:16px; font-size:11px; color:#333; text-align:center; border-top:1px solid #999; padding-top:6px;}
   @media print{body{margin:0; padding:10mm;}}
-  /* A4 发票：声明 A4 纸张 */
+  /* A4 收费凭证：声明 A4 纸张 */
   @page {size: A4; margin: 0;}
 </style></head>
 <body>
   <div class="head">
-    <h1>${hosp?.name || '宠物医院管理系统'}</h1>
-    <div class="no">发票代码：21300000000${String(row.billId).padStart(5, '0')}<br>发票号码：${String(row.billId).padStart(8, '0')}<br>开票日期：${payTime}</div>
+    <h1>${esc(hosp?.name || '宠物医院管理系统')} · 收费凭证</h1>
+    <div class="no">凭证编号：${esc(row.billId)}<br>开具日期：${esc(payTime)}</div>
   </div>
   <div class="t2">
-    <span>购买方名称：${row.clientName || ''}</span>
-    <span>密码区：******************</span>
+    <span>客户名称：${esc(row.clientName || '')}</span>
+    <span>单据类型：院内收费凭证（非税务发票）</span>
   </div>
   <div class="t2">
-    <span>购买方电话：${row.clientTel || ''}</span>
-    <span>销售方名称：${hosp?.name || '宠物医院管理系统'}</span>
+    <span>客户电话：${esc(row.clientTel || '')}</span>
+    <span>收款单位：${esc(hosp?.name || '宠物医院管理系统')}</span>
   </div>
   <table>
-    <tr><th class="l" style="width:30%">货物或应税劳务名称</th><th style="width:8%">数量</th><th style="width:8%">单位</th><th style="width:10%">单价</th><th style="width:13%">金额</th><th style="width:10%">税率</th><th style="width:13%">税额</th><th style="width:13%">价税合计</th></tr>
+    <tr><th class="l" style="width:34%">收费项目</th><th style="width:10%">数量</th><th style="width:10%">单位</th><th style="width:15%">单价</th><th style="width:15%">金额</th><th style="width:16%">备注</th></tr>
     ${trs}
-    <tr class="total-row"><td class="l" colspan="4">合计（大写）：${moneyCN(totalMoney)}</td><td class="r">${money(totalMoney)}</td><td>★</td><td>0.00</td><td class="r">${money(totalMoney)}</td></tr>
+    <tr class="total-row"><td class="l" colspan="4">合计（大写）：${moneyCN(totalMoney)}</td><td class="r">${money(totalMoney)}</td><td>—</td></tr>
   </table>
   <div class="bottom">
-    <p>价税合计（大写）：${moneyCN(totalMoney)}　（小写）：￥${money(totalMoney)}</p>
-    <p>备注：本单为宠物诊疗服务费。宠物：${row.petName || ''}，医生：${row.doctorName || ''}，支付方式：${payTypeText}。</p>
+    <p>合计（大写）：${moneyCN(totalMoney)}　（小写）：￥${money(totalMoney)}</p>
+    <p>备注：宠物诊疗服务费。宠物：${esc(row.petName || '')}，医生：${esc(row.doctorName || '')}，支付方式：${esc(payTypeText)}。</p>
   </div>
   <div class="sign">
-    <span>收款人：${row.payBy || '________'}</span>
+    <span>收款人：${esc(row.payBy || '________')}</span>
     <span>复核：________</span>
-    <span>开票人：________</span>
-    <span>销售方(盖章)：</span>
+    <span>经手人：________</span>
+    <span>收款单位(盖章)：</span>
   </div>
-  <div class="foot">${hosp?.phone ? '电话：' + hosp.phone + '　' : ''}${hosp?.address || ''}</div>
-  <div class="foot">本发票样式为系统内置格式，不联网，仅供内部记账/报销凭证使用</div>
+  <div class="foot">${esc(hosp?.phone ? '电话：' + hosp.phone + '　' : '')}${esc(hosp?.address || '')}</div>
+  <div class="foot">本单据为院内收费凭证，非税务发票，不作报销发票使用；如需发票请按当地税务规定另行开具</div>
 <script>window.onload = function(){ window.print(); }<\/script>
 </body></html>`
-  openPrintWindow('发票_' + row.billId, html)
+  openPrintWindow('收费凭证_' + row.billId, html)
 }
 
 /**

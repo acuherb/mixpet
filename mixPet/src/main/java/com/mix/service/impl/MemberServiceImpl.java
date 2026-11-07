@@ -2,6 +2,7 @@ package com.mix.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.ClientCountCardMapper;
 import com.mix.mapper.CountCardTemplateMapper;
 import com.mix.mapper.MemberLevelMapper;
@@ -80,21 +81,21 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result buyCard(Integer clientId, Integer templateId) {
-        if (clientId == null || templateId == null) return Result.error("缺少参数");
+        if (clientId == null || templateId == null) throw new BizException("缺少参数");
         CountCardTemplate t = cardTemplateMapper.selectById(templateId);
-        if (t == null || !Boolean.TRUE.equals(t.getActive())) return Result.error("次卡不存在或已下架");
-        if (t.getTimes() == null || t.getTimes() <= 0) return Result.error("次卡次数配置错误");
+        if (t == null || !Boolean.TRUE.equals(t.getActive())) throw new BizException("次卡不存在或已下架");
+        if (t.getTimes() == null || t.getTimes() <= 0) throw new BizException("次卡次数配置错误");
         Client client = clientService.getById(clientId);
-        if (client == null) return Result.error("客户不存在");
+        if (client == null) throw new BizException("客户不存在");
         BigDecimal price = t.getPrice() == null ? BigDecimal.ZERO : t.getPrice();
         BigDecimal balance = client.getClientBalance() == null ? BigDecimal.ZERO : client.getClientBalance();
-        if (balance.compareTo(price) < 0) return Result.error("余额不足（当前 " + balance + " 元），请先充值");
+        if (balance.compareTo(price) < 0) throw new BizException("余额不足（当前 " + balance + " 元），请先充值");
         boolean deducted = clientService.lambdaUpdate()
                 .eq(Client::getClientId, clientId)
                 .ge(Client::getClientBalance, price)
                 .setSql("client_balance = client_balance - " + price.toPlainString())
                 .update();
-        if (!deducted) return Result.error("余额不足，扣款失败");
+        if (!deducted) throw new BizException("余额不足，扣款失败");
         ClientCountCard card = new ClientCountCard();
         card.setClientId(clientId);
         card.setTemplateId(templateId);
@@ -111,12 +112,12 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     @Override
     public Result useCard(Integer cardId) {
         ClientCountCard card = clientCardMapper.selectById(cardId);
-        if (card == null) return Result.error("次卡不存在");
-        if (!Boolean.TRUE.equals(card.getStatus())) return Result.error("该次卡已用完或已作废");
+        if (card == null) throw new BizException("次卡不存在");
+        if (!Boolean.TRUE.equals(card.getStatus())) throw new BizException("该次卡已用完或已作废");
         if (card.getExpireDate() != null && card.getExpireDate().isBefore(LocalDate.now()))
-            return Result.error("该次卡已过期");
+            throw new BizException("该次卡已过期");
         if (card.getRemainTimes() == null || card.getRemainTimes() <= 0)
-            return Result.error("该次卡已无剩余次数");
+            throw new BizException("该次卡已无剩余次数");
         // 原子扣减+条件抢占（remain_times>0 才更新，防并发核销超扣成负数）
         int affected = clientCardMapper.update(null, com.baomidou.mybatisplus.core.toolkit.Wrappers
                 .<ClientCountCard>lambdaUpdate()
@@ -124,7 +125,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
                 .gt(ClientCountCard::getRemainTimes, 0)
                 .setSql("remain_times = remain_times - 1")
                 .setSql("status = (remain_times - 1) > 0"));
-        if (affected == 0) return Result.error("该次卡已无剩余次数");
+        if (affected == 0) throw new BizException("该次卡已无剩余次数");
         int remain = card.getRemainTimes() - 1;
         return Result.success("核销成功，剩余 " + remain + " 次");
     }
@@ -140,12 +141,12 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result exchangePoints(Integer clientId, Integer points) {
-        if (clientId == null || points == null || points <= 0) return Result.error("兑换积分需大于0");
-        if (points % 100 != 0) return Result.error("积分需为100的倍数（100分=1元）");
+        if (clientId == null || points == null || points <= 0) throw new BizException("兑换积分需大于0");
+        if (points % 100 != 0) throw new BizException("积分需为100的倍数（100分=1元）");
         Client client = clientService.getById(clientId);
-        if (client == null) return Result.error("客户不存在");
+        if (client == null) throw new BizException("客户不存在");
         int own = client.getClientPoints() == null ? 0 : client.getClientPoints();
-        if (own < points) return Result.error("积分不足（当前 " + own + " 分）");
+        if (own < points) throw new BizException("积分不足（当前 " + own + " 分）");
         BigDecimal money = BigDecimal.valueOf(points).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         // 条件扣减（client_points >= points 才更新，防并发兑换扣成负数；上面预检只为提前给友好提示）
         boolean ok = clientService.lambdaUpdate()
@@ -154,7 +155,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
                 .setSql("client_points = client_points - " + points)
                 .setSql("client_balance = client_balance + " + money.toPlainString())
                 .update();
-        if (!ok) return Result.error("积分不足（当前 " + own + " 分）");
+        if (!ok) throw new BizException("积分不足（当前 " + own + " 分）");
         return Result.success("兑换成功：" + points + " 分 → ￥" + money.toPlainString());
     }
 
@@ -195,8 +196,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
 
     @Override
     public Result saveCardTemplate(CountCardTemplate t) {
-        if (t == null || t.getName() == null || t.getName().isBlank()) return Result.error("次卡名称不能为空");
-        if (t.getTimes() == null || t.getTimes() <= 0) return Result.error("次数需大于0");
+        if (t == null || t.getName() == null || t.getName().isBlank()) throw new BizException("次卡名称不能为空");
+        if (t.getTimes() == null || t.getTimes() <= 0) throw new BizException("次数需大于0");
         if (t.getActive() == null) t.setActive(true);
         if (t.getTemplateId() == null) {
             cardTemplateMapper.insert(t);

@@ -19,6 +19,14 @@
         <span>挂号查看<i v-if="todayAppointCount > 0" class="nav-badge">{{ todayAppointCount > 99 ? '99+' : todayAppointCount }}</i></span>
       </label>
       <label>
+        <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientBill">
+        <span>账单明细</span>
+      </label>
+      <label>
+        <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientNotice">
+        <span>消息通知<i v-if="unreadCount > 0" class="nav-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</i></span>
+      </label>
+      <label>
         <input v-model="checkValue" name="radio" type="radio" value="/reception/chat">
         <span>在线咨询</span>
       </label>
@@ -34,8 +42,26 @@
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import router from "@/router";
 import {Msg} from "@/model/entiy/Msg";
+import {subscribe} from "@/utils/chatSocket";
 import {ElNotification} from "element-plus";
 import {reqClientAppoint} from "@/request/AppointApi";
+import {reqNotifyUnread} from "@/request/NotifyApi";
+
+// 报告出具/结果修订的站内通知角标：进入个人中心立即刷新，之后每分钟兜底轮询
+const unreadCount = ref<number>(0)
+const loadUnread = (): void => {
+  reqNotifyUnread().then(n => { unreadCount.value = n || 0 }).catch(() => { /* 角标失败不影响主流程 */ })
+}
+let notifyTimer: number | undefined
+onMounted(() => {
+  loadUnread()
+  notifyTimer = window.setInterval(loadUnread, 60000)
+  window.addEventListener('mixpet:notifyChanged', loadUnread)
+})
+onBeforeUnmount(() => {
+  window.clearInterval(notifyTimer)
+  window.removeEventListener('mixpet:notifyChanged', loadUnread)
+})
 
 const checkValue = ref<string>(router.currentRoute.value.fullPath)
 watch(checkValue, () => {
@@ -60,13 +86,9 @@ const previewOf = (m: Msg): string => {
 }
 
 // WebSocket：顾客在个人中心时，实时接收医生回复并提醒（未读角标已在首页“咨询医生”入口展示）
-const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
-let ws: WebSocket | null = null
+let unsubscribeChat: (() => void) | null = null
 onMounted(() => {
-  ws = new WebSocket(wsUrl)
-  ws.onmessage = (ev) => {
-    try {
-      const m = JSON.parse(ev.data) as Msg
+  unsubscribeChat = subscribe((m: Msg) => {
       ElNotification({
         title: '医生回复了您',
         message: previewOf(m),
@@ -75,11 +97,11 @@ onMounted(() => {
         position: 'top-right',
         onClick: () => { ElNotification.closeAll(); router.push('/reception/chat') }
       })
-    } catch { /* 忽略非消息帧 */ }
-  }
+  })
 })
 onBeforeUnmount(() => {
-  ws?.close(1000, '离开个人中心')
+  unsubscribeChat?.()
+  unsubscribeChat = null
   ElNotification.closeAll()
 })
 </script>

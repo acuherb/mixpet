@@ -16,4 +16,14 @@ export interface LabOrder {
     /** 报告文件(图片/PDF)路径，可选 */
     reportFile?: string | null;
     createTime?: string | null;
+    /** 标本类型与采样/接收时间（临床时间轴） */
+    specimenType?: string | null;
+    collectTime?: string | null;
+    receiveTime?: string | null;
+    /** 复核人 / 复核时间（与录入人分离） */
+    reviewBy?: string | null;
+    reviewAt?: string | null;
+    /** 是否含危急值；结果修订次数 */
+    criticalFlag?: boolean | null;
+    resultRevision?: number | null;
 }

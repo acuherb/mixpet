@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.mix.model.dto.FosterDto;
 import com.mix.model.dto.FosterPetDto;
+import com.mix.common.Result;
 import com.mix.model.entity.Foster;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -66,4 +68,7 @@ public interface IFosterService extends IService<Foster> {
      * @return 修改成功
      */
     boolean updateFoster(Foster foster);
+
+    /** 接回结算：后端重算费用、状态抢占、并入统一账单 */
+    Result back(Integer fosterId, LocalDate backDate);
 }

@@ -136,7 +136,7 @@
         <span>{{ backMoney >= backRow.fosterMoney ? '需补收' : '应退还' }}</span>
         <b :style="{color: backMoney >= backRow.fosterMoney ? '#f56c6c' : '#67C23A'}">￥{{ Math.abs(backMoney - backRow.fosterMoney).toFixed(2) }}</b>
       </div>
-      <div class="back-tip">确认后状态变为「已接回」，结算金额更新到订单；补收/退款请到收银台或线下办理</div>
+      <div class="back-tip">确认后由服务端按天数与单价重算费用，计入收银台账单；请到收费列表收款</div>
     </div>
     <template #footer>
       <el-button round @click="backView = false">取消</el-button>
@@ -155,7 +155,7 @@ import {PageQuery, YFosterList} from "@/model/VO/BackQuery";
 import {exampleFoster, Foster} from "@/model/entiy/Foster";
 import {FosterDto} from "@/model/DO/FosterDto";
 import {Page} from "@/model/DO/Page";
-import {reqAddFoster, reqDelFoster, reqDelFosterBatch, reqFosterList, reqUpdateFoster} from "@/request/FosterApi";
+import {reqAddFoster, reqBackFoster, reqDelFoster, reqDelFosterBatch, reqFosterList, reqUpdateFoster} from "@/request/FosterApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 import {reqClientNameHavePet} from "@/request/ClientApi";
@@ -361,12 +361,10 @@ const actualDays = (): number => {
 const submitBack = (): void => {
   if (!backRow.value) return
   backSaving.value = true
-  reqUpdateFoster({
-    ...backRow.value, status: 2, backDate: backDate.value, fosterMoney: backMoney.value
-  } as Foster).then(res => {
+  reqBackFoster(backRow.value.fosterId!, backDate.value || '').then(res => {
     backSaving.value = false
     if (res.code === 1) {
-      ElMessage.success(`接回成功，结算 ￥${backMoney.value.toFixed(2)}`)
+      ElMessage.success(`接回成功，结算 ￥${backMoney.value.toFixed(2)}，已计入收银台账单`)
       backView.value = false
       sendQuery()
     } else ElMessage.error(res.msg || '操作失败')

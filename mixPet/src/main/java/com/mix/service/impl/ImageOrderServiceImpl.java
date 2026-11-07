@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.ImageOrderMapper;
@@ -20,6 +21,7 @@ import com.mix.model.entity.Pet;
 import com.mix.model.vo.ImageOrderVo;
 import com.mix.model.vo.ImageReportVo;
 import com.mix.model.vo.RequisitionVo;
+import com.mix.service.IClientNotificationService;
 import com.mix.service.IImageOrderService;
 import com.mix.service.IMedicalRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,26 +41,29 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     private final BillMapper billMapper;
     private final PetMapper petMapper;
     private final DoctorMapper doctorMapper;
+    private final IClientNotificationService notificationService;
 
     @Autowired
     public ImageOrderServiceImpl(IMedicalRecordService recordService, ImageTestMapper testMapper, BillMapper billMapper,
-                                 PetMapper petMapper, DoctorMapper doctorMapper) {
+                                 PetMapper petMapper, DoctorMapper doctorMapper,
+                                 IClientNotificationService notificationService) {
         this.recordService = recordService;
         this.testMapper = testMapper;
         this.billMapper = billMapper;
         this.petMapper = petMapper;
         this.doctorMapper = doctorMapper;
+        this.notificationService = notificationService;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result createOrder(ImageOrderVo vo, Doctor doctor) {
-        if (vo == null || vo.getRecordId() == null) return Result.error("缺少病历信息");
-        if (vo.getItemId() == null) return Result.error("请选择影像项目");
+        if (vo == null || vo.getRecordId() == null) throw new BizException("缺少病历信息");
+        if (vo.getItemId() == null) throw new BizException("请选择影像项目");
         MedicalRecord record = recordService.getById(vo.getRecordId());
-        if (record == null) return Result.error("病历不存在");
+        if (record == null) throw new BizException("病历不存在");
         ImageTest test = testMapper.selectById(vo.getItemId());
-        if (test == null || test.getIsDel() != null && test.getIsDel() == 1) return Result.error("影像项目不存在或已停用");
+        if (test == null || test.getIsDel() != null && test.getIsDel() == 1) throw new BizException("影像项目不存在或已停用");
 
         ImageOrder order = new ImageOrder();
         order.setRecordId(record.getRecordId());
@@ -73,7 +78,7 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
         order.setStatus(false);
         order.setNote(vo.getNote());
         boolean ok = this.save(order);
-        if (!ok) return Result.error("开单失败");
+        if (!ok) throw new BizException("开单失败");
 
         // 计费入账单
         Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
@@ -109,11 +114,11 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result saveReport(ImageReportVo vo) {
-        if (vo == null || vo.getOrderId() == null) return Result.error("缺少申请单id");
+        if (vo == null || vo.getOrderId() == null) throw new BizException("缺少申请单id");
         ImageOrder order = this.getById(vo.getOrderId());
-        if (order == null) return Result.error("申请单不存在");
-        if (Boolean.TRUE.equals(order.getStatus())) return Result.error("该单已出报告");
-        if (vo.getResult() == null || vo.getResult().isBlank()) return Result.error("请填写影像报告内容");
+        if (order == null) throw new BizException("申请单不存在");
+        if (Boolean.TRUE.equals(order.getStatus())) throw new BizException("该单已出报告");
+        if (vo.getResult() == null || vo.getResult().isBlank()) throw new BizException("请填写影像报告内容");
         this.lambdaUpdate()
                 .eq(ImageOrder::getOrderId, vo.getOrderId())
                 .set(ImageOrder::getResult, vo.getResult())
@@ -121,6 +126,10 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
                 .set(ImageOrder::getReportTime, LocalDateTime.now())
                 .set(ImageOrder::getStatus, true)
                 .update();
+        notificationService.notifyReport(order.getClientId(),
+                "影像报告已出具",
+                "就诊号 #" + order.getRecordId() + " 的影像检查报告已出具，可在「宠物信息」中查看完整结果",
+                "REPORT_IMAGE", "image_order", order.getOrderId());
         return Result.success("报告已提交");
     }
 
@@ -128,14 +137,14 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
     @Transactional(rollbackFor = Exception.class)
     public Result cancel(Integer orderId) {
         ImageOrder order = this.getById(orderId);
-        if (order == null) return Result.error("申请单不存在");
-        if (Boolean.TRUE.equals(order.getIsCancel())) return Result.error("该申请单已作废");
-        if (Boolean.TRUE.equals(order.getStatus())) return Result.error("已出报告的申请单不可作废");
+        if (order == null) throw new BizException("申请单不存在");
+        if (Boolean.TRUE.equals(order.getIsCancel())) throw new BizException("该申请单已作废");
+        if (Boolean.TRUE.equals(order.getStatus())) throw new BizException("已出报告的申请单不可作废");
         Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
                 .eq(Bill::getRecordId, order.getRecordId())
                 .eq(Bill::getPayStatus, false)
                 .last("limit 1"));
-        if (unpaid == null) return Result.error("未找到可冲减的未付账单（可能已收款，请走退款流程）");
+        if (unpaid == null) throw new BizException("未找到可冲减的未付账单（可能已收款，请走退款流程）");
         billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
                 .eq(Bill::getBillId, unpaid.getBillId())
                 .setSql("fee_image = fee_image - " + order.getFee().toPlainString())

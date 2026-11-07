@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.JobMapper;
 import com.mix.model.dto.JobDto;
@@ -47,7 +48,7 @@ public class JobServiceImpl extends ServiceImpl<JobMapper, Job> implements IJobS
 
     @Override
     public Result deleteById(Integer jobId) {
-        if (hasDoctor(jobId)) return Result.error("该职称下还有医生，不能删除");
+        if (hasDoctor(jobId)) throw new BizException("该职称下还有医生，不能删除");
         return Result.choice("删除", this.lambdaUpdate()
                 .eq(Job::getJobId, jobId)
                 .set(Job::getIsDel, System.currentTimeMillis())
@@ -56,9 +57,9 @@ public class JobServiceImpl extends ServiceImpl<JobMapper, Job> implements IJobS
 
     @Override
     public Result deleteByIds(List<Integer> ids) {
-        if (ids == null || ids.isEmpty()) return Result.error("请选择数据");
+        if (ids == null || ids.isEmpty()) throw new BizException("请选择数据");
         for (Integer id : ids) {
-            if (hasDoctor(id)) return Result.error("所选职称含在职医生，不能删除");
+            if (hasDoctor(id)) throw new BizException("所选职称含在职医生，不能删除");
         }
         return Result.choice("批量删除", this.lambdaUpdate()
                 .in(Job::getJobId, ids)

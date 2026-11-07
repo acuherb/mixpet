@@ -92,7 +92,7 @@ mixpet/
 ├── report/               # 报告附件存储（image/ 与 file/ 子目录）
 ├── db-backup/             # 单基线 pet_mix.sql（43表+演示数据）+ archive/ 历史脚本存档（INDEX.md 有发版压基线约定）
 ├── dev-tools/             # 开发辅助（start.sh 一键启停 / stop.sh / check.sh 等，见 WORKFLOW.md）
-├── deploy.sh             # 一键部署脚本（构建 + nginx 反代 + 启动）
+├── deploy.sh             # 一键生产部署（构建 + nginx HTTPS/WSS + systemd 守护 + logrotate）
 ├── .env                  # 本机环境变量（不入库；模板 .env.example）
 ├── CONTEXT.md            # 项目上下文与迭代日志（AI 协作约定）
 ├── DEPLOY.md             # 完整本地部署教程
@@ -140,24 +140,30 @@ cp .env.example .env    # 填入 DB_USER/DB_PASSWORD/APP_DEFAULT_PASSWORD/REMEMB
 
 ### 4. 一键部署（生产环境）
 
-仓库根目录提供 `deploy.sh`，自动完成**前端构建 → 后端打包 → 生成 nginx 反代配置 → 启动后端**：
+`deploy.sh` 自动完成**前端构建 → 后端打包 → 生成 nginx 完整站点（80 ACME/跳转、443 静态资源 + `/api` 反代 + `/chat` WSS + 安全响应头 + API/登录限流）→ 密钥收口到 `/etc/mixpet/mixpet.env` → 注册 systemd 服务（开机自启 / 崩溃重启）与 logrotate**：
 
 ```bash
-# 先按 DEPLOY.md 建库并导入基线，再补齐 24 个增量迁移脚本
-# 设置必要环境变量（至少 DB_PASSWORD / APP_DEFAULT_PASSWORD / REMEMBER_ME_KEY / VERIFY_CODE_SECRET）
-export MIXPET_DIR=/opt/mixpet                 # 项目目录（建议纯英文路径）
-export MIXPET_DOMAIN=pet.你的诊所域名.com
-export DB_USER=your_db_user
-export DB_PASSWORD=your_secure_password
+# 先按 DEPLOY.md 建库并导入单基线 pet_mix.sql（已含 P0/P1 的 pay_time/refund_money、
+# audit_log、doctor_schedule.is_del 默认值与号源索引）
+# 已有运行库升级：依次执行
+#   db-backup/feature_20261107_p0_payment_audit.sql（资金字段 + 审计表）
+#   db-backup/feature_20261107_p1_appointment_slot.sql（排班默认值 + 号源索引）
+#   db-backup/feature_20261107_p3_clinical.sql（病历留痕/化验危急值/顾客通知，均可重复执行）
+export MIXPET_DIR=/opt/mixpet                     # 项目目录（建议纯英文路径）
+export MIXPET_DOMAIN=pet.yourclinic.com           # 必填真实域名，占位域名会被拒绝
+export MIXPET_ADMIN_MAIL=admin@yourclinic.com     # --tls 时接收证书到期通知
+export DB_USER=mixpet DB_PASSWORD=your_secure_password
 export APP_DEFAULT_PASSWORD=your_secure_default_password
 export REMEMBER_ME_KEY=your_32_char_secret_key_here!
 export VERIFY_CODE_SECRET=your_32_char_jwt_key_here!
 
-bash deploy.sh            # 构建 + 生成 nginx 配置 + 启动后端
-bash deploy.sh --tls      # 额外申请 Let's Encrypt 证书并启用 HTTPS/WSS
-bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
+sudo -E bash deploy.sh --tls --firewall   # -E 保留环境变量；首次部署必须 --tls 才有 HTTPS
+# 二次部署会自动复用 /etc/mixpet/mixpet.env，不必重新贴密钥
+# 容器 / 无 systemd：sudo -E bash deploy.sh --no-systemd
 ```
 
+> 服务运维：`systemctl status mixpet`、`journalctl -u mixpet -f`、`tail -f /var/log/mixpet/backend.log`（logrotate 保留 14 天）。生产走 `prod` profile，路径/端口/邮件全部由环境变量提供，详见 [DEPLOY.md](./DEPLOY.md) 10.5。
+>
 > 上线前仍须：① 改默认口令 ② 清测试数据（见 [DEPLOY.md](./DEPLOY.md) 10.2）。脚本不执行数据库迁移与清数据。
 
 ---
@@ -179,8 +185,14 @@ bash deploy.sh --firewall # 额外配置 ufw（放行 22/443 并启用）
 | `APP_DEFAULT_PASSWORD` | *（无）* | 新建/重置账号默认口令，**生产必须设置** |
 | `REMEMBER_ME_KEY` | *（无）* | 记住我 Cookie 签名密钥（至少 32 字符），**生产必须设置** |
 | `VERIFY_CODE_SECRET` | *（无）* | JWT 验证码令牌密钥（至少 32 字符），**生产必须设置** |
+| `MIXPET_DOMAIN` | 内置占位域名 | 生产域名，`deploy.sh` 拒绝占位值 |
+| `SPRING_PROFILES_ACTIVE` | `dev` | `deploy.sh` 自动设为 `prod`（`application-prod.yml`） |
+| `SERVER_PORT` | `8085` | 后端端口，nginx 反代目标 |
+| `COOKIE_SECURE` | `true`（prod） | HTTPS 下会话 Cookie 必须为 Secure |
+| `MIXPET_DIR` / `MIXPET_DIST` | `/opt/mixpet` / `mix-ui/dist` | 项目根目录 / 前端产物目录 |
+| `BACKUP_DIR` | `$MIXPET_DIR/db-backup/runtime/` | prod 下数据备份落盘目录 |
 
-> ⚠️ **安全提示**：以上所有默认值为空，生产部署时必须通过环境变量设置。建议复制 [.env.example](./.env.example) 并填入真实值后，在启动脚本中通过 `source` 加载。
+> ⚠️ **安全提示**：以上所有默认值为空，生产部署时必须通过环境变量设置。建议复制 [.env.example](./.env.example) 并填入真实值后，在启动脚本中通过 `source` 加载；`deploy.sh` 会把最终值写入仅 root 与服务用户可读的 `/etc/mixpet/mixpet.env`。
 
 ---
 

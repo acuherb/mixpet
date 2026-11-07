@@ -2,6 +2,7 @@ package com.mix.controller;
 
 import com.mix.common.Result;
 import com.mix.common.SendMail;
+import com.mix.common.VerifyCodeStore;
 import com.mix.mapper.ClientMapper;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.Doctor;
@@ -16,8 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/login")
@@ -25,13 +24,15 @@ public class LoginController {
     private final ClientMapper clientMapper;
     private final SendMail sendMail;
     private final JwtUtil jwtUtil;
-    private final Map<String, Long> mailSendTime = new ConcurrentHashMap<>();
+    private final VerifyCodeStore verifyCodeStore;
 
     @Autowired
-    public LoginController(ClientMapper clientMapper, SendMail sendMail, JwtUtil jwtUtil) {
+    public LoginController(ClientMapper clientMapper, SendMail sendMail, JwtUtil jwtUtil,
+                           VerifyCodeStore verifyCodeStore) {
         this.clientMapper = clientMapper;
         this.sendMail = sendMail;
         this.jwtUtil = jwtUtil;
+        this.verifyCodeStore = verifyCodeStore;
     }
 
     @GetMapping
@@ -58,18 +59,15 @@ public class LoginController {
     @GetMapping("/regMail")
     public Result sendRegMail(String mail, HttpSession session) {
         if (StrUtil.isWhite(mail)) return Result.error("邮箱不能为空");
-        long now = System.currentTimeMillis();
-        Long lastTime = mailSendTime.get(mail);
-        if (lastTime != null && now - lastTime < 30 * 1000)
-            return Result.error("发送邮件需要间隔30s");
+        if (!verifyCodeStore.trySend(mail)) return Result.error("发送邮件需要间隔30s");
         String code = sendMail.sendQQEmail(mail);
         if (code != null) {
-            mailSendTime.merge(mail, now, (old, v) -> now);
-            String token = jwtUtil.generateVerifyCode(mail, null, code);
-            // 同步写 Session：顾客端「绑定邮箱」走 Session 校验（与 JWT token 两条链路都覆盖）
-            session.setAttribute(mail, code);
-            // 必须用 data()：success(String) 会把 token 当 msg 塞进 msg 字段，前端取 res.data 得到 undefined
-            // （2026-10-22 线上事故：注册提交提示「请先获取验证码」）
+            // 验证码只存服务端；下发的 token 仅包含一次性 id，base64 解码也拿不到验证码
+            String token = jwtUtil.generateVerifyCode(mail, null,
+                    verifyCodeStore.issue(mail, null, code));
+            // 顾客端「绑定邮箱」链路：Session 里只放 token，不再放明文验证码
+            session.setAttribute(mail, token);
+            // 必须用 data()：success(String) 会把 token 当 msg 塞进 msg 字段
             return Result.data(token);
         }
         return Result.error("邮件发送失败");
@@ -97,11 +95,9 @@ public class LoginController {
         String token = combined.substring(0, sepIdx);
         String userCode = combined.substring(sepIdx + 1);
 
-        String savedCode = jwtUtil.validateAndGetCode(token, registerVo.mail());
-        if (savedCode == null) return Result.error("验证码已过期，请重新获取");
-        if (!savedCode.equalsIgnoreCase(userCode.toUpperCase())) {
-            return Result.error("验证码不正确");
-        }
+        String jti = jwtUtil.validateAndGetJti(token, registerVo.mail());
+        if (jti == null || !verifyCodeStore.verify(jti, registerVo.mail(), null, userCode))
+            return Result.error("验证码不正确或已过期");
 
         Client client = new Client();
         client.setClientUsername(registerVo.tel());
@@ -133,15 +129,11 @@ public class LoginController {
         if (StrUtil.isWhite(username)) return Result.error("账号不能为空");
         if (StrUtil.isWhite(mail)) return Result.error("邮箱不能为空");
         if (clientMapper.sureMail(username, mail) == 0) return Result.error("账号邮箱不匹配");
-        long now = System.currentTimeMillis();
-        Long lastTime = mailSendTime.get(mail);
-        if (lastTime != null && now - lastTime < 30 * 1000)
-            return Result.error("发送邮件需要间隔30s");
+        if (!verifyCodeStore.trySend(mail)) return Result.error("发送邮件需要间隔30s");
         String code = sendMail.sendQQEmail(mail);
         if (code != null) {
-            mailSendTime.merge(mail, now, (old, v) -> now);
-            String token = jwtUtil.generateVerifyCode(mail, username, code);
-            // 同 regMail：token 必须走 data 字段（success(String) 会把它当 msg）
+            String token = jwtUtil.generateVerifyCode(mail, username,
+                    verifyCodeStore.issue(mail, username, code));
             return Result.data(token);
         }
         return Result.error("邮件发送失败");
@@ -152,7 +144,8 @@ public class LoginController {
         String username = regVo.username();
         String combined = regVo.code();
         if (StrUtil.isWhite(username)) return Result.error("账号不能为空");
-        if (StrUtil.isWhite(regVo.password()) || regVo.password().length() < 6) return Result.error("新密码至少6位");
+        if (StrUtil.isWhite(regVo.password()) || regVo.password().length() < 6)
+            return Result.error("新密码至少6位");
         if (StrUtil.isWhite(combined)) return Result.error("验证码不能为空");
 
         int sepIdx = combined.indexOf('|');
@@ -160,11 +153,9 @@ public class LoginController {
         String token = combined.substring(0, sepIdx);
         String userCode = combined.substring(sepIdx + 1);
 
-        String savedCode = jwtUtil.validateAndGetCode(token, regVo.mail(), regVo.username());
-        if (savedCode == null) return Result.error("验证码已过期，请重新获取");
-        if (!savedCode.equalsIgnoreCase(userCode.toUpperCase())) {
-            return Result.error("验证码不正确");
-        }
+        String jti = jwtUtil.validateAndGetJti(token, regVo.mail(), username);
+        if (jti == null || !verifyCodeStore.verify(jti, regVo.mail(), username, userCode))
+            return Result.error("验证码不正确或已过期");
 
         boolean isFind = clientMapper.updatePwdByUsername(regVo.getReallyPwd(), regVo.username());
         return Result.choice("密码重置", isFind);

@@ -1,7 +1,7 @@
 import {Page} from "@/model/DO/Page";
 import reqApi from "@/request/reqAPI";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
-import {Prescription, RecordVo} from "@/model/entiy/MedicalRecord";
+import {Prescription, RecordRevision, RecordVo} from "@/model/entiy/MedicalRecord";
 import {MedicalRecord} from "@/model/entiy/MedicalRecord";
 import {PetHistory} from "@/model/VO/PetHistory";
 import {RecordFull, RecordQuery} from "@/model/VO/RecordFull";
@@ -39,9 +39,15 @@ export const reqFinishRecord = (recordId: number, force = false): Promise<Res> =
 // 作废就诊（仅接诊中，需填原因）
 export const reqCancelRecord = (recordId: number, reason: string): Promise<Res> =>
     reqApi.put<string, Res>("record/cancel/" + recordId, {}, {params: {reason}})
-// 未完绪病历修改（内容字段：主诉/查体/诊断/治疗/医嘱/备注/复诊/分诊/体征）
+// 未完绪病历修改（内容字段：主诉/查体/诊断/治疗/医嘱/备注/复诊/分诊/体征；带 version 做乐观锁）
 export const reqUpdateRecord = (record: MedicalRecord): Promise<Res> =>
     reqApi.put<string, Res>("record", record)
+// 病历审核（仅已完结）
+export const reqReviewRecord = (recordId: number): Promise<Res> =>
+    reqApi.put<string, Res>("record/review/" + recordId, {})
+// 病历版本历史（变更前快照）
+export const reqRecordRevisions = (recordId: number): Promise<RecordRevision[]> =>
+    reqApi<string, RecordRevision[]>("record/revisions/" + recordId)
 // 宠物病史速览（接诊侧栏）
 export const reqPetHistory = (petId: number): Promise<PetHistory> =>
     reqApi<string, PetHistory>("record/petHistory/" + petId)

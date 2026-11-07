@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -72,5 +73,21 @@ public class FosterController {
     public Result update(@RequestBody Foster foster) {
         if (foster.getFosterMoney() <= 0) return Result.error("金额必须大于零");
         return Result.choice("修改", fosterService.updateFoster(foster));
+    }
+
+    /** 接回结算：金额一律由后端按天数×单价重算，前端只传日期 */
+    @PutMapping("/back/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result back(@PathVariable Integer id, @RequestBody java.util.Map<String, String> body) {
+        LocalDate backDate = null;
+        String s = body == null ? null : body.get("backDate");
+        if (s != null && !s.isBlank()) {
+            try {
+                backDate = LocalDate.parse(s.length() > 10 ? s.substring(0, 10) : s);
+            } catch (Exception e) {
+                return Result.error("接回日期格式不正确");
+            }
+        }
+        return fosterService.back(id, backDate);
     }
 }

@@ -28,15 +28,15 @@ export const backstage: RouteRecordRaw[] = [
     }, {
         // 病例中心（病历检索 + 全量档案）
         path: "z-recordList",
-        component: () => import('@/views/backstage/z-recordList.vue')
+        redirect: "/doctorPage/d-record"
     }, {
         // 处方笺档案（734号：调档/补打/作废）
         path: "z-rxArchive",
-        component: () => import('@/views/backstage/z-rxArchive.vue')
+        redirect: "/doctorPage/z-rxArchive"
     }, {
         // 检验/影像报告单打印
         path: "z-examReport",
-        component: () => import('@/views/backstage/z-examReport.vue')
+        redirect: "/doctorPage/z-examReport"
     }, {
         // 科室表
         path: "x-departmentList",
@@ -48,15 +48,15 @@ export const backstage: RouteRecordRaw[] = [
     }, {
         // 检验/影像申请单（国标，可打印）
         path: "z-requisition",
-        component: () => import('@/views/backstage/z-requisition.vue')
+        redirect: "/doctorPage/z-requisition"
     }, {
         // 随访/复诊提醒
         path: "z-remind",
-        component: () => import('@/views/backstage/z-remind.vue')
+        redirect: "/doctorPage/z-remind"
     }, {
         // 随访记录管理
         path: "z-follow",
-        component: () => import('@/views/backstage/z-follow.vue')
+        redirect: "/doctorPage/z-follow"
     }, {
         // 系统设置/字典（集中管理各模块枚举）
         path: "z-setting",
@@ -88,15 +88,15 @@ export const backstage: RouteRecordRaw[] = [
     }, {
         // 手术/麻醉管理
         path: "z-surgery",
-        component: () => import('@/views/backstage/z-surgery.vue')
+        redirect: "/doctorPage/z-surgery"
     }, {
         // 电子病历模板
         path: "z-template",
-        component: () => import('@/views/backstage/z-template.vue')
+        redirect: "/doctorPage/z-template"
     }, {
         // 手术/麻醉知情同意书（可打印）
         path: "z-consent",
-        component: () => import('@/views/backstage/z-consent.vue')
+        redirect: "/doctorPage/z-consent"
     },{
         // 领养表
         path: "y-adoptList",
@@ -132,31 +132,31 @@ export const backstage: RouteRecordRaw[] = [
     }, {
         // 检验项字典
         path: "z-labTest",
-        component: () => import('@/views/backstage/z-labTest.vue')
+        redirect: "/doctorPage/z-labTest"
     }, {
         // 医技结果录入：统一入口（化验+影像）
         path: "z-examResult",
-        component: () => import('@/views/backstage/z-examResult.vue')
+        redirect: "/doctorPage/z-examResult"
     }, {
         // 化验结果录入（兼容旧路径，重定向到统一入口）
         path: "z-labResult",
-        redirect: "/backstage/z-examResult?tab=lab"
+        redirect: "/doctorPage/z-examResult?tab=lab"
     }, {
         // 住院管理
         path: "z-hospital",
-        component: () => import('@/views/backstage/z-hospital.vue')
+        redirect: "/doctorPage/z-hospital"
     }, {
         // 影像项字典
         path: "z-imageTest",
-        component: () => import('@/views/backstage/z-imageTest.vue')
+        redirect: "/doctorPage/z-imageTest"
     }, {
         // 影像报告录入（兼容旧路径，重定向到统一入口）
         path: "z-imageResult",
-        redirect: "/backstage/z-examResult?tab=image"
+        redirect: "/doctorPage/z-examResult?tab=image"
     }, {
         // 免疫档案
         path: "z-immune",
-        component: () => import('@/views/backstage/z-immune.vue')
+        redirect: "/doctorPage/z-immune"
     }, {
         // 聊天数据清理
         path: "z-chatClean",
@@ -164,10 +164,12 @@ export const backstage: RouteRecordRaw[] = [
     }, {
         // 数据备份/还原（仅超管 ADMIN 可见可操作）
         path: "z-backup",
+        meta: {minAuthLv: 8},
         component: () => import('@/views/backstage/z-backup.vue')
     }, {
         // 操作日志（高危写操作留痕，管理者以上可查）
         path: "z-auditLog",
+        meta: {minAuthLv: 6},
         component: () => import('@/views/backstage/z-auditLog.vue')
     }
 ]

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.AdoptMapper;
 import com.mix.model.dto.AdoptDto;
 import com.mix.model.entity.Adopt;
@@ -14,10 +15,12 @@ import com.mix.model.entity.PetTransfer;
 import com.mix.mapper.PetMapper;
 import com.mix.mapper.PetTransferMapper;
 import com.mix.service.IAdoptService;
+import com.mix.service.IBillService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import java.util.List;
@@ -35,11 +38,13 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
 
     private final PetMapper petMapper;
     private final PetTransferMapper petTransferMapper;
+    private final IBillService billService;
 
     @Autowired
-    public AdoptServiceImpl(PetMapper petMapper, PetTransferMapper petTransferMapper) {
+    public AdoptServiceImpl(PetMapper petMapper, PetTransferMapper petTransferMapper, IBillService billService) {
         this.petMapper = petMapper;
         this.petTransferMapper = petTransferMapper;
+        this.billService = billService;
     }
 
     @Override
@@ -67,15 +72,15 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     @Transactional(rollbackFor = Exception.class)
     public Result adoptAdopt(AdoptVo adoptVo) {
         // 查看是否有主
-        if (baseMapper.petMaster(adoptVo.adoptId()) > 0) return Result.error("此物有主");
+        if (baseMapper.petMaster(adoptVo.adoptId()) > 0) throw new BizException("此物有主");
         // 无主则判断是否正常操作
-        if (adoptVo.isAdopt() == null) return Result.error("你不对劲");
+        if (adoptVo.isAdopt() == null) throw new BizException("你不对劲");
         // 正常操作则进行同意or拒绝
         if (adoptVo.isAdopt()) {
             String petInfo = "它有了温暖的家，感恩";
             // 1. 先查出领养单，拿到 petId 和 新主人 clientId
             Adopt adopt = this.getById(adoptVo.adoptId());
-            if (adopt == null) return Result.error("领养单不存在");
+            if (adopt == null) throw new BizException("领养单不存在");
             // 2. 原主人（应为 null）
             Pet pet = petMapper.selectById(adopt.getPetId());
             Integer fromClientId = pet == null ? null : pet.getClientId();
@@ -95,6 +100,11 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
                             ? "领养"
                             : "领养：" + applyInfo);
             petTransferMapper.insert(transfer);
+            // 5. 领养服务费并入统一账单（无病历号，记入「套餐/服务费」分项）
+            if (adopt.getAdoptMoney() != null && adopt.getAdoptMoney() > 0) {
+                billService.addCharge(adopt.getClientId(), adopt.getPetId(), null,
+                        BigDecimal.valueOf(adopt.getAdoptMoney()), "fee_package");
+            }
             return Result.choice("领养", true);
         } else {
             String reason = adoptVo.refuseReason();
@@ -112,11 +122,11 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     @Transactional(rollbackFor = Exception.class)
     public Result undoAdopt(Integer adoptId) {
         Adopt adopt = this.getById(adoptId);
-        if (adopt == null) return Result.error("领养单不存在");
-        if (adopt.getInAdopt() != 1) return Result.error("只有已通过的单子可以撤回");
+        if (adopt == null) throw new BizException("领养单不存在");
+        if (adopt.getInAdopt() != 1) throw new BizException("只有已通过的单子可以撤回");
 
         Pet pet = petMapper.selectById(adopt.getPetId());
-        if (pet == null) return Result.error("宠物不存在");
+        if (pet == null) throw new BizException("宠物不存在");
 
         // 1. 宠物变回无主
         // 注意：MP 的 updateById 默认跳过 null 字段，必须用 UpdateWrapper 显式 set null
@@ -146,8 +156,8 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     @Transactional(rollbackFor = Exception.class)
     public Result returnPet(Integer petId, Integer clientId) {
         Pet pet = petMapper.selectById(petId);
-        if (pet == null) return Result.error("宠物不存在");
-        if (!clientId.equals(pet.getClientId())) return Result.error("该宠物不在您名下");
+        if (pet == null) throw new BizException("宠物不存在");
+        if (!clientId.equals(pet.getClientId())) throw new BizException("该宠物不在您名下");
 
         // 1. 宠物变回无主（MP 的 updateById 默认跳过 null，必须显式 set null）
         petMapper.update(null, new LambdaUpdateWrapper<Pet>()
@@ -178,8 +188,8 @@ public class AdoptServiceImpl extends ServiceImpl<AdoptMapper, Adopt> implements
     @Override
     public Result restartAdopt(Integer adoptId) {
         Adopt adopt = this.getById(adoptId);
-        if (adopt == null) return Result.error("领养单不存在");
-        if (adopt.getInAdopt() != 0) return Result.error("只有已拒绝的单子可以重启");
+        if (adopt == null) throw new BizException("领养单不存在");
+        if (adopt.getInAdopt() != 0) throw new BizException("只有已拒绝的单子可以重启");
         return Result.choice("重启", baseMapper.restart(adoptId));
     }
 

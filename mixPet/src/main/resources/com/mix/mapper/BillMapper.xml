@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mix.mapper.BillMapper">
-    <!--收费列表分页：联查宠物/客户/医生名、客户余额；已付账单的收款时间取 update_time-->
+    <!--收费列表分页：联查宠物/客户/医生名、客户余额；收款时间取独立列 pay_time-->
     <select id="selectBillPage" resultType="com.mix.model.dto.BillDto">
         SELECT
         b.bill_id, b.client_id, b.pet_id, b.record_id,
@@ -9,8 +9,7 @@
         b.discount, b.discount_money, b.real_money,
         b.pay_status, b.pay_type, b.pay_by, b.dispense_status, b.dispense_by, b.dispense_time,
         b.refund_status, b.refund_by, b.refund_reason, b.refund_time,
-        b.create_time,
-        CASE WHEN b.pay_status = 1 THEN b.update_time END AS pay_time,
+        b.refund_money, b.pay_time, b.create_time,
         c.client_name, c.client_tel, c.client_balance,
         p.pet_name, d.doctor_name
         FROM bill b

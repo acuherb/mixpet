@@ -14,7 +14,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
+import java.security.SecureRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -82,8 +82,36 @@ public class SendMail {
      * @param verifySize 验证码长度
      * @return 验证码字符
      */
+    /**
+     * 个性化提醒邮件：只发给单个客户，正文不含其他客户信息。
+     * 与验证码邮件分开，避免改动 sendQQEmail 的签名与内容。
+     */
+    public boolean sendReminderMail(String to, String subject, String content) {
+        if (!isValidEmail(to)) return false;
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject("【" + hospitalName() + "】" + subject);
+            String safe = content == null ? "" : content
+                    .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                    .replace("\n", "<br>");
+            helper.setText("<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;font-size:14px;"
+                    + "color:#333;border-left:4px solid " + brandColor()
+                    + ";padding:12px 16px;background:#f7f9fb\">" + safe + "</div>"
+                    + "<p style='color:#888;font-size:12px'>本邮件由 " + hospitalName()
+                    + " 系统自动发送，请勿回复。</p>", true);
+            mailSender.send(message);
+            return true;
+        } catch (Exception e) {
+            log.warn("提醒邮件发送失败 to={} err={}", to, e.getMessage());
+            return false;
+        }
+    }
+
     public static String bornVerifyCode(int verifySize) {
-        Random rand = new Random();
+        SecureRandom rand = new SecureRandom();
         StringBuilder verifyCode = new StringBuilder(verifySize);
         for (int i = 0; i < verifySize; i++) {
             verifyCode.append(CHARS[rand.nextInt(CHARS.length)]);
@@ -108,7 +136,7 @@ public class SendMail {
             messageHelper.setFrom(hospName + " <" + from + ">");
             messageHelper.setTo(to);
             messageHelper.setSubject("【" + hospName + "】邮箱验证码");
-            String code = bornVerifyCode(4);
+            String code = bornVerifyCode(6);
             messageHelper.setText(buildHtml(code, hospName, brand), true);
             mailSender.send(message);
             log.info("成功向{}发送邮件（发件人显示名：{}）", to, hospName);

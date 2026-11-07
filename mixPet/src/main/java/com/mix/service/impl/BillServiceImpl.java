@@ -1,8 +1,10 @@
 package com.mix.service.impl;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.mix.common.BizException;
 import com.mix.common.Result;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.DrugMapper;
@@ -23,11 +25,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 账单 Service 实现
+ * 账单 Service 实现。
+ * 资金相关写操作统一「先条件抢占状态（CAS）→ 再改钱/库存」，失败抛 BizException 触发事务回滚，
+ * 避免双点/重试造成重复扣款、重复发药、重复退款与半截数据。
  */
 @Service
 public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IBillService {
@@ -53,104 +58,182 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
         return baseMapper.selectBillPage(new Page<>(numPage, pageSize), seaName, payStatus);
     }
 
+    /** 费用分项列名白名单：禁止把前端字符串直接拼进 SQL */
+    private static final java.util.Set<String> FEE_COLUMNS = java.util.Set.of(
+            "fee_register", "fee_treat", "fee_drug", "fee_lab", "fee_hospital",
+            "fee_image", "fee_package", "fee_surgery", "fee_immune");
+
+    @Override
+    public Integer addCharge(Integer clientId, Integer petId, Integer recordId,
+                             BigDecimal amount, String feeColumn) {
+        if (clientId == null || petId == null) throw new BizException("缺少客户或宠物信息");
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
+            throw new BizException("计费金额必须大于0");
+        if (!FEE_COLUMNS.contains(feeColumn)) throw new BizException("非法费用分项");
+
+        // 未付账单定位：无病历号（寄养/领养）时必须用 isNull，否则 record_id = null 恒 false 会永远新建
+        List<Bill> candidates = this.lambdaQuery()
+                .eq(Bill::getClientId, clientId)
+                .eq(Bill::getPetId, petId)
+                .eq(Bill::getPayStatus, false)
+                .eq(recordId != null, Bill::getRecordId, recordId)
+                .isNull(recordId == null, Bill::getRecordId)
+                .last("limit 1")
+                .list();
+        String amt = amount.toPlainString();
+        if (!candidates.isEmpty()) {
+            Bill unpaid = candidates.get(0);
+            this.lambdaUpdate()
+                    .eq(Bill::getBillId, unpaid.getBillId())
+                    .eq(Bill::getPayStatus, false)
+                    .setSql(feeColumn + " = COALESCE(" + feeColumn + ", 0) + " + amt)
+                    .setSql("total_money = COALESCE(total_money, 0) + " + amt)
+                    .update();
+            return unpaid.getBillId();
+        }
+
+        Bill bill = new Bill();
+        bill.setClientId(clientId);
+        bill.setPetId(petId);
+        bill.setRecordId(recordId);
+        bill.setFeeRegister(BigDecimal.ZERO);
+        bill.setFeeTreat(BigDecimal.ZERO);
+        bill.setFeeDrug(BigDecimal.ZERO);
+        bill.setFeeLab(BigDecimal.ZERO);
+        bill.setFeeHospital(BigDecimal.ZERO);
+        bill.setFeeImage(BigDecimal.ZERO);
+        bill.setFeePackage(BigDecimal.ZERO);
+        bill.setFeeSurgery(BigDecimal.ZERO);
+        bill.setFeeImmune(BigDecimal.ZERO);
+        bill.setTotalMoney(amount);
+        bill.setDiscount(memberService.discountOf(clientId));
+        bill.setPayStatus(false);
+        bill.setPayType(false);
+        switch (feeColumn) {
+            case "fee_register" -> bill.setFeeRegister(amount);
+            case "fee_treat" -> bill.setFeeTreat(amount);
+            case "fee_drug" -> bill.setFeeDrug(amount);
+            case "fee_lab" -> bill.setFeeLab(amount);
+            case "fee_hospital" -> bill.setFeeHospital(amount);
+            case "fee_image" -> bill.setFeeImage(amount);
+            case "fee_package" -> bill.setFeePackage(amount);
+            case "fee_surgery" -> bill.setFeeSurgery(amount);
+            case "fee_immune" -> bill.setFeeImmune(amount);
+            default -> throw new BizException("非法费用分项");
+        }
+        this.save(bill);
+        return bill.getBillId();
+    }
+
+    /** 无病历号的账单（寄养/领养）没有处方行 */
+    private List<Prescription> prescriptionsOf(Bill bill) {
+        return bill.getRecordId() == null
+                ? List.of()
+                : prescriptionMapper.selectByRecord(bill.getRecordId());
+    }
+
+    private static BigDecimal nz(BigDecimal v) {
+        return v == null ? BigDecimal.ZERO : v;
+    }
+
     /** 折后应付（旧账单无折扣快照时按原价，保证兼容） */
     private BigDecimal payable(Bill bill) {
         return bill.getRealMoney() != null ? bill.getRealMoney() : bill.getTotalMoney();
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result pay(Integer billId, Boolean payType) {
-        Bill bill = this.getById(billId);
-        if (bill == null) return Result.error("账单不存在");
-        if (Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单已收款，请勿重复操作");
-        // 余额支付：校验并扣减客户余额（按折后应付）
-        if (payType == null || !payType) { // false=余额（默认）
-            Client client = clientService.getById(bill.getClientId());
-            if (client == null) return Result.error("客户不存在");
-            BigDecimal due = payable(bill);
-            if (client.getClientBalance() == null
-                    || client.getClientBalance().compareTo(due) < 0)
-                return Result.error("客户余额不足（当前 " + client.getClientBalance() + " 元），请改用现金收款或先充值");
-            // 用 WHERE 条件保证原子扣减：余额不足时不更新，防并发超扣成负数
-            boolean deducted = clientService.lambdaUpdate()
-                    .eq(Client::getClientId, client.getClientId())
-                    .ge(Client::getClientBalance, due)
-                    .setSql("client_balance = client_balance - " + due.toPlainString())
-                    .update();
-            if (!deducted) return Result.error("客户余额不足，请改用现金收款或先充值");
-        }
-        // 账单标记已付（库存扣减移至「发药核对」环节，避免收款即出库）
-        // 收银者留痕：后台账号均为医生实体（auth_lv 分级），取当前登录人姓名
-        String payBy = null;
-        if (UserUtil.getUser() instanceof Doctor operator) payBy = operator.getDoctorName();
-        this.lambdaUpdate()
-                .eq(Bill::getBillId, billId)
-                .set(Bill::getPayStatus, true)
-                .set(Bill::getPayType, payType != null && payType)
-                .set(Bill::getPayBy, payBy)
-                .update();
-        // 会员积分累积（按折后实收 × 等级积分率）
-        memberService.earnPoints(bill.getClientId(), payable(bill));
-        // 是否有需发药药品（提示走「发药核对」出库）
-        long drugCount = prescriptionMapper.selectByRecord(bill.getRecordId()).size();
-        return Result.success(drugCount > 0
-                ? "收款成功，请到「发药核对」确认并扣减库存"
-                : "收款成功");
-    }
-
-    /** 当前登录操作人姓名（发药/退款留痕，不信任前端传参——后台账号均为 Doctor 实体） */
+    /** 当前登录操作人姓名（不信任前端传参） */
     private String currentOperator() {
         return UserUtil.getUser() instanceof Doctor d ? d.getDoctorName() : null;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    public Result pay(Integer billId, Boolean payType) {
+        Bill bill = this.getById(billId);
+        if (bill == null) throw new BizException("账单不存在");
+        if (Boolean.TRUE.equals(bill.getPayStatus())) throw new BizException("该账单已收款，请勿重复操作");
+        BigDecimal due = payable(bill);
+
+        // CAS 抢占：两个前台同时点收款时只有一个能继续（WHERE pay_status = 0）
+        boolean claimed = this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .eq(Bill::getPayStatus, false)
+                .set(Bill::getPayStatus, true)
+                .set(Bill::getPayType, payType != null && payType)
+                .set(Bill::getPayBy, currentOperator())
+                .set(Bill::getPayTime, LocalDateTime.now())
+                .update();
+        if (!claimed) throw new BizException("该账单已收款，请勿重复操作");
+
+        // 余额支付：条件原子扣减，防并发超扣成负数
+        if (payType == null || !payType) {
+            Client client = clientService.getById(bill.getClientId());
+            if (client == null) throw new BizException("客户不存在");
+            if (client.getClientBalance() == null || client.getClientBalance().compareTo(due) < 0)
+                throw new BizException("客户余额不足（当前 " + client.getClientBalance() + " 元），请改用现金收款或先充值");
+            boolean deducted = clientService.lambdaUpdate()
+                    .eq(Client::getClientId, client.getClientId())
+                    .ge(Client::getClientBalance, due)
+                    .setSql("client_balance = client_balance - " + due.toPlainString())
+                    .update();
+            if (!deducted) throw new BizException("客户余额不足，请改用现金收款或先充值");
+        }
+        memberService.earnPoints(bill.getClientId(), due);
+        long drugCount = prescriptionsOf(bill).size();
+        return Result.success(drugCount > 0
+                ? "收款成功，请到「发药核对」确认并扣减库存"
+                : "收款成功");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result dispense(Integer billId, String operator) {
-        // 操作人一律取当前登录人，忽略前端传参（防伪造他人名义发药）
         operator = currentOperator();
         Bill bill = this.getById(billId);
-        if (bill == null) return Result.error("账单不存在");
-        if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单尚未收款，无法发药");
-        if (Boolean.TRUE.equals(bill.getDispenseStatus())) return Result.error("该账单已发药，请勿重复核对");
-        // 发药核对：此刻才扣减库存（加 WHERE drug_stock >= quantity 原子校验防并发超扣），并记出入库台账
-        List<Prescription> prescriptions = prescriptionMapper.selectByRecord(bill.getRecordId());
+        if (bill == null) throw new BizException("账单不存在");
+        if (!Boolean.TRUE.equals(bill.getPayStatus())) throw new BizException("该账单尚未收款，无法发药");
+        if (Boolean.TRUE.equals(bill.getDispenseStatus())) throw new BizException("该账单已发药，请勿重复核对");
+
+        // 先抢占发药状态，再逐项扣库存；任一项失败抛异常，整体回滚（不会留下部分出库）
+        boolean claimed = this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .eq(Bill::getDispenseStatus, false)
+                .set(Bill::getDispenseStatus, true)
+                .set(Bill::getDispenseBy, operator)
+                .set(Bill::getDispenseTime, LocalDateTime.now())
+                .update();
+        if (!claimed) throw new BizException("该账单已发药，请勿重复核对");
+
+        List<Prescription> prescriptions = prescriptionsOf(bill);
         for (Prescription p : prescriptions) {
             if (p.getDrugId() == null) continue;
             Drug drug = drugMapper.selectById(p.getDrugId());
             int before = (drug != null && drug.getDrugStock() != null) ? drug.getDrugStock() : 0;
             int affected = drugMapper.update(null,
-                    new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Drug>()
+                    Wrappers.<Drug>lambdaUpdate()
                             .eq(Drug::getDrugId, p.getDrugId())
                             .ge(Drug::getDrugStock, p.getQuantity())
                             .setSql("drug_stock = drug_stock - " + p.getQuantity()));
             if (affected == 0)
-                return Result.error("「" + p.getDrugName() + "」库存不足（剩余 " + before + "），无法发药");
+                throw new BizException("「" + p.getDrugName() + "」库存不足（剩余 " + before + "），无法发药");
             drugService.logStockChange(p.getDrugId(), p.getDrugName(), 2, p.getQuantity(),
                     before, before - p.getQuantity(), "发药核对出库");
         }
-        this.lambdaUpdate()
-                .eq(Bill::getBillId, billId)
-                .set(Bill::getDispenseStatus, true)
-                .set(Bill::getDispenseBy, operator)
-                .set(Bill::getDispenseTime, LocalDateTime.now())
-                .update();
         return Result.success("发药核对完成" + (prescriptions.isEmpty() ? "" : "，药品库存已扣减"));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result refund(Integer billId, String reason, List<Integer> prescriptionIds) {
-        if (reason == null || reason.isBlank()) return Result.error("请填写退款原因");
-        // 操作人一律取当前登录人，忽略前端传参（防伪造他人名义退款）
+        if (reason == null || reason.isBlank()) throw new BizException("请填写退款原因");
         String operator = currentOperator();
         Bill bill = this.getById(billId);
-        if (bill == null) return Result.error("账单不存在");
-        if (!Boolean.TRUE.equals(bill.getPayStatus())) return Result.error("该账单未收款，无需退款");
-        if (Boolean.TRUE.equals(bill.getRefundStatus())) return Result.error("该账单已退款，请勿重复操作");
+        if (bill == null) throw new BizException("账单不存在");
+        if (!Boolean.TRUE.equals(bill.getPayStatus())) throw new BizException("该账单未收款，无需退款");
+        if (Boolean.TRUE.equals(bill.getRefundStatus())) throw new BizException("该账单已退款，请勿重复操作");
         boolean wasBalance = bill.getPayType() == null || !bill.getPayType();
-        // 选中要退的处方行：不传=整单退（该单所有未取消行）；传了=部分退（归属+未退过滤，防越权/重复退）
-        List<Prescription> allActive = prescriptionMapper.selectByRecord(bill.getRecordId());
+
+        List<Prescription> allActive = prescriptionsOf(bill);
         List<Prescription> picked;
         boolean partial;
         if (prescriptionIds != null && !prescriptionIds.isEmpty()) {
@@ -158,71 +241,79 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                     .filter(p -> p.getRecordId().equals(bill.getRecordId()))
                     .filter(p -> !Boolean.TRUE.equals(p.getIsCancel()))
                     .toList();
-            if (picked.isEmpty()) return Result.error("所选处方行不存在、不属于本单，或已退款/已作废");
+            if (picked.isEmpty()) throw new BizException("所选处方行不存在、不属于本单，或已退款/已作废");
             partial = true;
         } else {
             picked = allActive;
             partial = false;
         }
-        // 退款金额 = 选中行 单价×数量 之和（药品零售价部分）
-        BigDecimal refundFee = picked.stream()
-                .map(p -> (p.getDrugPrice() == null ? BigDecimal.ZERO : p.getDrugPrice())
-                        .multiply(BigDecimal.valueOf(p.getQuantity() == null ? 0 : p.getQuantity())))
+
+        // 逐行 CAS 抢占 is_cancel：并发重复退款只有一个请求能成功
+        for (Prescription p : picked) {
+            int affected = prescriptionMapper.update(null, Wrappers.<Prescription>lambdaUpdate()
+                    .eq(Prescription::getPrescriptionId, p.getPrescriptionId())
+                    .eq(Prescription::getIsCancel, false)
+                    .set(Prescription::getIsCancel, true));
+            if (affected == 0) throw new BizException("所选处方行已退款/已作废，请刷新后重试");
+        }
+
+        // 金额口径：收款按 real_money（折后），退款必须同口径；整单退按剩余实收全退（含非药费用）
+        BigDecimal real = bill.getRealMoney() != null ? bill.getRealMoney() : nz(bill.getTotalMoney());
+        BigDecimal remaining = real.subtract(nz(bill.getRefundMoney()));
+        BigDecimal discount = bill.getDiscount() == null ? BigDecimal.ONE : bill.getDiscount();
+        BigDecimal originalFee = picked.stream()
+                .map(p -> nz(p.getDrugPrice()).multiply(BigDecimal.valueOf(p.getQuantity() == null ? 0 : p.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (refundFee.compareTo(BigDecimal.ZERO) <= 0) return Result.error("退款金额必须大于0");
-        // 选中行标记已退（is_cancel=true）：防重复退，且小票/发票/发药核对（selectByRecord 过滤 is_cancel）自动排除
-        prescriptionMapper.update(null, com.baomidou.mybatisplus.core.toolkit.Wrappers.<Prescription>lambdaUpdate()
-                .in(Prescription::getPrescriptionId, picked.stream().map(Prescription::getPrescriptionId).toList())
-                .set(Prescription::getIsCancel, true));
-        // 回滚库存 + 记台账（仅「已发药核对」才扣过库存，需回库；已作废/未发药处方未扣，无需回滚）
+        boolean fullRefund = !partial;
+        BigDecimal refundFee = fullRefund
+                ? remaining
+                : originalFee.multiply(discount).setScale(2, RoundingMode.HALF_UP);
+        if (refundFee.compareTo(remaining) > 0) refundFee = remaining;
+        if (refundFee.compareTo(BigDecimal.ZERO) <= 0) throw new BizException("该账单无可退金额");
+
+        // 回库（仅「已发药核对」才扣过库存）
         if (Boolean.TRUE.equals(bill.getDispenseStatus())) {
             for (Prescription p : picked) {
                 if (p.getDrugId() == null) continue;
                 Drug drug = drugMapper.selectById(p.getDrugId());
                 int before = (drug != null && drug.getDrugStock() != null) ? drug.getDrugStock() : 0;
-                drugMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<Drug>()
+                drugMapper.update(null, Wrappers.<Drug>lambdaUpdate()
                         .eq(Drug::getDrugId, p.getDrugId())
                         .setSql("drug_stock = drug_stock + " + p.getQuantity()));
                 drugService.logStockChange(p.getDrugId(), p.getDrugName(), 3, p.getQuantity(),
                         before, before + p.getQuantity(), "退款回库");
             }
         }
-        // 账单冲减：药品费与总价减去退款金额（非药品费用不动）
+
+        // 账单原始金额保持可追溯，只累加「累计已退金额」，报表按 real_money - refund_money 计算
         this.lambdaUpdate()
                 .eq(Bill::getBillId, billId)
-                .setSql("fee_drug = fee_drug - " + refundFee.toPlainString())
-                .setSql("total_money = total_money - " + refundFee.toPlainString())
+                .setSql("refund_money = refund_money + " + refundFee.toPlainString())
                 .update();
-        // 余额支付才退还余额（现金收款无余额变动，提示线下退）
+
         if (wasBalance) {
-            Client client = clientService.getById(bill.getClientId());
-            if (client != null) {
-                clientService.lambdaUpdate()
-                        .eq(Client::getClientId, client.getClientId())
-                        .setSql("client_balance = client_balance + " + refundFee.toPlainString())
-                        .update();
-            }
+            clientService.lambdaUpdate()
+                    .eq(Client::getClientId, bill.getClientId())
+                    .setSql("client_balance = client_balance + " + refundFee.toPlainString())
+                    .update();
         }
-        // 冲销收款时累积的会员积分（按退款金额反算，不足时不扣为负）
         memberService.deductPoints(bill.getClientId(), refundFee);
-        // 选中行覆盖了该单全部未退行 → 等价整单退，置退款状态；否则账单保持有效（金额已减）
-        boolean fullRefund = !partial || picked.size() == allActive.size();
+
         if (fullRefund) {
-            this.lambdaUpdate()
+            boolean claimed = this.lambdaUpdate()
                     .eq(Bill::getBillId, billId)
+                    .eq(Bill::getRefundStatus, false)
                     .set(Bill::getRefundStatus, true)
                     .set(Bill::getRefundBy, operator)
                     .set(Bill::getRefundReason, reason)
                     .set(Bill::getRefundTime, LocalDateTime.now())
                     .update();
+            if (!claimed) throw new BizException("该账单已退款，请勿重复操作");
         }
-        return Result.success(fullRefund
-                ? "退款成功：￥" + refundFee.toPlainString()
+        return Result.success((fullRefund ? "退款成功：" : "部分退款成功：")
+                + "退 ￥" + refundFee.toPlainString()
                 + (Boolean.TRUE.equals(bill.getDispenseStatus()) ? "，库存已回滚" : "")
                 + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）")
-                : "部分退款成功：退 ￥" + refundFee.toPlainString() + "（" + picked.size() + "/" + allActive.size() + " 行）"
-                + (Boolean.TRUE.equals(bill.getDispenseStatus()) ? "，库存已回滚" : "")
-                + (wasBalance ? "，余额已退还" : "（现金收款，请线下退现金）")
-                + "；账单余额 ￥" + bill.getTotalMoney().subtract(refundFee).toPlainString() + " 待收");
+                + "；累计已退 ￥" + nz(bill.getRefundMoney()).add(refundFee).toPlainString());
     }
 }

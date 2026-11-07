@@ -58,7 +58,8 @@ public class NoticeController {
      */
     @GetMapping("/detail")
     public String getDetail(Integer id) {
-        return noticeService.getNoticeText(id);
+        // 内部系统公告（含全院客户/预约/疫苗明细）只允许员工读取，顾客端一律过滤
+        return noticeService.getPublicNoticeText(id);
     }
 
     @PostMapping

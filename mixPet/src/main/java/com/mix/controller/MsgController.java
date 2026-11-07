@@ -7,9 +7,11 @@ import com.mix.model.dto.NameDo;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.Doctor;
 import com.mix.model.entity.Msg;
+import com.mix.security.model.RoleConst;
 import com.mix.service.IMsgService;
 import com.mix.util.UserUtil;
 import org.slf4j.Logger;
+import org.springframework.security.access.annotation.Secured;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +50,7 @@ public class MsgController {
      * @param days 保留天数，默认90
      */
     @GetMapping("/expiredMsgNum")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public long expiredMsgNum(Integer days) {
         if (days == null) days = 90;
         return msgService.lambdaQuery()
@@ -56,33 +59,37 @@ public class MsgController {
     }
 
     /**
-     * 手动删除超过指定天数的历史聊天记录及其文件
+     * 手动删除超过指定天数的历史聊天记录及其文件（仅管理员，防任意登录用户毁证）
      *
      * @param days 保留天数，默认90
      */
     @PostMapping("/cleanExpiredMsg")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public Result cleanExpiredMsg(Integer days) {
         if (days == null) days = 90;
+        if (days < 0) return Result.error("保留天数不能为负数");
         List<Msg> expired = msgService.lambdaQuery()
                 .lt(Msg::getCreateTime, LocalDateTime.now().minusDays(days))
                 .list();
         if (expired.isEmpty()) return Result.choice("清理聊天记录", true);
-        // 删除磁盘上的图片/文件（纯文字消息 msgContent 为空则跳过）
-        // 文件名全局唯一，直接在 image/ 与 file/ 两个目录各尝试删除一次，
-        // 这样即使消息的 isImg/msgType 标记异常也能正确清理对应文件，避免漏删
+        // 文件名只能是纯文件名：msgContent 为用户可控内容，拼路径前必须校验，防 ../ 删任意文件
         List<Integer> ids = new ArrayList<>();
         for (Msg m : expired) {
             ids.add(m.getMsgId());
-            if (m.getMsgContent() != null) {
-                deleteIfExists(new File(chatPath + "image/" + m.getMsgContent()));
-                deleteIfExists(new File(chatPath + "file/" + m.getMsgContent()));
+            String name = m.getMsgContent();
+            if (isSafeFileName(name)) {
+                deleteIfExists(new File(chatPath + "image/" + name));
+                deleteIfExists(new File(chatPath + "file/" + name));
             }
         }
-        // 逻辑删除记录
         msgService.lambdaUpdate().in(Msg::getMsgId, ids)
                 .set(Msg::getIsDel, System.currentTimeMillis())
                 .update();
         return Result.choice("清理聊天记录", true);
+    }
+
+    private static boolean isSafeFileName(String name) {
+        return name != null && name.matches("[A-Za-z0-9_-]+(\\.[A-Za-z0-9]+)?");
     }
 
     private void deleteIfExists(File f) {

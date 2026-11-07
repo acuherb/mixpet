@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev # 默认使用dev配置文件
+    active: ${SPRING_PROFILES_ACTIVE:dev} # 生产由 deploy.sh 设为 prod（见 application-prod.yml）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/pet_mix?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8
@@ -54,15 +54,13 @@ mybatis-plus:
 appointment:
   max-per-day: 20 # 每位医生每日号源上限（同一医生同一自然日预约数）
 app:
-  # 新建用户/管理员重置密码的默认口令；生产必须通过环境变量 APP_DEFAULT_PASSWORD 设置（禁止硬编码）
-  default-password: ${APP_DEFAULT_PASSWORD:}
-  # JWT 验证码令牌密钥（生产必须通过环境变量设置，至少 32 字符）
-  verify-code-secret: ${VERIFY_CODE_SECRET:}
+  # 新建/重置账号默认口令：无内置兜底，缺失直接启动失败
+  default-password: ${APP_DEFAULT_PASSWORD}
+  # 验证码令牌签名密钥：≥32 字符强随机值，缺失直接启动失败
+  verify-code-secret: ${VERIFY_CODE_SECRET}
 remember-me:
-  # 记住我 Cookie 的签名密钥（生产必须通过环境变量 REMEMBER_ME_KEY 覆盖；
-  # 保留非空兜底默认值：此前默认值被替换为空，导致不走 start.sh 的启动方式
-  # （IDE/CI/冒烟）直接抛 key cannot be empty 启动失败——2026-10-22 事故）
-  key: ${REMEMBER_ME_KEY:MixPet@Remember2026}
+  # 记住我 Cookie 的 HMAC-SHA256 签名密钥：≥32 字符强随机值，缺失直接启动失败
+  key: ${REMEMBER_ME_KEY}
 # 数据备份/还原（管理后台「数据备份」页）：.sql 落盘目录，换机器用 BACKUP_DIR 覆盖
 # auto-enabled 每日 02:00 自动备份开关；auto-keep 自动备份保留份数（0=不清理；
 # 只清理 auto_ 前缀，手动备份与还原前快照 pre_restore_ 永不自动删）

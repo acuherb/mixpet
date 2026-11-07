@@ -22,4 +22,10 @@ public interface IScheduleService extends IService<DoctorSchedule> {
 
     /** 某医生当日是否出诊；未配置排班则默认放行(向后兼容) */
     boolean isOnDuty(Integer doctorId, LocalDate date);
+
+    /** 某医生当日某时段是否出诊（period：1上午 2下午） */
+    boolean isOnDuty(Integer doctorId, LocalDate date, Integer period);
+
+    /** 某医生某星期某时段的可约号源数；无排班返回 0 */
+    int maxCountOf(Integer doctorId, int weekday, int period);
 }

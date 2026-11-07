@@ -69,6 +69,10 @@ public class Bill implements Serializable {
     private String refundReason;
     /** 退款时间 */
     private LocalDateTime refundTime;
+    /** 收款时间：独立于 update_time，退款/追加处方不会刷新，日结按此列统计 */
+    private LocalDateTime payTime;
+    /** 累计已退金额（实付口径）：账单原始金额不被冲减，报表按 real_money - refund_money 计算 */
+    private BigDecimal refundMoney;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

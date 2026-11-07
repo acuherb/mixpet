@@ -1,6 +1,7 @@
 package com.mix.service.impl;
 
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.HospitalSettingMapper;
 import com.mix.model.entity.HospitalSetting;
 import com.mix.service.IHospitalSettingService;
@@ -22,7 +23,7 @@ public class HospitalSettingServiceImpl extends ServiceImpl<HospitalSettingMappe
 
     @Override
     public Result update(HospitalSetting setting) {
-        if (setting == null) return Result.error("参数不能为空");
+        if (setting == null) throw new BizException("参数不能为空");
         setting.setId(1);
         return Result.choice("保存", this.saveOrUpdate(setting));
     }

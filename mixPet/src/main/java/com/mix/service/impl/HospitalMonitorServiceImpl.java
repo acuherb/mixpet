@@ -2,6 +2,7 @@ package com.mix.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.HospitalMonitorMapper;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.Doctor;
@@ -37,10 +38,10 @@ public class HospitalMonitorServiceImpl extends ServiceImpl<HospitalMonitorMappe
 
     @Override
     public Result addMonitor(HospitalMonitor monitor) {
-        if (monitor == null || monitor.getHospitalId() == null) return Result.error("缺少住院单id");
+        if (monitor == null || monitor.getHospitalId() == null) throw new BizException("缺少住院单id");
         HospitalRecord h = hospitalService.getById(monitor.getHospitalId());
-        if (h == null) return Result.error("住院单不存在");
-        if (Boolean.TRUE.equals(h.getStatus())) return Result.error("该宠物已出院，不能添加监护记录");
+        if (h == null) throw new BizException("住院单不存在");
+        if (Boolean.TRUE.equals(h.getStatus())) throw new BizException("该宠物已出院，不能添加监护记录");
         monitor.setPetId(h.getPetId());
         if (monitor.getMonitorTime() == null) monitor.setMonitorTime(LocalDateTime.now());
         monitor.setRecorder(currentOperator());

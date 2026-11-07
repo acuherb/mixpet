@@ -140,7 +140,7 @@
     <!-- 移动端简化提示 -->
     <el-alert v-if="isMobile" :closable="false" show-icon type="warning" style="margin-bottom: 8px"
               title="您正在使用移动设备，接诊向导已简化为快速查看模式。完整操作请使用电脑端。"/>
-    <el-dialog v-model="treatView" :close-on-click-modal="false" top="4vh" width="94%" style="max-width: 800px">
+    <el-dialog v-model="treatView" :close-on-click-modal="false" :before-close="beforeCloseTreat" top="4vh" width="94%" style="max-width: 800px">
       <template #header>
         <span style="font-weight: bold">接诊向导 · {{ stepTitles[activeStep] }}</span>
         <el-tag v-if="treatAppoint" style="margin-left: 8px" type="warning">
@@ -149,6 +149,8 @@
         <el-tag v-if="orderLocked" style="margin-left: 8px" type="info">
           {{ treatStatus === 2 ? '已作废' : '已完结' }} · 只读
         </el-tag>
+        <el-tag v-if="hasDraft" style="margin-left: 8px" type="success" effect="plain">本地草稿已暂存</el-tag>
+        <el-button v-if="hasDraft && !orderLocked" size="small" link type="danger" style="margin-left: 6px" @click="discardDraft">清空草稿</el-button>
       </template>
 
       <!-- 接诊向导步骤条 -->
@@ -591,6 +593,7 @@
           <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
           <el-button type="primary" plain @click="printChoice = true">打印</el-button>
           <el-button type="success" plain @click="goCashier">去收银台收费</el-button>
+          <el-button type="info" plain @click="openRevisions">病历版本 / 审核</el-button>
         </div>
         <p class="phase-tip">确认信息无误后点「完结就诊」；有未完成事项（待出结果/待手术/待随访）会提醒，确认后仍可强制完结。</p>
       </div>
@@ -707,6 +710,31 @@
     <!-- 处方笺快捷打印（第3步保存处方后直接用，预设处方笺模式） -->
     <PrintChoiceDialog v-model="rxQuickView" preset="rx" :record-id="treatRecordId"/>
 
+    <!-- 病历版本留痕与审核入口 -->
+    <el-dialog v-model="revView" title="病历版本与审核" width="760px" append-to-body>
+      <div class="rev-tip">每次修改病历都会保存变更前的完整快照；内容修改会使原审核结论自动失效。</div>
+      <el-table :data="revisions" size="small" border max-height="340" empty-text="暂无修改记录（V1 为建档版本）">
+        <el-table-column label="变更前版本" width="120">
+          <template #default="s">V{{ s.row.revisionNo }}</template>
+        </el-table-column>
+        <el-table-column prop="editorName" label="修改人" width="110"/>
+        <el-table-column prop="changeReason" label="变更原因" width="130"/>
+        <el-table-column label="时间" width="170">
+          <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 19) }}</template>
+        </el-table-column>
+        <el-table-column label="变更前快照">
+          <template #default="s"><el-button link type="primary" size="small" @click="showSnapshot(s.row)">查看</el-button></template>
+        </el-table-column>
+      </el-table>
+      <template #footer>
+        <el-button @click="revView = false">关闭</el-button>
+        <el-button type="primary" :disabled="!treatRecordId" @click="reviewCurrent">审核病历</el-button>
+      </template>
+    </el-dialog>
+    <el-dialog v-model="snapshotView" title="变更前病历快照" width="640px" append-to-body>
+      <pre class="rev-json">{{ snapshotText }}</pre>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -716,7 +744,8 @@ import {AppointDto2} from "@/model/DO/AppointDto2";
 import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {reqUpdateAppoint} from "@/request/AppointApi";
-import {computed, onMounted, reactive, ref, watch} from "vue";
+import {computed, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {onBeforeRouteLeave} from "vue-router";
 import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
@@ -726,7 +755,8 @@ import {Delete, InfoFilled, MagicStick, Notebook, Plus, Printer} from "@element-
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqRecordRevisions, reqReviewRecord, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import type {RecordRevision} from "@/model/entiy/MedicalRecord";
 import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
 import {RecordTemplate} from "@/model/entiy/RecordTemplate";
 import {reqPackageList} from "@/request/PackageApi";
@@ -959,6 +989,10 @@ const resetOrderForms = (): void => {
 }
 
 const openTreat = (a: AppointDto2): void => {
+  // 重置期间暂停草稿自动保存，避免把空表单写进 storage 覆盖已有草稿
+  draftPaused.value = true
+  hasDraft.value = false
+  window.clearTimeout(draftTimer)
   treatAppoint.value = a
   loadPetHistory(a.petId)
   recordForm.value = exampleMedicalRecord(a.appointmentId)
@@ -971,6 +1005,7 @@ const openTreat = (a: AppointDto2): void => {
   loadImageTests()
   treatView.value = true
   treatPhase.value = 'record'
+  treatRecordId.value = 0
   activeStep.value = 0
   treatStatus.value = 0
   // 已建过病历：回显内容 + 进入开单阶段（接诊中可继续追加/修改，已完结/已作废只读）
@@ -995,13 +1030,16 @@ const openTreat = (a: AppointDto2): void => {
       recordForm.value.bloodPressure = rec.bloodPressure
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
+      // 回传版本号：后端据此做乐观锁，避免两个窗口互相覆盖病历
+      recordForm.value.version = rec.version ?? 1
       // 检验/影像已开单数与列表（tab 角标用）
       loadOrders()
       // 接诊中→进入开单步骤；已完结/已作废→直达完结结算（只读汇总）
       if ((rec.status ?? 1) === 0) enterOrders()
       else { treatPhase.value = 'orders'; activeStep.value = 3; loadSaved() }
     }
-  })
+    restoreDraft()
+  }).catch(() => { restoreDraft() })
 }
 const enterOrders = (): void => {
   treatPhase.value = 'orders'
@@ -1032,6 +1070,8 @@ const loadSaved = (): void => {
       savedPkg.value = res.packages || []
       if (res.record.feeRegister != null) recordForm.value.feeRegister = res.record.feeRegister
       if (res.record.feeTreat != null) recordForm.value.feeTreat = res.record.feeTreat
+      // 服务端回填属于「已保存状态」，同步基线，避免被当成医生改动写进草稿
+      baseline.value = draftSnapshot()
     }
   })
   reqSurgeryByRecord(treatRecordId.value).then(r => { savedSurgery.value = r || [] })
@@ -1047,7 +1087,12 @@ const submitRecord = (): void => {
       treatSubmitting.value = true
       reqUpdateRecord({...recordForm.value, recordId: treatRecordId.value}).then(res => {
         treatSubmitting.value = false
-        if (res.code === 1) { enterOrders() }
+        if (res.code === 1) {
+          // 服务端版本 +1，本地同步，否则下一次修改会被乐观锁判为「已被他人修改」
+          recordForm.value.version = (recordForm.value.version ?? 1) + 1
+          markClean()
+          enterOrders()
+        }
         else ElMessage.error(res.msg || '保存失败')
       })
       return
@@ -1067,6 +1112,7 @@ const submitRecord = (): void => {
           treatSubmitting.value = false
           if (rec) {
             treatRecordId.value = rec.recordId
+            markClean()
             enterOrders()
           }
         })
@@ -1315,6 +1361,7 @@ const finishTreat = (): void => {
 }
 const showSummary = (): void => {
   treatStatus.value = 1
+  clearDraft()
   if (treatAppoint.value) recordStatusMap.value[treatAppoint.value.appointmentId] = 1
   // 完结后直达结算步骤（汇总预览+收尾操作）
   activeStep.value = 3
@@ -1329,6 +1376,7 @@ const cancelTreat = (): void => {
     reqCancelRecord(treatRecordId.value, value).then(res => {
       if (res.code === 1) {
         ElMessage.success('已作废')
+        clearDraft()
         treatStatus.value = 2
         if (treatAppoint.value) recordStatusMap.value[treatAppoint.value.appointmentId] = 2
         treatView.value = false
@@ -1385,7 +1433,8 @@ const goDoctor = (path: string): void => {
 }
 // 去收银台：直达待收费列表（完结生成的账单在那里收款/发药）
 const goCashier = (): void => {
-  router.push('/backstage/y-billList?payStatus=0')
+  // 收费/发药已收进医生工作台，不再跳出到 /backstage 的另一套信息架构
+  router.push('/doctorPage/y-billList?payStatus=0')
 }
 
 const recordRules = reactive<FormRules>({
@@ -1429,6 +1478,172 @@ watch(() => form.value.clientId, (newValue): void => {
   reqPetNameByClientId(newValue, <number>form.value.petId).then(res => {
     petNameL.value = res
   })
+})
+
+/* ===== 病历版本留痕与审核 ===== */
+const revView = ref(false)
+const revisions = ref<RecordRevision[]>([])
+const snapshotView = ref(false)
+const snapshotText = ref('')
+const openRevisions = (): void => {
+  if (!treatRecordId.value) { ElMessage.warning('该挂号单尚未建立病历'); return }
+  reqRecordRevisions(treatRecordId.value).then(list => {
+    revisions.value = list || []
+    revView.value = true
+  }).catch(() => ElMessage.error('版本历史加载失败'))
+}
+const showSnapshot = (row: RecordRevision): void => {
+  try { snapshotText.value = JSON.stringify(JSON.parse(row.snapshotJson || '{}'), null, 2) }
+  catch { snapshotText.value = row.snapshotJson || '{}' }
+  snapshotView.value = true
+}
+const reviewCurrent = (): void => {
+  reqReviewRecord(treatRecordId.value).then(res => {
+    if (res.code === 1) { ElMessage.success(res.msg || '审核完成'); openRevisions() }
+    else ElMessage.error(res.msg || '审核失败')
+  }).catch(() => ElMessage.error('审核失败'))
+}
+
+/* ===== 接诊向导草稿：自动暂存到 sessionStorage，误关/刷新后可恢复 ===== */
+type TreatDraft = {
+  savedAt: number
+  recordId: number
+  step: number
+  form: MedicalRecord
+  tplId: number | null
+  prescriptions: Prescription[]
+  packages: ServicePackage[]
+  needSurgery: boolean
+  surgeryForm: SurgeryVo
+  lab: { testIds: number[]; orderNote: string }
+  image: { itemId: number | null; examPart: string; note: string }
+}
+const DRAFT_PREFIX = 'mixpet_treat_draft_'
+const DRAFT_TTL = 24 * 60 * 60 * 1000
+const hasDraft = ref(false)
+const draftPaused = ref(false)
+let draftTimer: number | undefined
+const draftKey = (aid: number): string => DRAFT_PREFIX + aid
+/** 只序列化医生录入内容（不含步骤/时间戳），用于判断是否真有未保存修改 */
+const draftSnapshot = (): string => JSON.stringify({
+  f: recordForm.value,
+  ps: prescriptions.value,
+  pk: packages.value,
+  su: needSurgery.value ? surgeryForm.value : null,
+  lab: labForm,
+  img: imageForm
+})
+const baseline = ref('')
+const draftPayload = (): TreatDraft => ({
+  savedAt: Date.now(),
+  recordId: treatRecordId.value,
+  step: activeStep.value,
+  form: recordForm.value,
+  tplId: tplId.value,
+  prescriptions: prescriptions.value,
+  packages: packages.value,
+  needSurgery: needSurgery.value,
+  surgeryForm: surgeryForm.value,
+  lab: {testIds: [...labForm.testIds], orderNote: labForm.orderNote},
+  image: {itemId: imageForm.itemId, examPart: imageForm.examPart, note: imageForm.note}
+})
+const clearDraft = (): void => {
+  window.clearTimeout(draftTimer)
+  const aid = treatAppoint.value?.appointmentId
+  if (aid) {
+    try { sessionStorage.removeItem(draftKey(aid)) } catch { /* 隐私模式下 storage 不可用，忽略 */ }
+  }
+  hasDraft.value = false
+}
+/** 内容已落库：清掉草稿并把当前状态记为新基线 */
+const markClean = (): void => {
+  clearDraft()
+  baseline.value = draftSnapshot()
+}
+const persistDraft = (): void => {
+  if (draftPaused.value || !treatView.value || orderLocked.value || !treatAppoint.value) return
+  if (draftSnapshot() === baseline.value) return
+  try {
+    sessionStorage.setItem(draftKey(treatAppoint.value.appointmentId), JSON.stringify(draftPayload()))
+    hasDraft.value = true
+  } catch { /* 容量/隐私模式：草稿不可用，仍由离开确认兜底 */ }
+}
+// 深度监听全部录入项，400ms 节流，避免每敲一个字就写一次 storage
+watch([recordForm, prescriptions, packages, needSurgery, surgeryForm, labForm, imageForm], () => {
+  window.clearTimeout(draftTimer)
+  draftTimer = window.setTimeout(persistDraft, 400)
+}, {deep: true})
+const restoreDraft = (): void => {
+  const aid = treatAppoint.value?.appointmentId
+  if (!aid) { baseline.value = draftSnapshot(); draftPaused.value = false; return }
+  let raw: string | null = null
+  try { raw = sessionStorage.getItem(draftKey(aid)) } catch { raw = null }
+  if (orderLocked.value) {
+    clearDraft()
+  } else if (raw) {
+    let d: TreatDraft | null = null
+    try { d = JSON.parse(raw) as TreatDraft } catch { d = null }
+    if (!d || !d.savedAt || Date.now() - d.savedAt > DRAFT_TTL || d.recordId !== treatRecordId.value) {
+      clearDraft()
+      ElMessage.info('本地草稿已过期或与当前病历不一致，已清除')
+    } else {
+      Object.assign(recordForm.value, d.form || {})
+      tplId.value = d.tplId ?? null
+      prescriptions.value = d.prescriptions || []
+      packages.value = d.packages || []
+      needSurgery.value = !!d.needSurgery
+      if (d.surgeryForm) surgeryForm.value = d.surgeryForm
+      labForm.testIds = d.lab?.testIds || []
+      labForm.orderNote = d.lab?.orderNote || ''
+      imageForm.itemId = d.image?.itemId ?? null
+      imageForm.examPart = d.image?.examPart || ''
+      imageForm.note = d.image?.note || ''
+      activeStep.value = Math.min(3, Math.max(0, d.step ?? 0))
+      hasDraft.value = true
+      ElMessage.success('已恢复上次未保存的接诊草稿')
+    }
+  }
+  baseline.value = draftSnapshot()
+  draftPaused.value = false
+}
+/** 主动丢弃草稿：重新从服务端载入该挂号单 */
+const discardDraft = (): void => {
+  const a = treatAppoint.value
+  if (!a) return
+  ElMessageBox.confirm('清空本地草稿并重新载入服务端病历？未保存的修改将丢失。', '清空草稿',
+      {confirmButtonText: '清空并重载', cancelButtonText: '取消', type: 'warning'})
+      .then(() => { clearDraft(); openTreat(a) }).catch(() => { /* 继续编辑 */ })
+}
+
+/* ===== 接诊向导防误关：有草稿或相对基线有改动时离开前确认 ===== */
+const treatDirty = computed<boolean>(() => treatView.value && !orderLocked.value &&
+    (hasDraft.value || draftSnapshot() !== baseline.value))
+const flushDraft = (): void => {
+  window.clearTimeout(draftTimer)
+  persistDraft()
+}
+const beforeCloseTreat = (done: () => void): void => {
+  if (!treatDirty.value) { done(); return }
+  ElMessageBox.confirm('接诊内容已自动暂存，下次打开该挂号单可继续。确定关闭向导吗？', '提示', {type: 'warning'})
+      .then(() => { flushDraft(); done() }).catch(() => { /* 继续编辑 */ })
+}
+const guardUnload = (e: BeforeUnloadEvent): void => {
+  if (!treatDirty.value) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+onMounted(() => window.addEventListener('beforeunload', guardUnload))
+onBeforeUnmount(() => {
+  window.clearTimeout(draftTimer)
+  window.removeEventListener('beforeunload', guardUnload)
+})
+onBeforeRouteLeave(async () => {
+  if (!treatDirty.value) return true
+  try {
+    await ElMessageBox.confirm('接诊内容已自动暂存，可稍后继续。确定离开吗？', '提示', {type: 'warning'})
+    flushDraft()
+    return true
+  } catch { return false }
 })
 </script>
 
@@ -1637,6 +1852,8 @@ watch(() => form.value.clientId, (newValue): void => {
   .settle-ops .el-button { width: 100%; margin: 0; }
 }
 .summary-btns { margin-top: 16px; text-align: right; }
+.rev-tip { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.rev-json { max-height: 420px; overflow: auto; padding: 12px; border-radius: 8px; background: #f6f8fa; font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
 
 /* ===== 电子病历录入（问诊与检查）现代样式 2026-10-24 ===== */
 

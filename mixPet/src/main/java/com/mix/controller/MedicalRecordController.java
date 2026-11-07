@@ -11,6 +11,7 @@ import com.mix.model.vo.RecordQueryVo;
 import com.mix.model.vo.RecordTodoVo;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.MedicalRecord;
+import com.mix.model.entity.MedicalRecordRevision;
 import com.mix.model.entity.Doctor;
 import com.mix.model.entity.Pet;
 import com.mix.model.entity.Prescription;
@@ -57,6 +58,7 @@ public class MedicalRecordController {
      * 医生接诊：保存病历+处方，生成未付账单，挂号单标记完成
      */
     @PostMapping("/save")
+    @AuditLog(module = "record", action = "saveRecord", target = "接诊建档")
     @Secured(RoleConst.DOCTOR)
     public Result save(@RequestBody RecordVo vo) {
         if (UserUtil.getUser() instanceof Doctor doctor) {
@@ -69,6 +71,7 @@ public class MedicalRecordController {
      * 前端确认后带 force=true 再次提交即强制完结
      */
     @PutMapping("/finish/{id}")
+    @AuditLog(module = "record", action = "finishRecord", target = "完结就诊")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public Result finish(@PathVariable Integer id, boolean force) {
         return recordService.finishRecord(id, force);
@@ -76,16 +79,33 @@ public class MedicalRecordController {
 
     /** 作废就诊（仅接诊中）：填写作废原因 */
     @PutMapping("/cancel/{id}")
+    @AuditLog(module = "record", action = "cancelRecord", target = "作废就诊")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public Result cancel(@PathVariable Integer id, String reason) {
         return recordService.cancelRecord(id, reason);
     }
 
-    /** 未完绪病历修改（仅接诊中）：内容字段可改，费用不走这里 */
+    /** 未完绪病历修改（仅接诊中）：内容字段可改，费用不走这里；变更前留痕 */
     @PutMapping
+    @AuditLog(module = "record", action = "updateRecord", target = "修改病历")
     @Secured(RoleConst.DOCTOR)
     public Result update(@RequestBody MedicalRecord record) {
         return recordService.updateRecord(record);
+    }
+
+    /** 病历审核（仅已完结）：医师/管理者双签中的审核一环 */
+    @PutMapping("/review/{id}")
+    @AuditLog(module = "record", action = "reviewRecord", target = "病历审核")
+    @Secured({RoleConst.DOCTOR, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result review(@PathVariable Integer id) {
+        return recordService.reviewRecord(id);
+    }
+
+    /** 病历版本历史：变更前整本快照，供追溯/复原 */
+    @GetMapping("/revisions/{id}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    public List<MedicalRecordRevision> revisions(@PathVariable Integer id) {
+        return recordService.listRevisions(id);
     }
 
     /**

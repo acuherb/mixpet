@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.AnesthesiaRecordMapper;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.SurgeryMapper;
@@ -40,12 +41,12 @@ public class SurgeryServiceImpl extends ServiceImpl<SurgeryMapper, Surgery> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result createOrder(SurgeryVo vo, Doctor doctor) {
-        if (vo == null || vo.getRecordId() == null) return Result.error("缺少病历信息");
+        if (vo == null || vo.getRecordId() == null) throw new BizException("缺少病历信息");
         MedicalRecord record = recordService.getById(vo.getRecordId());
-        if (record == null) return Result.error("病历不存在");
-        if (vo.getSurgeryName() == null || vo.getSurgeryName().isBlank()) return Result.error("请填写手术名称");
+        if (record == null) throw new BizException("病历不存在");
+        if (vo.getSurgeryName() == null || vo.getSurgeryName().isBlank()) throw new BizException("请填写手术名称");
         BigDecimal fee = vo.getFee() == null ? BigDecimal.ZERO : vo.getFee();
-        if (fee.compareTo(BigDecimal.ZERO) < 0) return Result.error("手术费不能为负数");
+        if (fee.compareTo(BigDecimal.ZERO) < 0) throw new BizException("手术费不能为负数");
         Surgery s = new Surgery();
         s.setRecordId(record.getRecordId());
         s.setPetId(record.getPetId());
@@ -113,14 +114,14 @@ public class SurgeryServiceImpl extends ServiceImpl<SurgeryMapper, Surgery> impl
 
     @Override
     public Result update(Surgery surgery) {
-        if (surgery == null || surgery.getSurgeryId() == null) return Result.error("缺少手术单id");
+        if (surgery == null || surgery.getSurgeryId() == null) throw new BizException("缺少手术单id");
         return Result.choice("保存", this.updateById(surgery));
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result saveAnesthesia(AnesthesiaRecord ar) {
-        if (ar == null || ar.getSurgeryId() == null) return Result.error("缺少手术单id");
+        if (ar == null || ar.getSurgeryId() == null) throw new BizException("缺少手术单id");
         AnesthesiaRecord exist = anesthesiaMapper.selectOne(
                 Wrappers.<AnesthesiaRecord>lambdaQuery().eq(AnesthesiaRecord::getSurgeryId, ar.getSurgeryId()).last("limit 1"));
         if (exist != null) {

@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.mapper.MedicalRecordMapper;
 import com.mix.model.dto.LabOrderDto;
@@ -75,11 +76,20 @@ public class LabOrderController {
         return null;
     }
 
-    /** 录入化验结果 */
+    /** 录入化验结果（含修订留痕与服务端异常判定） */
     @PutMapping("/result")
+    @AuditLog(module = "lab", action = "saveResult", target = "录入检验结果")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
     public Result saveResult(@RequestBody LabResultVo vo) {
         return labService.saveResult(vo, operatorName());
+    }
+
+    /** 复核检验报告：录入人与审核人分离 */
+    @PutMapping("/result/review/{orderId}")
+    @AuditLog(module = "lab", action = "reviewResult", target = "检验报告复核")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    public Result reviewResult(@PathVariable Integer orderId) {
+        return labService.reviewResult(orderId, operatorName());
     }
 
     /** 作废化验单（未出结果）：冲减未付账单检验费 */

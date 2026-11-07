@@ -38,7 +38,7 @@ public class DoctorServiceImpl extends ServiceImpl<DoctorMapper, Doctor> impleme
     }
 
     /** 新建医生/重置密码默认口令 */
-    @Value("${app.default-password:123456}")
+    @Value("${app.default-password}")
     private String defaultPwd;
 
     @Override

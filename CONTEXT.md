@@ -415,7 +415,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - start.sh 三修（中文路径 locale 保命+就绪检测类名 MixPetApplication+限堆错峰），后升级 .env 加载为 set -a; source。
 
 ### 安全审计 13 项 + 数据/乱码修复（2026-10-21 ~ 22）
-- 并发安全 5：药品入库原子累加（原先读后写丢更新）、处方作废条件更新抢占（is_cancel=false+affected，防并发重复冲减）、次卡核销原子扣减（remain_times>0 抢占）、积分兑换条件扣减（client_points>=points）、挂号两入口加事务（count+insert 同事务）。
+- 并发安全 5：药品入库原子累加（原先读后写丢更新）、处方作废条件更新抢占（is_cancel=false+affected，防并发重复冲减）、次卡核销原子扣减（remain_times>0 抢占）、积分兑换条件扣减（client_points>=points）、挂号两入口加事务（count+insert 同事务）。【2026-11-07 P1 更正】所有挂号/改期写入口已统一收敛到 `IAppointmentService.reserve`：事务内 `doctor` 主键 FOR UPDATE 行锁 + 整日/时段双容量校验（`doctor_schedule.max_count` 为真值，20 为每日硬兜底）；`doctor_schedule.is_del` 默认值修为 NOT NULL DEFAULT 0。
 - 安全 6：Client/Doctor 密码字段 @JsonIgnore；发药/退款操作人改登录态取（防伪造，退款原因单列 refund_reason）；Session Cookie SameSite=Lax+HttpOnly（缓解全局关 CSRF）；记住我密钥/默认口令外置（remember-me.key/APP_DEFAULT_PASSWORD）；BCrypt 单例；update 清空密码字段。
 - Bill 生成列标注 insert/updateStrategy=NEVER。不成立 2 项：批量入库无事务=有意设计；setSql 拼接=值全数值型字段（注入不可行）。
 - 数据修复：member_level/record_template 中文双重编码乱码回转（全库扫描仅此两表）。
@@ -468,3 +468,20 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **③ 手机端回归**：playwright 390×844 viewport 扫 **52 个路由（顾客端/医生端/后台全量）零页面级横向溢出**（表格内横滚为设计内形态，不计）；关键页无 <24px 触达按钮。未发现需修的响应式缺陷（el-table max-height+fixed 列与 flex-wrap 模式全域一致）。
 - **半件（小票打印）**：打印窗口补 `@page` 声明——小票 `size: 80mm auto; margin: 0`（原只有 72mm 宽适配，浏览器打印对话框选 80mm 纸即正确）、A4 发票 `size: A4`。**边界**：真实 ESC/POS 热敏打印机指令集打印需打印机型号+打印服务，超出纯 Web 能力，未做（文档已说明）。
 - 期间处理：vite dev server 曾被误伤挂掉（start.sh 重启恢复）；npm build 在内存紧张时放后台跑（用户机器 4G 内存，OOM 是老问题，限堆已做）。
+
+### P0/P1 止血后收尾 + P2 生产化（2026-11-07）
+- **P1 尾项**：`d-appoint.vue` 接诊向导新增 `sessionStorage` 草稿（按挂号单存、24h TTL、400ms 节流、刷新/误关自动恢复、提交病历/完结/作废后清除，可主动清空重载）；离开确认改按「相对基线是否有改动」判定，修掉主诉自动带入即误报未保存。`z-consent` / `d-rx` 补加载失败提示，`PrintChoiceDialog` 补 iframe 打印异常与弹窗被拦截提示。
+- **P2 部署**：`deploy.sh` 重写为 6 步——nginx 完整站点（80 ACME+301、443 静态资源 + `/api` 反代 + `/chat` WSS + HSTS 等安全头 + API 10r/s / 登录 1r/s 限流）、`/etc/mixpet/mixpet.env`（0640 收口全部密钥，二次部署自动复用）、systemd unit（`Restart=always`、开机自启、专用系统用户、固定 jar 路径）、logrotate；`--tls` 用 certbot webroot 不改写站点配置，`--no-systemd` 回退容器场景。
+- **P2 配置**：新增 `application-prod.yml`，四个附件目录 / 备份目录 / 端口 / 邮件 / `COOKIE_SECURE` 全部外置；主 yml 三个密钥仍无兜底，缺失即启动失败。
+- **P2 工程**：vite `manualChunks` 拆 framework/element/vendor/pdf，`html2pdf.js` 改为导出 PDF 时动态加载；构建主包降至约 45KB，超大 chunk 只剩按需加载的 PDF 包。
+- **同步**：README / DEPLOY.md（新增 10.5）/ `.env.example` / CI / `verify-p0.sh`（扩到 P0/P1/P2 共 20 项，全绿）。
+- **未做**：真实域名证书与浏览器端到端实测、审计读操作/前后值快照、备份加密与异地副本、依赖升级；上线前仍按 DEPLOY.md 10.2 清场并双轨试运行 2~4 周。
+
+### 临床专业度与信息架构补强（2026-11-07，P3）
+用户反馈「功能多但只是有，病历/化验单不专业、医生操作一半在后台一半在工作台」，按 4 条落地：
+- **① 病历合规地基**：`medical_record` 加 `version`/`signed_by`/`signed_at`/`review_status`/`review_by`/`review_at`；新增 `medical_record_revision`（变更前整本 JSON 快照）。修改病历写快照 + 版本 +1 + 乐观锁（前端回传 version，不一致拒绝覆盖）+ 原审核自动失效；完结时由登录态写入电子签名；新增审核接口与版本历史弹窗；`addPrescriptions`/`addPackages`/`cancelPrescription` 统一加完结只读校验；打印页三套版式的「签字」占位改为真实签名/版本/审核状态。
+- **② 化验单做深**：`lab_order` 加标本类型、采样/接收时间、复核人/时间、危急标记、修订次数；`lab_order_item` 加数值化参考区间与危急阈值；新增 `lab_ref_range`（按物种/性别/月龄分层，规则越具体优先级越高，不预置医学数值）、`lab_result_revision`。新增 `LabResultEvaluator` 作为服务端唯一判定入口（异常/危急复算，兼容旧 `ref_range` 文本），前端 `autoAbnormal` 降级为录入预检；结果支持「带原因修订 + 修订前整单快照 + 复核后锁定」，报告双签。打印页显示时间轴、双签、危急提示。
+- **③ 医生闭环**：`doctorPage.ts` 收进收银/发药、处方笺档案、报告与申请单打印、检验/影像字典、病历模板、同意书、随访提醒；工作台加「临床工具」网格；`backstage.ts` 16 条临床遗留路由统一 redirect 到 `/doctorPage/*`（保留旧 URL 兼容，后台只留运营管理）；`goCashier` 与待收费入口不再跳后台。后台菜单搜索已存在（未重做）。
+- **④ 顾客闭环**：新增 `client_notification` + 定向站内通知（化验/影像报告出具或修订时自动写入，按 clientId 强制过滤，支持已读/全部已读）；顾客中心加账单明细页（分项费用/实付/退款/发药状态）与消息通知页 + 未读角标（60s 轮询 + 自定义事件即时刷新）。
+- **迁移**：`db-backup/feature_20261107_p3_clinical.sql`（整组幂等）+ 基线 `pet_mix.sql` 同步；README/DEPLOY/verify-p0.sh 同步。
+- **仍未做**：SOAP 结构化分区、鉴别诊断/诊断依据落库、诊断编码、DICOM/影像原图、危急值的短信/电话闭环、`lab_ref_range` 的医学数值录入与后台维护界面、病历审核退回流程、结果修订的复核撤销。

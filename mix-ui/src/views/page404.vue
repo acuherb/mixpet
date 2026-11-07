@@ -8,6 +8,7 @@
   >
     <input ref="myInput" class="myInput">
     <h1>{{ state.score }}</h1>
+    <el-button class="back-home" type="primary" round @click.stop="goHome">返回首页</el-button>
     <p>你来到了网站的尽头，这里只有一个小游戏</p>
     <p>按空格开始游戏，按ESC暂停</p>
     <p>按下左右方向键移动挡板</p>
@@ -28,6 +29,14 @@
 
 <script lang="ts" setup>
 import {onBeforeUnmount, onMounted, reactive, ref, watch} from 'vue'
+import {useRouter} from 'vue-router'
+
+const router = useRouter()
+const goHome = (): void => {
+  clearInterval(timer)
+  clearInterval(timer2)
+  router.push('/')
+}
 
 // 绑定移动方块事件
 onMounted(() => {
@@ -36,6 +45,7 @@ onMounted(() => {
 // 移除移动方块事件
 onBeforeUnmount(() => {
   clearInterval(timer)
+  clearInterval(timer2)
 })
 // 隐藏的输入框
 const myInput = ref<HTMLInputElement>();
@@ -177,6 +187,8 @@ const start = () => {
   .box {
     justify-content: center;
     width: 500px;
+    max-width: 100vw;
+    overflow: hidden;
     height: 300px;
     margin: 0 auto;
     position: relative;

@@ -1,6 +1,7 @@
 package com.mix.scheduler;
 
 import com.mix.service.IBackupService;
+import com.mix.service.INoticeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 public class BackupScheduler {
     private static final Logger log = LoggerFactory.getLogger(BackupScheduler.class);
     private final IBackupService backupService;
+    private final INoticeService noticeService;
 
     @Value("${backup.dir:/home/debian/公共/mixpet/db-backup/runtime/}")
     private String backupDir;
@@ -34,8 +36,9 @@ public class BackupScheduler {
     @Value("${backup.auto-keep:7}")
     private int autoKeep;
 
-    public BackupScheduler(IBackupService backupService) {
+    public BackupScheduler(IBackupService backupService, INoticeService noticeService) {
         this.backupService = backupService;
+        this.noticeService = noticeService;
     }
 
     /** 每天凌晨 02:00（与疫苗/预约提醒错峰） */
@@ -48,6 +51,13 @@ public class BackupScheduler {
             keepAutoBackups();
         } catch (Exception e) {
             log.error("定时自动备份失败（不影响其他任务）", e);
+            // 静默失败会让灾备形同虚设：生成一条内部公告，让管理员在后台可见
+            try {
+                noticeService.createSystemNotice("【告警】自动备份失败",
+                        "每日自动备份失败，请立即检查磁盘空间、数据库账号与 mysqldump 可用性。原因：" + e.getMessage());
+            } catch (Exception ignore) {
+                log.error("备份失败告警也写入失败", ignore);
+            }
         }
     }
 

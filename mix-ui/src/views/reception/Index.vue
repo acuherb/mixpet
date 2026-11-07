@@ -153,6 +153,7 @@ import {clearPwdCheckFlag} from "@/router";
 import {reqClientGetNearDoctor, reqClientMsgGroup} from "@/request/MsgApi";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
+import {subscribe} from "@/utils/chatSocket";
 import {getDisplayTime} from "@/utils/TimeUtil";
 import {hospital} from "@/utils/hospital";
 import {reqFourDoctor} from "@/request/DoctorApi";
@@ -278,7 +279,8 @@ const myLogout = () => {
       clearPwdCheckFlag()
       isLogin.value = false
       totalUnread.value = 0
-      if (ws) { ws.close(1000, '退出登录'); ws = null }
+      unsubscribeChat?.()
+      unsubscribeChat = null
       router.push("/")
     }).catch(() => ElMessage.error('退出失败，请重试'))
   }).catch(() => ElMessage.info('已取消'))
@@ -298,14 +300,10 @@ const previewOf = (m: Msg): string => {
   if (m.msgType === 'FILE') return `［文件］${m.msgName || ''}`
   return m.msgContent || ''
 }
-const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
-let ws: WebSocket | null = null
+let unsubscribeChat: (() => void) | null = null
 const connectChat = (): void => {
-  if (ws) return
-  ws = new WebSocket(wsUrl)
-  ws.onmessage = (ev) => {
-    try {
-      const m = JSON.parse(ev.data) as Msg
+  if (unsubscribeChat) return
+  unsubscribeChat = subscribe((m: Msg) => {
       loadUnread()
       ElNotification({
         title: '医生回复了您',
@@ -315,11 +313,11 @@ const connectChat = (): void => {
         position: 'top-right',
         onClick: () => { ElNotification.closeAll(); router.push('/reception/chat') }
       })
-    } catch { /* 忽略非消息帧 */ }
-  }
+  })
 }
 onBeforeUnmount(() => {
-  if (ws) { ws.close(1000, '离开首页'); ws = null }
+  unsubscribeChat?.()
+  unsubscribeChat = null
   ElNotification.closeAll()
 })
 </script>

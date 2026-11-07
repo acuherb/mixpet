@@ -22,8 +22,11 @@ public interface ILabOrderService extends IService<LabOrder> {
     /** 化验单分页 */
     IPage<LabOrderDto> selectPage(Integer status, int numPage, int pageSize);
 
-    /** 录入化验结果 */
+    /** 录入化验结果（异常/危急由服务端复算，修订留痕） */
     Result saveResult(LabResultVo vo, String operator);
+
+    /** 复核检验报告：录入人之外再签审核人 */
+    Result reviewResult(Integer orderId, String operator);
 
     /** 某病历的化验单（含明细） */
     List<LabOrderDto> selectByRecord(Integer recordId);

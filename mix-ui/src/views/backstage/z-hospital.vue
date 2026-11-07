@@ -90,7 +90,7 @@
     </template>
   </el-dialog>
 
-  <!--出院结算弹窗：费用明细可核对，天数可调，押金应退一眼可见-->
+  <!--出院结算弹窗：费用明细可核对，天数可调，押金自动冲抵后的差额一眼可见-->
   <el-dialog v-model="dischargeView" title="出院结算" draggable width="520px" :close-on-click-modal="false">
     <div v-if="fee" class="fee-box">
       <div class="fee-row fee-head">
@@ -107,12 +107,12 @@
       <el-divider style="margin:8px 0"/>
       <div class="fee-row"><span>已收押金</span><b style="color:#67C23A">￥{{ num(fee.deposit) }}</b></div>
       <div class="fee-row">
-        <span>{{ fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) >= 0 ? '应退押金' : '需补收（押金不足）' }}</span>
+        <span>{{ fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) >= 0 ? '押金余款（线下退还）' : '仍需补收（押金不足）' }}</span>
         <b :style="{color: fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee) >= 0 ? '#67C23A' : '#f56c6c'}">
           ￥{{ num(Math.abs(fee.deposit - (fee.bedFee * feeDays + fee.nursingFee * feeDays + fee.infusionFee * feeDays + fee.adviceFee))) }}
         </b>
       </div>
-      <div class="fee-tip">确认后费用计入该病历账单（收银台收款）；押金差额请在线下/收银台办理退还或补收</div>
+      <div class="fee-tip">确认后押金自动冲抵，仅净额计入该病历账单；余款线下退还，不足部分到收银台补收</div>
     </div>
     <template #footer>
       <el-button round @click="dischargeView = false">取消</el-button>

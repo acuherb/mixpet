@@ -74,6 +74,16 @@ public class MedicalRecord implements Serializable {
     /** 诊疗费 */
     private BigDecimal feeTreat;
 
+    /** 病历版本号：建档为 1，每次内容修改 +1（配合前端提交做乐观锁） */
+    private Integer version;
+    /** 完结签名：接诊医师姓名与签名时间（打印页取真实值，不再留空白） */
+    private String signedBy;
+    private LocalDateTime signedAt;
+    /** 审核状态：0待审核 1已审核 2退回 */
+    private Integer reviewStatus;
+    private String reviewBy;
+    private LocalDateTime reviewAt;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

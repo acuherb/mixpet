@@ -1,13 +1,16 @@
 package com.mix.security.login;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mix.common.LoginAttemptLimiter;
 import com.mix.security.model.LoginVo;
+import com.mix.service.IAuditLogService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,61 +22,73 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * 自定义的登录处理器，让Security用Json校验密码
- *
- * @since : 2023-06-05 09:57
+ * 自定义的登录处理器，让 Security 用 Json 校验密码；同时做失败锁定与计数。
+ * 注意：不打印登录请求体（含明文密码）。
  */
 @Component
 public class LoginFilter extends UsernamePasswordAuthenticationFilter {
     private static final Logger log = LoggerFactory.getLogger(LoginFilter.class);
+    private static final String ATTEMPT_KEY = "loginAttemptKey";
 
-    public LoginFilter(LoginProvider loginProvider, RememberService rememberService) {
-        // 将登录的校验器放在这里
+    private final LoginAttemptLimiter loginAttemptLimiter;
+
+    public LoginFilter(LoginProvider loginProvider, RememberService rememberService,
+                       LoginAttemptLimiter loginAttemptLimiter, IAuditLogService auditLogService) {
         super(new ProviderManager(loginProvider));
-        // 访问到拦截器的路径
+        this.loginAttemptLimiter = loginAttemptLimiter;
         setFilterProcessesUrl("/cao/toLogin");
-        // 登录成功处理器
-        LoginHandler loginHandler = new LoginHandler();
+        LoginHandler loginHandler = new LoginHandler(auditLogService);
         setAuthenticationSuccessHandler(loginHandler);
-        // 登录失败处理器
         setAuthenticationFailureHandler(loginHandler);
-        // 设置记住我
         setRememberMeServices(rememberService);
     }
 
-    /***
-     * 重写账号密码的处理，让其可以接收Json
-     */
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse resp) throws AuthenticationException {
-        if (JsonUtil.isJson(req)) {
-            log.info("【自定义的登录过滤器启动】");
-            ObjectMapper mapper = new ObjectMapper();
-            UsernamePasswordAuthenticationToken authRequest;
-            try (InputStream is = req.getInputStream()) {
-                LoginVo login = mapper.readValue(is, LoginVo.class);
-                log.info("登录过滤器收到的参数是:\n" + login);
-                // 设置记住我，这里会在自己的写记住我服务里面取出
-                req.setAttribute("rememberMe", login.remember());
-                // 事实上，这里并不是设置用户名与密码，而是主角（可以为Object)与凭证
-                authRequest = new UsernamePasswordAuthenticationToken(login, login.password());
-                setDetails(req, authRequest);
-                return this.getAuthenticationManager().authenticate(authRequest);
-            } catch (IOException e) {
-                log.warn("Json转化失败");
-                authRequest = new UsernamePasswordAuthenticationToken("", "");
-                return this.getAuthenticationManager().authenticate(authRequest);
-            }
-        } else {
-            log.info("【启用原来的登录过滤器】");
+    public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse resp)
+            throws AuthenticationException {
+        if (!JsonUtil.isJson(req)) {
             return super.attemptAuthentication(req, resp);
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        try (InputStream is = req.getInputStream()) {
+            LoginVo login = mapper.readValue(is, LoginVo.class);
+            if (login == null) throw new LockedException("请求格式错误");
+            String key = attemptKey(req, login.username());
+            if (loginAttemptLimiter.isBlocked(key)) {
+                throw new LockedException("登录失败次数过多，请 15 分钟后重试");
+            }
+            req.setAttribute(ATTEMPT_KEY, key);
+            req.setAttribute("loginUsername", login.username());
+            req.setAttribute("rememberMe", login.remember());
+            UsernamePasswordAuthenticationToken authRequest =
+                    new UsernamePasswordAuthenticationToken(login, login.password());
+            setDetails(req, authRequest);
+            return this.getAuthenticationManager().authenticate(authRequest);
+        } catch (IOException e) {
+            log.warn("登录请求 JSON 解析失败");
+            UsernamePasswordAuthenticationToken authRequest =
+                    new UsernamePasswordAuthenticationToken("", "");
+            return this.getAuthenticationManager().authenticate(authRequest);
         }
     }
 
+    /** 按「来源 IP + 账号」计数；不信任 X-Forwarded-For（可被客户端伪造） */
+    private String attemptKey(HttpServletRequest req, String username) {
+        return req.getRemoteAddr() + "|" + (username == null ? "" : username);
+    }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        log.info("登录转成功处理器");
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                              AuthenticationException failed) throws IOException, ServletException {
+        loginAttemptLimiter.recordFailure((String) request.getAttribute(ATTEMPT_KEY));
+        super.unsuccessfulAuthentication(request, response, failed);
+    }
+
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                            FilterChain chain, Authentication authResult)
+            throws IOException, ServletException {
+        loginAttemptLimiter.clear((String) request.getAttribute(ATTEMPT_KEY));
         super.successfulAuthentication(request, response, chain, authResult);
     }
 }

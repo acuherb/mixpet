@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -27,8 +28,15 @@ public class LabOrderItem implements Serializable {
     private String refRange;
     /** 检验结果值 */
     private String resultValue;
-    /** 是否异常 */
+    /** 是否异常（由服务端按参考区间复算，不信任前端） */
     private Boolean isAbnormal;
+    /** 开单时按物种/月龄/性别匹配的数值化参考区间与危急阈值 */
+    private BigDecimal refLow;
+    private BigDecimal refHigh;
+    private BigDecimal criticalLow;
+    private BigDecimal criticalHigh;
+    /** 是否命中危急值 */
+    private Boolean criticalFlag;
     /** 出结果时间 */
     private LocalDateTime resultTime;
 

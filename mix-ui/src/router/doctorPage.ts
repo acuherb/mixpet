@@ -69,5 +69,38 @@ export const doctorPage: RouteRecordRaw[] = [
         // 随访记录
         path: "z-follow",
         component: () => import('@/views/backstage/z-follow.vue'),
+    }, {
+        // 收费/发药：医生闭环的最后一环，不再跳到 /backstage 另一个壳
+        path: "y-billList",
+        component: () => import('@/views/backstage/y-billList.vue'),
+    }, {
+        // 处方笺档案（调档/补打/作废）
+        path: "z-rxArchive",
+        component: () => import('@/views/backstage/z-rxArchive.vue'),
+    }, {
+        // 检验/影像报告单打印
+        path: "z-examReport",
+        component: () => import('@/views/backstage/z-examReport.vue'),
+    }, {
+        // 检验/影像申请单打印
+        path: "z-requisition",
+        component: () => import('@/views/backstage/z-requisition.vue'),
+    }, {
+        // 临床配置：检验项 / 影像项字典、病历模板
+        path: "z-labTest",
+        component: () => import('@/views/backstage/z-labTest.vue'),
+    }, {
+        path: "z-imageTest",
+        component: () => import('@/views/backstage/z-imageTest.vue'),
+    }, {
+        path: "z-template",
+        component: () => import('@/views/backstage/z-template.vue'),
+    }, {
+        // 手术知情同意书 / 随访复诊提醒
+        path: "z-consent",
+        component: () => import('@/views/backstage/z-consent.vue'),
+    }, {
+        path: "z-remind",
+        component: () => import('@/views/backstage/z-remind.vue'),
     },
 ]

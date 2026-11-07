@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.HospitalMapper;
 import com.mix.model.dto.HospitalDto;
@@ -47,21 +48,21 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result saveIn(HospitalVo vo, Doctor doctor) {
-        if (vo == null || vo.getRecordId() == null) return Result.error("缺少病历信息");
+        if (vo == null || vo.getRecordId() == null) throw new BizException("缺少病历信息");
         MedicalRecord record = recordService.getById(vo.getRecordId());
-        if (record == null) return Result.error("病历不存在");
+        if (record == null) throw new BizException("病历不存在");
         BigDecimal bed = vo.getBedFee() == null ? BigDecimal.ZERO : vo.getBedFee();
         BigDecimal nursing = vo.getNursingFee() == null ? BigDecimal.ZERO : vo.getNursingFee();
         BigDecimal infusion = vo.getInfusionFee() == null ? BigDecimal.ZERO : vo.getInfusionFee();
         BigDecimal daily = bed.add(nursing).add(infusion);
         if (daily.compareTo(BigDecimal.ZERO) < 0)
-            return Result.error("日均住院费不能小于0");
+            throw new BizException("日均住院费不能小于0");
         // 该病历不能重复住院（简单防重）
         long cnt = this.lambdaQuery()
                 .eq(HospitalRecord::getRecordId, vo.getRecordId())
                 .eq(HospitalRecord::getStatus, false)
                 .count();
-        if (cnt > 0) return Result.error("该病历已有未出院记录");
+        if (cnt > 0) throw new BizException("该病历已有未出院记录");
         HospitalRecord recordEn = new HospitalRecord();
         recordEn.setRecordId(record.getRecordId());
         recordEn.setPetId(record.getPetId());
@@ -83,10 +84,10 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result discharge(Integer hospitalId, Integer daysOverride) {
-        if (hospitalId == null) return Result.error("缺少住院记录id");
+        if (hospitalId == null) throw new BizException("缺少住院记录id");
         HospitalRecord recordEn = this.getById(hospitalId);
-        if (recordEn == null) return Result.error("住院记录不存在");
-        if (Boolean.TRUE.equals(recordEn.getStatus())) return Result.error("该记录已出院");
+        if (recordEn == null) throw new BizException("住院记录不存在");
+        if (Boolean.TRUE.equals(recordEn.getStatus())) throw new BizException("该记录已出院");
         // 天数：默认按入院至今跨夜数+1（进一结算，至少1天）；结算弹窗可手改（提前出院按实际）
         long diff = Duration.between(recordEn.getInTime(), LocalDateTime.now()).toDays();
         int days = daysOverride != null && daysOverride > 0 ? daysOverride : Math.max((int) diff + 1, 1);
@@ -100,50 +101,59 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
                 .map(a -> a.getFee() == null ? BigDecimal.ZERO : a.getFee())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal fee = stayFee.add(adviceFee);
-        // 计费：优先累加进未付账单，否则单独生成一张住院账单
-        Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
-                .eq(Bill::getRecordId, recordEn.getRecordId())
-                .eq(Bill::getPayStatus, false)
-                .last("limit 1"));
-        if (unpaid != null) {
-            billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
-                    .eq(Bill::getBillId, unpaid.getBillId())
-                    .setSql("fee_hospital = fee_hospital + " + fee.toPlainString())
-                    .setSql("total_money = total_money + " + fee.toPlainString()));
-        } else {
-            Bill bill = new Bill();
-            bill.setClientId(recordEn.getClientId());
-            bill.setPetId(recordEn.getPetId());
-            bill.setRecordId(recordEn.getRecordId());
-            bill.setFeeRegister(BigDecimal.ZERO);
-            bill.setFeeTreat(BigDecimal.ZERO);
-            bill.setFeeDrug(BigDecimal.ZERO);
-            bill.setFeeLab(BigDecimal.ZERO);
-            bill.setFeePackage(BigDecimal.ZERO);
-            bill.setFeeSurgery(BigDecimal.ZERO);
-            bill.setFeeImmune(BigDecimal.ZERO);
-            bill.setFeeHospital(fee);
-            bill.setTotalMoney(fee);
-            bill.setPayStatus(false);
-            bill.setPayType(false);
-            billMapper.insert(bill);
-        }
-        this.lambdaUpdate()
+        // 押金冲抵：收取押金时未进系统收入，出院时按净额入账，避免把押金重复计成营收
+        BigDecimal deposit = nz(recordEn.getDeposit());
+        BigDecimal used = deposit.min(fee);
+        BigDecimal net = fee.subtract(used).max(BigDecimal.ZERO);
+        // CAS 抢占出院状态：两个前台同时点结算只有一个能计费（WHERE status = 0）
+        boolean claimed = this.lambdaUpdate()
                 .eq(HospitalRecord::getHospitalId, hospitalId)
+                .eq(HospitalRecord::getStatus, false)
                 .set(HospitalRecord::getStatus, true)
                 .set(HospitalRecord::getOutTime, LocalDateTime.now())
                 .set(HospitalRecord::getDays, days)
                 .update();
-        BigDecimal deposit = nz(recordEn.getDeposit());
-        BigDecimal diffDeposit = deposit.subtract(fee);
-        String refundTip = deposit.compareTo(BigDecimal.ZERO) > 0
-                ? "；押金 ￥" + deposit.toPlainString() + "，应退 ￥"
-                + diffDeposit.max(BigDecimal.ZERO).toPlainString()
-                + (diffDeposit.signum() < 0 ? "（押金不足，需补收 ￥" + fee.subtract(deposit).toPlainString() + "）" : "")
+        if (!claimed) throw new BizException("该记录已出院，请勿重复结算");
+        // 计费：押金已冲抵部分不再计入系统收入，只把净额并入统一账单
+        if (net.signum() > 0) {
+            Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                    .eq(Bill::getRecordId, recordEn.getRecordId())
+                    .eq(Bill::getPayStatus, false)
+                    .last("limit 1"));
+            if (unpaid != null) {
+                billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                        .eq(Bill::getBillId, unpaid.getBillId())
+                        .setSql("fee_hospital = COALESCE(fee_hospital,0) + " + net.toPlainString())
+                        .setSql("total_money = COALESCE(total_money,0) + " + net.toPlainString()));
+            } else {
+                Bill bill = new Bill();
+                bill.setClientId(recordEn.getClientId());
+                bill.setPetId(recordEn.getPetId());
+                bill.setRecordId(recordEn.getRecordId());
+                bill.setFeeRegister(BigDecimal.ZERO);
+                bill.setFeeTreat(BigDecimal.ZERO);
+                bill.setFeeDrug(BigDecimal.ZERO);
+                bill.setFeeLab(BigDecimal.ZERO);
+                bill.setFeeImage(BigDecimal.ZERO);
+                bill.setFeePackage(BigDecimal.ZERO);
+                bill.setFeeSurgery(BigDecimal.ZERO);
+                bill.setFeeImmune(BigDecimal.ZERO);
+                bill.setFeeHospital(net);
+                bill.setTotalMoney(net);
+                bill.setPayStatus(false);
+                bill.setPayType(false);
+                billMapper.insert(bill);
+            }
+        }
+        BigDecimal leftover = deposit.subtract(fee);
+        String depositTip = used.signum() > 0
+                ? "；押金 ￥" + deposit.toPlainString() + " 已冲抵 ￥" + used.toPlainString()
+                + (net.signum() > 0 ? "，仍需补收 ￥" + net.toPlainString() : "，费用已由押金结清")
+                + (leftover.signum() > 0 ? "，余款 ￥" + leftover.toPlainString() + " 请线下退还" : "")
                 : "";
         return Result.success("出院结算成功：住院 " + days + " 天，住院费 ￥" + stayFee.toPlainString()
                 + (adviceFee.signum() > 0 ? " + 医嘱费用 ￥" + adviceFee.toPlainString() : "")
-                + " 已计入账单（￥" + fee.toPlainString() + "）" + refundTip);
+                + "（原价 ￥" + fee.toPlainString() + "，已计入账单 ￥" + net.toPlainString() + "）" + depositTip);
     }
 
     private static BigDecimal nz(BigDecimal v) {
@@ -153,19 +163,23 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result addDeposit(Integer hospitalId, BigDecimal amount, Doctor operator) {
-        if (hospitalId == null) return Result.error("缺少住院记录id");
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) return Result.error("收取金额必须大于0");
+        if (hospitalId == null) throw new BizException("缺少住院记录id");
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) throw new BizException("收取金额必须大于0");
         HospitalRecord recordEn = this.getById(hospitalId);
-        if (recordEn == null) return Result.error("住院记录不存在");
-        if (Boolean.TRUE.equals(recordEn.getStatus())) return Result.error("该记录已出院，不能收取押金");
-        BigDecimal now = nz(recordEn.getDeposit()).add(amount);
+        if (recordEn == null) throw new BizException("住院记录不存在");
+        if (Boolean.TRUE.equals(recordEn.getStatus())) throw new BizException("该记录已出院，不能收取押金");
+        // 原子累加，避免并发两次收押金丢失一次（读后写）
         boolean ok = this.lambdaUpdate()
                 .eq(HospitalRecord::getHospitalId, hospitalId)
-                .set(HospitalRecord::getDeposit, now)
+                .eq(HospitalRecord::getStatus, false)
+                .setSql("deposit = COALESCE(deposit, 0) + " + amount.toPlainString())
                 .set(HospitalRecord::getDepositBy, operator == null ? null : operator.getDoctorName())
                 .set(HospitalRecord::getDepositTime, LocalDateTime.now())
                 .update();
-        return ok ? Result.success("收取押金 ￥" + amount.toPlainString() + "，累计已收 ￥" + now.toPlainString()) : Result.error("收取失败");
+        if (!ok) throw new BizException("收取失败，住院记录状态可能已变更");
+        HospitalRecord fresh = this.getById(hospitalId);
+        BigDecimal now = fresh == null ? amount : nz(fresh.getDeposit());
+        return Result.success("收取押金 ￥" + amount.toPlainString() + "，累计已收 ￥" + now.toPlainString());
     }
 
     @Override

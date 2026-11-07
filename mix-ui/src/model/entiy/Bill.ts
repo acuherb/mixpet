@@ -19,6 +19,10 @@ export interface Bill {
     discountMoney: number | null;
     /** 折后应付/实收 */
     realMoney: number | null;
+    /** 累计退款额（账单原始金额不冲减） */
+    refundMoney?: number | null;
+    /** 独立收款时间（统计口径） */
+    payTime?: string | null;
     /** 0未付 1已付 */
     payStatus: boolean;
     /** 0余额 1现金 */

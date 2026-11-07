@@ -9,45 +9,34 @@ import com.mix.model.entity.Client;
 import com.mix.security.model.RoleConst;
 import com.mix.service.IAppointmentService;
 import com.mix.service.IPetService;
-import com.mix.service.IScheduleService;
 import com.mix.model.entity.Pet;
 import com.mix.util.StrUtil;
 import com.mix.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.annotation.Secured;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * <p>
- * 挂号单表 前端控制器
- * </p>
- *
- * @author MixJade
- * @since 2022-12-22
+ * 挂号单表 前端控制器。
+ * 所有新增/改期路径统一走 IAppointmentService.reserve（事务 + 行锁 + 容量校验），
+ * Controller 只做身份与字段级校验，不再各自做号源判断。
  */
 @RestController
 @RequestMapping("/appointment")
 public class AppointmentController {
     private final IAppointmentService appointmentService;
     private final IPetService petService;
-    private final IScheduleService scheduleService;
-
-    /** 每位医生每日号源上限 */
-    @Value("${appointment.max-per-day:20}")
-    private int maxPerDay;
 
     @Autowired
-    public AppointmentController(IAppointmentService appointmentService, IPetService petService,
-                                 IScheduleService scheduleService) {
+    public AppointmentController(IAppointmentService appointmentService, IPetService petService) {
         this.appointmentService = appointmentService;
         this.petService = petService;
-        this.scheduleService = scheduleService;
     }
 
     @GetMapping("/page")
@@ -56,18 +45,12 @@ public class AppointmentController {
         return appointmentService.selectByPage(seaName, seaType, numPage, pageSize);
     }
 
-    /**
-     * 根据医生查询挂号信息
-     */
     @GetMapping("/doctor")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
     public List<AppointmentDto> getDoctor(Integer doctorId) {
         return appointmentService.getDoctor(doctorId);
     }
 
-    /**
-     * 用户个人中心:根据用户查询挂号信息
-     */
     @GetMapping("/client")
     public List<AppointmentDto> getClient() {
         if (UserUtil.getUser() instanceof Client client) {
@@ -75,45 +58,50 @@ public class AppointmentController {
         } else return null;
     }
 
-    /**
-     * 顾客查某医生当日已约数（挂号时段余号展示，date=YYYY-MM-DD）
-     */
+    /** 顾客查某医生当日已约数（保留兼容） */
     @GetMapping("/self/dayCount")
     public long dayCount(Integer doctorId, String date) {
-        if (doctorId == null || StrUtil.isWhite(date)) return 0;
+        return sameDay(doctorId, date).size();
+    }
+
+    /** 顾客端余号：按上午/下午分别返回已约数，避免用整日数把两个时段各减一次 */
+    @GetMapping("/self/slotCount")
+    public Map<String, Long> slotCount(Integer doctorId, String date) {
+        List<Appointment> rows = sameDay(doctorId, date);
+        long am = rows.stream().filter(a -> a.getAppointmentDate() != null
+                && a.getAppointmentDate().getHour() < 12).count();
+        Map<String, Long> out = new HashMap<>();
+        out.put("1", am);
+        out.put("2", rows.size() - am);
+        out.put("total", (long) rows.size());
+        return out;
+    }
+
+    private List<Appointment> sameDay(Integer doctorId, String date) {
+        if (doctorId == null || StrUtil.isWhite(date)) return List.of();
         LocalDate day = LocalDate.parse(date);
-        LocalDateTime dayStart = day.atStartOfDay();
-        LocalDateTime dayEnd = day.plusDays(1).atStartOfDay();
         return appointmentService.lambdaQuery()
                 .eq(Appointment::getDoctorId, doctorId)
-                .ge(Appointment::getAppointmentDate, dayStart)
-                .lt(Appointment::getAppointmentDate, dayEnd)
+                .ge(Appointment::getAppointmentDate, day.atStartOfDay())
+                .lt(Appointment::getAppointmentDate, day.plusDays(1).atStartOfDay())
                 .and(w -> w.eq(Appointment::getIsDel, 0).or().isNull(Appointment::getIsDel))
-                .count();
+                .list();
     }
 
-    // 事务保证：号源校验(count)与 insert 在同一事务内，缩小并发竞态窗口（彻底方案需号源行锁表，后续迭代）
     @PostMapping
-    @Transactional(rollbackFor = Exception.class)
     @Secured(RoleConst.NURSE)
     public Result save(@RequestBody Appointment appointment) {
-        Result checkAppoint = checkAppoint(appointment);
-        if (checkAppoint.code() == 0) return checkAppoint;
-        // 自动记录就诊时的宠物主人
+        Result check = checkFields(appointment);
+        if (check.code() == 0) return check;
         Pet pet = petService.getById(appointment.getPetId());
-        if (pet != null) appointment.setPetOwnerId(pet.getClientId());
-        else appointment.setPetOwnerId(appointment.getClientId());
-        return Result.choice("添加", appointmentService.save(appointment));
+        appointment.setPetOwnerId(pet != null ? pet.getClientId() : appointment.getClientId());
+        return Result.choice("添加", appointmentService.reserve(appointment, true));
     }
 
-    /**
-     * 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物
-     */
+    /** 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物 */
     @PostMapping("/self")
-    @Transactional(rollbackFor = Exception.class)
     public Result saveSelf(@RequestBody Appointment appointment) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
-        // 只能预约自己名下的宠物
         Pet pet = petService.getById(appointment.getPetId());
         if (pet == null) return Result.error("请选择宠物");
         if (!client.getClientId().equals(pet.getClientId())) return Result.error("只能预约自己名下的宠物");
@@ -121,15 +109,14 @@ public class AppointmentController {
             return Result.error("该宠物信息待审核（或已停用），暂不能挂号，请联系医院");
         appointment.setClientId(client.getClientId());
         appointment.setPetOwnerId(client.getClientId());
-        Result checkAppoint = checkAppoint(appointment);
-        if (checkAppoint.code() == 0) return checkAppoint;
+        Result check = checkFields(appointment);
+        if (check.code() == 0) return check;
         appointment.setIsSuc(false);
-        return Result.choice("预约", appointmentService.save(appointment));
+        return Result.choice("预约", appointmentService.reserve(appointment, true));
     }
 
-    /**
-     * 顾客改期自己的待就诊预约（仅可改就诊时间，其余以原单为准，防越权）
-     */    @PutMapping("/self/{id}")
+    /** 顾客改期自己的待就诊预约（仅可改就诊时间，其余以原单为准，防越权） */
+    @PutMapping("/self/{id}")
     public Result updateSelf(@PathVariable Integer id, @RequestBody Appointment appointment) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
         Appointment db = appointmentService.getById(id);
@@ -137,7 +124,6 @@ public class AppointmentController {
         if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
         if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，不能改期");
         if (Boolean.TRUE.equals(db.getMiss())) return Result.error("该预约已爽约，不能改期，请重新预约");
-        // 锁定不可改字段，仅采纳新的就诊时间
         appointment.setAppointmentId(id);
         appointment.setClientId(db.getClientId());
         appointment.setPetId(db.getPetId());
@@ -146,21 +132,18 @@ public class AppointmentController {
         appointment.setDoctorId(db.getDoctorId());
         appointment.setAppointmentInfo(db.getAppointmentInfo());
         appointment.setIsSuc(db.getIsSuc());
-        Result check = checkAppoint(appointment);
+        Result check = checkFields(appointment);
         if (check.code() == 0) return check;
-        return Result.choice("改期", appointmentService.updateById(appointment));
+        return Result.choice("改期", appointmentService.reserve(appointment, false));
     }
 
-    /**
-     * 顾客取消自己的待就诊预约
-     */
     @PutMapping("/self/cancel/{id}")
     public Result cancelSelf(@PathVariable Integer id) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
         Appointment db = appointmentService.getById(id);
         if (db == null) return Result.error("预约不存在");
         if (!client.getClientId().equals(db.getClientId())) return Result.error("只能操作自己的预约");
-        if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已完成，无法取消");
+        if (Boolean.TRUE.equals(db.getIsSuc())) return Result.error("该预约已接诊，无法取消");
         if (Boolean.TRUE.equals(db.getMiss())) return Result.error("该预约已爽约，无需取消，请重新预约");
         return Result.choice("取消", appointmentService.lambdaUpdate()
                 .eq(Appointment::getAppointmentId, id)
@@ -168,10 +151,6 @@ public class AppointmentController {
                 .update());
     }
 
-    /**
-     * 医生标记爽约（预约时间已过但顾客未到店）：记录保留（miss 状态位，不逻辑删除），
-     * 顾客端可见「已爽约」记录且不能再改期/取消；仅允许操作「未处理」且就诊时间已过的挂号单
-     */
     @PutMapping("/miss/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
     @AuditLog(module = "appointment", action = "miss", target = "标记爽约")
@@ -203,45 +182,19 @@ public class AppointmentController {
     @PutMapping
     @Secured(RoleConst.DOCTOR)
     public Result update(@RequestBody Appointment appointment) {
-        Result checkAppoint = checkAppoint(appointment);
-        if (checkAppoint.code() == 0) return checkAppoint;
-        else return Result.choice("修改", appointmentService.updateById(appointment));
+        Result check = checkFields(appointment);
+        if (check.code() == 0) return check;
+        return Result.choice("修改", appointmentService.reserve(appointment, false));
     }
 
-    /**
-     * 新增或修改时，校验信息
-     *
-     * @param appoint 新增或修改的挂号传参
-     * @return 是否校验通过
-     */
-    private Result checkAppoint(Appointment appoint) {
-        if (appoint.getAppointmentDate() == null)
-            return Result.error("就诊时间不能为空");
-        if (StrUtil.isWhite(appoint.getAppointmentInfo()))
-            return Result.error("请输入挂号描述");
-        if (appoint.getClientId() == null || appoint.getClientId() == 0)
-            return Result.error("请选择用户");
-        if (appoint.getPetId() == null || appoint.getPetId() == 0)
-            return Result.error("请选择宠物");
-        if (appoint.getDepartmentId() == null || appoint.getDepartmentId() == 0)
-            return Result.error("请选择科室");
-        if (appoint.getDoctorId() == null || appoint.getDoctorId() == 0)
-            return Result.error("请选择医生");
-        // 排班校验：该医生当日不出诊则不能挂号（未配置排班的医生不限制，向后兼容）
-        if (!scheduleService.isOnDuty(appoint.getDoctorId(), appoint.getAppointmentDate().toLocalDate()))
-            return Result.error("该医生当日未排班（不出诊），请改选其他日期或医生");
-        // 号源容量：同一医生同一自然日预约数不得超过上限（改期时排除自身）
-        LocalDateTime dayStart = appoint.getAppointmentDate().toLocalDate().atStartOfDay();
-        LocalDateTime dayEnd = appoint.getAppointmentDate().toLocalDate().plusDays(1).atStartOfDay();
-        long sameDay = appointmentService.lambdaQuery()
-                .eq(Appointment::getDoctorId, appoint.getDoctorId())
-                .ge(Appointment::getAppointmentDate, dayStart)
-                .lt(Appointment::getAppointmentDate, dayEnd)
-                .ne(appoint.getAppointmentId() != null, Appointment::getAppointmentId, appoint.getAppointmentId())
-                .and(w -> w.eq(Appointment::getIsDel, 0).or().isNull(Appointment::getIsDel))
-                .count();
-        if (sameDay >= maxPerDay)
-            return Result.error("该医生当日号源已满（每日最多 " + maxPerDay + " 个），请改选其他日期或医生");
+    /** 字段级校验；容量/出诊/并发由 Service.reserve 统一负责 */
+    private Result checkFields(Appointment appoint) {
+        if (appoint.getAppointmentDate() == null) return Result.error("就诊时间不能为空");
+        if (StrUtil.isWhite(appoint.getAppointmentInfo())) return Result.error("请输入挂号描述");
+        if (appoint.getClientId() == null || appoint.getClientId() == 0) return Result.error("请选择用户");
+        if (appoint.getPetId() == null || appoint.getPetId() == 0) return Result.error("请选择宠物");
+        if (appoint.getDepartmentId() == null || appoint.getDepartmentId() == 0) return Result.error("请选择科室");
+        if (appoint.getDoctorId() == null || appoint.getDoctorId() == 0) return Result.error("请选择医生");
         return Result.success("数据合法");
     }
 }

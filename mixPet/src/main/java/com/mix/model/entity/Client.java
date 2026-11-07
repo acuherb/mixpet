@@ -191,7 +191,7 @@ public class Client implements Serializable {
                 ", clientTel2='" + clientTel2 + '\'' +
                 ", clientBirthday=" + clientBirthday +
                 ", clientAddress='" + clientAddress + '\'' +
-                ", clientIdCard='" + clientIdCard + '\'' +
+                ", clientIdCard='***'" +
                 ", clientLevel=" + clientLevel +
                 ", clientPoints=" + clientPoints +
                 ", clientBalance=" + clientBalance +

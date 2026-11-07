@@ -59,6 +59,13 @@ public class ExceptionAdvice {
         return Result.error("缺少必需参数: " + e.getParameterName());
     }
 
+    /** 业务校验失败：统一转成与原先 Result.error 相同的响应体，但事务已回滚 */
+    @ExceptionHandler(BizException.class)
+    public Result doBizException(BizException e) {
+        log.warn("业务校验失败: {}", e.getMessage());
+        return Result.error(e.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public Result doIllegalArgumentException(IllegalArgumentException e) {
         return Result.error(e.getMessage());

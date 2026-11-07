@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.FollowUpMapper;
 import com.mix.mapper.MedicalRecordMapper;
 import com.mix.model.dto.FollowUpDto;
@@ -40,9 +41,9 @@ public class FollowUpServiceImpl extends ServiceImpl<FollowUpMapper, FollowUp> i
 
     @Override
     public Result add(FollowUp f) {
-        if (f == null || f.getRecordId() == null) return Result.error("缺少病历id");
+        if (f == null || f.getRecordId() == null) throw new BizException("缺少病历id");
         MedicalRecord r = recordMapper.selectById(f.getRecordId());
-        if (r == null) return Result.error("病历不存在");
+        if (r == null) throw new BizException("病历不存在");
         f.setFollowId(null);
         f.setPetId(r.getPetId());
         f.setClientId(r.getClientId());
@@ -69,8 +70,8 @@ public class FollowUpServiceImpl extends ServiceImpl<FollowUpMapper, FollowUp> i
     @Override
     public Result done(Integer followId, String result) {
         FollowUp f = this.getById(followId);
-        if (f == null) return Result.error("随访记录不存在");
-        if (Boolean.TRUE.equals(f.getStatus())) return Result.error("该随访已完成");
+        if (f == null) throw new BizException("随访记录不存在");
+        if (Boolean.TRUE.equals(f.getStatus())) throw new BizException("该随访已完成");
         this.lambdaUpdate()
                 .eq(FollowUp::getFollowId, followId)
                 .set(FollowUp::getStatus, true)

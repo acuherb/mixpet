@@ -68,6 +68,7 @@
 
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import {useRoute, useRouter} from 'vue-router'
 import {reqConsentSheet} from "@/request/SurgeryApi";
 import {ConsentSheet} from "@/model/VO/ConsentSheet";
@@ -86,6 +87,9 @@ onMounted(() => {
   reqConsentSheet(surgeryId).then(res => {
     c.value = res
     loading.value = false
+  }).catch(() => {
+    loading.value = false
+    ElMessage.error('同意书加载失败，请重试')
   })
 })
 

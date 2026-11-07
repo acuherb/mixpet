@@ -142,7 +142,8 @@ public class DoctorLogController {
             Pet pet = petService.getById(appointment.getPetId());
             appointment.setPetOwnerId(pet != null ? pet.getClientId() : appointment.getClientId());
             if (appointment.getIsSuc() == null) appointment.setIsSuc(false);
-            return Result.choice("添加", appointService.save(appointment));
+            // 与后台/顾客端共用带行锁的写入口，杜绝医生端绕过容量校验造成超卖
+            return Result.choice("添加", appointService.reserve(appointment, true));
         } else return Result.error("未获取登录信息");
     }
 

@@ -48,6 +48,14 @@ export const reception: RouteRecordRaw[] = [
                 // 个人中心的挂号信息
                 path: "clientPet",
                 component: () => import('@/views/reception/clientPet.vue')
+            }, {
+                // 个人中心的账单明细（费用分项 / 实付 / 退款 / 发药状态）
+                path: "clientBill",
+                component: () => import('@/views/reception/clientBill.vue')
+            }, {
+                // 个人中心的站内通知（报告出具主动触达）
+                path: "clientNotice",
+                component: () => import('@/views/reception/clientNotice.vue')
             },
         ],
     }, {

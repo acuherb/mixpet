@@ -33,7 +33,9 @@ Thumbs.db
 
 # ---------- 敏感配置 ----------
 application-local.yml
-application-prod.yml
+# application-prod.yml 已入库：只含 ${环境变量} 占位符，不含任何真实密钥；
+# 真实值由 deploy.sh 写入服务器 /etc/mixpet/mixpet.env（不入库）。
+# 切勿把填了明文密码/密钥的本地配置提交进来。
 
 # ---------- 运行时上传数据（UUID 命名的上传文件不进仓库；种子/默认图片仍保留跟踪） ----------
 avatar/????????-????-????-????-????????????.*

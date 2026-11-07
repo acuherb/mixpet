@@ -3,7 +3,7 @@
     <el-card shadow="never">
       <template #header>
         <b>医生排班</b>
-        <span class="tip">设置医生每周几上/下午是否出诊及可约号源；保存后挂号将校验"医生当日是否出诊"</span>
+        <span class="tip">设置医生每周几上/下午是否出诊及可约号源；单时段最多 20 号，挂号按时段校验容量</span>
       </template>
       <div class="sel-row">
         <span>选择医生：</span>
@@ -21,7 +21,7 @@
         </el-table-column>
         <el-table-column label="上午号源" width="140">
           <template #default="s">
-            <el-input-number v-model="s.row.amCount" :disabled="!s.row.amActive" :max="999" :min="0" size="small"/>
+            <el-input-number v-model="s.row.amCount" :disabled="!s.row.amActive" :max="20" :min="0" size="small"/>
           </template>
         </el-table-column>
         <el-table-column label="下午出诊" width="110">
@@ -29,7 +29,7 @@
         </el-table-column>
         <el-table-column label="下午号源" width="140">
           <template #default="s">
-            <el-input-number v-model="s.row.pmCount" :disabled="!s.row.pmActive" :max="999" :min="0" size="small"/>
+            <el-input-number v-model="s.row.pmCount" :disabled="!s.row.pmActive" :max="20" :min="0" size="small"/>
           </template>
         </el-table-column>
       </el-table>

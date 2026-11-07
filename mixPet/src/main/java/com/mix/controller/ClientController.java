@@ -3,6 +3,8 @@ package com.mix.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
+import com.mix.common.VerifyCodeStore;
+import com.mix.util.JwtUtil;
 import com.mix.model.entity.Client;
 import com.mix.model.dto.NameDo;
 import com.mix.model.vo.EmailVo;
@@ -41,17 +43,22 @@ public class ClientController {
     private final IClientService clientService;
     private final IMemberService memberService;
     private final AvatarFileService avatarFileService;
+    private final JwtUtil jwtUtil;
+    private final VerifyCodeStore verifyCodeStore;
 
     @Autowired
     public ClientController(IClientService clientService, IMemberService memberService,
-                            AvatarFileService avatarFileService) {
+                            AvatarFileService avatarFileService, JwtUtil jwtUtil,
+                            VerifyCodeStore verifyCodeStore) {
         this.clientService = clientService;
         this.memberService = memberService;
         this.avatarFileService = avatarFileService;
+        this.jwtUtil = jwtUtil;
+        this.verifyCodeStore = verifyCodeStore;
     }
 
-    /** 管理员重置密码默认口令 */
-    @Value("${app.default-password:123456}")
+    /** 管理员重置密码默认口令（无内置兜底，缺失则启动失败） */
+    @Value("${app.default-password}")
     private String defaultPwd;
 
     /**
@@ -119,6 +126,7 @@ public class ClientController {
      * 前台为客户充值（现金收款存入余额，供收费时余额扣款）
      */
     @PutMapping("/recharge")
+    @AuditLog(module = "client", action = "recharge", target = "客户余额充值")
     @Secured(RoleConst.NURSE)
     public Result recharge(Integer clientId, BigDecimal money) {
         if (clientId == null) return Result.error("缺少客户id");
@@ -199,6 +207,8 @@ public class ClientController {
                 return Result.error("原密码不正确");
             dbClient.setClientPassword(StrUtil.tranPwd(vo.newPwd()));
             dbClient.setClientPwdChanged(true);
+            // 同步刷新登录态中的标记，避免后端强制改密拦截器继续拦截本会话
+            current.setClientPwdChanged(true);
             return Result.choice("修改密码", clientService.updateById(dbClient));
         }
         return Result.error("未登录");
@@ -208,6 +218,7 @@ public class ClientController {
      * 管理员重置某用户密码为 123456
      */
     @PutMapping("/reset/{id}")
+    @AuditLog(module = "client", action = "resetPwd", target = "重置客户密码")
     @Secured(RoleConst.MANAGER)
     public Result resetPassword(@PathVariable Integer id) {
         Client dbClient = clientService.getById(id);
@@ -226,9 +237,12 @@ public class ClientController {
         if (StrUtil.isWhite(vo.email())) return Result.error("邮箱不能为空");
         if (!SendMail.isValidEmail(vo.email())) return Result.error("邮箱格式不正确");
         if (StrUtil.isWhite(vo.code())) return Result.error("验证码不能为空");
-        String sessionCode = (String) session.getAttribute(vo.email());
-        if (sessionCode == null) return Result.error("未发送验证码");
-        if (!sessionCode.equalsIgnoreCase(vo.code())) return Result.error("验证码不正确");
+        // Session 里只存令牌，验证码由 VerifyCodeStore 服务端一次性校验
+        String token = (String) session.getAttribute(vo.email());
+        if (token == null) return Result.error("未发送验证码");
+        String jti = jwtUtil.validateAndGetJti(token, vo.email());
+        if (jti == null || !verifyCodeStore.verify(jti, vo.email(), null, vo.code()))
+            return Result.error("验证码不正确或已过期");
         session.removeAttribute(vo.email());
         if (UserUtil.getUser() instanceof Client current) {
             Client dbClient = clientService.getById(current.getClientId());

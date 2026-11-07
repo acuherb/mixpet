@@ -66,7 +66,7 @@
           <span v-else class="ro">{{ rx.dispenser }}</span>
         </div>
         <el-alert :closable="false" show-icon type="info"
-                  title="打印后由执业兽医师手签并盖医院章；系统不留电子签名。"/>
+                  title="处方笺打印后仍需手签盖章；电子病历在完结时由接诊医师签名，可在病历页查看版本与审核状态。"/>
       </div>
       <div class="pv-preview">
         <iframe v-if="rxPreviewSrc" :src="rxPreviewSrc" class="pv-frame" title="处方笺预览"/>
@@ -126,10 +126,15 @@ const recSrc = computed(() =>
     '/#/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + style.value)
 const framePrint = (): void => {
   const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
-  f?.contentWindow?.print()
+  if (!f?.contentWindow) { ElMessage.warning('预览尚未加载完成，请稍后重试'); return }
+  try { f.contentWindow.print() } catch { ElMessage.error('预览打印失败，请改用「导出 PDF」') }
+}
+/** 弹窗被浏览器拦截时给出提示，避免点了没反应 */
+const openPrintPage = (url: string): void => {
+  if (!window.open(url, '_blank')) ElMessage.warning('打印窗口被拦截，请允许弹出窗口后重试')
 }
 const exportPdf = (): void => {
-  window.open(recSrc.value + '&autopdf=1', '_blank')
+  openPrintPage(recSrc.value + '&autopdf=1')
 }
 
 /*===== 兽用处方笺：联次 + 补录 + 生成编号打印 =====*/
@@ -164,7 +169,7 @@ const prepareAndPrint = (): void => {
     preparing.value = false
     if (res.code === 1) {
       view.value = false
-      window.open('/#/doctorPage/d-rx?recordId=' + props.recordId + '&auto=1', '_blank')
+      openPrintPage('/#/doctorPage/d-rx?recordId=' + props.recordId + '&auto=1')
     } else {
       ElMessage.error(res.msg || '生成失败')
     }

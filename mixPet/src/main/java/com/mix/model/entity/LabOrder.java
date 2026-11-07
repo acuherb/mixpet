@@ -39,6 +39,19 @@ public class LabOrder implements Serializable {
     /** 是否作废 0否 1是 */
     private Boolean isCancel;
 
+    /** 标本类型：全血/血清/血浆/尿液/粪便/拭子等 */
+    private String specimenType;
+    /** 采样时间 / 标本接收时间（临床时间轴） */
+    private LocalDateTime collectTime;
+    private LocalDateTime receiveTime;
+    /** 结果复核人 / 复核时间（录入人与审核人分离） */
+    private String reviewBy;
+    private LocalDateTime reviewAt;
+    /** 本单是否含危急值 */
+    private Boolean criticalFlag;
+    /** 结果修订次数：0=首次录入，>=1 为复核后修订 */
+    private Integer resultRevision;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

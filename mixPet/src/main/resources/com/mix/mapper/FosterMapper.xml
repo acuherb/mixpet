@@ -4,7 +4,9 @@
     <!--分页查询-->
     <select id="selectFosterPage" resultType="com.mix.model.dto.FosterDto">
         select
-        foster_id, foster_code,f.pet_id, f.client_id, foster_term, foster_money, foster_info, p.pet_name,c.client_name
+        foster_id, foster_code,f.pet_id, f.client_id, foster_term, foster_money, foster_info,
+        f.in_date, f.back_date, f.daily_fee, f.clean_fee, f.meal_fee, f.status,
+        p.pet_name,c.client_name
         FROM foster f,pet p,client c
         WHERE f.is_del = 0
         AND f.pet_id = p.pet_id

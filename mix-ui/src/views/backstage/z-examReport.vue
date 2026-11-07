@@ -63,6 +63,9 @@
         <div class="rx-note">
           <b>结果说明：</b>{{ report.resultNote || '（无）' }}
         </div>
+        <div class="rx-note" v-if="report.criticalFlag" style="color:#d03050">
+          <b>危急值提示：</b>本单存在危急值，请立即联系接诊医师并留存处置记录。
+        </div>
       </template>
 
       <!-- 影像：检查项目 + 报告文本 -->
@@ -84,12 +87,16 @@
       <table class="rx-table rx-sign">
         <tbody>
           <tr>
-            <td class="k">报告医师</td><td class="v sign">（签名/盖章）</td>
-            <td class="k">审核医师</td><td class="v sign">（签名/盖章）</td>
+            <td class="k">报告医师</td><td class="v sign">{{ report.resultBy || '（待录入）' }}</td>
+            <td class="k">审核医师</td><td class="v sign">{{ report.reviewBy || '（未复核）' }}</td>
           </tr>
           <tr>
             <td class="k">报告日期</td><td class="v">{{ fmt(report.resultTime || report.createTime) }}</td>
             <td class="k">备注</td><td class="v">{{ report.remark || '—' }}</td>
+          </tr>
+          <tr v-if="report.type === 'lab'">
+            <td class="k">标本类型</td><td class="v">{{ report.specimenType || '—' }}</td>
+            <td class="k">采样 / 接收</td><td class="v">{{ fmt(report.collectTime) || '—' }} / {{ fmt(report.receiveTime) || '—' }}</td>
           </tr>
         </tbody>
       </table>
@@ -135,6 +142,13 @@ interface ReportData {
   // 检验
   items: { name: string; refRange: string | null; unit: string | null; resultValue: string | null; abnormal: boolean }[]
   resultNote: string | null
+  // 临床时间轴与双签（检验报告）
+  specimenType: string | null
+  collectTime: string | null
+  receiveTime: string | null
+  resultBy: string | null
+  reviewBy: string | null
+  criticalFlag: boolean
   // 影像
   itemName: string
   examPart: string | null
@@ -169,6 +183,12 @@ onMounted(() => {
       fee: base.fee ?? 0,
       items: [],
       resultNote: null,
+      specimenType: null,
+      collectTime: null,
+      receiveTime: null,
+      resultBy: null,
+      reviewBy: null,
+      criticalFlag: false,
       itemName: '',
       examPart: base.examPart ?? null,
       resultText: null
@@ -186,6 +206,12 @@ onMounted(() => {
         } else {
           data.resultTime = hit.resultTime ?? null
           data.resultNote = hit.resultNote ?? null
+          data.specimenType = hit.specimenType ?? null
+          data.collectTime = hit.collectTime ?? null
+          data.receiveTime = hit.receiveTime ?? null
+          data.resultBy = hit.resultBy ?? null
+          data.reviewBy = hit.reviewBy ?? null
+          data.criticalFlag = !!hit.criticalFlag
           data.items = (hit.items || []).map((i: any) => ({
             name: i.itemName,
             refRange: i.refRange,

@@ -123,6 +123,15 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     }
 
     @Override
+    public String getPublicNoticeText(Integer noticeId) {
+        Notice notice = getById(noticeId);
+        // 顾客端接口：只放行「顾客可见 + 未禁用」的公告，内部提醒（含全院客户明细）不可枚举
+        if (notice == null || Boolean.TRUE.equals(notice.getNoticeType())
+                || Boolean.TRUE.equals(notice.getIsDisable())) return null;
+        return getText(notice.getNoticeFile());
+    }
+
+    @Override
     public List<NoticeDto> selectFour() {
         List<NoticeDto> noticeList = baseMapper.selectFour();
         noticeList.forEach(noticeDto -> noticeDto.setTextNotice(getText(noticeDto.getNoticeFile())));
@@ -143,8 +152,12 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
     @Override
     public boolean updateNotice(NoticeDto noticeDto) {
         if (UserUtil.getUser() instanceof Doctor doctor) {
+            // 文件名一律以数据库现值为准，不信任前端传参（防路径穿越写任意文件）
+            Notice existing = noticeDto.getNoticeId() == null ? null : getById(noticeDto.getNoticeId());
+            if (existing == null || !isSafeFileName(existing.getNoticeFile())) return false;
             noticeDto.setUpdateId(doctor.getDoctorId());
-            writeText(noticeDto.getTextNotice(), noticeDto.getNoticeFile());
+            noticeDto.setNoticeFile(existing.getNoticeFile());
+            writeText(noticeDto.getTextNotice(), existing.getNoticeFile());
             return baseMapper.updateNotice(noticeDto);
         } else return false;
     }
@@ -169,12 +182,21 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
      * @return 公告文本
      */
     private String getText(String noticeFile) {
+        if (!isSafeFileName(noticeFile)) {
+            log.warn("拒绝读取非法公告文件名：{}", noticeFile);
+            return null;
+        }
         try {
             return Files.readString(Path.of(noticePath + noticeFile));
         } catch (IOException e) {
             log.warn("公告文本获取失败" + e);
             return null;
         }
+    }
+
+    /** 公告文件名只能是纯文件名：禁止 ../、绝对路径、路径分隔符 */
+    private static boolean isSafeFileName(String name) {
+        return name != null && name.matches("[A-Za-z0-9_-]+(\\.[A-Za-z0-9]+)?");
     }
 
     /**
@@ -184,6 +206,7 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, Notice> impleme
      * @param noticeFile 公告文件名
      */
     private void writeText(String text, String noticeFile) {
+        if (!isSafeFileName(noticeFile)) throw new IllegalArgumentException("非法公告文件名");
         try (var sw = new OutputStreamWriter(new FileOutputStream(noticePath + noticeFile), StandardCharsets.UTF_8)) {
             sw.write(text);
         } catch (IOException e) {

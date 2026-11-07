@@ -14,9 +14,9 @@ import ChatPanel from "@/components/chat/ChatPanel.vue";
 import {onBeforeUnmount, onMounted, ref} from "vue";
 import {useRoute} from "vue-router";
 import {reqDoctorGetNearClient, reqDoctorMsgGroup, reqDoctorMsgList, reqSendDoctorMsg} from "@/request/MsgApi";
-import {ElMessage} from "element-plus";
 import {Msg} from "@/model/entiy/Msg";
 import {getNowISO} from "@/utils/TimeUtil";
+import {send, subscribe} from "@/utils/chatSocket";
 
 /**
  ┌───────────────────────────────────┐
@@ -46,22 +46,8 @@ const client = {
 // 得到分组与聊天记录
 const groupList = ref<ChatGroup[]>([]);
 const msgList = ref<MsgDo[]>([]);
-// WebSocket 连接：走同源 /chat，由 nginx（生产）或 vite（开发）反代到后端 8085，避免 HTTPS 页混合内容拦截
-const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
-const ws = new WebSocket(wsUrl);  // 建立WebSocket对象
-// 是否成功连接过（区分「离开页面」和「连接失败」）
-let wsOpened = false
-ws.onopen = () => {
-  wsOpened = true
-}
-// 医生离开或连接失败的提示
-ws.onclose = () => {
-  if (wsOpened) ElMessage.warning("你已离开聊天页面")
-  else ElMessage.warning("聊天连接失败，消息无法实时送达，请刷新重试")
-}
-// 这里是接受到消息之后刷新
-ws.onmessage = (ev) => {
-  const dataMsg = <Msg>JSON.parse(ev.data)
+// 共享单例连接：断线自动指数退避重连，JSON 解析与非消息帧由 chatSocket 统一处理
+const unsubscribeChat = subscribe((dataMsg: Msg) => {
   if (dataMsg.clientId === client.clientId) {
     const msgDo: MsgDo = {
       createTime: getNowISO(),
@@ -76,7 +62,7 @@ ws.onmessage = (ev) => {
     }
     msgList.value.push(msgDo)
   }
-}
+})
 /**
  ┌───────────────────────────────────┐
  │=============聊天时的过程============│
@@ -110,7 +96,7 @@ const sendTextMsg = (val: string): void => {
       })
     }
   })
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
+  send(msg)
 }
 // 发送图片消息
 const sendImgMsg = (imgName: string): void => {
@@ -127,7 +113,7 @@ const sendImgMsg = (imgName: string): void => {
       })
     }
   })
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
+  send(msg)
 }
 // 发送文件消息
 const sendFileMsg = (fileMeta: {name: string, origin: string}): void => {
@@ -145,7 +131,7 @@ const sendFileMsg = (fileMeta: {name: string, origin: string}): void => {
       })
     }
   })
-  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg))
+  send(msg)
 }
 /**
  ┌───────────────────────────────────┐
@@ -153,7 +139,7 @@ const sendFileMsg = (fileMeta: {name: string, origin: string}): void => {
  └───────────────────────────────────┘
  */
 onBeforeUnmount(() => {
-  ws.close(1000, '正常关闭连接');
+  unsubscribeChat()
 })
 </script>
 

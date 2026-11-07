@@ -42,12 +42,19 @@ public class ImgController {
     // 修复微信/支付宝图片因 MIME 缺失（无扩展名）导致上传失败：识别出图片才走图片流程
     private final String basePath, chatPath, reportPath;
 
+    private final com.mix.mapper.LabOrderMapper labOrderMapper;
+    private final com.mix.mapper.ImageOrderMapper imageOrderMapper;
+
     public ImgController(@Value("${pet-mix.images-path}") String basePath,
                          @Value("${pet-mix.chatImg-path}") String chatPath,
-                         @Value("${pet-mix.report-path}") String reportPath) {
+                         @Value("${pet-mix.report-path}") String reportPath,
+                         com.mix.mapper.LabOrderMapper labOrderMapper,
+                         com.mix.mapper.ImageOrderMapper imageOrderMapper) {
         this.basePath = basePath;
         this.chatPath = chatPath;
         this.reportPath = reportPath;
+        this.labOrderMapper = labOrderMapper;
+        this.imageOrderMapper = imageOrderMapper;
         // 确保聊天目录下的 image 与 file 子目录存在
         new File(chatImageDir()).mkdirs();
         new File(chatFileDir()).mkdirs();
@@ -215,6 +222,22 @@ public class ImgController {
     public void downReport(String name, HttpServletResponse response) {
         if (name == null || name.isBlank()) return;
         if (name.contains("..") || name.contains("/") || name.contains("\\")) return;
+        // 顾客只能下载自己名下的化验/影像报告附件（文件名 UUID 不可枚举也不能越权）
+        if (com.mix.util.UserUtil.getUser() instanceof com.mix.model.entity.Client client) {
+            Integer cid = client.getClientId();
+            Long lab = labOrderMapper.selectCount(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.mix.model.entity.LabOrder>()
+                            .eq(com.mix.model.entity.LabOrder::getReportFile, name)
+                            .eq(com.mix.model.entity.LabOrder::getClientId, cid));
+            Long img = imageOrderMapper.selectCount(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.mix.model.entity.ImageOrder>()
+                            .eq(com.mix.model.entity.ImageOrder::getReportFile, name)
+                            .eq(com.mix.model.entity.ImageOrder::getClientId, cid));
+            if ((lab == null || lab == 0) && (img == null || img == 0)) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+        }
         File image = new File(reportImageDir() + name);
         File file = new File(reportFileDir() + name);
         String dir = null;
@@ -245,6 +268,8 @@ public class ImgController {
         // 附件下载统一用 octet-stream（防浏览器按扩展名猜出危险 MIME）
         if (asAttachment) mime = "application/octet-stream";
         try (var fis = new FileInputStream(file); var ops = response.getOutputStream()) {
+            // 禁止浏览器 MIME 嗅探，防 inline 预览变成存储型 XSS
+            response.setHeader("X-Content-Type-Options", "nosniff");
             response.setContentType(mime);
             if (asAttachment) {
                 response.setHeader("Content-Disposition", "attachment; filename=\"" +

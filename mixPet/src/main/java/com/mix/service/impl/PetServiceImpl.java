@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.PhotoEnum;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.PetMapper;
 import com.mix.mapper.PetTransferMapper;
 import com.mix.model.dto.PetDto;
@@ -102,7 +103,7 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
     @Transactional(rollbackFor = Exception.class)
     public Result deleteOrDeactivate(Integer petId) {
         Pet pet = getById(petId);
-        if (pet == null) return Result.error("宠物不存在");
+        if (pet == null) throw new BizException("宠物不存在");
         Map<String, Long> m = baseMapper.countRefById(petId);
         long total = m.values().stream().mapToLong(Long::longValue).sum();
         if (total == 0) {
@@ -150,8 +151,8 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
     @Transactional(rollbackFor = Exception.class)
     public Result intake(Integer petId, String reason) {
         Pet pet = getById(petId);
-        if (pet == null) return Result.error("宠物不存在");
-        if (pet.getClientId() == null) return Result.error("该宠物已是无主状态，无需入栏");
+        if (pet == null) throw new BizException("宠物不存在");
+        if (pet.getClientId() == null) throw new BizException("该宠物已是无主状态，无需入栏");
         Integer fromClientId = pet.getClientId();
         // MP 的 updateById 默认跳过 null 字段，清空主人必须显式 set null
         this.lambdaUpdate()

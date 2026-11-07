@@ -87,6 +87,26 @@ export interface MedicalRecord {
     finishTime?: string | null;
     /** 作废原因 */
     cancelReason?: string | null;
+    /** 版本号：修改时回传做乐观锁，版本不一致后端拒绝覆盖 */
+    version?: number | null;
+    /** 完结电子签名与审核状态 */
+    signedBy?: string | null;
+    signedAt?: string | null;
+    reviewStatus?: number | null;
+    reviewBy?: string | null;
+    reviewAt?: string | null;
+}
+
+/** 病历修改留痕：某次变更前的整本快照 */
+export interface RecordRevision {
+    revisionId: number;
+    recordId: number;
+    revisionNo: number;
+    snapshotJson: string;
+    editorId?: number | null;
+    editorName?: string | null;
+    changeReason?: string | null;
+    createTime?: string | null;
 }
 
 export const exampleMedicalRecord = (appointmentId: number): MedicalRecord => {

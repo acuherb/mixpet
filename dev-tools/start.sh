@@ -6,11 +6,10 @@ PROJ="$HOME/公共/mixpet"
 BK_LOG="/tmp/pet-backend.log"   # 后端统一日志
 FT_LOG="/tmp/pet-frontend.log"  # 前端统一日志
 
-# 加载环境变量（优先用已有的 $HOME/.env > 项目根目录 .env > .env.example）
-for f in "$HOME/.env" "$PROJ/.env" "$PROJ/.env.example"; do
+# 加载环境变量：只认真实 .env，绝不回退到仓库内公开的 .env.example（占位密钥不能进生产）
+for f in "$HOME/.env" "$PROJ/.env"; do
   if [ -f "$f" ]; then
     echo "加载环境变量: $f"
-    # set -a 让后续任何变量赋值自动 export，再用 source 加载 .env 文件
     set -a
     # shellcheck disable=SC1090
     source "$f"
@@ -18,11 +17,39 @@ for f in "$HOME/.env" "$PROJ/.env" "$PROJ/.env.example"; do
     break
   fi
 done
+for required in DB_USER DB_PASSWORD APP_DEFAULT_PASSWORD REMEMBER_ME_KEY VERIFY_CODE_SECRET; do
+  if [ -z "${!required:-}" ]; then
+    echo "缺少必需环境变量 $required：请复制 .env.example 为 .env 并填入真实值" >&2
+    exit 1
+  fi
+done
+if [ "${#REMEMBER_ME_KEY}" -lt 32 ] || [ "${#VERIFY_CODE_SECRET}" -lt 32 ]; then
+  echo "REMEMBER_ME_KEY / VERIFY_CODE_SECRET 必须至少 32 字符（.env 当前值过短）" >&2
+  exit 1
+fi
 
 # 中文路径保命：项目在「公共」目录下，mvn/JVM 默认 locale 非 UTF-8 时
 # sun.jnu.encoding 会把中文路径解析成 ?????? 直接 InvalidPathException 挂掉
 export LANG=C.UTF-8 LC_ALL=C.UTF-8
 export JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
+
+# JDK 必须锁定「完整的 17」：Debian 13 默认 java 常指向 JDK21 的 JRE（无 javac），
+# Maven in-process 编译会直接报 "release version 17 not supported"。
+# 桌面双击 / 非登录 shell 启动时 ~/.bashrc 的 JAVA_HOME 不一定生效，所以在这里兜底。
+JAVA17=""
+for d in "${JAVA_HOME:-}" /usr/lib/jvm/temurin-17-jdk-amd64 /usr/lib/jvm/java-17-openjdk-amd64; do
+  if [ -n "$d" ] && [ -x "$d/bin/javac" ] && "$d/bin/javac" -version 2>&1 | grep -q 'javac 17'; then
+    JAVA17="$d"
+    break
+  fi
+done
+if [ -z "$JAVA17" ]; then
+  echo "❌ 未找到完整 JDK 17（需含 javac）：sudo apt install temurin-17-jdk，或设置 JAVA_HOME" >&2
+  exit 1
+fi
+export JAVA_HOME="$JAVA17"
+export PATH="$JAVA_HOME/bin:$PATH"
+echo "JDK: $JAVA_HOME ($("$JAVA_HOME/bin/javac" -version 2>&1 | head -n 1))"
 
 # 先停干净（按端口，避免误杀与占用卡死）
 "$PROJ/dev-tools/stop.sh" || true

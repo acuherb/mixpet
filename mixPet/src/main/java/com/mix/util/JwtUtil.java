@@ -3,6 +3,7 @@ package com.mix.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -21,11 +22,19 @@ public class JwtUtil {
     @Value("${app.verify-code-secret:}")
     private String secret;
 
+    /** 启动时强校验：密钥缺失、过短或仍是仓库公开模板值 → 拒绝启动，不再用确定性密钥兜底 */
+    @PostConstruct
+    public void checkSecret() {
+        if (secret == null || secret.length() < 32
+                || secret.equals("YourSecureJwtSecretKeyAtLeast32Chars!")) {
+            throw new IllegalStateException(
+                    "VERIFY_CODE_SECRET 未配置、短于 32 字符或仍是公开模板值，拒绝启动（请在 .env 中配置强随机密钥）");
+        }
+    }
+
     /**
-     * 签名密钥：JJWT 要求 HMAC-SHA 密钥 ≥256bit(32字节)，否则抛 WeakKeyException 导致接口 500。
-     * 配置容错：任意长度/空配置都先经 SHA-256 归一成恰好 32 字节——
-     * ① 用户填短密钥不再炸（2026-10-22 线上事故：.env 填了 31 字节密钥，邮件发出后签 token 即崩）；
-     * ② ≥32 字节的规范密钥按原值截取，保持确定性（同一配置签出的 token 可跨重启校验）。
+     * 签名密钥：JJWT 要求 HMAC-SHA 密钥 ≥256bit(32字节)。
+     * checkSecret 已保证配置不为空；此处仍兼容 Base64 形式与超长密钥。
      */
     private SecretKey getKey() {
         byte[] raw;
@@ -47,16 +56,16 @@ public class JwtUtil {
     }
 
     /**
-     * 生成验证码 Token
-     * @param mail     用于绑定验证码与邮箱，防止跨邮箱使用
+     * 生成验证码令牌：只携带一次性 id（jti），验证码本身只存服务端 VerifyCodeStore。
+     * @param mail     绑定邮箱，防止跨邮箱使用
      * @param username 可选，用于找回密码场景绑定账号
-     * @param code     验证码
+     * @param jti      VerifyCodeStore.issue 返回的一次性 id
      */
-    public String generateVerifyCode(String mail, String username, String code) {
+    public String generateVerifyCode(String mail, String username, String jti) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("type", "verify_code");
         claims.put("mail", mail);
-        claims.put("code", code);
+        claims.put("jti", jti);
         if (username != null) {
             claims.put("username", username);
         }
@@ -70,34 +79,23 @@ public class JwtUtil {
                 .compact();
     }
 
-    /**
-     * 验证 Token 并提取验证码（用于注册：只校验 mail）
-     * @param token 待验证的 JWT
-     * @param expectedMail 期望的邮箱（前端传回，用于绑定校验）
-     */
-    public String validateAndGetCode(String token, String expectedMail) {
-        try {
-            Claims claims = parseClaims(token);
-            if (!"verify_code".equals(claims.get("type"))) return null;
-            if (claims.getExpiration().before(new Date())) return null;
-            if (!expectedMail.equals(claims.get("mail"))) return null;
-            return claims.get("code", String.class);
-        } catch (Exception e) {
-            return null;
-        }
+    /** 校验令牌并返回服务端存储 id（注册场景，只绑定邮箱） */
+    public String validateAndGetJti(String token, String expectedMail) {
+        return validateAndGetJti(token, expectedMail, null);
     }
 
-    /**
-     * 验证 Token 并提取验证码（用于找回密码：校验 mail + username）
-     */
-    public String validateAndGetCode(String token, String expectedMail, String expectedUsername) {
+    /** 校验令牌并返回服务端存储 id（找回密码场景，绑定邮箱 + 账号） */
+    public String validateAndGetJti(String token, String expectedMail, String expectedUsername) {
         try {
             Claims claims = parseClaims(token);
             if (!"verify_code".equals(claims.get("type"))) return null;
             if (claims.getExpiration().before(new Date())) return null;
-            if (!expectedMail.equals(claims.get("mail"))) return null;
-            if (!expectedUsername.equals(claims.get("username"))) return null;
-            return claims.get("code", String.class);
+            if (expectedMail == null || !expectedMail.equalsIgnoreCase(claims.get("mail", String.class)))
+                return null;
+            String boundUser = claims.get("username", String.class);
+            if (boundUser != null && !boundUser.equals(expectedUsername)) return null;
+            String jti = claims.get("jti", String.class);
+            return jti == null || jti.isBlank() ? null : jti;
         } catch (Exception e) {
             return null;
         }

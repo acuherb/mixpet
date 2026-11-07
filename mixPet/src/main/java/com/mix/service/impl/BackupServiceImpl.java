@@ -98,8 +98,17 @@ public class BackupServiceImpl implements IBackupService {
     public String create(String prefix) {
         if (!busy.compareAndSet(false, true)) throw new IllegalStateException("已有备份/还原任务在进行，请稍候");
         try {
-            String name = (prefix == null ? "mixpet_" : prefix) + FILE_TS.format(LocalDateTime.now()) + ".sql";
-            File out = new File(dir(), name);
+            return doCreate(prefix);
+        } finally {
+            busy.set(false);
+        }
+    }
+
+    /** 无锁的备份主体：供还原流程在持锁状态下调用（避免自己抢自己的锁导致死锁） */
+    private String doCreate(String prefix) {
+        String name = (prefix == null ? "mixpet_" : prefix) + FILE_TS.format(LocalDateTime.now()) + ".sql";
+        File out = new File(dir(), name);
+        try {
             ProcessBuilder pb = new ProcessBuilder(
                     "mysqldump", "-h" + host(), "-P" + port(),
                     "--default-character-set=utf8mb4",
@@ -118,6 +127,7 @@ public class BackupServiceImpl implements IBackupService {
                 log.error("备份失败 code={} err={}", code, err);
                 throw new IllegalStateException("备份失败：" + err.lines().findFirst().orElse("未知错误"));
             }
+            writeChecksum(out);
             log.info("数据备份成功：{}（{} 字节）", name, out.length());
             return name;
         } catch (InterruptedException e) {
@@ -125,8 +135,36 @@ public class BackupServiceImpl implements IBackupService {
             throw new IllegalStateException("备份被中断");
         } catch (IOException e) {
             throw new IllegalStateException("备份IO异常：" + e.getMessage());
-        } finally {
-            busy.set(false);
+        }
+    }
+
+    /** 生成 SHA-256 校验文件，还原前可验证备份未被损坏/篡改 */
+    private void writeChecksum(File sql) throws IOException {
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(Files.readAllBytes(sql.toPath()));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : digest) hex.append(String.format("%02x", b));
+            Files.writeString(new File(sql.getParentFile(), sql.getName() + ".sha256").toPath(), hex.toString());
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IOException("SHA-256 不可用", e);
+        }
+    }
+
+    /** 还原前校验（无校验文件的历史备份仍允许还原） */
+    private void verifyChecksum(File sql) {
+        File sum = new File(sql.getParentFile(), sql.getName() + ".sha256");
+        if (!sum.exists()) return;
+        try {
+            byte[] digest = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(Files.readAllBytes(sql.toPath()));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : digest) hex.append(String.format("%02x", b));
+            if (!hex.toString().equalsIgnoreCase(Files.readString(sum.toPath()).trim())) {
+                throw new IllegalStateException("备份文件校验失败（SHA-256 不匹配），已中止还原");
+            }
+        } catch (IOException | java.security.NoSuchAlgorithmException e) {
+            throw new IllegalStateException("备份校验读取失败，已中止还原", e);
         }
     }
 
@@ -137,10 +175,12 @@ public class BackupServiceImpl implements IBackupService {
         if (!nameOk(name)) throw new IllegalArgumentException("非法备份文件名");
         File src = new File(dir(), name);
         if (!src.exists()) throw new IllegalArgumentException("备份文件不存在：" + name);
+        verifyChecksum(src);
         if (!busy.compareAndSet(false, true)) throw new IllegalStateException("已有备份/还原任务在进行，请稍候");
         try {
-            // 闸3：还原前自动快照当前数据（出事用它回退）
-            String snapshot = create("pre_restore_");
+            // 闸3：还原前自动快照当前数据（出事用它回退）。
+            // 必须调用无锁的 doCreate：原实现调用 create() 会抢同一把 busy 锁，导致还原永远不执行。
+            String snapshot = doCreate("pre_restore_");
             // 执行还原：mysql < backup.sql
             ProcessBuilder pb = new ProcessBuilder(
                     "mysql", "-h" + host(), "-P" + port(),

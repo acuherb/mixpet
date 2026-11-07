@@ -156,7 +156,7 @@ import {reqDepartNameHaveDoctor} from "@/request/DepartApi";
 import {reqDoctorNameByDepartId} from "@/request/DoctorApi";
 import {reqClientBill} from "@/request/BillApi";
 import {reqScheduleByDoctor} from "@/request/ScheduleApi";
-import {reqDayCount} from "@/request/AppointApi";
+import {reqSlotCount} from "@/request/AppointApi";
 import {DoctorSchedule} from "@/model/entiy/DoctorSchedule";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {CircleCheck, Plus} from "@element-plus/icons-vue";
@@ -194,14 +194,18 @@ const onDateChange = (): void => {
   const weekday = new Date(appointDate.value + 'T00:00:00').getDay() || 7 // 1周一...7周日
   Promise.all([
     reqScheduleByDoctor(doctorId),
-    reqDayCount(doctorId, appointDate.value)
+    reqSlotCount(doctorId, appointDate.value)
   ]).then(([sc, cnt]) => {
     slots.value = (sc || [])
         .filter((s: DoctorSchedule) => s.active !== false && s.weekday === weekday)
         .map((s: DoctorSchedule) => ({
           period: s.period as number,
           max: s.maxCount ?? 0,
-          left: Math.max(0, (s.maxCount ?? 0) - (cnt ?? 0))
+          // 按「本时段」扣减，且不超过每日硬上限 20 的剩余额度
+          left: Math.max(0, Math.min(
+            (s.maxCount ?? 0) - (cnt?.[s.period as number] ?? 0),
+            20 - (cnt?.total ?? 0)
+          ))
         }))
         .sort((a, b) => a.period - b.period)
   })

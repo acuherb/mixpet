@@ -66,15 +66,14 @@ public class ReportServiceImpl implements IReportService {
         LocalDateTime startDt = start.atStartOfDay();
         LocalDateTime endDt = end.plusDays(1).atStartOfDay(); // [start, end]
 
-        // 已收款、未退款、接诊日期在区间内
+        // 统一按独立收款时间 pay_time 统计；退款不整单排除，而是扣减累计已退金额（与 StatisticsMapper 同口径）
         List<Bill> paid = billMapper.selectList(Wrappers.<Bill>lambdaQuery()
                 .eq(Bill::getPayStatus, true)
-                .and(w -> w.eq(Bill::getRefundStatus, false).or().isNull(Bill::getRefundStatus))
-                .ge(Bill::getCreateTime, startDt).lt(Bill::getCreateTime, endDt));
-        // 区间内退款账单
+                .ge(Bill::getPayTime, startDt).lt(Bill::getPayTime, endDt));
+        // 区间内发生退款的账单
         List<Bill> refunded = billMapper.selectList(Wrappers.<Bill>lambdaQuery()
-                .eq(Bill::getRefundStatus, true)
-                .ge(Bill::getCreateTime, startDt).lt(Bill::getCreateTime, endDt));
+                .gt(Bill::getRefundMoney, BigDecimal.ZERO)
+                .ge(Bill::getPayTime, startDt).lt(Bill::getPayTime, endDt));
 
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal discountTotal = BigDecimal.ZERO;
@@ -83,7 +82,8 @@ public class ReportServiceImpl implements IReportService {
         Map<LocalDate, BigDecimal> trend = new TreeMap<>();
         List<Integer> recordIds = new ArrayList<>();
         for (Bill b : paid) {
-            BigDecimal real = b.getRealMoney() != null ? b.getRealMoney() : nz(b.getTotalMoney());
+            BigDecimal real = (b.getRealMoney() != null ? b.getRealMoney() : nz(b.getTotalMoney()))
+                    .subtract(nz(b.getRefundMoney())).max(BigDecimal.ZERO);
             total = total.add(real);
             discountTotal = discountTotal.add(nz(b.getDiscountMoney()));
             fReg = fReg.add(nz(b.getFeeRegister()));
@@ -94,8 +94,8 @@ public class ReportServiceImpl implements IReportService {
             fPkg = fPkg.add(nz(b.getFeePackage()));
             fSur = fSur.add(nz(b.getFeeSurgery()));
             fHos = fHos.add(nz(b.getFeeHospital()));
-            if (b.getCreateTime() != null)
-                trend.merge(b.getCreateTime().toLocalDate(), real, BigDecimal::add);
+            if (b.getPayTime() != null)
+                trend.merge(b.getPayTime().toLocalDate(), real, BigDecimal::add);
             if (b.getRecordId() != null) recordIds.add(b.getRecordId());
         }
         r.setTotalRevenue(total);
@@ -111,7 +111,7 @@ public class ReportServiceImpl implements IReportService {
         r.setFeePackage(fPkg);
         r.setFeeSurgery(fSur);
         r.setFeeHospital(fHos);
-        BigDecimal refundAmt = refunded.stream().map(b -> nz(b.getTotalMoney()))
+        BigDecimal refundAmt = refunded.stream().map(b -> nz(b.getRefundMoney()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         r.setRefundCount(refunded.size());
         r.setRefundAmount(refundAmt);
@@ -129,8 +129,9 @@ public class ReportServiceImpl implements IReportService {
             for (Bill b : paid) {
                 MedicalRecord rec = recMap.get(b.getRecordId());
                 if (rec == null) continue;
-                if (rec.getDepartmentId() != null) deptSum.merge(rec.getDepartmentId(), nz(b.getTotalMoney()), BigDecimal::add);
-                if (rec.getDoctorId() != null) docSum.merge(rec.getDoctorId(), nz(b.getTotalMoney()), BigDecimal::add);
+                BigDecimal net = nz(b.getRealMoney()).subtract(nz(b.getRefundMoney())).max(BigDecimal.ZERO);
+                if (rec.getDepartmentId() != null) deptSum.merge(rec.getDepartmentId(), net, BigDecimal::add);
+                if (rec.getDoctorId() != null) docSum.merge(rec.getDoctorId(), net, BigDecimal::add);
             }
             Map<Integer, String> deptNames = departmentMapper.selectList(null).stream()
                     .collect(Collectors.toMap(Department::getDepartmentId, Department::getDepartmentName, (a, b) -> a));

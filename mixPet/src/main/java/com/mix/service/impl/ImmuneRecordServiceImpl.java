@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.DrugMapper;
 import com.mix.mapper.ImmuneRecordMapper;
@@ -48,13 +49,13 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Result saveImmune(ImmuneVo vo, Doctor doctor) {
-        if (vo == null || vo.getDrugId() == null) return Result.error("请选择疫苗");
-        if (vo.getPetId() == null && vo.getRecordId() == null) return Result.error("缺少宠物信息");
+        if (vo == null || vo.getDrugId() == null) throw new BizException("请选择疫苗");
+        if (vo.getPetId() == null && vo.getRecordId() == null) throw new BizException("缺少宠物信息");
         Drug drug = drugMapper.selectById(vo.getDrugId());
-        if (drug == null) return Result.error("疫苗不存在");
+        if (drug == null) throw new BizException("疫苗不存在");
         boolean deleted = drug.getIsDel() != null && drug.getIsDel() != 0L;
         if (!"疫苗".equals(drug.getDrugType()) || !Boolean.TRUE.equals(drug.getActive()) || deleted)
-            return Result.error("疫苗不存在或已停用");
+            throw new BizException("疫苗不存在或已停用");
 
         Integer petId = vo.getPetId();
         Integer clientId = null;
@@ -65,7 +66,7 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
                 clientId = record.getClientId();
             }
         }
-        if (petId == null) return Result.error("无法确定宠物");
+        if (petId == null) throw new BizException("无法确定宠物");
 
         // 计算此针为第几针
         Long cnt = this.lambdaQuery().eq(ImmuneRecord::getPetId, petId)
@@ -84,7 +85,7 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
                 .eq(Drug::getDrugId, drug.getDrugId())
                 .ge(Drug::getDrugStock, 1)
                 .setSql("drug_stock = drug_stock - 1"));
-        if (affected == 0) return Result.error("「" + drug.getDrugName() + "」库存不足（剩余 " + stock + "），无法登记接种");
+        if (affected == 0) throw new BizException("「" + drug.getDrugName() + "」库存不足（剩余 " + stock + "），无法登记接种");
         drugService.logStockChange(drug.getDrugId(), drug.getDrugName(), 2, 1,
                 stock, stock - 1, "免疫接种出库");
 
@@ -136,7 +137,7 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
             return Result.success("接种登记成功，疫苗费 ￥" + fee.toPlainString()
                     + (vo.getRecordId() != null ? " 已计入病历 #" + vo.getRecordId() + " 账单" : ""));
         }
-        return Result.error("登记失败");
+        throw new BizException("登记失败");
     }
 
     @Override

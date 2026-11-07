@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -15,19 +16,19 @@ import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.web.authentication.rememberme.AbstractRememberMeServices;
 import org.springframework.security.web.authentication.rememberme.InvalidCookieException;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 /**
- * 记住我
+ * 记住我（Cookie 签名改为 HMAC-SHA256，密钥由环境变量强校验提供）
  */
 @Component
 public class RememberService extends AbstractRememberMeServices {
+    private static final String SIGN_ALGORITHM = "HmacSHA256";
     private final Log log = LogFactory.getLog(this.getClass());
     private final ClientDetails clientDetails;
     private final DoctorDetails doctorDetails;
@@ -35,67 +36,67 @@ public class RememberService extends AbstractRememberMeServices {
     public RememberService(ClientDetails clientDetails,
                            DoctorDetails doctorDetails,
                            @Value("${remember-me.key:}") String key) {
-        // 兜底：配置为空（如环境变量未注入）时用固定默认值，避免启动即抛 key cannot be empty
-        super(StringUtils.hasLength(key) ? key : "MixPetDefaultRememberKey", clientDetails);
+        // 在 super 参数里做强校验：密钥缺失/过短/公开模板值 → 拒绝启动，不再有可推导的兜底密钥
+        super(requireStrongKey(key), clientDetails);
         this.clientDetails = clientDetails;
         this.doctorDetails = doctorDetails;
     }
 
+    private static String requireStrongKey(String key) {
+        if (key == null || key.length() < 32
+                || key.equals("YourSecureRememberMeKeyAtLeast32Chars!")
+                || key.equals("MixPet@Remember2026")) {
+            throw new IllegalStateException(
+                    "REMEMBER_ME_KEY 未配置、短于 32 字符或仍是公开模板值，拒绝启动（请在 .env 中配置强随机密钥）");
+        }
+        return key;
+    }
+
     @Override
     protected void onLoginSuccess(HttpServletRequest req, HttpServletResponse resp, Authentication sucAut) {
-        log.info("登录成功的记住我处理");
         if (sucAut.getPrincipal() instanceof MyUser myUser) {
             String username = myUser.username();
             String password = myUser.password();
             RoleEnum roleEnum = myUser.roleEnum();
-            if (!StringUtils.hasLength(username)) {
-                log.info("用户名为空");
-                return;
-            }
-            long expiryTime = System.currentTimeMillis();
-            // 记住我3个小时
-            int lifeHour = 3;
-            expiryTime += 1000L * 3600L * (long) lifeHour;
+            if (!StringUtils.hasLength(username)) return;
+            long expiryTime = System.currentTimeMillis() + 1000L * 3600L * 3;
             String signatureValue = this.makeTokenSignature(expiryTime, username, password, roleEnum.name());
-            setCookie(new String[]{username, Long.toString(expiryTime), roleEnum.name(), "MD5", signatureValue}, lifeHour * 3600, req, resp);
+            setCookie(new String[]{username, Long.toString(expiryTime), roleEnum.name(),
+                    SIGN_ALGORITHM, signatureValue}, 3 * 3600, req, resp);
         }
     }
 
     @Override
     protected boolean rememberMeRequested(HttpServletRequest req, String parameter) {
-        log.info("自定义RememberMe处理;");
         if (JsonUtil.isJson(req)) {
-            log.info("芝士JSON");
-            boolean rememberMe = (boolean) req.getAttribute("rememberMe");
-            log.info("记住我处理器收到的参数是:" + rememberMe);
-            return rememberMe;
-        } else return false;
+            return Boolean.TRUE.equals(req.getAttribute("rememberMe"));
+        }
+        return false;
     }
 
     @Override
-    protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest req, HttpServletResponse resp) throws RememberMeAuthenticationException, UsernameNotFoundException {
-        if (cookieTokens.length != 4 && cookieTokens.length != 5) {
+    protected UserDetails processAutoLoginCookie(String[] cookieTokens, HttpServletRequest req, HttpServletResponse resp)
+            throws RememberMeAuthenticationException, UsernameNotFoundException {
+        if (cookieTokens.length != 5) {
             throw new InvalidCookieException("Cookie 字段数不符");
         }
-        log.info("收到的cookie" + Arrays.toString(cookieTokens));
-        String name = cookieTokens[0];
         long expiryTime;
         try {
             expiryTime = Long.parseLong(cookieTokens[1]);
         } catch (NumberFormatException e) {
             throw new InvalidCookieException("Cookie 时间格式错误");
         }
-        // 1) 校验是否过期
         if (expiryTime < System.currentTimeMillis()) {
             throw new InvalidCookieException("Cookie 已过期");
         }
+        String name = cookieTokens[0];
         String role = cookieTokens[2];
-        // 2) 先加载用户：active=0（停用/黑名单）会在此抛 UsernameNotFoundException，从而被拦截
+        // 先加载用户：active=0（停用/黑名单）会在此抛 UsernameNotFoundException，从而被拦截
         UserDetails user = role.equals(RoleEnum.DOCTOR.name())
                 ? doctorDetails.loadUserByUsername(name)
                 : clientDetails.loadUserByUsername(name);
-        // 3) 校验签名，防止伪造/篡改（签名含密码与 key，密码变更后自动失效，需重新登录）
-        String presentedSignature = cookieTokens[cookieTokens.length - 1];
+        // 签名含密码哈希与 key，密码变更后自动失效，需重新登录
+        String presentedSignature = cookieTokens[4];
         String expectedSignature = makeTokenSignature(expiryTime, name, user.getPassword(), role);
         if (!expectedSignature.equals(presentedSignature)) {
             throw new InvalidCookieException("Cookie 签名不符");
@@ -103,16 +104,15 @@ public class RememberService extends AbstractRememberMeServices {
         return user;
     }
 
-    /***
-     * 设置token内容
-     */
+    /** HMAC-SHA256(key, username:expiry:passwordHash:role)，不再使用可碰撞的 MD5 拼接 */
     private String makeTokenSignature(long expiryTime, String username, String password, String role) {
-        String data = username + ":" + expiryTime + ":" + password + ":" + role + ":" + this.getKey();
+        String data = username + ":" + expiryTime + ":" + password + ":" + role;
         try {
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            return new String(Hex.encode(digest.digest(data.getBytes())));
-        } catch (NoSuchAlgorithmException var8) {
-            throw new IllegalStateException("Token加密失败");
+            Mac mac = Mac.getInstance(SIGN_ALGORITHM);
+            mac.init(new SecretKeySpec(getKey().getBytes(StandardCharsets.UTF_8), SIGN_ALGORITHM));
+            return new String(Hex.encode(mac.doFinal(data.getBytes(StandardCharsets.UTF_8))));
+        } catch (Exception e) {
+            throw new IllegalStateException("记住我签名失败", e);
         }
     }
 }

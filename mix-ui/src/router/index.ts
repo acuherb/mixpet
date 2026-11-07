@@ -3,7 +3,9 @@ import {reception} from "@/router/reception";
 import {backstage} from "@/router/backstage";
 import {doctorPage} from "@/router/doctorPage";
 import {reqGetLogin, reqLoginUser} from "@/request/PowerApi";
+import {reqGetLoginD} from "@/request/DoctorApi";
 import {RoleEnum} from "@/model/VO/LoginVo";
+import {ElMessage} from "element-plus";
 
 const routes: RouteRecordRaw[] = [
     {
@@ -11,7 +13,6 @@ const routes: RouteRecordRaw[] = [
         path: '/',
         component: () => import('@/views/reception/Index.vue')
     }, {
-        // 登录页
         path: '/login',
         component: () => import('@/views/login.vue')
     }, {
@@ -21,7 +22,6 @@ const routes: RouteRecordRaw[] = [
         path: '/register',
         component: () => import('@/views/register.vue')
     }, {
-        // 顾客端公告列表（更多公告）
         path: '/reception/noticeList',
         component: () => import('@/views/reception/noticeList.vue')
     }, {
@@ -38,7 +38,7 @@ const routes: RouteRecordRaw[] = [
         path: '/doctorPage',
         children: [...doctorPage],
     }, {
-        path: '/:pathMatch(.*)', // 404路由
+        path: '/:pathMatch(.*)',
         name: 'not-found',
         component: () => import('@/views/page404.vue')
     }
@@ -48,15 +48,39 @@ export const router = createRouter({
     routes: routes
 })
 
-/**
- * 首次登录强制改密守卫：顾客未改初始密码时，访问任何顾客端页面都重定向到 /changePwd。
- * sessionStorage 存储标记，页面刷新后仍生效；登出时由 logout 接口（或前端自行）清除。
- */
+/** 首次改密检查标记：只有检查真正通过后才写入，避免一次失败就永久跳过 */
 const PWD_CHECK_KEY = "mixpet_pwd_check_done"
+
 router.beforeEach(async (to) => {
-    if (to.path === "/reception/clientCenter"
-        || to.path.startsWith("/reception/clientCenter/")
-        || to.path.startsWith("/reception/chat")) {
+    const path = to.path
+
+    // 后台 / 医生端：必须登录且为员工角色（此前完全依赖后端 403，URL 直达会渲染空壳）
+    if (path.startsWith("/backstage") || path.startsWith("/doctorPage")) {
+        try {
+            const role = await reqGetLogin()
+            if (role !== RoleEnum.DOCTOR) return "/login"
+        } catch {
+            return "/login"
+        }
+        const minLv = Number(to.meta?.minAuthLv ?? 0)
+        if (minLv > 0) {
+            try {
+                const doctor = await reqGetLoginD()
+                if (!doctor || Number((doctor as any).authLv ?? 0) < minLv) {
+                    ElMessage.warning("该页面需要更高权限")
+                    return "/backstage"
+                }
+            } catch {
+                return "/login"
+            }
+        }
+        return true
+    }
+
+    // 顾客中心 / 聊天：必须是顾客本人
+    if (path === "/reception/clientCenter"
+        || path.startsWith("/reception/clientCenter/")
+        || path.startsWith("/reception/chat")) {
         try {
             const role = await reqGetLogin()
             if (role !== RoleEnum.CLIENT) return "/login"
@@ -64,9 +88,10 @@ router.beforeEach(async (to) => {
             return "/login"
         }
     }
+
+    // 顾客端首改密：标记只在检查成功后写入
+    if (!path.startsWith("/reception") || path === "/changePwd") return true
     if (sessionStorage.getItem(PWD_CHECK_KEY)) return true
-    if (!to.path.startsWith("/reception")) return true
-    sessionStorage.setItem(PWD_CHECK_KEY, "1")
     try {
         const role = await reqGetLogin()
         if (role !== RoleEnum.CLIENT) return true
@@ -75,7 +100,9 @@ router.beforeEach(async (to) => {
             sessionStorage.removeItem(PWD_CHECK_KEY)
             return "/changePwd"
         }
+        sessionStorage.setItem(PWD_CHECK_KEY, "1")
     } catch {
+        sessionStorage.removeItem(PWD_CHECK_KEY)
         // 未登录等异常由 axios 401 拦截器处理
     }
     return true

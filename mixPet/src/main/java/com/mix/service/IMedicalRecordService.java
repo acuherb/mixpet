@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.mix.common.Result;
 import com.mix.model.dto.RecordDto;
 import com.mix.model.entity.MedicalRecord;
+import com.mix.model.entity.MedicalRecordRevision;
 import com.mix.model.entity.Doctor;
 import com.mix.model.vo.PetHistoryVo;
 import com.mix.model.vo.RecordFullVo;
@@ -52,8 +53,14 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
     /** 作废就诊（仅接诊中）：填写作废原因 */
     Result cancelRecord(Integer recordId, String reason);
 
-    /** 未完绪病历修改（仅接诊中）：主诉/查体/诊断/治疗/医嘱/内部备注/复诊/分诊/体征 */
+    /** 未完绪病历修改（仅接诊中）：留痕 + 版本号 +1 + 乐观锁，原审核自动失效 */
     Result updateRecord(MedicalRecord record);
+
+    /** 病历审核（仅已完结）：写入审核人/时间 */
+    Result reviewRecord(Integer recordId);
+
+    /** 病历修改历史：按版本倒序的变更前快照 */
+    List<MedicalRecordRevision> listRevisions(Integer recordId);
 
     /** 宠物病史速览（接诊侧栏）：档案+过敏/既往史+最近就诊+近期用药+检验异常 */
     PetHistoryVo selectPetHistory(Integer petId);

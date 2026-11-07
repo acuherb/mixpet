@@ -6,6 +6,7 @@ import com.mix.common.Result;
 import com.mix.model.dto.BillDto;
 import com.mix.model.entity.Bill;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -26,4 +27,14 @@ public interface IBillService extends IService<Bill> {
      * prescriptionIds 为空=整单退；传了=部分退（只退选中医嘱行，行标记 is_cancel 防重复退）
      */
     Result refund(Integer billId, String reason, List<Integer> prescriptionIds);
+
+    /**
+     * 统一计费入口：寄养、领养、住院等非接诊费用并入统一账单。
+     * 优先累加进同一客户/宠物的未付账单，否则新建（含折扣快照）；调用方保证事务。
+     *
+     * @param feeColumn 费用分项列名（白名单，如 fee_package）
+     * @return 账单 id
+     */
+    Integer addCharge(Integer clientId, Integer petId, Integer recordId,
+                      BigDecimal amount, String feeColumn);
 }

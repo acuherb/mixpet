@@ -26,7 +26,7 @@ import java.util.List;
 public class ClientServiceImpl extends ServiceImpl<ClientMapper, Client> implements IClientService {
 
     /** 新建用户/重置密码默认口令 */
-    @Value("${app.default-password:123456}")
+    @Value("${app.default-password}")
     private String defaultPwd;
 
     @Override

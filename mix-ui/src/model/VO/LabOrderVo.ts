@@ -24,5 +24,11 @@ export interface LabResultVo {
     resultNote: string;
     /** 报告文件(图片/PDF)路径，可选 */
     reportFile?: string;
+    /** 标本类型与采样/接收时间 */
+    specimenType?: string | null;
+    collectTime?: string | null;
+    receiveTime?: string | null;
+    /** 已出结果后修订必填 */
+    reviseReason?: string;
     items: LabResultItemVo[];
 }

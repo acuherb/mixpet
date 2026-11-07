@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.DrugMapper;
 import com.mix.mapper.DrugRecordMapper;
 import com.mix.mapper.SupplierMapper;
@@ -99,11 +100,11 @@ public class DrugServiceImpl extends ServiceImpl<DrugMapper, Drug> implements ID
 
     @Override
     public Result inbound(Integer drugId, Integer quantity, BigDecimal costPrice, LocalDate expireDate, String note, Integer supplierId, String batchNo) {
-        if (drugId == null || quantity == null || quantity <= 0) return Result.error("入库数量必须大于0");
+        if (drugId == null || quantity == null || quantity <= 0) throw new BizException("入库数量必须大于0");
         if (costPrice != null && costPrice.compareTo(BigDecimal.ZERO) < 0)
-            return Result.error("成本价不能为负数");
+            throw new BizException("成本价不能为负数");
         Drug drug = this.getById(drugId);
-        if (drug == null) return Result.error("药品不存在");
+        if (drug == null) throw new BizException("药品不存在");
         int before = drug.getDrugStock() == null ? 0 : drug.getDrugStock();
         // 原子累加库存（防并发入库丢失更新：不用先读后写，与发药扣减同款 setSql 模式）
         this.lambdaUpdate().eq(Drug::getDrugId, drugId)

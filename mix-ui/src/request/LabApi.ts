@@ -37,9 +37,12 @@ export const reqLabByRecord = (recordId: number): Promise<LabOrderDto[]> =>
 // 某医生接诊病历（开单选病历）
 export const reqDoctorRecords = (): Promise<RecordDto[]> =>
     reqApi<string, RecordDto[]>("lab/records")
-// 录入化验结果
+// 录入化验结果（异常/危急由服务端复算，修订需带 reviseReason）
 export const reqSaveLabResult = (data: LabResultVo): Promise<Res> =>
     reqApi.put<string, Res>("lab/result", data)
+// 复核检验报告（录入人之外再签审核人）
+export const reqReviewLabResult = (orderId: number): Promise<Res> =>
+    reqApi.put<string, Res>("lab/result/review/" + orderId, {})
 // 作废化验单（未出结果）
 export const reqLabCancel = (orderId: number): Promise<Res> =>
     reqApi.put<string, Res>("lab/cancel/" + orderId)

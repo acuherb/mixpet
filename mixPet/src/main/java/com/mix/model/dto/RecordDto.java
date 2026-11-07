@@ -56,4 +56,11 @@ public class RecordDto {
     private String internalNote;
     /** 体格检查：仅病历详情接口返回 */
     private String physicalExam;
+    /** 病历版本与签名/审核（打印页用） */
+    private Integer version;
+    private String signedBy;
+    private LocalDateTime signedAt;
+    private Integer reviewStatus;
+    private String reviewBy;
+    private LocalDateTime reviewAt;
 }

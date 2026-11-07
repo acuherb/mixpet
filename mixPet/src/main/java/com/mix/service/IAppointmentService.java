@@ -64,4 +64,10 @@ public interface IAppointmentService extends IService<Appointment> {
      * 医生：查询自己的订单
      */
     List<AppointmentDto2> getDoctorLog(Integer doctorId);
+
+    /**
+     * 挂号/改期唯一写入口：事务内行锁 + 出诊校验 + 整日/时段双容量校验 + 写入。
+     * 所有新增与改期路径都必须走这里，避免旁路造成号源超卖。
+     */
+    boolean reserve(Appointment appointment, boolean isNew);
 }

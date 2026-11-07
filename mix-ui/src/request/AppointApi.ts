@@ -31,6 +31,9 @@ export const reqMissAppoint = (id: number): Promise<Res> =>
 // 顾客查某医生当日已约数（时段余号，date=YYYY-MM-DD）
 export const reqDayCount = (doctorId: number, date: string): Promise<number> =>
     reqApi<string, number>("appointment/self/dayCount", {params: {doctorId, date}})
+/** 分时段余号：{"1":上午已约,"2":下午已约,"total":整日已约} */
+export const reqSlotCount = (doctorId: number, date: string): Promise<Record<string, number>> =>
+    reqApi<string, Record<string, number>>("appointment/self/slotCount", {params: {doctorId, date}})
 // 管理员修改挂号
 export const reqUpdateAppoint = (data: Appoint): Promise<Res> =>
     reqApi.put<string, Res>("appointment", data)

@@ -18,6 +18,9 @@ export const reqAddFoster = (data: Foster): Promise<Res> =>
 // 管理员修改领养
 export const reqUpdateFoster = (data: Foster): Promise<Res> =>
     reqApi.put<string, Res>("foster", data)
+// 接回结算（金额由后端按天数×单价重算并计入收银台账单）
+export const reqBackFoster = (id: number, backDate: string): Promise<Res> =>
+    reqApi.put<string, Res>("foster/back/" + id, {backDate})
 // 管理员删除领养
 export const reqDelFoster = (id: number): Promise<Res> =>
     reqApi.delete<string, Res>("foster/" + id)

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.mix.common.Result;
+import com.mix.common.BizException;
 import com.mix.mapper.DepartmentMapper;
 import com.mix.mapper.DoctorDepartMapper;
 import com.mix.model.dto.DepartmentDto;
@@ -50,7 +51,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     @Override
     public Result deleteById(Integer departmentId) {
         if (hasDoctor(departmentId))
-            return Result.error("当前科室下有人");
+            throw new BizException("当前科室下有人");
         return Result.choice("删除单个", this.lambdaUpdate()
                 .eq(Department::getDepartmentId, departmentId)
                 .set(Department::getIsDel, System.currentTimeMillis())
@@ -59,12 +60,12 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
 
     @Override
     public Result deleteByIds(List<Integer> idGroup) {
-        if (idGroup.size() < 1) return Result.error("请选择数据"); // IN语句中没有数据会报错
+        if (idGroup.size() < 1) throw new BizException("请选择数据"); // IN语句中没有数据会报错
         int cnt = 0;
         for (Integer id : idGroup) if (hasDoctor(id)) cnt++;
         if (cnt > 0) {
-            if (idGroup.size() == 1) return Result.error("所选科室有人");
-            else return Result.error("部分所选科室有人");
+            if (idGroup.size() == 1) throw new BizException("所选科室有人");
+            else throw new BizException("部分所选科室有人");
         }
         return Result.choice("删除多个", lambdaUpdate()
                 .in(Department::getDepartmentId, idGroup)

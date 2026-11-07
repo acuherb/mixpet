@@ -86,8 +86,13 @@
         <tbody>
           <tr>
             <td class="k">执业兽医</td><td class="v">{{ full.record.doctorName }}</td>
-            <td class="k">签字</td><td class="v">____________</td>
-            <td class="k">日期</td><td class="v">{{ fmt(full.record.createTime).slice(0, 10) }}</td>
+            <td class="k">电子签名</td><td class="v">{{ full.record.signedBy || '待完结签名' }}</td>
+            <td class="k">签名日期</td><td class="v">{{ fmt(full.record.signedAt || full.record.createTime).slice(0, 10) }}</td>
+          </tr>
+          <tr>
+            <td class="k">病历版本</td><td class="v">V{{ full.record.version ?? 1 }}</td>
+            <td class="k">审核状态</td><td class="v">{{ full.record.reviewStatus === 1 ? '已审核' : '待审核' }}</td>
+            <td class="k">审核人/日期</td><td class="v">{{ full.record.reviewBy || '—' }} {{ fmt(full.record.reviewAt).slice(0, 10) }}</td>
           </tr>
         </tbody>
       </table>
@@ -126,8 +131,8 @@
         <b>检验：</b>{{ full.labOrders.length }} 单（异常 {{ labAbnormalCount }} 项）｜<b>影像：</b>{{ full.imageOrders.length }} 单
       </div>
       <div class="rm-sign">
-        <span>执业兽医：{{ full.record.doctorName }}（签字）____________</span>
-        <span>日期：{{ fmt(full.record.createTime).slice(0, 10) }}</span>
+        <span>执业兽医：{{ full.record.doctorName }}（电子签名：{{ full.record.signedBy || '待完结' }}）V{{ full.record.version ?? 1 }}</span>
+        <span>日期：{{ fmt(full.record.signedAt || full.record.createTime).slice(0, 10) }}</span>
       </div>
       <div class="rm-foot">简化版仅作针式打印快速留档，完整内容以国标病历/详情版为准。</div>
     </div>
@@ -229,6 +234,12 @@
         <div class="rc-advice-body">{{ full.record.advice || '遵医嘱' }}</div>
       </div>
 
+      <div class="rc-signbox">
+        <span>接诊医师：{{ full.record.doctorName }}</span>
+        <span>电子签名：{{ full.record.signedBy || '待完结签名' }}</span>
+        <span>版本：V{{ full.record.version ?? 1 }}</span>
+        <span>审核：{{ full.record.reviewStatus === 1 ? (full.record.reviewBy || '已审核') : '待审核' }}</span>
+      </div>
       <div class="rc-foot">本病历由 mixpet 智慧宠物医疗管理系统生成 · 就诊问题请致电本院或在线咨询</div>
     </div>
 
@@ -270,6 +281,9 @@ onMounted(() => {
     if (res?.record.petId) reqPetOne(res.record.petId).then(p => { pet.value = p })
     // 带 autopdf=1（从打印预览弹窗跳入）：渲染后自动导出 PDF
     if (route.query.autopdf === '1') setTimeout(() => exportPdf(), 600)
+  }).catch(() => {
+    loading.value = false
+    ElMessage.error('病历数据加载失败，请返回重试')
   })
 })
 
@@ -556,6 +570,11 @@ const exportPdf = (): void => {
   border-radius: 10px;
   .rc-advice-tit { font-size: 13px; font-weight: 700; color: #b88230; margin-bottom: 4px; }
   .rc-advice-body { font-size: 13px; color: #606266; line-height: 1.7; white-space: pre-wrap; }
+}
+.rc-signbox {
+    display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 14px 0 6px;
+    padding: 10px 12px; border-radius: 8px; background: #f4f8fb;
+    font-size: 12px; color: #42536b; font-weight: 600;
 }
 .rc-foot {
   padding: 14px 26px 20px;

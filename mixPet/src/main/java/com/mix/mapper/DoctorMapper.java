@@ -39,4 +39,8 @@ public interface DoctorMapper extends BaseMapper<Doctor> {
     List<Doctor> selectByDepartmentId(Integer departmentId);
 
     boolean updateSelf(Doctor doctor);
+
+    /** 号源并发控制：锁住医生主键行，使同一医生的挂号/改期串行化 */
+    @Select("SELECT doctor_id FROM doctor WHERE doctor_id = #{doctorId} FOR UPDATE")
+    Integer lockDoctor(@Param("doctorId") Integer doctorId);
 }

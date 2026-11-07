@@ -278,7 +278,6 @@ public class Doctor implements Serializable {
                 ", doctorCert = " + doctorCert +
                 ", doctorInfo = " + doctorInfo +
                 ", doctorMotto = " + doctorMotto +
-                ", doctorPassword = " + doctorPassword +
                 ", createTime = " + createTime +
                 ", updateTime = " + updateTime +
                 ", isDel = " + isDel +

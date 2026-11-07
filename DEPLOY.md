@@ -73,7 +73,7 @@ cd mixpet
 - `chat/` — 聊天文件（其下分 `image/` 图片、`file/` 文件两子目录）
 - `report/` — 报告附件（其下分 `image/` 与 `file/` 两子目录）
 - `.env` — 本机环境变量（**不入库**，复制 `.env.example` 生成；`start.sh` 自动加载）
-- `deploy.sh` — 一键部署脚本（构建 + nginx 反代 + 启动）
+- `deploy.sh` — 一键生产部署（构建 + nginx HTTPS/WSS 站点 + systemd 守护 + logrotate）
 
 ---
 
@@ -153,8 +153,11 @@ cp .env.example .env
 | `MAIL_USER` / `MAIL_PASS` | 注册验证码/找回密码发信（QQ 邮箱 SMTP） |
 | `PET_AVATAR` / `PET_NOTICE` / `PET_CHATIMG` | 头像/公告/聊天文件存储目录（默认即本机路径） |
 | `BACKUP_DIR` | 数据备份 .sql 落盘目录（默认 `项目/db-backup/runtime/`） |
+| `SPRING_PROFILES_ACTIVE` | 生产由 `deploy.sh` 设为 `prod`，加载 `application-prod.yml` |
+| `SERVER_PORT` / `COOKIE_SECURE` | 后端端口（默认 8085）/ HTTPS 下会话 Cookie Secure（prod 默认 true） |
+| `MIXPET_DOMAIN` / `MIXPET_DIR` / `MIXPET_ADMIN_MAIL` | 部署域名 / 项目绝对路径 / certbot 通知邮箱（仅 `deploy.sh` 使用） |
 
-> `start.sh` 会按 `$HOME/.env` → 项目 `.env` → `.env.example` 顺序自动加载；手动 `mvn spring-boot:run` 前先 `set -a; source .env; set +a`。
+> `start.sh` 只加载真实的 `$HOME/.env` 或项目 `.env`，**绝不回退仓库内公开的 `.env.example`**（占位密钥不能进生产）；手动 `mvn spring-boot:run` 前先 `set -a; source .env; set +a`。生产部署的变量收口见 10.5。
 
 ### 4.3 启动后端（推荐：一键脚本）
 
@@ -360,6 +363,8 @@ Maven 用的 JDK 不是 17。检查 `mvn -version`，确认 `~/.bashrc` 里的 `
 - 越权：业务接口除登录/公开展示类外均要求认证，敏感接口已加 `@Secured` 角色约束（详见 CONTEXT.md 安全基线）。
 
 #### nginx 反代配置（HTTPS + WSS）
+> 以下是**等价配置片段**，便于理解链路；实际部署请用 `deploy.sh` 自动生成（额外包含 API/登录限流、安全响应头、静态资源缓存，以及 systemd 与 logrotate，见 10.5），避免文档与线上配置漂移。
+
 前端 `npm run build` 产物 `dist/` 由 nginx 托管，后端 8085 与 WebSocket 经 nginx 反代。证书用 Let's Encrypt：
 
 ```bash
@@ -423,6 +428,20 @@ TRUNCATE TABLE msg, notice, follow_up, surgery_consent, surgery, record_package,
 sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw enable
 ```
 
+#### P0 上线验收清单（2026-11-07 止血修复后必做）
+
+1. **密钥**：在服务器配置 `DB_USER / DB_PASSWORD / APP_DEFAULT_PASSWORD / REMEMBER_ME_KEY / VERIFY_CODE_SECRET`，两个密钥各 ≥32 字符强随机值，禁止使用 `.env.example` 模板值；`start.sh` 与后端启动时都会 fail-fast。旧的「记住我」Cookie 升级后自动失效，全员重新登录一次即可。
+2. **数据库**：全新库直接导入 `db-backup/pet_mix.sql`（末尾已含 P0/P1/P3 全部 DDL）；已有运行库依次执行 `db-backup/feature_20261107_p0_payment_audit.sql`、`db-backup/feature_20261107_p1_appointment_slot.sql`、`db-backup/feature_20261107_p3_clinical.sql`（均可重复执行）。**漏执行会导致日结为 0、审计写入被静默丢弃、排班容量不生效、病历留痕/危急值/通知表缺失**。P3 的 `lab_ref_range` 不预置医学数值，需由检验科按本院仪器试剂录入参考区间与危急阈值；未配置时系统回退解析旧 `ref_range` 文本。
+3. **清场**：按上文 TRUNCATE 清演示数据，但**必须先重建唯一超管（MANAGER）并设强口令**，再全量改密、清除客户 PII；清场前先做一次完整备份。
+4. **找回密码实测**：调用 `/login/findMail` 拿到 token 后 base64 解 payload，应只有 `jti` 而**没有验证码**；不读邮件直接提交应被拒绝；同一验证码只能用一次。
+5. **越权实测**：用顾客账号请求 `/msg/cleanExpiredMsg`、`/immune/pet/{他人宠物ID}`、`/notice/detail` 内部公告、`/common/downReport?name={他人报告}`，应返回 403/空。
+6. **资金并发实测**：两个窗口同时对同一账单点收款 / 发药 / 退款，只有一次生效；9 折账单退款金额应等于折后实付；「经营统计 / 财务报表 / 收费列表」三处日结金额一致。
+7. **灾备演练**：后台手动备份 → 检查同目录 `.sha256` → 在**隔离库**还原 → 核对表数与账单金额。`restore` 已修掉自死锁，还原必然失败是回归信号。
+8. **试运行**：`bash dev-tools/verify-p0.sh` 全绿；CI 跑 `mvn test` + `npm run build`；前 2~4 周纸质/旧表格双轨并行，每天核对现金、余额、库存、账单。
+9. **生产链路实测**：`nginx -t` 通过；`curl -I https://域名` 应带 HSTS / `X-Content-Type-Options`；浏览器登录后打开在线咨询确认 `wss` 握手成功；`systemctl restart mixpet` 后服务自动恢复，且 `kill -9` 后 10 秒内被拉起。
+
+> 自动备份失败会生成「【告警】自动备份失败」内部公告；仍需每周人工把备份复制到异地（脚本不做异地传输），每月做一次恢复演练。
+
 ### 10.3 部署到云端
 - **前端**：`npm run build` 后上传 `dist/` 到 Cloudflare Pages
 - **后端**：云服务器（推荐 2C4G），或先用 Oracle Cloud 免费 ARM
@@ -446,6 +465,62 @@ mysqldump -u mixpet -p pet_mix > ~/backup/pet_mix_$(date +%Y%m%d).sql
 ```
 
 > 命令行还原（危险，务必先备份当前库）：`mysql -u mixpet -p pet_mix < 备份文件.sql`。
+
+---
+
+### 10.5 生产部署（deploy.sh：nginx + systemd + prod profile）
+
+适用于有真实域名、要长期对外提供服务的场景；本地开发仍用 `dev-tools/start.sh`。
+
+#### 前置
+
+- root 权限（写 `/etc/nginx`、`/etc/systemd/system`、`/etc/mixpet`）
+- 已安装 nginx 与 `certbot`（`apt install -y nginx certbot`），域名 DNS 已解析到本机
+- 已按第三章建库导入；环境变量按 4.2 准备齐全（密钥 ≥32 字符、非模板值）
+
+#### 一键执行
+
+```bash
+set -a; source /path/to/.env; set +a        # 只加载真实 .env，不加载 .env.example
+export MIXPET_DIR=/opt/mixpet MIXPET_DOMAIN=pet.yourclinic.com
+export MIXPET_ADMIN_MAIL=admin@yourclinic.com
+sudo -E bash deploy.sh --tls --firewall
+```
+
+- `-E` 保留环境变量；**首次部署必须 `--tls`**，否则 80 会跳转到尚未启用的 443，站点不可访问（prod 的会话 Cookie 也是 Secure，本来就必须 HTTPS）。
+- 二次部署自动复用 `/etc/mixpet/mixpet.env`，无需再贴一遍密钥；单独重发版本用 `sudo -E bash deploy.sh` 即可。
+- 容器 / 无 systemd：`--no-systemd` 回退 `nohup`（不自动重启，生产不推荐）。
+
+#### 生成物
+
+| 文件 | 作用 |
+| :--- | :--- |
+| `/etc/nginx/sites-available/mixpet` | 80：ACME 校验目录 + 301 跳 HTTPS |
+| `/etc/nginx/sites-available/mixpet-ssl` | 443：静态 `dist` + `/api` 反代 + `/chat` WSS + 安全响应头 |
+| `/etc/nginx/conf.d/mixpet-limits.conf` | `limit_req_zone`（API 10r/s、登录/验证码 1r/s，按客户端 IP） |
+| `/etc/mixpet/mixpet.env` | 全部环境变量（0640 root:mixpet），密钥不落项目目录 |
+| `/etc/systemd/system/mixpet.service` | `Restart=always` / `RestartSec=10` / 开机自启 / 以 `mixpet` 系统用户运行 |
+| `/etc/logrotate.d/mixpet` | `/var/log/mixpet/*.log` 每日轮转、保留 14 天 |
+| `$MIXPET_DIR/mixpet-backend.jar` | 固定路径后端包，发版无需改 unit |
+
+#### prod profile
+
+`deploy.sh` 设 `SPRING_PROFILES_ACTIVE=prod`，加载 `application-prod.yml`：四个附件目录、`BACKUP_DIR`、`SERVER_PORT`、邮件账号、`COOKIE_SECURE` 全部取自环境变量，仓库里不再有本机路径。`application.yml` 中的三个密钥仍无兜底，缺失即启动失败。
+
+> `COOKIE_SECURE=true` 要求 HTTPS；纯 HTTP 内网联调才设为 `false`，且不要下发 HSTS。
+
+#### 运维
+
+```bash
+systemctl status mixpet
+systemctl restart mixpet
+journalctl -u mixpet -f
+tail -f /var/log/mixpet/backend.log
+nginx -t && systemctl reload nginx
+certbot renew --dry-run          # 证书续期演练
+```
+
+> nginx 不设 CSP：打印页使用 `document.write` 内联脚本、PDF 导出依赖 canvas，强 CSP 会直接破坏打印/导出；如需启用须先改造打印链路。前端构建已用 `manualChunks` 分包，`html2pdf.js` 改为导出 PDF 时动态加载，不进首屏。
 
 ---
 

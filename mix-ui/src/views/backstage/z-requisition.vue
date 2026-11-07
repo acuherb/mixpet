@@ -92,6 +92,7 @@ import {reqLabRequisition} from "@/request/LabApi";
 import {Requisition} from "@/model/entiy/Requisition";
 import {getAge} from "@/utils/TimeUtil";
 import {useBrand} from "@/utils/UseBrand";
+import {ElMessage} from "element-plus";
 
 const route = useRoute()
 const router = useRouter()
@@ -108,6 +109,9 @@ onMounted(() => {
   api(orderId).then(res => {
     req.value = res
     loading.value = false
+  }).catch(() => {
+    loading.value = false
+    ElMessage.error('申请单数据加载失败，请返回重试')
   })
 })
 

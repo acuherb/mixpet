@@ -59,6 +59,9 @@ public interface INoticeService extends IService<Notice> {
      */
     String getNoticeText(Integer noticeId);
 
+    /** 顾客端公告详情：只放行公开且启用的公告，内部系统提醒不可枚举 */
+    String getPublicNoticeText(Integer noticeId);
+
     /**
      * 主页的公告查询
      */

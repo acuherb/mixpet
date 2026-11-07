@@ -65,7 +65,7 @@
                 待就诊 <b class="qnum" :class="{hot: todayPending.length > 0}">{{ todayPending.length }}</b>
               </el-button>
             </router-link>
-            <router-link to="/backstage/y-billList">
+            <router-link to="/doctorPage/y-billList?payStatus=0">
               <el-button round plain :type="stat.pendingBills > 0 ? 'danger' : 'info'">
                 待收费 <b class="qnum" :class="{hot: stat.pendingBills > 0}">{{ stat.pendingBills }}</b>
               </el-button>
@@ -227,13 +227,33 @@
           </router-link>
         </div>
       </div>
+
+      <!-- 临床工具箱：收费/档案/打印/字典原先散落在 /backstage，统一收进医生工作台 -->
+      <div class="panel tools-panel">
+        <div class="panel-head">
+          <div class="ph-tit">
+            <span class="ph-ico ico-tools"><el-icon><Setting/></el-icon></span>
+            <div>
+              <h3>临床工具</h3>
+              <p>收费、档案、报告打印与字典配置都在工作台内完成，无需再切换后台</p>
+            </div>
+          </div>
+        </div>
+        <div class="tool-grid">
+          <router-link v-for="t in clinicalTools" :key="t.path" :to="t.path" class="tool-link">
+            <span class="tool-ico">{{ t.icon }}</span>
+            <span class="tool-name">{{ t.name }}</span>
+            <span class="tool-desc">{{ t.desc }}</span>
+          </router-link>
+        </div>
+      </div>
     </main>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref} from "vue";
-import {ArrowRight, Bell, ChatDotRound, Document, HomeFilled, Sunny, User} from "@element-plus/icons-vue";
+import {ArrowRight, Bell, ChatDotRound, Document, HomeFilled, Setting, Sunny, User} from "@element-plus/icons-vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
 import {ChatGroup} from "@/model/DO/ChatGroup";
 import {reqDoctorAppoint, reqGetLoginD} from "@/request/DoctorApi";
@@ -246,11 +266,25 @@ import {RecordDto} from "@/model/DO/RecordDto";
 import {RecordTodo} from "@/model/VO/RecordFull";
 import {StatOverview} from "@/model/entiy/StatOverview";
 import {reqLogout} from "@/request/PowerApi";
+import {subscribe} from "@/utils/chatSocket";
 import {clearPwdCheckFlag} from "@/router";
 import {useRouter} from "vue-router";
 import {ElMessage, ElMessageBox, ElNotification} from "element-plus";
 import {SwitchButton} from "@element-plus/icons-vue";
 import {Msg} from "@/model/entiy/Msg";
+
+/** 临床工具箱：原先散落在 /backstage 的入口全部收进医生工作台 */
+const clinicalTools = [
+  {name: '收银台 / 发药', desc: '待收费、发药核对', path: '/doctorPage/y-billList?payStatus=0', icon: '收'},
+  {name: '处方笺档案', desc: '调档 / 补打 / 作废', path: '/doctorPage/z-rxArchive', icon: '方'},
+  {name: '报告单打印', desc: '检验 / 影像报告', path: '/doctorPage/z-examReport', icon: '报'},
+  {name: '申请单打印', desc: '检验 / 影像申请', path: '/doctorPage/z-requisition', icon: '申'},
+  {name: '手术知情同意书', desc: '签署与留档', path: '/doctorPage/z-consent', icon: '同'},
+  {name: '随访复诊提醒', desc: '待联系名单', path: '/doctorPage/z-remind', icon: '访'},
+  {name: '检验项字典', desc: '参考区间与危急值', path: '/doctorPage/z-labTest', icon: '检'},
+  {name: '影像项字典', desc: '检查项目与定价', path: '/doctorPage/z-imageTest', icon: '影'},
+  {name: '病历模板', desc: '常用问诊模板', path: '/doctorPage/z-template', icon: '模'}
+]
 
 const timeText = ref<string>('--:--:--')
 // 医院信息（全局单例，顶栏品牌位展示）
@@ -327,9 +361,8 @@ const loadClients = (): void => {
   reqDoctorMsgGroup(0).then(res => groupList.value = res || [])
 }
 
-// WebSocket：医生工作台实时接收客户咨询消息并提醒
-const wsUrl = (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/chat"
-let ws: WebSocket | null = null
+// WebSocket：医生工作台实时接收客户咨询消息并提醒（共享单例连接）
+let unsubscribeChat: (() => void) | null = null
 
 const clientNameOf = (cid: number): string =>
     groupList.value.find(g => g.roleId === cid)?.roleName || `客户${cid}`
@@ -375,12 +408,7 @@ onMounted(() => {
     reqRecordTodo().then(res => { if (res) todo.value = res })
     reqStatOverview().then(res => { if (res) stat.value = res })
   }, 60000)
-  ws = new WebSocket(wsUrl)
-  ws.onmessage = (ev) => {
-    try {
-      handleChatMsg(JSON.parse(ev.data) as Msg)
-    } catch { /* 忽略非消息帧 */ }
-  }
+  unsubscribeChat = subscribe((m: Msg) => handleChatMsg(m))
 })
 
 const loadData = () => {
@@ -414,7 +442,8 @@ const doLogout = (): void => {
 onBeforeUnmount(() => {
   if (timeTimer) clearInterval(timeTimer)
   if (dataTimer) clearInterval(dataTimer)
-  ws?.close(1000, '离开工作台')
+  unsubscribeChat?.()
+  unsubscribeChat = null
   ElNotification.closeAll()
 })
 </script>
@@ -993,6 +1022,24 @@ onBeforeUnmount(() => {
 }
 
 /* 预留功能位 */
+/* 临床工具箱：紧凑网格，避免为低频工具再堆一层菜单 */
+.tools-panel { margin-top: 18px; }
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 0 18px 18px; }
+.tool-link {
+  display: grid; grid-template-columns: 34px 1fr; grid-template-rows: auto auto;
+  column-gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid #e8edf3; background: #fff; text-decoration: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.tool-link:hover { border-color: #409eff; box-shadow: 0 4px 14px rgba(64,158,255,.12); }
+.tool-ico {
+  grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: #eef5ff; color: #3b7ddd; font-weight: 700; font-size: 15px;
+}
+.tool-name { color: #253858; font-size: 13px; font-weight: 600; }
+.tool-desc { color: #8a96a8; font-size: 11px; }
+
 .future-grid {
   margin-top: 28px;
   display: grid;
