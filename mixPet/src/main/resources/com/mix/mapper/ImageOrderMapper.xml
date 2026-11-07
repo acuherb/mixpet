@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mix.mapper.ImageOrderMapper">
-    <!--申请单分页：联查宠物/客户/医生名和病历诊断；待检查在前-->
-    <select id="selectImageOrderPage" resultType="com.mix.model.dto.ImageOrderDto">
-        SELECT
+    <!--影像申请单联查列（含结构化所见/诊断/DICOM/原图）：两个查询共用，page 额外带 r.diagnosis -->
+    <sql id="imgOrderCols">
         o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
         o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
         o.findings, o.impression, o.dicom_uid, o.dicom_series, o.image_files,
-        p.pet_name, c.client_name, d.doctor_name, r.diagnosis
+        p.pet_name, c.client_name, d.doctor_name
+    </sql>
+    <!--申请单分页：联查宠物/客户/医生名和病历诊断；待检查在前-->
+    <select id="selectImageOrderPage" resultType="com.mix.model.dto.ImageOrderDto">
+        SELECT
+        <include refid="imgOrderCols"/>, r.diagnosis
         FROM image_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id
         LEFT JOIN client c ON o.client_id = c.client_id
@@ -23,10 +27,7 @@
     <!--某病历的申请单-->
     <select id="selectByRecord" resultType="com.mix.model.dto.ImageOrderDto">
         SELECT
-        o.order_id, o.record_id, o.pet_id, o.client_id, o.doctor_id, o.item_id,
-        o.item_name, o.group_name, o.fee, o.exam_part, o.result, o.report_time, o.status, o.note, o.report_file, o.create_time,
-        o.findings, o.impression, o.dicom_uid, o.dicom_series, o.image_files,
-        p.pet_name, c.client_name, d.doctor_name
+        <include refid="imgOrderCols"/>
         FROM image_order o
         LEFT JOIN pet p ON o.pet_id = p.pet_id
         LEFT JOIN client c ON o.client_id = c.client_id
