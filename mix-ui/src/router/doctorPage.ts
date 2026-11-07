@@ -6,8 +6,12 @@ import {RouteRecordRaw} from "vue-router";
  */
 export const doctorPage: RouteRecordRaw[] = [
     {
-        // 网站主页
+        // 诊疗流中枢（脊柱）：预约→接诊→开单→结果→结算→随访 一条可视化流水线，实时联动、自动流转
         path: "",
+        component: () => import('@/views/doctorPage/d-flow.vue'),
+    }, {
+        // 经典工作台（兼容保留）
+        path: "d-home",
         component: () => import('@/views/doctorPage/index.vue'),
     }, {
         // 医生的挂号
