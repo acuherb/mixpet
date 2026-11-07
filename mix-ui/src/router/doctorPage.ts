@@ -7,8 +7,19 @@ import {RouteRecordRaw} from "vue-router";
 export const doctorPage: RouteRecordRaw[] = [
     {
         // 诊疗流中枢（脊柱）：预约→接诊→开单→结果→结算→随访 一条可视化流水线，实时联动、自动流转
-        path: "",
+        // 父路由：深页（接诊/结果/收银/随访）作为子路由在流内抽屉就地处理，不跳页
+        path: "d-flow",
         component: () => import('@/views/doctorPage/d-flow.vue'),
+        children: [
+            {path: 'appoint', component: () => import('@/views/doctorPage/d-appoint.vue')},
+            {path: 'exam', component: () => import('@/views/backstage/z-examResult.vue')},
+            {path: 'pay', component: () => import('@/views/backstage/y-billList.vue')},
+            {path: 'follow', component: () => import('@/views/backstage/z-follow.vue')},
+        ],
+    }, {
+        // 默认进入诊疗流
+        path: "",
+        redirect: 'd-flow',
     }, {
         // 经典工作台（兼容保留）
         path: "d-home",

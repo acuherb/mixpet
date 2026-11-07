@@ -494,3 +494,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **④ 危急值处置闭环**：`lab_order` 加 `critical_handled`/`critical_handle_by`/`critical_handle_at`/`critical_notify_at`；出具含危急值结果时写通知时间并自动给顾客发通知（P3 已建），列表新增「危急处置」按钮标记已处置（处置人留痕）；新增**撤销复核**（管理层，解除复核锁允许再修订，全程留痕）。
 - **迁移**：`db-backup/feature_20261107_p4_clinical.sql`（列/表幂等 + `diagnosis_dict` 初值 IGNORE 幂等）+ 基线 `pet_mix.sql` 同步；README/DEPLOY/verify-p0.sh 同步。
 - **仍未做**：SOAP 仍是单文本框（未拆 S/O/A/P 独立存储字段）、诊断编码未与医保/上报对接、危急值无短信/电话自动外呼（仅站内通知 + 处置留痕）、DICOM 未对接 PACS 实际拉图、`lab_ref_range` 初值未预置（需检验科按本院录入）、病历审核无「退回后二次提交」工作流状态机、处方/化验/影像的修改审计未覆盖读操作前后值全量快照。
+
+### 诊疗流脊柱 / 系统级重构（2026-11-07，P5）
+用户要求「不停留在缝补，要闭环、灵动、行云流水的管理系统」，遂把散落各处的页面重构为**一条患者就诊旅程上的连续状态流**，三端共用同一套语言。无新增数据库表，纯编排层。
+- **后端状态机聚合（闭环的骨）**：新增 `FlowController` + `FlowService` + `FlowItem`/`FlowStage`/`DoctorFlowVo`。`GET /flow/doctorPipeline` 从 5 张业务表派生 `待诊→接诊中→待结果→待结算→待随访` 五个环节的当前快照；任一单据状态变化（出结果/收款）会让它自动流向下一环节。复用 `MedicalRecordMapper`/`LabOrderMapper`/`ImageOrderMapper`/`BillMapper`/`FollowUpMapper`/`IAppointmentService`，前端由并发 6 请求收敛为单接口。`Result.data(obj)` 回传（`Result.success` 只接收 String）。
+- **可复用展示组件**：`mix-ui/src/views/doctorPage/FlowPipeline.vue`（流水线 + 实时事件流 + Cmd+K 命令面板 + 患者旅程抽屉），纯展示，通过 `navigate(path)` / `logout` 事件把路由决策交回各端；`stages/events/commands` 由外部注入。
+- **医生端内联深页（行云流水最后一公里）**：`d-flow` 改为带 `children` 的父路由，`appoint/exam/pay/follow` 四个子路由把 `d-appoint`/`z-examResult`/`y-billList`/`z-follow` 直接在流内抽屉渲染，患者全程不离开这条河；关闭抽屉回 `/doctorPage/d-flow` 并刷新。`""` 重定向到 `d-flow`，经典视图保留在 `d-home`。
+- **前台/管理端复用同一范式**：`backstage/r-flow.vue`（前台接待流：今日预约→待收银→今日已诊，复用 `reqAppointList`/`reqBillPage`）、`backstage/m-flow.vue`（经营驾驶舱：营收/挂号/待结算/待发药/待检/住院/疫苗/药品预警，复用 `reqStatOverview`），均挂在 `/backstage/r-flow`、`/backstage/m-flow`。
+- **实时联动**：医生端 `chatSocket.subscribe` + 20s 轮询 + `mixpet:flow-refresh` 全局事件；对环节计数做 diff，自动弹「N 项结果已回报/账单已收款/新增挂号」等事件。前台 20s、管理端 30s 轮询。
+- **验证**：`mvn test` / `npm run build` / `verify-p0.sh`（含 P5 检查项）全绿。
+- **仍未做**：后端状态机为「派生快照」而非带转换事件表的持久化工作流（无自动外呼/自动通知的下一环节触发）；深页内联时若其内部 `router.push` 到顶层路由会脱离抽屉；前台/管理端尚未接入 WS 实时推送（仅轮询）；三端尚未做角色权限隔离（`/backstage/r-flow`、`m-flow` 目前对所有后台角色可见）；内网联调与浏览器实测待做。

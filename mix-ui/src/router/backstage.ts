@@ -14,6 +14,14 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-dashboard",
         component: () => import('@/views/backstage/z-dashboard.vue')
     }, {
+        // 前台接待流（复用诊疗流脊柱：今日预约→待收银→已诊）
+        path: "r-flow",
+        component: () => import('@/views/backstage/r-flow.vue')
+    }, {
+        // 管理驾驶舱（复用诊疗流脊柱：营收/挂号/待结算/住院/药品预警）
+        path: "m-flow",
+        component: () => import('@/views/backstage/m-flow.vue')
+    }, {
         // 收费表
         path: "y-billList",
         component: () => import('@/views/backstage/y-billList.vue')

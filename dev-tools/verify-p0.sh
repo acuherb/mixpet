@@ -83,6 +83,15 @@ has mix-ui/src/router/doctorPage.ts 'y-billList' \
   && has mixPet/src/main/java/com/mix/service/impl/LabOrderServiceImpl.java 'handleCritical' \
   && has mixPet/src/main/java/com/mix/service/impl/MedicalRecordServiceImpl.java 'rejectRecord' \
   && ok 'P4 SOAP/诊断编码/参考区间/危急处置/审核退回/复核撤销' || bad 'P4 SOAP/诊断编码/参考区间/危急处置/审核退回/复核撤销'
+has mixPet/src/main/java/com/mix/controller/FlowController.java 'doctorPipeline' \
+  && has mixPet/src/main/java/com/mix/service/FlowService.java 'FlowStage' \
+  && has mix-ui/src/request/FlowApi.ts 'reqDoctorPipeline' \
+  && has mix-ui/src/views/doctorPage/FlowPipeline.vue 'navigate' \
+  && has mix-ui/src/views/doctorPage/d-flow.vue 'FlowPipeline' \
+  && has mix-ui/src/router/doctorPage.ts 'children' \
+  && has mix-ui/src/views/backstage/r-flow.vue 'reqAppointList' \
+  && has mix-ui/src/views/backstage/m-flow.vue 'reqStatOverview' \
+  && ok 'P5 诊疗流脊柱（后端聚合/内联深页/前台/管理端复用）' || bad 'P5 诊疗流脊柱（后端聚合/内联深页/前台/管理端复用）'
 bash -n deploy.sh && bash -n dev-tools/start.sh \
   && ok '部署脚本语法' || bad '部署脚本语法'
 
@@ -99,5 +108,5 @@ else
 fi
 
 echo "----"
-if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4 静态自检全部通过"; else echo "P0/P1/P2/P3/P4 静态自检存在失败项"; fi
+if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4/P5 静态自检全部通过"; else echo "P0/P1/P2/P3/P4/P5 静态自检存在失败项"; fi
 exit "$fail"
