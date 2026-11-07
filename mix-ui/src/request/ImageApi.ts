@@ -29,7 +29,10 @@ export const reqDelImageTest = (id: number): Promise<Res> =>
 export const reqCreateImageOrder = (data: { recordId: number; itemId: number; examPart: string; note: string }): Promise<Res> =>
     reqApi.post<string, Res>("imageOrder", data)
 // 报告录入
-export const reqSaveImageReport = (data: { orderId: number; result: string; reportFile?: string }): Promise<Res> =>
+export const reqSaveImageReport = (data: {
+  orderId: number; result: string; reportFile?: string;
+  findings?: string; impression?: string; dicomUid?: string; dicomSeries?: string; imageFiles?: string;
+}): Promise<Res> =>
     reqApi.put<string, Res>("imageOrder/report", data)
 // 作废申请单（未出报告）
 export const reqImageCancel = (orderId: number): Promise<Res> =>

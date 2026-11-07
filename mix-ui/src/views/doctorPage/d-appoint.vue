@@ -164,6 +164,10 @@
       <div class="treat-body">
         <div class="treat-main">
 
+      <el-alert v-if="recordForm.reviewNote" type="error" :closable="false" show-icon
+                :title="'病历已被审核退回，请按意见修订后重新完结并签名'"
+                :description="'退回理由：' + recordForm.reviewNote" style="margin-bottom:12px"/>
+
       <!-- 接诊向导表单：始终渲染，按步骤 v-show 切换 -->
       <el-form ref="recordFormRef" :model="recordForm" :rules="recordRules" label-width="90px">
         <!-- 第一步：问诊与检查（模板/主诉/现病史/既往史/查体/体征） -->
@@ -180,7 +184,7 @@
         </div>
 
         <div class="step-head">
-          <div class="step-tit"><span class="step-no">一</span>问诊 · 宠物为什么来医院？</div>
+          <div class="step-tit"><span class="step-no">一</span>S 主观资料 · 问诊（宠物为什么来医院）</div>
           <el-button size="small" plain type="warning" @click="openAi">
             <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
           </el-button>
@@ -206,7 +210,7 @@
         </div>
 
         <div class="step-head">
-          <div class="step-tit"><span class="step-no">二</span>检查 · 医生检查发现了什么？</div>
+          <div class="step-tit"><span class="step-no">二</span>O 客观资料 · 检查（医生发现了什么）</div>
         </div>
         <div class="rec-card">
           <div class="rec-card-tit">体格检查 <em>视触叩听等检查发现</em></div>
@@ -221,7 +225,7 @@
 
         <!-- 分诊与体征：网格排布（告别一列竖排） -->
         <div class="step-head">
-          <div class="step-tit"><span class="step-no">三</span>分诊与体征</div>
+          <div class="step-tit"><span class="step-no">三</span>O 客观资料 · 分诊与体征</div>
         </div>
         <div class="rec-vitals">
           <el-form-item label="分诊级别" class="vital-item">
@@ -253,13 +257,26 @@
         <!-- 第二步：诊断与医嘱（含费用） -->
         <div v-show="activeStep === 1" class="treat-step">
         <div class="step-head">
-          <el-divider content-position="left">三、诊断与治疗</el-divider>
+          <el-divider content-position="left">A 评估 / P 计划 · 诊断与治疗</el-divider>
           <el-button size="small" plain type="warning" @click="openAi">
             <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
           </el-button>
         </div>
         <el-form-item label="诊断" prop="diagnosis">
           <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
+        </el-form-item>
+        <el-form-item label="诊断编码">
+          <el-select v-model="recordForm.diagnosisCode" filterable clearable placeholder="从字典选码（可留空）" style="width: 100%" @change="onDiagnosisPick">
+            <el-option v-for="d in diagnosisOptions" :key="d.code" :label="`${d.code} · ${d.name}`" :value="d.code"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="鉴别诊断">
+          <el-input v-model="recordForm.differentialDiagnosis" :rows="2" maxlength="1000"
+                    placeholder="需排除的疾病及理由；可点「AI 辅助」一键带入鉴别诊断" type="textarea"/>
+        </el-form-item>
+        <el-form-item label="诊断依据">
+          <el-input v-model="recordForm.diagnosisBasis" :rows="2" maxlength="1000"
+                    placeholder="症状 / 体征 / 检验 / 影像的支持点" type="textarea"/>
         </el-form-item>
         <el-form-item label="治疗方案">
           <el-input v-model="recordForm.treatment" :rows="2" maxlength="255" placeholder="治疗措施" type="textarea"/>
@@ -728,6 +745,7 @@
       </el-table>
       <template #footer>
         <el-button @click="revView = false">关闭</el-button>
+        <el-button type="danger" plain :disabled="!treatRecordId" @click="rejectCurrent">审核退回</el-button>
         <el-button type="primary" :disabled="!treatRecordId" @click="reviewCurrent">审核病历</el-button>
       </template>
     </el-dialog>
@@ -755,7 +773,9 @@ import {Delete, InfoFilled, MagicStick, Notebook, Plus, Printer} from "@element-
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
-import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqRecordRevisions, reqReviewRecord, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import {reqAddRecordPackage, reqAddRecordPrescription, reqCancelRecord, reqFinishRecord, reqRecordByAppointment, reqRecordOne, reqRecordRevisions, reqRejectRecord, reqReviewRecord, reqSaveRecord, reqUpdateRecord} from "@/request/RecordApi";
+import {reqDiagnosisList} from "@/request/DiagnosisApi";
+import type {DiagnosisDict} from "@/request/DiagnosisApi";
 import type {RecordRevision} from "@/model/entiy/MedicalRecord";
 import {reqRecordTemplateList} from "@/request/RecordTemplateApi";
 import {RecordTemplate} from "@/model/entiy/RecordTemplate";
@@ -1028,6 +1048,11 @@ const openTreat = (a: AppointDto2): void => {
       recordForm.value.heartRate = rec.heartRate
       recordForm.value.respiratoryRate = rec.respiratoryRate
       recordForm.value.bloodPressure = rec.bloodPressure
+      recordForm.value.differentialDiagnosis = rec.differentialDiagnosis ?? ''
+      recordForm.value.diagnosisBasis = rec.diagnosisBasis ?? ''
+      recordForm.value.diagnosisCode = rec.diagnosisCode ?? null
+      recordForm.value.diagnosisCodeSystem = rec.diagnosisCodeSystem ?? null
+      recordForm.value.reviewNote = rec.reviewNote ?? null
       if (rec.feeRegister != null) recordForm.value.feeRegister = rec.feeRegister
       if (rec.feeTreat != null) recordForm.value.feeTreat = rec.feeTreat
       // 回传版本号：后端据此做乐观锁，避免两个窗口互相覆盖病历
@@ -1399,9 +1424,19 @@ const openAi = (): void => {
     else ElMessage.error(res.msg || 'AI 辅助生成失败')
   }).catch(() => { aiRequesting.value = false })
 }
+// AI 鉴别诊断/依据一并落进病历字段（此前只在抽屉里展示、不入库）
+const applyAiDiagnosis = (): void => {
+  const ds = aiAdvice.value?.differentials || []
+  if (!ds.length) return
+  const diffText = ds.map(d => `${d.cond}（${d.prob || '—'}）：${d.basis || '—'}`).join('\n')
+  if (!recordForm.value.differentialDiagnosis?.trim()) recordForm.value.differentialDiagnosis = diffText
+  if (!recordForm.value.diagnosisBasis?.trim())
+    recordForm.value.diagnosisBasis = ds.map(d => d.basis).filter(Boolean).join('\n')
+}
 // 一键填入医嘱：不覆盖已有内容，非空时确认后追加
 const fillAi = (): void => {
   if (!aiAdvice.value) return
+  applyAiDiagnosis()
   const text = [aiAdvice.value.ownerNote, ...(aiAdvice.value.treatRef || [])].filter(Boolean).join('\n')
   const cur = recordForm.value.advice || ''
   if (cur.trim()) {
@@ -1480,6 +1515,18 @@ watch(() => form.value.clientId, (newValue): void => {
   })
 })
 
+/* ===== 诊断编码字典（SOAP 的 A：结构化编码 + 体系） ===== */
+const diagnosisOptions = ref<DiagnosisDict[]>([])
+const loadDiagnosis = (): void => {
+  reqDiagnosisList().then(list => { diagnosisOptions.value = list || [] })
+      .catch(() => { /* 字典不可用时仍可手填诊断，不阻塞接诊 */ })
+}
+const onDiagnosisPick = (code: string | null): void => {
+  const hit = diagnosisOptions.value.find(d => d.code === code)
+  recordForm.value.diagnosisCodeSystem = hit?.codeSystem ?? null
+}
+onMounted(loadDiagnosis)
+
 /* ===== 病历版本留痕与审核 ===== */
 const revView = ref(false)
 const revisions = ref<RecordRevision[]>([])
@@ -1502,6 +1549,22 @@ const reviewCurrent = (): void => {
     if (res.code === 1) { ElMessage.success(res.msg || '审核完成'); openRevisions() }
     else ElMessage.error(res.msg || '审核失败')
   }).catch(() => ElMessage.error('审核失败'))
+}
+/** 审核退回：附理由，后端把病历状态改回接诊中，医生才能按意见修订 */
+const rejectCurrent = (): void => {
+  ElMessageBox.prompt('请填写退回理由（医生修订后需重新完结并签名）', '审核退回', {
+    confirmButtonText: '确认退回', cancelButtonText: '取消', inputType: 'textarea',
+    inputValidator: (v: string) => (v && v.trim().length >= 2) || '请填写至少 2 个字'
+  }).then(({value}) => {
+    reqRejectRecord(treatRecordId.value, value).then(res => {
+      if (res.code === 1) {
+        ElMessage.success(res.msg || '已退回')
+        revView.value = false
+        treatStatus.value = 0
+        activeStep.value = 0
+      } else ElMessage.error(res.msg || '退回失败')
+    }).catch(() => ElMessage.error('退回失败'))
+  }).catch(() => { /* 取消 */ })
 }
 
 /* ===== 接诊向导草稿：自动暂存到 sessionStorage，误关/刷新后可恢复 ===== */

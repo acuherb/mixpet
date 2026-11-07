@@ -21,6 +21,12 @@ public class ImageOrderDto {
     private BigDecimal fee;
     private String examPart;
     private String result;
+    /** 结构化报告：所见/诊断分离 + DICOM 元数据 + 原图附件 */
+    private String findings;
+    private String impression;
+    private String dicomUid;
+    private String dicomSeries;
+    private String imageFiles;
     private LocalDateTime reportTime;
     private Boolean status;
     private String reportFile;

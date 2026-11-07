@@ -92,6 +92,22 @@ public class LabOrderController {
         return labService.reviewResult(orderId, operatorName());
     }
 
+    /** 危急值处置闭环：标记已处置并记录处置人 */
+    @PutMapping("/result/critical/{orderId}")
+    @AuditLog(module = "lab", action = "handleCritical", target = "危急值处置")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    public Result handleCritical(@PathVariable Integer orderId) {
+        return labService.handleCritical(orderId, operatorName());
+    }
+
+    /** 撤销复核（管理层）：复核锁解除后可再次修订，全程留痕 */
+    @PutMapping("/result/revoke/{orderId}")
+    @AuditLog(module = "lab", action = "revokeReview", target = "撤销化验复核")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result revokeReview(@PathVariable Integer orderId) {
+        return labService.revokeReview(orderId, operatorName());
+    }
+
     /** 作废化验单（未出结果）：冲减未付账单检验费 */
     @PutMapping("/cancel/{orderId}")
     @Secured({RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})

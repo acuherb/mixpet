@@ -26,4 +26,9 @@ export interface LabOrder {
     /** 是否含危急值；结果修订次数 */
     criticalFlag?: boolean | null;
     resultRevision?: number | null;
+    /** 危急值处置闭环 */
+    criticalHandled?: boolean | null;
+    criticalHandleBy?: string | null;
+    criticalHandleAt?: string | null;
+    criticalNotifyAt?: string | null;
 }

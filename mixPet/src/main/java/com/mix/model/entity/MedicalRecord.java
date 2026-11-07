@@ -83,6 +83,16 @@ public class MedicalRecord implements Serializable {
     private Integer reviewStatus;
     private String reviewBy;
     private LocalDateTime reviewAt;
+    /** 审核退回理由（修改病历后自动清空） */
+    private String reviewNote;
+
+    /** 鉴别诊断：需排除的疾病与理由（SOAP 的 A） */
+    private String differentialDiagnosis;
+    /** 诊断依据：症状 / 体征 / 检验 / 影像支持点 */
+    private String diagnosisBasis;
+    /** 诊断编码：院内码或 ICD-11-VET 等；编码体系单独存，便于后续对接医保/上报 */
+    private String diagnosisCode;
+    private String diagnosisCodeSystem;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

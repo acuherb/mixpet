@@ -484,4 +484,13 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **③ 医生闭环**：`doctorPage.ts` 收进收银/发药、处方笺档案、报告与申请单打印、检验/影像字典、病历模板、同意书、随访提醒；工作台加「临床工具」网格；`backstage.ts` 16 条临床遗留路由统一 redirect 到 `/doctorPage/*`（保留旧 URL 兼容，后台只留运营管理）；`goCashier` 与待收费入口不再跳后台。后台菜单搜索已存在（未重做）。
 - **④ 顾客闭环**：新增 `client_notification` + 定向站内通知（化验/影像报告出具或修订时自动写入，按 clientId 强制过滤，支持已读/全部已读）；顾客中心加账单明细页（分项费用/实付/退款/发药状态）与消息通知页 + 未读角标（60s 轮询 + 自定义事件即时刷新）。
 - **迁移**：`db-backup/feature_20261107_p3_clinical.sql`（整组幂等）+ 基线 `pet_mix.sql` 同步；README/DEPLOY/verify-p0.sh 同步。
-- **仍未做**：SOAP 结构化分区、鉴别诊断/诊断依据落库、诊断编码、DICOM/影像原图、危急值的短信/电话闭环、`lab_ref_range` 的医学数值录入与后台维护界面、病历审核退回流程、结果修订的复核撤销。
+- **仍未做（P3 收尾前）**：SOAP 结构化分区、鉴别诊断/诊断依据落库、诊断编码、DICOM/影像原图、危急值的短信/电话闭环、`lab_ref_range` 的医学数值录入与后台维护界面、病历审核退回流程、结果修订的复核撤销——以上均已在 P4 补齐（见下）。
+
+### 临床专业度深化（2026-11-07，P4）
+把 P3 遗留的「不专业」清单逐项补齐：
+- **① 病历 SOAP / 诊断编码**：接诊向导四段标题改为 S 主观资料 / O 客观资料 / A 评估·P 计划 的 SOAP 分区；`medical_record` 加 `differential_diagnosis`/`diagnosis_basis`/`diagnosis_code`/`diagnosis_code_system`/`review_note`；新增 `diagnosis_dict`（院内码 / ICD-11-VET，初值 20 条，可停用不可物理删），接诊向导下拉选码并落库 code+体系快照；AI 鉴别诊断一键带入「鉴别诊断/诊断依据」。病历审核新增**退回**（附理由，后端把状态改回接诊中、清空原审核结论，医生端红条提示，修订后重新完结签名）。`RecordDto` 与联查 SQL 同步回显。
+- **② 影像报告结构化**：`image_order` 加 `findings`/`impression`/`dicom_uid`/`dicom_series`/`image_files`；录入端拆分为「影像所见 / 影像诊断 / DICOM / 原图附件（多张）」，后端 `saveReport` 兼容旧纯文本（无结构化时回退拼接）；打印页分区展示所见/诊断/DICOM/原图附件。
+- **③ 参考区间维护界面**：新增 `RefRangeController` + 前端 `z-refRange.vue`，按检验项 / 物种 / 性别 / 月龄分层 CRUD（含危急阈值），管理层维护；与 P3 的 `LabResultEvaluator` 服务端复算衔接。诊断字典维护页 `z-diagnosis.vue` 一并收进医生工作台「临床工具」。
+- **④ 危急值处置闭环**：`lab_order` 加 `critical_handled`/`critical_handle_by`/`critical_handle_at`/`critical_notify_at`；出具含危急值结果时写通知时间并自动给顾客发通知（P3 已建），列表新增「危急处置」按钮标记已处置（处置人留痕）；新增**撤销复核**（管理层，解除复核锁允许再修订，全程留痕）。
+- **迁移**：`db-backup/feature_20261107_p4_clinical.sql`（列/表幂等 + `diagnosis_dict` 初值 IGNORE 幂等）+ 基线 `pet_mix.sql` 同步；README/DEPLOY/verify-p0.sh 同步。
+- **仍未做**：SOAP 仍是单文本框（未拆 S/O/A/P 独立存储字段）、诊断编码未与医保/上报对接、危急值无短信/电话自动外呼（仅站内通知 + 处置留痕）、DICOM 未对接 PACS 实际拉图、`lab_ref_range` 初值未预置（需检验科按本院录入）、病历审核无「退回后二次提交」工作流状态机、处方/化验/影像的修改审计未覆盖读操作前后值全量快照。

@@ -282,6 +282,8 @@ const clinicalTools = [
   {name: '手术知情同意书', desc: '签署与留档', path: '/doctorPage/z-consent', icon: '同'},
   {name: '随访复诊提醒', desc: '待联系名单', path: '/doctorPage/z-remind', icon: '访'},
   {name: '检验项字典', desc: '参考区间与危急值', path: '/doctorPage/z-labTest', icon: '检'},
+  {name: '参考区间维护', desc: '物种/月龄/危急阈值', path: '/doctorPage/z-refRange', icon: '阈'},
+  {name: '诊断编码字典', desc: 'ICD-11-VET 选码', path: '/doctorPage/z-diagnosis', icon: '码'},
   {name: '影像项字典', desc: '检查项目与定价', path: '/doctorPage/z-imageTest', icon: '影'},
   {name: '病历模板', desc: '常用问诊模板', path: '/doctorPage/z-template', icon: '模'}
 ]

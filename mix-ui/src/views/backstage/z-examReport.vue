@@ -80,7 +80,19 @@
           </tbody>
         </table>
         <div class="rx-rp">影像报告</div>
-        <div class="rx-report-text">{{ report.resultText || '（暂无报告内容）' }}</div>
+        <div v-if="report.findings || report.impression || report.resultText">
+          <div v-if="report.findings" class="rx-report-text"><b>影像所见：</b>{{ report.findings }}</div>
+          <div v-if="report.impression" class="rx-report-text"><b>影像诊断：</b>{{ report.impression }}</div>
+          <div v-if="report.resultText" class="rx-report-text">{{ report.resultText }}</div>
+        </div>
+        <div v-else class="rx-report-text">（暂无报告内容）</div>
+        <div v-if="report.dicomUid || report.dicomSeries" class="rx-note">
+          <b>DICOM：</b>{{ report.dicomUid || '—' }} / {{ report.dicomSeries || '—' }}
+        </div>
+        <div v-if="imageFileList.length" class="rx-note">
+          <b>原图附件：</b>
+          <span v-for="(f, i) in imageFileList" :key="i" style="margin-right:14px">{{ f }}</span>
+        </div>
       </template>
 
       <!-- 后记 -->
@@ -111,7 +123,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {reqImageRequisition} from "@/request/ImageApi";
 import {reqLabRequisition, reqLabByRecord} from "@/request/LabApi";
@@ -153,6 +165,11 @@ interface ReportData {
   itemName: string
   examPart: string | null
   resultText: string | null
+  findings: string | null
+  impression: string | null
+  dicomUid: string | null
+  dicomSeries: string | null
+  imageFiles: string | null
 }
 const report = ref<ReportData | null>(null)
 /** 是否已出结果（无结果的报告单打印时提示） */
@@ -191,7 +208,12 @@ onMounted(() => {
       criticalFlag: false,
       itemName: '',
       examPart: base.examPart ?? null,
-      resultText: null
+      resultText: null,
+      findings: null,
+      impression: null,
+      dicomUid: null,
+      dicomSeries: null,
+      imageFiles: null
     }
     if (!recordId) { report.value = data; loading.value = false; return }
     detailApi(recordId).then(list => {
@@ -201,6 +223,11 @@ onMounted(() => {
           data.resultTime = hit.reportTime ?? null
           data.itemName = hit.itemName || ''
           data.resultText = hit.result || null
+          data.findings = hit.findings ?? null
+          data.impression = hit.impression ?? null
+          data.dicomUid = hit.dicomUid ?? null
+          data.dicomSeries = hit.dicomSeries ?? null
+          data.imageFiles = hit.imageFiles ?? null
           data.fee = hit.fee ?? data.fee
           hasResult.value = !!hit.status
         } else {
@@ -228,6 +255,10 @@ onMounted(() => {
   }).catch(() => { loading.value = false })
 })
 
+const imageFileList = computed<string[]>(() => {
+  if (!report.value?.imageFiles) return []
+  try { const a = JSON.parse(report.value.imageFiles); return Array.isArray(a) ? a : [] } catch { return [] }
+})
 const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)
 const nowText = (): string => new Date().toLocaleString('zh-CN')
 const doPrint = (): void => window.print()

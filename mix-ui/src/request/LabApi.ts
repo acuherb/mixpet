@@ -43,6 +43,12 @@ export const reqSaveLabResult = (data: LabResultVo): Promise<Res> =>
 // 复核检验报告（录入人之外再签审核人）
 export const reqReviewLabResult = (orderId: number): Promise<Res> =>
     reqApi.put<string, Res>("lab/result/review/" + orderId, {})
+// 危急值处置闭环：标记已处置
+export const reqHandleCritical = (orderId: number): Promise<Res> =>
+    reqApi.put<string, Res>("lab/result/critical/" + orderId, {})
+// 撤销复核（管理层）：复核锁解除后可再次修订
+export const reqRevokeReview = (orderId: number): Promise<Res> =>
+    reqApi.put<string, Res>("lab/result/revoke/" + orderId, {})
 // 作废化验单（未出结果）
 export const reqLabCancel = (orderId: number): Promise<Res> =>
     reqApi.put<string, Res>("lab/cancel/" + orderId)

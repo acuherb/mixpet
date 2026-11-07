@@ -43,6 +43,9 @@ export const reqCancelRecord = (recordId: number, reason: string): Promise<Res> 
 export const reqUpdateRecord = (record: MedicalRecord): Promise<Res> =>
     reqApi.put<string, Res>("record", record)
 // 病历审核（仅已完结）
+// 审核退回：附理由，退回后回到接诊中供修订
+export const reqRejectRecord = (recordId: number, reason: string): Promise<Res> =>
+    reqApi.put<string, Res>("record/reject/" + recordId, {}, {params: {reason}})
 export const reqReviewRecord = (recordId: number): Promise<Res> =>
     reqApi.put<string, Res>("record/review/" + recordId, {})
 // 病历版本历史（变更前快照）

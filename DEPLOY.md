@@ -431,7 +431,7 @@ sudo ufw allow 443/tcp && sudo ufw allow 22/tcp && sudo ufw enable
 #### P0 上线验收清单（2026-11-07 止血修复后必做）
 
 1. **密钥**：在服务器配置 `DB_USER / DB_PASSWORD / APP_DEFAULT_PASSWORD / REMEMBER_ME_KEY / VERIFY_CODE_SECRET`，两个密钥各 ≥32 字符强随机值，禁止使用 `.env.example` 模板值；`start.sh` 与后端启动时都会 fail-fast。旧的「记住我」Cookie 升级后自动失效，全员重新登录一次即可。
-2. **数据库**：全新库直接导入 `db-backup/pet_mix.sql`（末尾已含 P0/P1/P3 全部 DDL）；已有运行库依次执行 `db-backup/feature_20261107_p0_payment_audit.sql`、`db-backup/feature_20261107_p1_appointment_slot.sql`、`db-backup/feature_20261107_p3_clinical.sql`（均可重复执行）。**漏执行会导致日结为 0、审计写入被静默丢弃、排班容量不生效、病历留痕/危急值/通知表缺失**。P3 的 `lab_ref_range` 不预置医学数值，需由检验科按本院仪器试剂录入参考区间与危急阈值；未配置时系统回退解析旧 `ref_range` 文本。
+2. **数据库**：全新库直接导入 `db-backup/pet_mix.sql`（末尾已含 P0/P1/P3/P4 全部 DDL）；已有运行库依次执行 `db-backup/feature_20261107_p0_payment_audit.sql`、`db-backup/feature_20261107_p1_appointment_slot.sql`、`db-backup/feature_20261107_p3_clinical.sql`、`db-backup/feature_20261107_p4_clinical.sql`（均可重复执行）。**漏执行会导致日结为 0、审计写入被静默丢弃、排班容量不生效、病历留痕/危急值/通知表缺失、诊断字典与参考区间维护不可用、危急值处置与审核退回/复核撤销无法使用**。P3 的 `lab_ref_range` 与 P4 的 `diagnosis_dict` 不预置医学数值，需由检验科/医师按本院仪器试剂与编码体系录入；未配置参考区间时系统回退解析旧 `ref_range` 文本。
 3. **清场**：按上文 TRUNCATE 清演示数据，但**必须先重建唯一超管（MANAGER）并设强口令**，再全量改密、清除客户 PII；清场前先做一次完整备份。
 4. **找回密码实测**：调用 `/login/findMail` 拿到 token 后 base64 解 payload，应只有 `jti` 而**没有验证码**；不读邮件直接提交应被拒绝；同一验证码只能用一次。
 5. **越权实测**：用顾客账号请求 `/msg/cleanExpiredMsg`、`/immune/pet/{他人宠物ID}`、`/notice/detail` 内部公告、`/common/downReport?name={他人报告}`，应返回 403/空。

@@ -74,7 +74,15 @@ has db-backup/feature_20261107_p3_clinical.sql 'medical_record_revision' \
   && ok 'P3 病历留痕 / 化验危急值 / 顾客闭环' || bad 'P3 病历留痕 / 化验危急值 / 顾客闭环'
 has mix-ui/src/router/doctorPage.ts 'y-billList' \
   && has mix-ui/src/router/backstage.ts 'redirect: "/doctorPage/z-examResult"' \
-  && ok 'P3 医生闭环路由归一' || bad 'P3 医生闭环路由归一'
+  && has db-backup/feature_20261107_p4_clinical.sql 'diagnosis_dict' \
+  && has mixPet/src/main/java/com/mix/controller/RefRangeController.java 'LabRefRange' \
+  && has mixPet/src/main/java/com/mix/controller/DiagnosisDictController.java 'DiagnosisDict' \
+  && has mix-ui/src/views/doctorPage/d-appoint.vue 'differentialDiagnosis' \
+  && has mix-ui/src/views/backstage/z-refRange.vue 'reqAddRefRange' \
+  && has mix-ui/src/views/backstage/z-diagnosis.vue 'reqDiagnosisPage' \
+  && has mixPet/src/main/java/com/mix/service/impl/LabOrderServiceImpl.java 'handleCritical' \
+  && has mixPet/src/main/java/com/mix/service/impl/MedicalRecordServiceImpl.java 'rejectRecord' \
+  && ok 'P4 SOAP/诊断编码/参考区间/危急处置/审核退回/复核撤销' || bad 'P4 SOAP/诊断编码/参考区间/危急处置/审核退回/复核撤销'
 bash -n deploy.sh && bash -n dev-tools/start.sh \
   && ok '部署脚本语法' || bad '部署脚本语法'
 
@@ -91,5 +99,5 @@ else
 fi
 
 echo "----"
-if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3 静态自检全部通过"; else echo "P0/P1/P2/P3 静态自检存在失败项"; fi
+if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4 静态自检全部通过"; else echo "P0/P1/P2/P3/P4 静态自检存在失败项"; fi
 exit "$fail"

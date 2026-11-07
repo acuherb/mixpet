@@ -82,18 +82,47 @@
           <label>报告内容</label>
           <p>{{ current?.result || '（无报告内容）' }}</p>
         </div>
+        <!-- 结构化：影像所见 / 影像诊断 / DICOM（录入时填写，与模板自由文本并存） -->
+        <template v-if="!readonly">
+          <div class="case-para">
+            <label>影像所见</label>
+            <el-input v-model="findings" :rows="3" maxlength="2000" type="textarea" placeholder="客观描述征象"/>
+          </div>
+          <div class="case-para">
+            <label>影像诊断</label>
+            <el-input v-model="impression" :rows="2" maxlength="1000" type="textarea" placeholder="结论性诊断"/>
+          </div>
+          <div class="case-para">
+            <label>DICOM</label>
+            <el-input v-model="dicomUid" maxlength="128" placeholder="Study UID" style="width: 220px; margin-right: 8px"/>
+            <el-input v-model="dicomSeries" maxlength="128" placeholder="Series UID" style="width: 220px"/>
+          </div>
+        </template>
+        <template v-else-if="current?.findings || current?.impression">
+          <div class="case-para"><label>影像所见</label><p>{{ current.findings || '—' }}</p></div>
+          <div class="case-para"><label>影像诊断</label><p>{{ current.impression || '—' }}</p></div>
+          <div class="case-para" v-if="current.dicomUid || current.dicomSeries">
+            <label>DICOM</label><p>{{ current.dicomUid || '—' }} / {{ current.dicomSeries || '—' }}</p>
+          </div>
+        </template>
       </div>
       <!-- 附件 -->
       <div class="case-sec">
-        <div class="case-sec-tit">报 告 附 件</div>
-        <div class="case-file" v-if="current?.reportFile">
-          <el-link type="primary" :href="fileBase + encodeURIComponent(current?.reportFile ?? '')" target="_blank">
-            <el-icon><Paperclip/></el-icon> 查看报告附件
-          </el-link>
-          <el-button v-if="!readonly" link type="danger" size="small" @click="removeReport">移除</el-button>
+        <div class="case-sec-tit">报 告 附 件 / 原 图</div>
+        <div class="case-file" v-if="!readonly">
+          <div v-for="(f, i) in imgFiles" :key="i" class="img-row">
+            <el-link type="primary" :href="fileBase + encodeURIComponent(f)" target="_blank">
+              <el-icon><Paperclip/></el-icon> {{ f }}
+            </el-link>
+            <el-button link type="danger" size="small" @click="imgFiles.splice(i, 1)">移除</el-button>
+          </div>
+          <UpImg :photo-nm="''" mode="report" @upPhoto="onImgUpload"/>
+          <span class="tip" style="margin-left:10px">支持多张原图/报告 PDF，存为原图附件</span>
         </div>
-        <div v-else-if="!readonly" class="case-file">
-          <UpImg :photo-nm="''" mode="report" @upPhoto="onReportUpload"/>
+        <div v-else-if="displayFiles.length" class="case-file">
+          <el-link v-for="(f, i) in displayFiles" :key="i" type="primary" :href="fileBase + encodeURIComponent(f)" target="_blank" style="margin-right:14px">
+            <el-icon><Paperclip/></el-icon> {{ f }}
+          </el-link>
         </div>
         <p v-else class="case-empty">暂无附件</p>
       </div>
@@ -146,11 +175,11 @@ const router = useRouter()
 const route = useRoute()
 // 打印影像申请单（国标）
 const printReq = (row: ImageOrder): void => {
-  router.push('/backstage/z-requisition?type=image&orderId=' + row.orderId)
+  router.push('/doctorPage/z-requisition?type=image&orderId=' + row.orderId)
 }
 // 打印影像报告单（检查项目+报告文本）
 const printReport = (row: ImageOrder): void => {
-  router.push('/backstage/z-examReport?type=image&recordId=' + row.recordId + '&orderId=' + row.orderId)
+  router.push('/doctorPage/z-examReport?type=image&recordId=' + row.recordId + '&orderId=' + row.orderId)
 }
 
 const modalView = ref(false)
@@ -161,6 +190,16 @@ const current = ref<ImageOrder | null>(null)
 const tplLabels = ref<string[]>([])
 const tplValues = ref<string[]>([])
 const extraText = ref('')
+// 结构化报告字段（所见/诊断/DICOM 与原图附件）
+const findings = ref('')
+const impression = ref('')
+const dicomUid = ref('')
+const dicomSeries = ref('')
+const imgFiles = ref<string[]>([])
+const displayFiles = computed<string[]>(() => {
+  if (!current.value?.imageFiles) return []
+  try { const a = JSON.parse(current.value.imageFiles); return Array.isArray(a) ? a : [] } catch { return [] }
+})
 const hasTpl = computed(() => tplLabels.value.length > 0)
 const parseTpl = (tpl: string | null | undefined): string[] => {
   if (!tpl) return []
@@ -179,11 +218,7 @@ const buildResult = (): string => {
 }
 // 报告附件下载前缀（走独立的报告接口，与头像分离）
 const fileBase = window.location.origin + '/api/common/downReport?name='
-const onReportUpload = (f: string): void => {
-  if (current.value) current.value.reportFile = f
-  if (f) ElMessage.success('报告附件已上传：' + f)
-}
-const removeReport = (): void => { if (current.value) current.value.reportFile = undefined }
+const onImgUpload = (f: string): void => { if (f) { imgFiles.value.push(f); ElMessage.success('原图已上传：' + f) } }
 
 const showDialog = (row: ImageOrder): void => {
   current.value = row
@@ -194,6 +229,11 @@ const showDialog = (row: ImageOrder): void => {
   tplLabels.value = []
   tplValues.value = []
   extraText.value = ''
+  findings.value = row.findings ?? ''
+  impression.value = row.impression ?? ''
+  dicomUid.value = row.dicomUid ?? ''
+  dicomSeries.value = row.dicomSeries ?? ''
+  imgFiles.value = row.imageFiles ? (() => { try { return JSON.parse(row.imageFiles) } catch { return [] } })() : []
   reqImageTestOne(row.itemId).then(t => {
     const labels = parseTpl(t?.reportTpl)
     if (labels.length) {
@@ -221,7 +261,12 @@ const formSubmit = (): void => {
     ElMessage.warning('请填写影像报告内容')
     return
   }
-  reqSaveImageReport({orderId: current.value.orderId, result, reportFile: current.value.reportFile ?? undefined}).then((res: Res) => {
+  reqSaveImageReport({
+    orderId: current.value.orderId, result, reportFile: current.value.reportFile ?? undefined,
+    findings: findings.value, impression: impression.value,
+    dicomUid: dicomUid.value, dicomSeries: dicomSeries.value,
+    imageFiles: JSON.stringify(imgFiles.value)
+  }).then((res: Res) => {
     if (res.code === 1) {
       ElMessage.success('影像报告已提交')
       modalView.value = false

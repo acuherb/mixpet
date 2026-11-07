@@ -95,6 +95,13 @@ export interface MedicalRecord {
     reviewStatus?: number | null;
     reviewBy?: string | null;
     reviewAt?: string | null;
+    /** 审核退回理由 */
+    reviewNote?: string | null;
+    /** SOAP 的 A：鉴别诊断 / 诊断依据 / 结构化编码 */
+    differentialDiagnosis?: string | null;
+    diagnosisBasis?: string | null;
+    diagnosisCode?: string | null;
+    diagnosisCodeSystem?: string | null;
 }
 
 /** 病历修改留痕：某次变更前的整本快照 */
@@ -120,7 +127,11 @@ export const exampleMedicalRecord = (appointmentId: number): MedicalRecord => {
         internalNote: "",
         revisitDate: null,
         feeRegister: 10,
-        feeTreat: 0
+        feeTreat: 0,
+        differentialDiagnosis: "",
+        diagnosisBasis: "",
+        diagnosisCode: null,
+        diagnosisCodeSystem: null
     }
 }
 

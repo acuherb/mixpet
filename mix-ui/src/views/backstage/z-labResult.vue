@@ -58,7 +58,8 @@
     <el-table-column label="开单时间" width="160" prop="createTime"/>
     <el-table-column label="状态" width="110">
       <template #default="scope">
-        <el-tag v-if="scope.row.criticalFlag" size="small" type="danger" effect="dark">危急值</el-tag>
+        <el-tag v-if="scope.row.criticalFlag && !scope.row.criticalHandled" size="small" type="danger" effect="dark">危急值·待处置</el-tag>
+        <el-tag v-else-if="scope.row.criticalFlag && scope.row.criticalHandled" size="small" type="warning" effect="dark">危急值·已处置</el-tag>
         <el-tag v-else-if="scope.row.reviewBy" size="small" type="success">已复核</el-tag>
         <el-tag v-else-if="scope.row.status" size="small" type="success">已出结果</el-tag>
         <el-tag v-else-if="isOverdue(scope.row)" size="small" type="danger">超时未检</el-tag>
@@ -73,6 +74,8 @@
           {{ !scope.row.status ? '录入结果' : (scope.row.reviewBy ? '查看结果' : '修订/复核') }}
         </el-button>
         <el-button v-if="scope.row.status && !scope.row.reviewBy" size="small" type="warning" @click="reviewOrder(scope.row)">复核</el-button>
+        <el-button v-if="scope.row.criticalFlag && scope.row.status && !scope.row.criticalHandled" size="small" type="danger" @click="handleCritical(scope.row)">危急处置</el-button>
+        <el-button v-if="scope.row.reviewBy" size="small" type="info" plain @click="revokeReview(scope.row)">撤销复核</el-button>
         <el-button v-if="!scope.row.status" size="small" type="danger" @click="cancelOrder(scope.row)">作废</el-button>
       </template>
     </el-table-column>
@@ -110,6 +113,13 @@
         <div class="case-para" v-if="current?.reviewBy">
           <label>复核</label>
           <p>{{ current.reviewBy }} · {{ current.reviewAt || '' }}</p>
+        </div>
+        <div class="case-para" v-if="current?.criticalFlag">
+          <label>危急值</label>
+          <p v-if="current.criticalHandled" style="color:#e6a23c">
+            已处置 · {{ current.criticalHandleBy }} · {{ current.criticalHandleAt || '' }}
+          </p>
+          <p v-else style="color:#f56c6c">待处置（已通知接诊医师：{{ current.criticalNotifyAt || '' }}）</p>
         </div>
       </div>
       <!-- 结果表：现代样式 -->
@@ -179,7 +189,7 @@ import {PageQuery} from "@/model/VO/BackQuery";
 import {LabOrderItem} from "@/model/entiy/LabOrderItem";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
 import {Page} from "@/model/DO/Page";
-import {reqLabByRecord, reqLabCancel, reqLabOrderPage, reqReviewLabResult, reqSaveLabResult} from "@/request/LabApi";
+import {reqLabByRecord, reqLabCancel, reqLabOrderPage, reqHandleCritical, reqReviewLabResult, reqRevokeReview, reqSaveLabResult} from "@/request/LabApi";
 import UpImg from "@/components/UpImg.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
@@ -331,6 +341,32 @@ const reviewOrder = (row: LabOrderDto | null): void => {
     reqReviewLabResult(row.orderId).then((res: Res) => {
       if (res.code === 1) { ElMessage.success(res.msg || '复核完成'); sendQuery() }
       else ElMessage.error(res.msg || '复核失败')
+    })
+  }).catch(() => { /* 取消 */ })
+}
+
+/** 危急值处置闭环：标记已处置并记录处置人 */
+const handleCritical = (row: LabOrderDto | null): void => {
+  if (!row) return
+  ElMessageBox.confirm(`确认处置化验单 #${row.orderId} 的危急值？处置后需同步电话通知接诊医师并留存处置记录。`, '危急值处置', {
+    confirmButtonText: '确认已处置', cancelButtonText: '取消', type: 'error'
+  }).then(() => {
+    reqHandleCritical(row.orderId).then((res: Res) => {
+      if (res.code === 1) { ElMessage.success(res.msg || '已处置'); sendQuery() }
+      else ElMessage.error(res.msg || '操作失败')
+    })
+  }).catch(() => { /* 取消 */ })
+}
+
+/** 撤销复核（管理层）：解除复核锁，允许再次修订 */
+const revokeReview = (row: LabOrderDto | null): void => {
+  if (!row) return
+  ElMessageBox.confirm(`确认撤销化验单 #${row.orderId} 的复核？撤销后报告重新开放修订。`, '撤销复核', {
+    confirmButtonText: '确认撤销', cancelButtonText: '取消', type: 'warning'
+  }).then(() => {
+    reqRevokeReview(row.orderId).then((res: Res) => {
+      if (res.code === 1) { ElMessage.success(res.msg || '已撤销复核'); sendQuery() }
+      else ElMessage.error(res.msg || '操作失败')
     })
   }).catch(() => { /* 取消 */ })
 }

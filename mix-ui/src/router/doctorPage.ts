@@ -102,5 +102,13 @@ export const doctorPage: RouteRecordRaw[] = [
     }, {
         path: "z-remind",
         component: () => import('@/views/backstage/z-remind.vue'),
+    }, {
+        // 检验参考区间维护（按物种/性别/月龄分层 + 危急阈值）
+        path: "z-refRange",
+        component: () => import('@/views/backstage/z-refRange.vue'),
+    }, {
+        // 诊断编码字典（SOAP 的 A：结构化编码 + 体系）
+        path: "z-diagnosis",
+        component: () => import('@/views/backstage/z-diagnosis.vue'),
     },
 ]

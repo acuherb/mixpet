@@ -149,6 +149,7 @@ cp .env.example .env    # 填入 DB_USER/DB_PASSWORD/APP_DEFAULT_PASSWORD/REMEMB
 #   db-backup/feature_20261107_p0_payment_audit.sql（资金字段 + 审计表）
 #   db-backup/feature_20261107_p1_appointment_slot.sql（排班默认值 + 号源索引）
 #   db-backup/feature_20261107_p3_clinical.sql（病历留痕/化验危急值/顾客通知，均可重复执行）
+#   db-backup/feature_20261107_p4_clinical.sql（SOAP诊断编码/影像结构化/参考区间维护/危急处置/审核退回，均可重复执行）
 export MIXPET_DIR=/opt/mixpet                     # 项目目录（建议纯英文路径）
 export MIXPET_DOMAIN=pet.yourclinic.com           # 必填真实域名，占位域名会被拒绝
 export MIXPET_ADMIN_MAIL=admin@yourclinic.com     # --tls 时接收证书到期通知

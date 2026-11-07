@@ -118,10 +118,23 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
         ImageOrder order = this.getById(vo.getOrderId());
         if (order == null) throw new BizException("申请单不存在");
         if (Boolean.TRUE.equals(order.getStatus())) throw new BizException("该单已出报告");
-        if (vo.getResult() == null || vo.getResult().isBlank()) throw new BizException("请填写影像报告内容");
+        // 兼容：前端仍传拼接好的 result；模板/结构化字段另存，打印页可分区展示
+        String report = vo.getResult();
+        if (report == null || report.isBlank()) {
+            if ((vo.getFindings() == null || vo.getFindings().isBlank())
+                    && (vo.getImpression() == null || vo.getImpression().isBlank()))
+                throw new BizException("请填写影像所见或影像诊断");
+            report = "【影像所见】" + (vo.getFindings() == null ? "" : vo.getFindings().trim())
+                    + "\n【影像诊断】" + (vo.getImpression() == null ? "" : vo.getImpression().trim());
+        }
         this.lambdaUpdate()
                 .eq(ImageOrder::getOrderId, vo.getOrderId())
-                .set(ImageOrder::getResult, vo.getResult())
+                .set(ImageOrder::getResult, report)
+                .set(ImageOrder::getFindings, vo.getFindings())
+                .set(ImageOrder::getImpression, vo.getImpression())
+                .set(ImageOrder::getDicomUid, vo.getDicomUid())
+                .set(ImageOrder::getDicomSeries, vo.getDicomSeries())
+                .set(ImageOrder::getImageFiles, vo.getImageFiles())
                 .set(ImageOrder::getReportFile, vo.getReportFile())
                 .set(ImageOrder::getReportTime, LocalDateTime.now())
                 .set(ImageOrder::getStatus, true)

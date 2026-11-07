@@ -28,6 +28,12 @@ public interface ILabOrderService extends IService<LabOrder> {
     /** 复核检验报告：录入人之外再签审核人 */
     Result reviewResult(Integer orderId, String operator);
 
+    /** 危急值处置闭环：标记已处置并记录处置人（仅含危急值的单可处置） */
+    Result handleCritical(Integer orderId, String operator);
+
+    /** 撤销复核（管理层）：复核锁解除后可再次修订，全程留痕 */
+    Result revokeReview(Integer orderId, String operator);
+
     /** 某病历的化验单（含明细） */
     List<LabOrderDto> selectByRecord(Integer recordId);
 

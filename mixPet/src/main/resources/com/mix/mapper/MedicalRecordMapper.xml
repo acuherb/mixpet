@@ -31,7 +31,8 @@
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time, r.status, r.finish_time, r.cancel_reason,
-        r.version, r.signed_by, r.signed_at, r.review_status, r.review_by, r.review_at,
+        r.version, r.signed_by, r.signed_at, r.review_status, r.review_by, r.review_at, r.review_note,
+        r.differential_diagnosis, r.diagnosis_basis, r.diagnosis_code, r.diagnosis_code_system,
         p.pet_name, c.client_name, d.doctor_name, dep.department_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id
@@ -103,7 +104,8 @@
         r.fee_register, r.fee_treat,
         b.fee_drug, b.total_money, b.pay_status,
         r.create_time, r.status, r.finish_time, r.cancel_reason,
-        r.version, r.signed_by, r.signed_at, r.review_status, r.review_by, r.review_at,
+        r.version, r.signed_by, r.signed_at, r.review_status, r.review_by, r.review_at, r.review_note,
+        r.differential_diagnosis, r.diagnosis_basis, r.diagnosis_code, r.diagnosis_code_system,
         p.pet_name, c.client_name, d.doctor_name, dep.department_name
         FROM medical_record r
         LEFT JOIN pet p ON r.pet_id = p.pet_id

@@ -63,4 +63,11 @@ public class RecordDto {
     private Integer reviewStatus;
     private String reviewBy;
     private LocalDateTime reviewAt;
+    /** 审核退回理由（修改后清空） */
+    private String reviewNote;
+    /** SOAP 的 A：鉴别诊断 / 诊断依据 / 结构化编码 */
+    private String differentialDiagnosis;
+    private String diagnosisBasis;
+    private String diagnosisCode;
+    private String diagnosisCodeSystem;
 }

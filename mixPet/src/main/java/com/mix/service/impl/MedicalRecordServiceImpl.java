@@ -583,11 +583,16 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getHeartRate, form.getHeartRate())
                 .set(MedicalRecord::getRespiratoryRate, form.getRespiratoryRate())
                 .set(MedicalRecord::getBloodPressure, form.getBloodPressure())
+                .set(MedicalRecord::getDifferentialDiagnosis, form.getDifferentialDiagnosis())
+                .set(MedicalRecord::getDiagnosisBasis, form.getDiagnosisBasis())
+                .set(MedicalRecord::getDiagnosisCode, form.getDiagnosisCode())
+                .set(MedicalRecord::getDiagnosisCodeSystem, form.getDiagnosisCodeSystem())
                 .set(MedicalRecord::getVersion, nextVersion)
                 // 内容变了，原审核结论自动失效，需重新审核
                 .set(MedicalRecord::getReviewStatus, 0)
                 .set(MedicalRecord::getReviewBy, null)
                 .set(MedicalRecord::getReviewAt, null)
+                .set(MedicalRecord::getReviewNote, null)
                 .update();
         return Result.success("病历已更新（V" + nextVersion + "，需重新审核）");
     }
@@ -610,8 +615,32 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getReviewStatus, 1)
                 .set(MedicalRecord::getReviewBy, reviewer == null ? "系统" : reviewer)
                 .set(MedicalRecord::getReviewAt, LocalDateTime.now())
+                .set(MedicalRecord::getReviewNote, null)
                 .update();
         return Result.success("病历审核完成");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result rejectRecord(Integer recordId, String reason) {
+        MedicalRecord record = this.getById(recordId);
+        if (record == null) throw new BizException("病历不存在");
+        if (record.getStatus() == null || record.getStatus() != 1)
+            throw new BizException("仅已完结的病历可退回");
+        if (reason == null || reason.isBlank()) throw new BizException("请填写退回理由");
+        if (record.getReviewStatus() != null && record.getReviewStatus() == 2)
+            throw new BizException("该病历已退回，请勿重复操作");
+        writeRevision(record, "病历审核退回：" + reason.trim());
+        String reviewer = currentDoctorName();
+        this.lambdaUpdate().eq(MedicalRecord::getRecordId, recordId)
+                .set(MedicalRecord::getReviewStatus, 2)
+                .set(MedicalRecord::getReviewBy, reviewer == null ? "系统" : reviewer)
+                .set(MedicalRecord::getReviewAt, LocalDateTime.now())
+                .set(MedicalRecord::getReviewNote, reason.trim())
+                // 退回后回到接诊中，医生才能按意见修订；重新完结时重新签名
+                .set(MedicalRecord::getStatus, 0)
+                .update();
+        return Result.success("病历已退回接诊医生，状态恢复为接诊中");
     }
 
     @Override

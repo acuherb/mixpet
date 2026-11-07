@@ -34,6 +34,11 @@ public class LabOrderDto {
     private LocalDateTime reviewAt;
     private Boolean criticalFlag;
     private Integer resultRevision;
+    /** 危急值处置闭环 */
+    private Boolean criticalHandled;
+    private String criticalHandleBy;
+    private LocalDateTime criticalHandleAt;
+    private LocalDateTime criticalNotifyAt;
 
     private String petName;
     private String clientName;

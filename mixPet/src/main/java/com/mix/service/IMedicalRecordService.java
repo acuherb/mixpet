@@ -59,6 +59,9 @@ public interface IMedicalRecordService extends IService<MedicalRecord> {
     /** 病历审核（仅已完结）：写入审核人/时间 */
     Result reviewRecord(Integer recordId);
 
+    /** 审核退回：附理由，回到接诊中供修订 */
+    Result rejectRecord(Integer recordId, String reason);
+
     /** 病历修改历史：按版本倒序的变更前快照 */
     List<MedicalRecordRevision> listRevisions(Integer recordId);
 

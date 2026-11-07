@@ -51,6 +51,11 @@ public class LabOrder implements Serializable {
     private Boolean criticalFlag;
     /** 结果修订次数：0=首次录入，>=1 为复核后修订 */
     private Integer resultRevision;
+    /** 危急值处置闭环：是否已处置 / 处置人 / 处置时间 / 通知接诊医生时间 */
+    private Boolean criticalHandled;
+    private String criticalHandleBy;
+    private LocalDateTime criticalHandleAt;
+    private LocalDateTime criticalNotifyAt;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

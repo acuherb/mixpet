@@ -33,6 +33,14 @@ public class ImageOrder implements Serializable {
     private String examPart;
     /** 影像报告内容 */
     private String result;
+    /** 影像所见（客观描述）与影像诊断（结论）分离，避免一个文本框混写 */
+    private String findings;
+    private String impression;
+    /** DICOM Study / Series UID：对接 PACS 时的检索键 */
+    private String dicomUid;
+    private String dicomSeries;
+    /** 原图附件文件名 JSON 数组，如 ["a.dcm","b.png"] */
+    private String imageFiles;
     private LocalDateTime reportTime;
     /** 0待检查 1已出报告 */
     private Boolean status;

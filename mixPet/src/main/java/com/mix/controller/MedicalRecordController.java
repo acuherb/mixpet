@@ -101,6 +101,14 @@ public class MedicalRecordController {
         return recordService.reviewRecord(id);
     }
 
+    /** 病历审核退回：附理由，退回后回到接诊中供医生按意见修订 */
+    @PutMapping("/reject/{id}")
+    @AuditLog(module = "record", action = "rejectRecord", target = "病历审核退回")
+    @Secured({RoleConst.DOCTOR, RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result reject(@PathVariable Integer id, String reason) {
+        return recordService.rejectRecord(id, reason);
+    }
+
     /** 病历版本历史：变更前整本快照，供追溯/复原 */
     @GetMapping("/revisions/{id}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})

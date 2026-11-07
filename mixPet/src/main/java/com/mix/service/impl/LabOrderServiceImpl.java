@@ -202,6 +202,11 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
                 .set(LabOrder::getReceiveTime, vo.getReceiveTime())
                 .set(LabOrder::getCriticalFlag, anyCritical)
                 .set(LabOrder::getResultRevision, revision)
+                // 有危急值则记录通知时间，并清空旧的处置标记（需重新处置）
+                .set(LabOrder::getCriticalNotifyAt, anyCritical ? LocalDateTime.now() : null)
+                .set(LabOrder::getCriticalHandled, anyCritical ? false : order.getCriticalHandled())
+                .set(LabOrder::getCriticalHandleBy, anyCritical ? null : order.getCriticalHandleBy())
+                .set(LabOrder::getCriticalHandleAt, anyCritical ? null : order.getCriticalHandleAt())
                 // 录入/修订后复核失效，必须重新双签
                 .set(LabOrder::getReviewBy, null)
                 .set(LabOrder::getReviewAt, null)
@@ -227,6 +232,38 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
                 .set(LabOrder::getReviewAt, LocalDateTime.now())
                 .update();
         return Result.success("报告已复核（审核人：" + operator + "）");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result handleCritical(Integer orderId, String operator) {
+        LabOrder order = this.getById(orderId);
+        if (order == null) throw new BizException("化验单不存在");
+        if (!Boolean.TRUE.equals(order.getCriticalFlag())) throw new BizException("该报告不含危急值，无需处置");
+        if (Boolean.TRUE.equals(order.getCriticalHandled())) throw new BizException("该危急值已处置");
+        this.lambdaUpdate().eq(LabOrder::getOrderId, orderId)
+                .set(LabOrder::getCriticalHandled, true)
+                .set(LabOrder::getCriticalHandleBy, operator)
+                .set(LabOrder::getCriticalHandleAt, LocalDateTime.now())
+                .update();
+        return Result.success("危急值已处置（处置人：" + operator + "）");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result revokeReview(Integer orderId, String operator) {
+        LabOrder order = this.getById(orderId);
+        if (order == null) throw new BizException("化验单不存在");
+        if (order.getReviewBy() == null) throw new BizException("该报告尚未复核，无需撤销");
+        // 撤销复核：清除双签，回到已出结果待复核状态，允许再次修订；处置标记一并回退
+        this.lambdaUpdate().eq(LabOrder::getOrderId, orderId)
+                .set(LabOrder::getReviewBy, null)
+                .set(LabOrder::getReviewAt, null)
+                .set(LabOrder::getCriticalHandled, false)
+                .set(LabOrder::getCriticalHandleBy, null)
+                .set(LabOrder::getCriticalHandleAt, null)
+                .update();
+        return Result.success("已撤销复核（操作人：" + operator + "），报告重新开放修订");
     }
 
     /** 结果修订前保存整单快照（单头 + 全部明细），可追溯到任意一版 */
@@ -338,6 +375,10 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
             dto.setReviewAt(o.getReviewAt());
             dto.setCriticalFlag(o.getCriticalFlag());
             dto.setResultRevision(o.getResultRevision());
+            dto.setCriticalHandled(o.getCriticalHandled());
+            dto.setCriticalHandleBy(o.getCriticalHandleBy());
+            dto.setCriticalHandleAt(o.getCriticalHandleAt());
+            dto.setCriticalNotifyAt(o.getCriticalNotifyAt());
             dto.setItems(labOrderItemMapper.selectList(
                     Wrappers.<LabOrderItem>lambdaQuery().eq(LabOrderItem::getOrderId, o.getOrderId())));
             result.add(dto);
