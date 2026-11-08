@@ -51,8 +51,21 @@ export const router = createRouter({
 /** 首次改密检查标记：只有检查真正通过后才写入，避免一次失败就永久跳过 */
 const PWD_CHECK_KEY = "mixpet_pwd_check_done"
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
     const path = to.path
+
+    // 诊疗流内联：深页在抽屉里 router.push 到其它医生端业务页时，重写为 d-flow/inline，
+    // 患者全程不离开这条河。排除经典视图、流自身、以及「独立页打开」的显式放行标记。
+    if (from.path.startsWith('/doctorPage/d-flow/')
+        && path.startsWith('/doctorPage/')
+        && !path.startsWith('/doctorPage/d-flow')
+        && path !== '/doctorPage/d-home'
+        && !to.query.__flowStandalone) {
+        return {
+            path: '/doctorPage/d-flow/inline',
+            query: {...to.query, __flowTarget: path}
+        }
+    }
 
     // 后台 / 医生端：必须登录且为员工角色（此前完全依赖后端 403，URL 直达会渲染空壳）
     if (path.startsWith("/backstage") || path.startsWith("/doctorPage")) {

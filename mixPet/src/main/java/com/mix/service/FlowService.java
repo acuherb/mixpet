@@ -6,6 +6,7 @@ import com.mix.mapper.FollowUpMapper;
 import com.mix.mapper.ImageOrderMapper;
 import com.mix.mapper.LabOrderMapper;
 import com.mix.mapper.MedicalRecordMapper;
+import com.mix.model.dto.AppointmentDto;
 import com.mix.model.dto.AppointmentDto2;
 import com.mix.model.dto.BillDto;
 import com.mix.model.dto.DoctorFlowVo;
@@ -16,6 +17,7 @@ import com.mix.model.dto.ImageOrderDto;
 import com.mix.model.dto.LabOrderDto;
 import com.mix.model.dto.RecordDto;
 import com.mix.model.vo.RecordQueryVo;
+import com.mix.model.vo.StatOverviewVo;
 import com.mix.util.UserUtil;
 import org.springframework.stereotype.Service;
 
@@ -43,16 +45,19 @@ public class FlowService {
     private final BillMapper billMapper;
     private final FollowUpMapper followMapper;
     private final IAppointmentService appointmentService;
+    private final IStatisticsService statisticsService;
 
     public FlowService(MedicalRecordMapper recordMapper, LabOrderMapper labMapper,
                        ImageOrderMapper imageMapper, BillMapper billMapper,
-                       FollowUpMapper followMapper, IAppointmentService appointmentService) {
+                       FollowUpMapper followMapper, IAppointmentService appointmentService,
+                       IStatisticsService statisticsService) {
         this.recordMapper = recordMapper;
         this.labMapper = labMapper;
         this.imageMapper = imageMapper;
         this.billMapper = billMapper;
         this.followMapper = followMapper;
         this.appointmentService = appointmentService;
+        this.statisticsService = statisticsService;
     }
 
     public DoctorFlowVo doctorPipeline() {
@@ -120,6 +125,90 @@ public class FlowService {
 
         stages.add(wait); stages.add(treat); stages.add(result); stages.add(pay); stages.add(follow);
         return new DoctorFlowVo(stages, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+    }
+
+    /**
+     * 前台接待流：今日预约 → 待收银 → 今日已诊。
+     * 权限由 FlowController.receptionPipeline 上的 @Secured(NURSE) 强制。
+     */
+    public DoctorFlowVo receptionPipeline() {
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter hm = DateTimeFormatter.ofPattern("HH:mm");
+
+        FlowStage wait = new FlowStage("appt", "今日预约", "全部预约·按到店引导", "/backstage/y-appointmentList", "去挂号");
+        FlowStage done = new FlowStage("done", "今日已诊", "已接诊完成", "/backstage/y-appointmentList", "查看");
+        for (AppointmentDto a : appointmentService.selectByPage("", 0, 1, 200).getRecords()) {
+            if (a.getAppointmentDate() == null || !a.getAppointmentDate().toLocalDate().equals(today)) continue;
+            String sub = a.getClientName() + " · " + a.getAppointmentDate().format(hm);
+            if (Boolean.TRUE.equals(a.getIsSuc())) {
+                done.add(new FlowItem("d" + a.getAppointmentId(), a.getPetName(),
+                        a.getClientName() + " · 已完成", null, null,
+                        "done", "复盘", "/backstage/y-appointmentList", a.getClientName()));
+            } else {
+                wait.add(new FlowItem("a" + a.getAppointmentId(), a.getPetName(), sub, null, null,
+                        "appt", "办理/分诊", "/backstage/y-appointmentList", a.getClientName()));
+            }
+        }
+
+        FlowStage pay = new FlowStage("pay", "待收银", "已完结·未收款", "/backstage/y-billList?payStatus=0", "去收银");
+        for (BillDto b : billMapper.selectBillPage(new Page<>(1, 50), "", 0).getRecords()) {
+            BigDecimal money = b.getTotalMoney();
+            pay.add(new FlowItem("b" + b.getBillId(), b.getPetName(),
+                    b.getClientName() + " · ￥" + (money == null ? "0.00" : String.format("%.2f", money.doubleValue())),
+                    null, null, "pay", "收款", "/backstage/y-billList?payStatus=0", b.getClientName()));
+        }
+
+        List<FlowStage> stages = List.of(wait, pay, done);
+        return new DoctorFlowVo(stages, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+    }
+
+    /**
+     * 管理驾驶舱：把经营指标也表达成一条"流"（营收→挂号→结算→发药→医技→住院→疫苗→药品）。
+     * 权限由 FlowController.managerPipeline 上的 @Secured(MANAGER) 强制。
+     */
+    public DoctorFlowVo managerPipeline() {
+        StatOverviewVo s = statisticsService.selectOverview();
+        List<FlowStage> stages = new ArrayList<>();
+        stages.add(metric("rev", "今日营收", "营业收入", s.getTodayRevenue() != null ? 1 : 0,
+                "￥" + money(s.getTodayRevenue()), "今日营业收入 · 月 " + money(s.getMonthRevenue()),
+                "/backstage/z-report", null));
+        stages.add(metric("appt", "今日挂号", "预约/到店", nvl(s.getTodayAppoint()),
+                nvl(s.getTodayAppoint()) + " 笔", "今日预约 · 已接诊 " + nvl(s.getTodayRecord()),
+                "/backstage/y-appointmentList", null));
+        stages.add(metric("pay", "待结算", "未收款账单", nvl(s.getPendingBills()),
+                nvl(s.getPendingBills()) + " 笔", "未收款账单", "/backstage/y-billList?payStatus=0",
+                nvl(s.getPendingBills()) > 0 ? "danger" : null));
+        stages.add(metric("dis", "待发药", "已收款待发药", nvl(s.getPendingDispense()),
+                nvl(s.getPendingDispense()) + " 笔", "待发药", "/backstage/y-billList", null));
+        stages.add(metric("exam", "待检/待影像", "医技积压", nvl(s.getPendingLab()) + nvl(s.getPendingImage()),
+                nvl(s.getPendingLab()) + "/" + nvl(s.getPendingImage()),
+                "化验 " + nvl(s.getPendingLab()) + " · 影像 " + nvl(s.getPendingImage()),
+                "/doctorPage/z-examResult", null));
+        stages.add(metric("hosp", "住院中", "在院动物", nvl(s.getInHospital()),
+                nvl(s.getInHospital()) + " 例", "在院动物", "/backstage/z-hospital", null));
+        stages.add(metric("vac", "到期疫苗", "待提醒", nvl(s.getDueVaccine()),
+                nvl(s.getDueVaccine()) + " 只", "到期/逾期免疫", "/doctorPage/z-immune", null));
+        long drug = nvl(s.getLowStock()) + nvl(s.getExpiringDrug());
+        stages.add(metric("drug", "药品预警", "低库存/近效期", drug,
+                "低 " + nvl(s.getLowStock()) + " · 近效 " + nvl(s.getExpiringDrug()),
+                "低库存 " + nvl(s.getLowStock()) + " · 近效期 " + nvl(s.getExpiringDrug()),
+                "/backstage/y-drugList", drug > 0 ? "warn" : null));
+        return new DoctorFlowVo(stages, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+    }
+
+    /** 经营指标环节：单卡片承载数值，count 用于角标 */
+    private FlowStage metric(String key, String title, String desc, long count,
+                             String chip, String sub, String path, String cls) {
+        FlowStage st = new FlowStage(key, title, desc, path, "查看");
+        st.add(new FlowItem(key, chip, sub, null, cls, title, "查看", path, null));
+        st.count = (int) count;
+        return st;
+    }
+
+    private long nvl(Long v) { return v == null ? 0 : v; }
+
+    private String money(BigDecimal v) {
+        return "￥" + (v == null ? "0.00" : String.format("%.2f", v.doubleValue()));
     }
 
     private Integer currentDoctorId() {

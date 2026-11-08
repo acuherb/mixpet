@@ -2,6 +2,7 @@ package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.annotation.AuditLog;
+import com.mix.annotation.FlowChanged;
 import com.mix.common.Result;
 import com.mix.model.dto.BillDto;
 import com.mix.model.entity.Bill;
@@ -63,6 +64,7 @@ public class BillController {
     @PutMapping("/pay/{billId}")
     @Secured(RoleConst.NURSE)
     @AuditLog(module = "bill", action = "pay", target = "账单收款")
+    @FlowChanged(stage = "pay", text = "账单已收款，流转至随访")
     public Result pay(@PathVariable Integer billId, Boolean payType) {
         return billService.pay(billId, payType != null && payType);
     }

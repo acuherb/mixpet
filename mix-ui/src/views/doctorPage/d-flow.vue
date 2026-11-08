@@ -23,17 +23,18 @@
 </template>
 
 <script lang="ts" setup>
-import {onBeforeUnmount, onMounted, ref} from 'vue'
-import {useRouter} from 'vue-router'
+import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
 import {Right, User} from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import FlowPipeline from '@/views/doctorPage/FlowPipeline.vue'
 import {reqDoctorPipeline, type FlowStage} from '@/request/FlowApi'
 import {reqLogout} from '@/request/PowerApi'
-import {subscribe} from '@/utils/chatSocket'
+import {subscribeFlow} from '@/utils/chatSocket'
 import {clearPwdCheckFlag} from '@/router'
 
 const router = useRouter()
+const route = useRoute()
 
 const stages = ref<FlowStage[]>([])
 const lastRefresh = ref('')
@@ -99,6 +100,26 @@ const closeInline = (done: () => void): void => {
   router.push('/doctorPage/d-flow').then(() => { loadAll(); done() })
 }
 
+// 抽屉开合跟随路由：深页内部 router.push 被守卫重写到 d-flow/inline 时，
+// 抽屉保持打开、内容无缝切换，患者全程不离开这条河。
+const inlineNames: Record<string, string> = {
+  appoint: '接诊', exam: '医技结果', pay: '收银', follow: '随访'
+}
+watch(() => route.path, (p: string): void => {
+  if (!p.startsWith('/doctorPage/d-flow/')) {
+    inlineOpen.value = false
+    return
+  }
+  inlineOpen.value = true
+  const leaf = p.split('/').pop() || ''
+  if (leaf === 'inline') {
+    const t = String(route.query.__flowTarget || '')
+    inlineTitle.value = '处理 · ' + (t.split('/').pop() || '业务页')
+  } else {
+    inlineTitle.value = '处理 · ' + (inlineNames[leaf] || leaf)
+  }
+}, {immediate: true})
+
 const doLogout = () => {
   ElMessageBox.confirm('确定退出登录吗？', '退出登录', {confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'})
     .then(() => { reqLogout().then(res => { clearPwdCheckFlag(); if (res.code === 1) router.push('/login') }) })
@@ -112,7 +133,10 @@ let pollTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
   loadAll()
   pollTimer = setInterval(loadAll, 20000)
-  unsub = subscribe(() => loadAll())
+  unsub = subscribeFlow((e: any) => {
+    if (e?.text) pushEvent(e.text, 'ok')
+    loadAll()
+  })
   window.addEventListener('mixpet:flow-refresh', onRefresh as EventListener)
 })
 onBeforeUnmount(() => {

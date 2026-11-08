@@ -89,9 +89,21 @@ has mixPet/src/main/java/com/mix/controller/FlowController.java 'doctorPipeline'
   && has mix-ui/src/views/doctorPage/FlowPipeline.vue 'navigate' \
   && has mix-ui/src/views/doctorPage/d-flow.vue 'FlowPipeline' \
   && has mix-ui/src/router/doctorPage.ts 'children' \
-  && has mix-ui/src/views/backstage/r-flow.vue 'reqAppointList' \
-  && has mix-ui/src/views/backstage/m-flow.vue 'reqStatOverview' \
+  && has mix-ui/src/views/backstage/r-flow.vue 'reqReceptionPipeline' \
+  && has mix-ui/src/views/backstage/m-flow.vue 'reqManagerPipeline' \
   && ok 'P5 诊疗流脊柱（后端聚合/内联深页/前台/管理端复用）' || bad 'P5 诊疗流脊柱（后端聚合/内联深页/前台/管理端复用）'
+has mixPet/src/main/java/com/mix/ws/FlowNotify.java 'FLOW_REFRESH' \
+  && has mixPet/src/main/java/com/mix/annotation/FlowChanged.java 'String stage()' \
+  && has mixPet/src/main/java/com/mix/aspect/FlowNotifyAspect.java 'flowChanged.stage()' \
+  && has mixPet/src/main/java/com/mix/controller/LabOrderController.java 'FlowChanged' \
+  && has mixPet/src/main/java/com/mix/controller/BillController.java 'FlowChanged' \
+  && has mixPet/src/main/java/com/mix/ws/ChatEndpoint.java 'broadcastFlow' \
+  && has mix-ui/src/utils/chatSocket.ts 'subscribeFlow' \
+  && has mix-ui/src/views/doctorPage/FlowInline.vue '__flowTarget' \
+  && has mix-ui/src/router/index.ts '__flowStandalone' \
+  && has mixPet/src/main/java/com/mix/controller/FlowController.java '@Secured(RoleConst.MANAGER)' \
+  && has mix-ui/src/router/backstage.ts 'minAuthLv: 6' \
+  && ok 'P6 状态变更广播/三端实时/权限隔离/内联不脱离' || bad 'P6 状态变更广播/三端实时/权限隔离/内联不脱离'
 bash -n deploy.sh && bash -n dev-tools/start.sh \
   && ok '部署脚本语法' || bad '部署脚本语法'
 
@@ -108,5 +120,5 @@ else
 fi
 
 echo "----"
-if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4/P5 静态自检全部通过"; else echo "P0/P1/P2/P3/P4/P5 静态自检存在失败项"; fi
+if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4/P5/P6 静态自检全部通过"; else echo "P0/P1/P2/P3/P4/P5/P6 静态自检存在失败项"; fi
 exit "$fail"

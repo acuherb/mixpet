@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.FlowChanged;
 import com.mix.common.Result;
 import com.mix.model.dto.FollowUpDto;
 import com.mix.model.entity.Client;
@@ -58,6 +59,7 @@ public class FollowUpController {
     /** 完成随访 */
     @PutMapping("/done/{followId}")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE})
+    @FlowChanged(stage = "follow", text = "随访已完成，闭环结束")
     public Result done(@PathVariable Integer followId, String result) {
         return followService.done(followId, result);
     }

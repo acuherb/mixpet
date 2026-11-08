@@ -2,6 +2,7 @@ package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.annotation.AuditLog;
+import com.mix.annotation.FlowChanged;
 import com.mix.common.Result;
 import com.mix.model.dto.AppointmentDto;
 import com.mix.model.entity.Appointment;
@@ -90,6 +91,7 @@ public class AppointmentController {
 
     @PostMapping
     @Secured(RoleConst.NURSE)
+    @FlowChanged(stage = "wait", text = "新增挂号，待接诊")
     public Result save(@RequestBody Appointment appointment) {
         Result check = checkFields(appointment);
         if (check.code() == 0) return check;
@@ -100,6 +102,7 @@ public class AppointmentController {
 
     /** 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物 */
     @PostMapping("/self")
+    @FlowChanged(stage = "wait", text = "顾客自主预约，待接诊")
     public Result saveSelf(@RequestBody Appointment appointment) {
         if (!(UserUtil.getUser() instanceof Client client)) return Result.error("请先登录顾客账号");
         Pet pet = petService.getById(appointment.getPetId());

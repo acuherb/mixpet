@@ -28,3 +28,9 @@ export interface DoctorFlowVo {
 // 诊疗流（闭环状态机）脊柱：单一接口取回全部环节快照
 export const reqDoctorPipeline = (): Promise<DoctorFlowVo> =>
   reqApi<string, DoctorFlowVo>('flow/doctorPipeline')
+// 前台接待流（后端限 NURSE 及以上）
+export const reqReceptionPipeline = (): Promise<DoctorFlowVo> =>
+  reqApi<string, DoctorFlowVo>('flow/receptionPipeline')
+// 管理驾驶舱（后端限 MANAGER 及以上）
+export const reqManagerPipeline = (): Promise<DoctorFlowVo> =>
+  reqApi<string, DoctorFlowVo>('flow/managerPipeline')

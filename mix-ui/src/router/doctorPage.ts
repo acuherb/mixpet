@@ -15,6 +15,8 @@ export const doctorPage: RouteRecordRaw[] = [
             {path: 'exam', component: () => import('@/views/backstage/z-examResult.vue')},
             {path: 'pay', component: () => import('@/views/backstage/y-billList.vue')},
             {path: 'follow', component: () => import('@/views/backstage/z-follow.vue')},
+            // 通用内联：深页内部 router.push 到其它业务页时，由全局守卫重写到这里，不脱离抽屉
+            {path: 'inline', component: () => import('@/views/doctorPage/FlowInline.vue')},
         ],
     }, {
         // 默认进入诊疗流

@@ -500,7 +500,14 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **后端状态机聚合（闭环的骨）**：新增 `FlowController` + `FlowService` + `FlowItem`/`FlowStage`/`DoctorFlowVo`。`GET /flow/doctorPipeline` 从 5 张业务表派生 `待诊→接诊中→待结果→待结算→待随访` 五个环节的当前快照；任一单据状态变化（出结果/收款）会让它自动流向下一环节。复用 `MedicalRecordMapper`/`LabOrderMapper`/`ImageOrderMapper`/`BillMapper`/`FollowUpMapper`/`IAppointmentService`，前端由并发 6 请求收敛为单接口。`Result.data(obj)` 回传（`Result.success` 只接收 String）。
 - **可复用展示组件**：`mix-ui/src/views/doctorPage/FlowPipeline.vue`（流水线 + 实时事件流 + Cmd+K 命令面板 + 患者旅程抽屉），纯展示，通过 `navigate(path)` / `logout` 事件把路由决策交回各端；`stages/events/commands` 由外部注入。
 - **医生端内联深页（行云流水最后一公里）**：`d-flow` 改为带 `children` 的父路由，`appoint/exam/pay/follow` 四个子路由把 `d-appoint`/`z-examResult`/`y-billList`/`z-follow` 直接在流内抽屉渲染，患者全程不离开这条河；关闭抽屉回 `/doctorPage/d-flow` 并刷新。`""` 重定向到 `d-flow`，经典视图保留在 `d-home`。
-- **前台/管理端复用同一范式**：`backstage/r-flow.vue`（前台接待流：今日预约→待收银→今日已诊，复用 `reqAppointList`/`reqBillPage`）、`backstage/m-flow.vue`（经营驾驶舱：营收/挂号/待结算/待发药/待检/住院/疫苗/药品预警，复用 `reqStatOverview`），均挂在 `/backstage/r-flow`、`/backstage/m-flow`。
-- **实时联动**：医生端 `chatSocket.subscribe` + 20s 轮询 + `mixpet:flow-refresh` 全局事件；对环节计数做 diff，自动弹「N 项结果已回报/账单已收款/新增挂号」等事件。前台 20s、管理端 30s 轮询。
+- **前台/管理端复用同一范式**：`backstage/r-flow.vue`（前台接待流：今日预约→待收银→今日已诊）、`backstage/m-flow.vue`（经营驾驶舱：营收/挂号/待结算/待发药/待检/住院/疫苗/药品预警），均挂在 `/backstage/r-flow`、`/backstage/m-flow`。P6 起改为调用各自的后端聚合接口（见下），不再在前端拼数据。
 - **验证**：`mvn test` / `npm run build` / `verify-p0.sh`（含 P5 检查项）全绿。
-- **仍未做**：后端状态机为「派生快照」而非带转换事件表的持久化工作流（无自动外呼/自动通知的下一环节触发）；深页内联时若其内部 `router.push` 到顶层路由会脱离抽屉；前台/管理端尚未接入 WS 实时推送（仅轮询）；三端尚未做角色权限隔离（`/backstage/r-flow`、`m-flow` 目前对所有后台角色可见）；内网联调与浏览器实测待做。
+
+### 闭环神经 / 权限隔离 / 内联不脱离（2026-11-08，P6）
+补齐 P5 遗留的四项：状态变更主动广播、三端实时、权限隔离、深页内联脱离抽屉。
+- **状态变更主动广播（闭环的神经）**：新增 `@FlowChanged(stage,text)` + `FlowNotifyAspect`，在挂号新增、接诊建档、就诊完结、开化验/影像单、结果回报、账单收款、随访完成等 **10 个状态转换点**成功（`Result.code==1`）后，由 `FlowNotify.fire` 经 `ChatEndpoint.broadcastFlow` 向**所有在线员工**推 `FLOW_REFRESH` 帧。注解打在 controller 方法上——被调用 service 的 `@Transactional` 在 `point.proceed()` 返回时已提交，前端收到再拉取不会读到旧数据；业务失败/异常不广播。失效连接逐个忽略，广播失败不影响主业务，前端保留轮询兜底。
+- **WS 类型隔离**：`chatSocket.ts` 拆出 `flowHandlers` 与 `subscribeFlow()`；`onmessage` 按 `data.type==='FLOW_REFRESH'` 分流，系统帧**绝不进入聊天消息流**（否则 `d-chat`/`clientCenter` 会把刷新帧渲染成一条聊天）。最后一个订阅者（含流订阅者）退出才断开。三端流统一 `subscribeFlow` + `mixpet:flow-refresh` 全局事件 + 轮询（医生 20s、前台 20s、管理 30s）。
+- **权限隔离（前后端双保险）**：`FlowService` 新增 `receptionPipeline()`（今日预约/待收银/今日已诊，复用 `IAppointmentService.selectByPage` + `BillMapper`）与 `managerPipeline()`（8 个经营指标环节，复用 `IStatisticsService.selectOverview`）；`FlowController` 三个接口分别 `@Secured`：医生流 `{LOSER,NURSE,DOCTOR,MANAGER}`（工作台首页对所有在岗员工开放，故含 LOSER）、前台流 `{NURSE,MANAGER}`、管理流 `MANAGER`。前端 `backstage.ts` 同步 `r-flow: minAuthLv 2` / `m-flow: minAuthLv 6`。注意后端角色是**累积授予**（authLv 8 含全部角色，0 仅 LOSER），漏掉 LOSER 会让临时工打开工作台首页得到 403 空流。
+- **内联深页不脱离抽屉**：新增 `d-flow/inline` 子路由 + `FlowInline.vue`（白名单 25 个医生端业务页，`defineAsyncComponent` 按 `__flowTarget` 就地渲染）。全局 `beforeEach` 守卫把「从流内深页 `router.push` 到其它医生端业务页」重写为 `d-flow/inline?__flowTarget=<原path>`，并把原 query **平铺**保留（深页 `useRoute().query.recordId` 照常可读）。排除经典视图 `d-home`、流自身、以及「独立页打开」的 `__flowStandalone` 放行标记，避免把用户刻意离开流的操作也拦回抽屉；`d-flow.vue` 的抽屉开合改为 `watch(route.path)` 驱动，守卫重写后抽屉自动保持打开、内容无缝切换。
+- **验证**：`mvn test` / `npm run build` / `verify-p0.sh`（含 P6 检查项）全绿。
+- **仍未做**：仍是「派生快照」而非持久化工作流事件表（无自动外呼/短信触发下一环节）；`FlowInline` 白名单为静态表，新增医生端页面需手动登记；广播只推在线员工、不推顾客（顾客端通知仍走站内信）；三端未做更细的数据行级权限；浏览器实测与真实 WS 联调待做。

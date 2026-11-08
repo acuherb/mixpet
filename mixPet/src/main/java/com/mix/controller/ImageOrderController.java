@@ -1,6 +1,7 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.mix.annotation.FlowChanged;
 import com.mix.common.Result;
 import com.mix.model.dto.ImageOrderDto;
 import com.mix.model.entity.Client;
@@ -37,6 +38,7 @@ public class ImageOrderController {
     /** 医生开单 */
     @PostMapping
     @Secured(RoleConst.DOCTOR)
+    @FlowChanged(stage = "result", text = "新开影像单，已流入待结果")
     public Result createOrder(@RequestBody ImageOrderVo vo) {
         if (UserUtil.getUser() instanceof Doctor doctor) return orderService.createOrder(vo, doctor);
         return Result.error("请登录医生账号");
@@ -45,6 +47,7 @@ public class ImageOrderController {
     /** 影像报告录入 */
     @PutMapping("/report")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    @FlowChanged(stage = "result", text = "影像报告已出具，可结算")
     public Result saveReport(@RequestBody ImageReportVo vo) {
         return orderService.saveReport(vo);
     }

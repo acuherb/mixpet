@@ -2,6 +2,7 @@ package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.annotation.AuditLog;
+import com.mix.annotation.FlowChanged;
 import com.mix.common.Result;
 import com.mix.mapper.MedicalRecordMapper;
 import com.mix.model.dto.LabOrderDto;
@@ -44,6 +45,7 @@ public class LabOrderController {
     /** 医生开化验单（含计费） */
     @PostMapping("/order")
     @Secured(RoleConst.DOCTOR)
+    @FlowChanged(stage = "result", text = "新开化验单，已流入待结果")
     public Result createOrder(@RequestBody LabOrderVo vo) {
         if (UserUtil.getUser() instanceof Doctor doctor) return labService.createOrder(vo, doctor);
         return Result.error("请登录医生账号");
@@ -80,6 +82,7 @@ public class LabOrderController {
     @PutMapping("/result")
     @AuditLog(module = "lab", action = "saveResult", target = "录入检验结果")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER})
+    @FlowChanged(stage = "result", text = "化验结果已回报，可复核/结算")
     public Result saveResult(@RequestBody LabResultVo vo) {
         return labService.saveResult(vo, operatorName());
     }

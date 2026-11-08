@@ -105,6 +105,20 @@ public class ChatEndpoint {
     }
 
     /**
+     * 向所有在线员工广播诊疗流系统事件（FLOW_REFRESH）。
+     * 只遍历 onlineDoctors，顾客端不会收到；逐个 try 避免单个失效连接拖垮广播。
+     */
+    public static void broadcastFlow(String json) {
+        for (ChatEndpoint ep : onlineDoctors.values()) {
+            try {
+                if (ep.session != null && ep.session.isOpen()) ep.session.getBasicRemote().sendText(json);
+            } catch (Exception ignored) {
+                // 忽略单个失效会话
+            }
+        }
+    }
+
+    /**
      * 将对象转成json格式的字符串
      */
     private String msgToString(Msg msg) {

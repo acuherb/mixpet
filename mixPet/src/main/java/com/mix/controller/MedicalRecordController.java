@@ -2,6 +2,7 @@ package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.annotation.AuditLog;
+import com.mix.annotation.FlowChanged;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.mix.common.Result;
 import com.mix.model.dto.RecordDto;
@@ -60,6 +61,7 @@ public class MedicalRecordController {
     @PostMapping("/save")
     @AuditLog(module = "record", action = "saveRecord", target = "接诊建档")
     @Secured(RoleConst.DOCTOR)
+    @FlowChanged(stage = "treat", text = "接诊建档，已流入接诊中")
     public Result save(@RequestBody RecordVo vo) {
         if (UserUtil.getUser() instanceof Doctor doctor) {
             return recordService.saveRecord(vo, doctor);
@@ -73,6 +75,7 @@ public class MedicalRecordController {
     @PutMapping("/finish/{id}")
     @AuditLog(module = "record", action = "finishRecord", target = "完结就诊")
     @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN})
+    @FlowChanged(stage = "pay", text = "就诊已完结，生成待结算账单")
     public Result finish(@PathVariable Integer id, boolean force) {
         return recordService.finishRecord(id, force);
     }
