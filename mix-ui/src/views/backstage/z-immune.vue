@@ -85,7 +85,7 @@ import {reqImmunePage, reqSaveImmune} from "@/request/ImmuneApi";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
-const qp = reactive({numPage: 1, pageSize: 15, dueSoon: false})
+const qp = reactive({numPage: 1, pageSize: 20, dueSoon: false})
 const dueSoonFilter = ref<boolean | null>(null)
 const list = ref<Page<ImmuneRecord>>({records: [], total: 0})
 const vaccineDrugs = ref<Drug[]>([])

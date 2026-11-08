@@ -417,7 +417,7 @@ const qp = reactive<YPetList>({
   petName: '',
   clientName: '',
   numPage: 1,
-  pageSize: 15
+  pageSize: 20
 })
 // 列表展示
 const petList = ref<Page<PetDto>>({records: [], total: 0})
@@ -593,7 +593,7 @@ const formSubmit = async (): Promise<void> => {
       modalView.value = false
       if (modalTit.value == "新增宠物") reqAddPet(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改宠物") reqUpdatePet(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

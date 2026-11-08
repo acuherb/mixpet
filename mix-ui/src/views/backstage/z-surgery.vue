@@ -196,7 +196,7 @@ import {reqConsentOne, reqCreateSurgery, reqSaveAnesthesia, reqSignConsent, reqS
 const PRE_OP_CHECKS = ['血常规', '生化', '凝血']
 
 const route = useRoute()
-const qp = reactive({numPage: 1, pageSize: 15, status: null as number | null})
+const qp = reactive({numPage: 1, pageSize: 20, status: null as number | null})
 const statusFilter = ref<number | null>(null)
 const list = ref<Page<Surgery>>({records: [], total: 0})
 

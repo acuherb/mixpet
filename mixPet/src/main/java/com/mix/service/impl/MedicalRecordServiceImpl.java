@@ -342,6 +342,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         MedicalRecord owner = this.getById(p.getRecordId());
         if (owner == null) throw new BizException("病历不存在");
         assertEditable(owner);
+        assertOwner(owner);
         Bill unpaid = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
                 .eq(Bill::getRecordId, p.getRecordId())
                 .eq(Bill::getPayStatus, false)
@@ -376,6 +377,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         MedicalRecord record = this.getById(recordId);
         if (record == null) throw new BizException("病历不存在");
         assertEditable(record);
+        assertOwner(record);
         if (list == null || list.isEmpty()) throw new BizException("请至少添加一种药品");
         Bill bill = unpaidBill(recordId);
         if (bill == null) throw new BizException("该病历账单已收款或不存在，无法追加（如需追加请先退款）");
@@ -410,6 +412,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         MedicalRecord record = this.getById(recordId);
         if (record == null) throw new BizException("病历不存在");
         assertEditable(record);
+        assertOwner(record);
         if (packageIds == null || packageIds.isEmpty()) throw new BizException("请至少选择一个套餐");
         Bill bill = unpaidBill(recordId);
         if (bill == null) throw new BizException("该病历账单已收款或不存在，无法追加（如需追加请先退款）");
@@ -496,9 +499,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result finishRecord(Integer recordId, boolean force) {
         MedicalRecord record = this.getById(recordId);
         if (record == null) throw new BizException("病历不存在");
+        assertOwner(record);
         if (record.getStatus() == null || record.getStatus() != 0)
             throw new BizException(record.getStatus() != null && record.getStatus() == 2
                     ? "该就诊已作废，不能完结" : "该就诊已完结，无需重复操作");
@@ -535,21 +540,54 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getSignedBy, signer)
                 .set(MedicalRecord::getSignedAt, LocalDateTime.now())
                 .update();
-        return Result.success("就诊已完结");
+        // 病历填了复诊日期就自动生成一条待随访：提醒不再只躺在提醒页，而是进入诊疗流待办
+        if (record.getRevisitDate() != null
+                && followUpMapper.selectCount(Wrappers.<FollowUp>lambdaQuery()
+                        .eq(FollowUp::getRecordId, recordId)) == 0) {
+            FollowUp fu = new FollowUp();
+            fu.setRecordId(recordId);
+            fu.setPetId(record.getPetId());
+            fu.setClientId(record.getClientId());
+            fu.setFollowType("电话");
+            fu.setContent("按病历复诊日期自动生成的随访待办");
+            fu.setPlanTime(record.getRevisitDate().atStartOfDay());
+            fu.setStatus(false);
+            followUpMapper.insert(fu);
+        }
+        return Result.success("就诊已完结（已按复诊日期生成随访待办）");
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result cancelRecord(Integer recordId, String reason) {
         MedicalRecord record = this.getById(recordId);
         if (record == null) throw new BizException("病历不存在");
         if (record.getStatus() == null || record.getStatus() != 0)
             throw new BizException("仅接诊中的就诊可以作废");
+        assertOwner(record);
         if (reason == null || reason.isBlank()) throw new BizException("请填写作废原因");
+        writeRevision(record, "作废就诊：" + reason.trim());
         this.lambdaUpdate().eq(MedicalRecord::getRecordId, recordId)
                 .set(MedicalRecord::getStatus, 2)
                 .set(MedicalRecord::getCancelReason, reason.trim())
                 .update();
-        return Result.success("就诊已作废");
+        // 作废必须把整条链路一起收掉，否则号源占死、未付账单仍可收款、待结果永远消不掉
+        billMapper.update(null, Wrappers.<Bill>lambdaUpdate()
+                .eq(Bill::getRecordId, recordId)
+                .eq(Bill::getPayStatus, false)
+                .setSql("is_del = 1"));
+        if (record.getAppointmentId() != null) {
+            appointmentService.lambdaUpdate()
+                    .eq(Appointment::getAppointmentId, record.getAppointmentId())
+                    .set(Appointment::getIsSuc, false)
+                    .update();
+        }
+        // 作废本次就诊已开的检验/影像申请单：否则它们永远留在「待结果」，并卡住完结就诊
+        labOrderMapper.update(null, Wrappers.<LabOrder>lambdaUpdate()
+                .eq(LabOrder::getRecordId, recordId).setSql("is_cancel = 1"));
+        imageOrderMapper.update(null, Wrappers.<ImageOrder>lambdaUpdate()
+                .eq(ImageOrder::getRecordId, recordId).setSql("is_cancel = 1"));
+        return Result.success("就诊已作废：号源已释放、未付账单与待结果申请单一并作废。如需再次就诊请重新挂号");
     }
 
     @Override
@@ -559,15 +597,17 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         MedicalRecord record = this.getById(form.getRecordId());
         if (record == null) throw new BizException("病历不存在");
         assertEditable(record);
-        // 乐观锁：前端带上的版本必须与库中一致，避免两个窗口互相静默覆盖
-        if (form.getVersion() != null && record.getVersion() != null
-                && !form.getVersion().equals(record.getVersion()))
+        assertOwner(record);
+        // 乐观锁：版本必传且与库中一致；不传一律拒绝，避免旧页面/脚本静默覆盖
+        if (form.getVersion() == null || record.getVersion() == null
+                || !form.getVersion().equals(record.getVersion()))
             throw new BizException("病历已被他人修改（当前 V" + record.getVersion() + "），请刷新后重新编辑");
         // 变更前先落整本快照：病历不再被覆盖得无影无踪
         writeRevision(record, "修改病历内容");
-        int nextVersion = (record.getVersion() == null ? 1 : record.getVersion()) + 1;
+        int nextVersion = record.getVersion() + 1;
         // 只更新内容字段，费用不动（费用变动请走处方作废/退款流程）
-        this.lambdaUpdate().eq(MedicalRecord::getRecordId, form.getRecordId())
+        boolean ok = this.lambdaUpdate().eq(MedicalRecord::getRecordId, form.getRecordId())
+                .eq(MedicalRecord::getVersion, record.getVersion())
                 .set(MedicalRecord::getChiefComplaint, form.getChiefComplaint())
                 .set(MedicalRecord::getPresentIllness, form.getPresentIllness())
                 .set(MedicalRecord::getPastHistory, form.getPastHistory())
@@ -594,10 +634,12 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getReviewAt, null)
                 .set(MedicalRecord::getReviewNote, null)
                 .update();
+        if (!ok) throw new BizException("病历已被他人修改，请刷新后重新编辑");
         return Result.success("病历已更新（V" + nextVersion + "，需重新审核）");
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result reviewRecord(Integer recordId) {
         MedicalRecord record = this.getById(recordId);
         if (record == null) throw new BizException("病历不存在");
@@ -630,6 +672,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         if (reason == null || reason.isBlank()) throw new BizException("请填写退回理由");
         if (record.getReviewStatus() != null && record.getReviewStatus() == 2)
             throw new BizException("该病历已退回，请勿重复操作");
+        if (record.getReviewStatus() != null && record.getReviewStatus() == 1)
+            throw new BizException("该病历已审核通过，不能退回");
         writeRevision(record, "病历审核退回：" + reason.trim());
         String reviewer = currentDoctorName();
         this.lambdaUpdate().eq(MedicalRecord::getRecordId, recordId)
@@ -637,8 +681,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 .set(MedicalRecord::getReviewBy, reviewer == null ? "系统" : reviewer)
                 .set(MedicalRecord::getReviewAt, LocalDateTime.now())
                 .set(MedicalRecord::getReviewNote, reason.trim())
-                // 退回后回到接诊中，医生才能按意见修订；重新完结时重新签名
+                // 退回后回到接诊中，医生才能按意见修订；清空旧签名，重新完结时重新签名
                 .set(MedicalRecord::getStatus, 0)
+                .set(MedicalRecord::getSignedBy, null)
+                .set(MedicalRecord::getSignedAt, null)
+                .setSql("version = version + 1")
                 .update();
         return Result.success("病历已退回接诊医生，状态恢复为接诊中");
     }
@@ -654,6 +701,18 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private void assertEditable(MedicalRecord record) {
         if (record.getStatus() == null || record.getStatus() != 0)
             throw new BizException("该就诊已完结/已作废，单据只读");
+    }
+
+    /** 归属校验：普通医生只能改本人接诊的病历；主任/院长（authLv>=6）可跨人复核修正。
+     *  一律取登录态，不信任前端传参。 */
+    private void assertOwner(MedicalRecord record) {
+        Object user = UserUtil.getUser();
+        if (!(user instanceof Doctor doctor)) return;
+        Integer lv = doctor.getAuthLv();
+        if (lv != null && lv >= 6) return;
+        if (doctor.getDoctorId() != null && record.getDoctorId() != null
+                && !doctor.getDoctorId().equals(record.getDoctorId()))
+            throw new BizException("只能操作本人接诊的病历");
     }
 
     /** 变更前整本快照 + 登录态操作人（不信任前端传参） */

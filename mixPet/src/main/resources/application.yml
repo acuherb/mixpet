@@ -71,6 +71,8 @@ backup:
 ---
 # AI 辅助诊疗（旁路功能：enabled=false 一键关闭，不影响正常接诊）
 ai:
-  enabled: true # 功能开关
-  provider: mock # 模型提供方：mock(演示)/deepseek(上线期)
+  # 未接入真实模型前默认下线：不允许规则/演示假建议进入临床决策。
+  # 接入方式：实现 AiProvider 并注册 Bean，设 AI_ENABLED=true。
+  enabled: false
+  provider: none
   # apiKey 走环境变量 AI_API_KEY，不写入本文件、不提交

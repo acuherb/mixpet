@@ -24,6 +24,20 @@ public class BillDto {
     private BigDecimal feeSurgery;
     private BigDecimal feeImmune;
     private BigDecimal totalMoney;
+    /** 会员折扣快照（1.00=无折扣）；折后应付 real_money = ROUND(total_money * IFNULL(discount,1),2) */
+    private BigDecimal discount;
+    private BigDecimal discountMoney;
+    private BigDecimal realMoney;
+    /** 发药核对状态：是否发药/核对人/时间 */
+    private Boolean dispenseStatus;
+    private String dispenseBy;
+    private LocalDateTime dispenseTime;
+    /** 退款状态：是否整单退/操作人/原因/时间/累计已退金额 */
+    private Boolean refundStatus;
+    private String refundBy;
+    private String refundReason;
+    private LocalDateTime refundTime;
+    private BigDecimal refundMoney;
     private Boolean payStatus;
     private Boolean payType;
     private LocalDateTime createTime;

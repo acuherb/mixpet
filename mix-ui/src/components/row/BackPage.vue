@@ -15,7 +15,7 @@
 </template>
 
 <script lang="ts" setup>
-/*=====后台分页条，每页默认 30 条=====*/
+/*=====后台分页条，每页默认 20 条=====*/
 import {reactive} from "vue";
 import {PageQuery} from "@/model/VO/BackQuery";
 
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 
 const pu = reactive<PageQuery>({
   numPage: 1,
-  pageSize: 30
+  pageSize: 20
 })
 
 const handleSizeChange = (val: number) => {

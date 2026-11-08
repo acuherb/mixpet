@@ -137,9 +137,6 @@
     </el-dialog>
 
     <!--接诊弹窗：向导式（问诊检查 → 诊断医嘱 → 处置开单 → 完结结算）-->
-    <!-- 移动端简化提示 -->
-    <el-alert v-if="isMobile" :closable="false" show-icon type="warning" style="margin-bottom: 8px"
-              title="您正在使用移动设备，接诊向导已简化为快速查看模式。完整操作请使用电脑端。"/>
     <el-dialog v-model="treatView" :close-on-click-modal="false" :before-close="beforeCloseTreat" top="4vh" width="94%" style="max-width: 800px">
       <template #header>
         <span style="font-weight: bold">接诊向导 · {{ stepTitles[activeStep] }}</span>
@@ -185,9 +182,6 @@
 
         <div class="step-head">
           <div class="step-tit"><span class="step-no">一</span>S 主观资料 · 问诊（宠物为什么来医院）</div>
-          <el-button size="small" plain type="warning" @click="openAi">
-            <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
-          </el-button>
         </div>
         <!-- 问诊卡片组：主诉重点卡 + 现病史/既往史 -->
         <div class="rec-card key">
@@ -258,9 +252,6 @@
         <div v-show="activeStep === 1" class="treat-step">
         <div class="step-head">
           <el-divider content-position="left">A 评估 / P 计划 · 诊断与治疗</el-divider>
-          <el-button size="small" plain type="warning" @click="openAi">
-            <el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助
-          </el-button>
         </div>
         <el-form-item label="诊断" prop="diagnosis">
           <el-input v-model="recordForm.diagnosis" maxlength="255" placeholder="诊断结论"/>
@@ -272,7 +263,7 @@
         </el-form-item>
         <el-form-item label="鉴别诊断">
           <el-input v-model="recordForm.differentialDiagnosis" :rows="2" maxlength="1000"
-                    placeholder="需排除的疾病及理由；可点「AI 辅助」一键带入鉴别诊断" type="textarea"/>
+                    placeholder="需排除的疾病及理由" type="textarea"/>
         </el-form-item>
         <el-form-item label="诊断依据">
           <el-input v-model="recordForm.diagnosisBasis" :rows="2" maxlength="1000"
@@ -607,7 +598,6 @@
           <el-button @click="goDoctor('z-hospital')">入院登记</el-button>
           <el-button @click="goDoctor('z-immune')">免疫接种</el-button>
           <el-button @click="goDoctor('z-follow')">写随访</el-button>
-          <el-button type="warning" plain @click="openAi"><el-icon style="margin-right:4px"><MagicStick/></el-icon>AI 辅助</el-button>
           <el-button type="primary" plain @click="printChoice = true">打印</el-button>
           <el-button type="success" plain @click="goCashier">去收银台收费</el-button>
           <el-button type="info" plain @click="openRevisions">病历版本 / 审核</el-button>
@@ -686,41 +676,6 @@
       </template>
     </el-dialog>
 
-    <!-- AI 辅助抽屉：结构化建议 + 合规横幅 + 一键填入 -->
-    <el-drawer v-model="aiDrawer" append-to-body size="540px" title="AI 辅助诊疗" v-loading="aiRequesting">
-      <el-alert :closable="false" show-icon type="warning" title="AI 辅助内容仅供临床参考，非诊断结论；请以问诊、查体及检验/影像结果为准，相关医疗决策与法律责任由执业兽医本人承担"/>
-      <template v-if="aiAdvice">
-        <h4 class="ai-tit">鉴别诊断</h4>
-        <el-table :data="aiAdvice.differentials" border size="small">
-          <el-table-column label="可能疾病" min-width="120" prop="cond"/>
-          <el-table-column label="倾向" prop="prob" width="56"/>
-          <el-table-column label="依据" min-width="160" prop="basis" show-overflow-tooltip/>
-        </el-table>
-
-        <h4 class="ai-tit">建议检查</h4>
-        <div class="ai-tags">
-          <el-tag v-for="(e, i) in aiAdvice.examSuggest" :key="i" size="small" style="margin:0 6px 6px 0">{{ e }}</el-tag>
-        </div>
-
-        <h4 class="ai-tit">指标解读</h4>
-        <p v-for="(e, i) in aiAdvice.indexExplain" :key="i" class="ai-line">{{ e }}</p>
-
-        <h4 class="ai-tit">治疗参考</h4>
-        <p v-for="(e, i) in aiAdvice.treatRef" :key="i" class="ai-line">· {{ e }}</p>
-
-        <h4 class="ai-tit">向宠主说明（可编辑，一键填入医嘱）</h4>
-        <el-input v-model="aiAdvice.ownerNote" :rows="4" type="textarea"/>
-
-        <h4 class="ai-tit">复诊建议</h4>
-        <p class="ai-line">{{ aiAdvice.revisitSuggest }}</p>
-      </template>
-      <el-empty v-else-if="!aiRequesting" description="暂无建议内容"/>
-      <template #footer>
-        <el-button @click="aiDrawer = false">关闭</el-button>
-        <el-button :disabled="!aiAdvice" type="primary" @click="fillAi">一键填入医嘱</el-button>
-      </template>
-    </el-drawer>
-
     <!-- 兽用处方笺打印前弹窗（734号：联次+补录+编号） -->
     <!-- 统一打印入口：电子病历 / 兽用处方笺（国标） -->
     <PrintChoiceDialog v-model="printChoice" :record-id="treatRecordId"/>
@@ -769,7 +724,7 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqClientNameHavePet} from "@/request/ClientApi";
-import {Delete, InfoFilled, MagicStick, Notebook, Plus, Printer} from "@element-plus/icons-vue";
+import {Delete, InfoFilled, Notebook, Plus, Printer} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
 import {exampleMedicalRecord, examplePrescription, MedicalRecord, Prescription} from "@/model/entiy/MedicalRecord";
@@ -792,8 +747,6 @@ import {reqPetHistory} from "@/request/RecordApi";
 import PrintChoiceDialog from "@/components/record/PrintChoiceDialog.vue";
 import {reqMissAppoint} from "@/request/AppointApi";
 import {PetHistory} from "@/model/VO/PetHistory";
-import {reqAiAssist} from "@/request/AiApi";
-import {AiAdvice} from "@/model/VO/AiAdvice";
 import {LabTest} from "@/model/entiy/LabTest";
 import {reqCreateLabOrder, reqLabByRecord, reqLabTestList} from "@/request/LabApi";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
@@ -1409,49 +1362,6 @@ const cancelTreat = (): void => {
       } else ElMessage.error(res.msg || '作废失败')
     })
   }).catch(() => ElMessage.info('已取消'))
-}
-// AI 辅助：拉取结构化建议（防重复由后端 hash 处理），渲染抽屉，可一键填入医嘱
-const aiDrawer = ref(false)
-const aiAdvice = ref<AiAdvice | null>(null)
-const aiRequesting = ref(false)
-const openAi = (): void => {
-  if (!treatRecordId.value) { ElMessage.warning('请先保存病历后再使用 AI 辅助'); return }
-  aiDrawer.value = true
-  aiRequesting.value = true
-  reqAiAssist(treatRecordId.value).then(res => {
-    aiRequesting.value = false
-    if (res.code === 1) aiAdvice.value = res.advice
-    else ElMessage.error(res.msg || 'AI 辅助生成失败')
-  }).catch(() => { aiRequesting.value = false })
-}
-// AI 鉴别诊断/依据一并落进病历字段（此前只在抽屉里展示、不入库）
-const applyAiDiagnosis = (): void => {
-  const ds = aiAdvice.value?.differentials || []
-  if (!ds.length) return
-  const diffText = ds.map(d => `${d.cond}（${d.prob || '—'}）：${d.basis || '—'}`).join('\n')
-  if (!recordForm.value.differentialDiagnosis?.trim()) recordForm.value.differentialDiagnosis = diffText
-  if (!recordForm.value.diagnosisBasis?.trim())
-    recordForm.value.diagnosisBasis = ds.map(d => d.basis).filter(Boolean).join('\n')
-}
-// 一键填入医嘱：不覆盖已有内容，非空时确认后追加
-const fillAi = (): void => {
-  if (!aiAdvice.value) return
-  applyAiDiagnosis()
-  const text = [aiAdvice.value.ownerNote, ...(aiAdvice.value.treatRef || [])].filter(Boolean).join('\n')
-  const cur = recordForm.value.advice || ''
-  if (cur.trim()) {
-    ElMessageBox.confirm('医嘱已有内容，是否追加 AI 建议（不覆盖原内容）？', '一键填入', {
-      confirmButtonText: '追加', cancelButtonText: '取消', type: 'warning'
-    }).then(() => {
-      recordForm.value.advice = cur + '\n' + text
-      aiDrawer.value = false
-      ElMessage.success('已追加到医嘱')
-    }).catch(() => ElMessage.info('已取消'))
-  } else {
-    recordForm.value.advice = text
-    aiDrawer.value = false
-    ElMessage.success('已填入医嘱，请核对修改')
-  }
 }
 
 // 打印预览：模板宫格（国标病历 / 彩色详情版 / 处方笺），iframe 实时预览

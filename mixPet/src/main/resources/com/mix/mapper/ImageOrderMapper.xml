@@ -17,7 +17,7 @@
         LEFT JOIN client c ON o.client_id = c.client_id
         LEFT JOIN doctor d ON o.doctor_id = d.doctor_id
         LEFT JOIN medical_record r ON o.record_id = r.record_id
-        WHERE o.is_del = 0
+        WHERE o.is_del = 0 AND o.is_cancel = 0
         <if test="status != null">
             AND o.status = #{status}
         </if>

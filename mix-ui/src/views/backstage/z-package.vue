@@ -135,7 +135,7 @@ onMounted(() => {
   sendQuery()
 })
 
-const qp = reactive({packageName: '', category: '', numPage: 1, pageSize: 15})
+const qp = reactive({packageName: '', category: '', numPage: 1, pageSize: 20})
 const list = ref<Page<ServicePackage>>({records: [], total: 0})
 
 const changePuB = (val: PageQuery): void => {
@@ -247,7 +247,7 @@ const formSubmit = async (): Promise<void> => {
       modalView.value = false
       if (modalTit.value == "新增套餐") reqAddPackage(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改套餐") reqUpdatePackage(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

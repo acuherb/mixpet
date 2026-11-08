@@ -39,8 +39,8 @@ backup:
   auto-keep: ${BACKUP_AUTO_KEEP:14}
 
 ai:
-  enabled: ${AI_ENABLED:true}
-  provider: ${AI_PROVIDER:mock}
+  enabled: ${AI_ENABLED:false}
+  provider: ${AI_PROVIDER:none}
 
 logging:
   level:

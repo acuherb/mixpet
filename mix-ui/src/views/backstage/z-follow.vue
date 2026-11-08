@@ -115,7 +115,7 @@ import {RecordDto} from "@/model/DO/RecordDto";
 import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
-const qp = reactive({numPage: 1, pageSize: 15, status: null as boolean | null, seaName: ''})
+const qp = reactive({numPage: 1, pageSize: 20, status: null as boolean | null, seaName: ''})
 const statusFilter = ref<boolean | null>(null)
 const list = ref<Page<FollowUpDto>>({records: [], total: 0})
 const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 16)

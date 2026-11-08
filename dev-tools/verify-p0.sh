@@ -147,6 +147,25 @@ else
   echo "SKIP .env 检查（CI 环境）"
 fi
 
+# 真连库 schema 校验：静态字符串检查抓不到「代码引用了库里不存在的列」，
+# 这正是上次「诊疗流系统繁忙」的漏检点。缺列直接判 FAIL，不静默跳过。
+if [ -f "$PROJ/.env" ] && command -v mysql >/dev/null 2>&1 && [ -n "${DB_USER:-}" ]; then
+  DBCOLS=$(MYSQL_PWD="${DB_PASSWORD:-}" mysql -u "$DB_USER" -N pet_mix -e \
+    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='pet_mix' AND TABLE_NAME='medical_record' AND COLUMN_NAME IN ('version','review_status','diagnosis_code','differential_diagnosis')" 2>/dev/null) || DBCOLS=""
+  if [ "$DBCOLS" = "4" ]; then
+    ok '数据库 schema 与代码一致（临床关键列 4/4）'
+  else
+    bad "数据库 schema 缺列或不可达（临床列 ${DBCOLS:-不可用}/4，请跑 bash dev-tools/db-migrate.sh）"
+  fi
+else
+  echo "SKIP 连库 schema 校验（CI 环境或缺 mysql 客户端）"
+fi
+# 未接入真实模型前，不允许规则/演示假建议回流到临床页面
+has mixPet/src/main/resources/application.yml 'enabled: false' \
+  && has mixPet/src/main/resources/application.yml 'provider: none' \
+  && ! has mix-ui/src/views/doctorPage/d-appoint.vue 'reqAiAssist' \
+  && ok 'AI 辅助已下线（无假建议入口）' || bad 'AI 辅助已下线（无假建议入口）'
+
 echo "----"
-if [ "$fail" -eq 0 ]; then echo "P0/P1/P2/P3/P4/P5/P6 静态自检全部通过"; else echo "P0/P1/P2/P3/P4/P5/P6 静态自检存在失败项"; fi
+if [ "$fail" -eq 0 ]; then echo "P0-P6 + 加固项 自检全部通过"; else echo "P0-P6 + 加固项 自检存在失败项"; fi
 exit "$fail"

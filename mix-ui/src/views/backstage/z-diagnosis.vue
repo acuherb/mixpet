@@ -74,7 +74,7 @@ import {Edit, Delete} from "@element-plus/icons-vue";
 import {reqAddDiagnosis, reqDelDiagnosis, reqDiagnosisPage, reqUpdateDiagnosis, type DiagnosisDict} from "@/request/DiagnosisApi";
 import {Res} from "@/request/Res";
 
-const qp = reactive<{ numPage: number; pageSize: number; keyword: string }>({numPage: 1, pageSize: 15, keyword: ''})
+const qp = reactive<{ numPage: number; pageSize: number; keyword: string }>({numPage: 1, pageSize: 20, keyword: ''})
 const list = ref<Page<DiagnosisDict>>({records: [], total: 0})
 
 let timer: number | undefined

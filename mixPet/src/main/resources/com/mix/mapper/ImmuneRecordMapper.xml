@@ -47,6 +47,11 @@
         LEFT JOIN doctor d ON i.doctor_id = d.doctor_id
         WHERE i.is_del = 0 AND i.next_time IS NOT NULL
         AND i.next_time &lt;= DATE_ADD(NOW(), INTERVAL 30 DAY)
+        <!-- 只提醒该宠物最新一次接种的到期日：接种新一针后旧提醒自动消失；过期太久的不再堆积 -->
+        AND NOT EXISTS (SELECT 1 FROM immune_record n
+                        WHERE n.pet_id = i.pet_id AND n.is_del = 0
+                          AND n.vaccinate_time > i.vaccinate_time)
+        AND i.next_time &gt;= DATE_SUB(NOW(), INTERVAL 30 DAY)
         ORDER BY i.next_time ASC
     </select>
 </mapper>

@@ -14,7 +14,7 @@
           <span class="hint">全流程实时联动 · 自动流转</span>
         </div>
         <ul class="nav">
-          <li><a class="nav-link" @click="paletteOpen = true"><el-icon><Search/></el-icon> 命令面板 <kbd>⌘K</kbd></a></li>
+          <li><a class="nav-link" @click="paletteOpen = true"><el-icon><Search/></el-icon> 命令面板 <kbd>Ctrl/⌘ K</kbd></a></li>
           <slot name="nav-right"/>
           <li><router-link to="/backstage"><el-icon><User/></el-icon> 个人中心</router-link></li>
           <li><a class="nav-logout" title="退出登录" @click="$emit('logout')"><el-icon><SwitchButton/></el-icon> 退出</a></li>
@@ -129,6 +129,14 @@ const active = ref<FlowChip | null>(null)
 const openChip = (c: FlowChip) => { active.value = c; drawer.value = true }
 
 const paletteOpen = ref(false)
+const onPaletteHotkey = (e: KeyboardEvent): void => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault()
+    paletteOpen.value = !paletteOpen.value
+  }
+}
+onMounted(() => window.addEventListener('keydown', onPaletteHotkey))
+onBeforeUnmount(() => window.removeEventListener('keydown', onPaletteHotkey))
 const paletteKw = ref('')
 const paletteFiltered = computed(() => {
   const kw = paletteKw.value.trim().toLowerCase()

@@ -1,6 +1,13 @@
 <template>
   <div class="d-flow-shell">
+    <div v-if="loadError" style="padding:48px 16px">
+      <el-result icon="error" title="诊疗流暂时无法加载"
+                 sub-title="数据未取到，这不代表今天没有患者。请重试，或联系管理员检查服务与数据库。">
+        <template #extra><el-button type="primary" @click="loadAll">重新加载</el-button></template>
+      </el-result>
+    </div>
     <FlowPipeline
+      v-else
       title="诊疗流"
       brand-name="mixpet"
       :stages="stages"
@@ -33,6 +40,7 @@ import {clearPwdCheckFlag} from '@/router'
 const router = useRouter()
 const route = useRoute()
 
+const loadError = ref(false)
 const stages = ref<FlowStage[]>([])
 const lastRefresh = ref('')
 const events = ref<{id: number; text: string; time: string; cls: string; icon: any}[]>([])
@@ -56,6 +64,7 @@ let snap = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
 const loadAll = async (): Promise<void> => {
   try {
     const vo = await reqDoctorPipeline()
+    loadError.value = false
     stages.value = vo.stages || []
     const now = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
     for (const s of stages.value) if (s.key in now) (now as any)[s.key] = s.count
@@ -65,7 +74,8 @@ const loadAll = async (): Promise<void> => {
     snap = now
     lastRefresh.value = `${p(new Date().getHours())}:${p(new Date().getMinutes())}:${p(new Date().getSeconds())}`
   } catch (e) {
-    pushEvent('数据加载失败，稍后自动重试', 'err')
+    loadError.value = true
+    pushEvent('数据加载失败，请点「重新加载」重试', 'err')
   }
 }
 

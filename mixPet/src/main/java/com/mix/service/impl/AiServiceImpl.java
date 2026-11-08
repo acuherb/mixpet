@@ -32,7 +32,8 @@ import java.util.List;
 /**
  * AI 辅助诊疗服务实现：
  * buildContext(RecordFullVo) → 防重复(request_hash) → Provider.assist → 留痕(ai_advice)
- * MVP 注入 MockAiProvider；上线期改为按 yml(ai.provider) 选择 Provider，业务无感
+ * 默认 ai.enabled=false 且无可用 Provider：功能下线，绝不返回假建议。
+ * 接入真实模型后实现 AiProvider 并注册 Bean，业务代码无需改动。
  */
 @Service
 public class AiServiceImpl implements AiService {

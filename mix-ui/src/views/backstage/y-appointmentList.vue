@@ -130,7 +130,7 @@ const qp: YAppointList = reactive({
   seaName: '',
   seaType: 0,
   numPage: 1,
-  pageSize: 6
+  pageSize: 20
 })
 // 列表展示
 const appointList = ref<Page<AppointDto>>({records: [], total: 0})
@@ -173,7 +173,7 @@ const handleSelectionChange = (val: Appoint[]): void => {
 const delBatchB = (): void => {
   if (roleIdList.value.length == 0) return
   ElMessageBox.confirm(
-      '在您做出指示之前，我还是要再次确认，您确定要焚毁这些的订单吗？',
+      '确定删除选中的记录吗？删除后不可恢复。',
       '删除多个确认',
       {
         confirmButtonText: '确认',
@@ -189,7 +189,7 @@ const delBatchB = (): void => {
 // 删除单个
 const delOne = (id: number): void => {
   ElMessageBox.confirm(
-      `解脱一纸束缚的契约，赐予其尘归尘的命运。`,
+      `删除后不可恢复，请确认。`,
       '删除单个确认',
       {
         confirmButtonText: '确认',
@@ -204,7 +204,8 @@ const delOne = (id: number): void => {
 }
 // 确定请求的返回值，然后刷新
 const sureFlush = (res: Res): void => {
-  if (res.code === 1) sendQuery()
+  if (res.code === 1) { modalView.value = false; sendQuery() }
+  else ElMessage.error(res.msg || '保存失败，请检查填写内容后重试')
 }
 
 /**
@@ -268,11 +269,10 @@ const myFormRef = ref<FormInstance>()
 const formSubmit = async (): Promise<void> => {
   await myFormRef.value?.validate((valid: boolean): void => {
     if (valid) {
-      // 校验通过，提交
-      modalView.value = false
+      // 校验通过，提交：保存成功后才关窗，失败保留已填数据
       if (modalTit.value == "新增挂号") reqAddAppoint(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改挂号") reqUpdateAppoint(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

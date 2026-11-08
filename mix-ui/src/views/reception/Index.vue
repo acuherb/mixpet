@@ -247,8 +247,8 @@ interface UserCard {
 
 const userCard: UserCard[] = [
   {
-    "tit": "挂号信息",
-    "body": "在此查看自己的历史挂号",
+    "tit": "预约挂号",
+    "body": "立即预约挂号，查看与管理我的挂号",
     "type": "primary",
     "routerPath": "/reception/clientCenter/clientAppoint"
   }, {

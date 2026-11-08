@@ -103,7 +103,7 @@ const qp = reactive({
   testName: '',
   testGroup: '',
   numPage: 1,
-  pageSize: 15
+  pageSize: 20
 })
 const list = ref<Page<LabTest>>({records: [], total: 0})
 const changePuB = (val: PageQuery): void => {

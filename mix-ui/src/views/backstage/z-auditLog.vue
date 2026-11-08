@@ -58,7 +58,7 @@ interface AuditLogRow {
 }
 
 const list = ref<Page<AuditLogRow>>({records: [], total: 0} as any)
-const qp = reactive({numPage: 1, pageSize: 15, operator: '', module: ''})
+const qp = reactive({numPage: 1, pageSize: 20, operator: '', module: ''})
 
 const modules = [
   {value: 'bill', label: '收银账单'},

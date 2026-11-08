@@ -4,8 +4,9 @@ import com.mix.model.vo.AiAdviceVo;
 import com.mix.model.vo.AiContext;
 
 /**
- * AI 辅助诊疗 Provider 抽象：
- * MVP 用 MockAiProvider（规则演示，不联网）；上线期实现 DeepSeekProvider（JDK HttpClient）即可切换，业务无感
+ * AI 辅助诊疗 Provider 抽象（未来接真实模型的扩展点）。
+ * 当前无可用实现、ai.enabled=false：不得提供规则/演示假建议。
+ * 接入方式：新增 XxxAiProvider implements AiProvider + @Component，并设 AI_ENABLED=true。
  */
 public interface AiProvider {
     /** 提供方标识：mock / deepseek */

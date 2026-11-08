@@ -28,7 +28,13 @@
         LEFT JOIN client c ON r.client_id = c.client_id
         LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
         LEFT JOIN department dep ON r.department_id = dep.department_id
-        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        LEFT JOIN (
+            SELECT record_id,
+                   SUM(fee_drug) AS fee_drug,
+                   SUM(total_money) AS total_money,
+                   MIN(pay_status) AS pay_status
+            FROM bill WHERE is_del = 0 GROUP BY record_id
+        ) b ON b.record_id = r.record_id
         WHERE r.is_del = 0
         AND r.pet_id = #{petId}
         ORDER BY r.create_time DESC
@@ -43,7 +49,13 @@
         LEFT JOIN client c ON r.client_id = c.client_id
         LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
         LEFT JOIN department dep ON r.department_id = dep.department_id
-        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        LEFT JOIN (
+            SELECT record_id,
+                   SUM(fee_drug) AS fee_drug,
+                   SUM(total_money) AS total_money,
+                   MIN(pay_status) AS pay_status
+            FROM bill WHERE is_del = 0 GROUP BY record_id
+        ) b ON b.record_id = r.record_id
         WHERE r.is_del = 0
         AND r.record_id = #{recordId}
     </select>
@@ -76,6 +88,8 @@
         LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
         WHERE r.is_del = 0 AND r.revisit_date IS NOT NULL
         AND r.revisit_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        <!-- 已完成随访的不再提醒：提醒页可随「写随访」自然消掉，不会永久堆积 -->
+        AND NOT EXISTS (SELECT 1 FROM follow_up f WHERE f.record_id = r.record_id AND f.status = 1)
         ORDER BY r.revisit_date ASC
     </select>
     <!--宠物近期用药：跨处方+病历，取最近10条-->
@@ -108,7 +122,13 @@
         LEFT JOIN client c ON r.client_id = c.client_id
         LEFT JOIN doctor d ON r.doctor_id = d.doctor_id
         LEFT JOIN department dep ON r.department_id = dep.department_id
-        LEFT JOIN bill b ON b.record_id = r.record_id AND b.is_del = 0
+        LEFT JOIN (
+            SELECT record_id,
+                   SUM(fee_drug) AS fee_drug,
+                   SUM(total_money) AS total_money,
+                   MIN(pay_status) AS pay_status
+            FROM bill WHERE is_del = 0 GROUP BY record_id
+        ) b ON b.record_id = r.record_id
         WHERE r.is_del = 0
         <if test="q.recordId != null"> AND r.record_id = #{q.recordId} </if>
         <if test="q.petName != null and q.petName != ''"> AND p.pet_name LIKE CONCAT('%', #{q.petName}, '%') </if>

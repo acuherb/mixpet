@@ -99,7 +99,7 @@ import {Res} from "@/request/Res";
 const imgGroupOpts = ref<SysDict[]>([])
 reqDictByType('img_group').then(r => { imgGroupOpts.value = r || [] })
 
-const qp = reactive({itemName: '', groupName: '', numPage: 1, pageSize: 15})
+const qp = reactive({itemName: '', groupName: '', numPage: 1, pageSize: 20})
 const list = ref<Page<ImageTest>>({records: [], total: 0})
 const changePuB = (val: PageQuery): void => {
   qp.numPage = val.numPage

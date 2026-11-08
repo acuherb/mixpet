@@ -107,7 +107,7 @@ import {
 } from "@/request/RefRangeApi";
 import {Res} from "@/request/Res";
 
-const qp = reactive<{ numPage: number; pageSize: number; testId?: number }>({numPage: 1, pageSize: 15, testId: undefined})
+const qp = reactive<{ numPage: number; pageSize: number; testId?: number }>({numPage: 1, pageSize: 20, testId: undefined})
 const list = ref<Page<LabRefRange>>({records: [], total: 0})
 const testOpts = ref<LabTest[]>([])
 

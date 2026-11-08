@@ -136,11 +136,11 @@
     <div class="pay-choice">
       <div class="pay-card" @click="payBill(payRow!, false)">
         <h4>余额收款</h4>
-        <p>扣客户余额，收款后自动发药扣库存</p>
+        <p>扣客户余额；收款后需完成发药核对</p>
       </div>
       <div class="pay-card" @click="payBill(payRow!, true)">
         <h4>现金收款</h4>
-        <p>线下收现金，收款后自动发药扣库存</p>
+        <p>线下收现金；收款后需完成发药核对</p>
       </div>
     </div>
     <template #footer>
@@ -260,6 +260,9 @@ onMounted(() => {
   // 从接诊结算步「去收银台」带入待收费筛选
   const ps = route.query.payStatus
   if (ps != null && ps !== '') qp.payStatus = Number(ps)
+  // 从诊疗流卡片带入患者：直接预填搜索词，不用再手输一次宠物名
+  const sn = route.query.seaName
+  if (sn != null && sn !== '') qp.seaName = String(sn)
   sendQuery()
 })
 
@@ -273,7 +276,7 @@ const qp = reactive({
   seaName: '',
   payStatus: 0,
   numPage: 1,
-  pageSize: 15
+  pageSize: 20
 })
 // 列表展示
 const billList = ref<Page<BillDto>>({records: [], total: 0})
@@ -326,9 +329,9 @@ const debQuery = debounce(nowQuery, 400)
  */
 const payBill = (row: BillDto, cash: boolean): void => {
   const payName = cash ? '现金' : '余额'
-  let tip = `确认以【${payName}】方式收取 ${row.clientName}（${row.petName}）的 ￥${row.totalMoney} 吗？`
-  if (!cash) tip += `（当前余额 ￥${row.clientBalance ?? 0}，收款后自动发药扣库存）`
-  else tip += '（收款后自动发药扣库存）'
+  let tip = `确认以【${payName}】方式收取 ${row.clientName}（${row.petName}）的 ￥${realMoneyOf(row)} 吗？`
+  if (!cash) tip += `（当前余额 ￥${row.clientBalance ?? 0}；收款后请到「发药核对」确认出库）`
+  else tip += '（收款后请到「发药核对」确认出库）'
   ElMessageBox.confirm(tip, '收款确认', {
     confirmButtonText: '确认收款',
     cancelButtonText: '取消',
@@ -780,9 +783,9 @@ const roleIdList = ref<number[]>([])
 const handleSelectionChange = (val: BillDto[]): void => {
   roleIdList.value = val.map(obj => obj.billId)
 }
-// 账单不允许删除，仅占位避免 BackOpCol 报错
+// 账单不可删除：保留回调以兼容通用操作栏组件，明确引导走退款冲正
 const delBatchB = (): void => {
-  ElMessage.info('账单不允许删除')
+  ElMessage.warning('账单不允许删除；如需冲正请使用「退款」流程')
 }
 </script>
 

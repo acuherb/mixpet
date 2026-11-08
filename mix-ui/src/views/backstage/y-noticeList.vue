@@ -119,7 +119,7 @@ onMounted(() => {
 const qp: YNoticeList = reactive({
   noticeName: '',
   numPage: 1,
-  pageSize: 6
+  pageSize: 20
 })
 // 列表展示
 const noticeList = ref<Page<NoticeDto>>({records: [], total: 0})
@@ -162,7 +162,7 @@ const handleSelectionChange = (val: NoticeDto[]): void => {
 const delBatchB = (): void => {
   if (roleIdList.value.length == 0) return
   ElMessageBox.confirm(
-      '在您做出指示之前，我还是要再次确认，您确定要焚毁这些的订单吗？',
+      '确定删除选中的记录吗？删除后不可恢复。',
       '删除多个确认',
       {
         confirmButtonText: '确认',
@@ -178,7 +178,7 @@ const delBatchB = (): void => {
 // 删除单个
 const delOne = (id: number): void => {
   ElMessageBox.confirm(
-      `解脱一纸束缚的契约，赐予其尘归尘的命运。`,
+      `删除后不可恢复，请确认。`,
       '删除单个确认',
       {
         confirmButtonText: '确认',
@@ -251,7 +251,7 @@ const formSubmit = async (): Promise<void> => {
       modalView.value = false
       if (modalTit.value == "新增公告") reqAddNotice(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改公告") reqUpdateNotice(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

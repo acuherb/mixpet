@@ -10,7 +10,11 @@
       <div v-if="!isCollapse" class="menu-search">
         <el-input v-model="menuKw" clearable placeholder="搜索菜单" size="small" :prefix-icon="Search"/>
       </div>
-      <router-link :to="$route.path==='/backstage'?'/doctorPage':'/backstage'">
+      <router-link to="/doctorPage/d-flow" title="诊疗流（工作台）" style="display:flex;align-items:center;gap:8px;padding:10px 16px;color:#ffd04b;text-decoration:none;font-size:14px;white-space:nowrap">
+        <el-icon><IconMenu/></el-icon>
+        <span v-if="!isCollapse">诊疗流 · 工作台</span>
+      </router-link>
+      <router-link to="/backstage" title="个人中心">
         <img :src="'/api/common/download?name='+doctorNow.photo" alt="头像" class="my-avatar"/>
       </router-link>
       <el-menu
@@ -35,6 +39,7 @@
             <el-icon><Tickets/></el-icon>
             <span>运营管理</span>
           </template>
+          <el-menu-item v-if="doctorNow.authLv >= 2" v-show="menuMatch('今日接待')" index="/backstage/r-flow">今日接待 · 到店/待收银/已诊</el-menu-item>
           <el-menu-item v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
           <el-menu-item v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
           <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
@@ -50,6 +55,7 @@
             <el-icon><DataBoard/></el-icon>
             <span>经营分析</span>
           </template>
+          <el-menu-item v-show="menuMatch('经营驾驶舱')" index="/backstage/m-flow">经营驾驶舱 · 实时指标</el-menu-item>
           <el-menu-item v-show="menuMatch('经营看板')" index="/backstage/z-dashboard">经营看板</el-menu-item>
           <el-menu-item v-show="menuMatch('财务报表')" index="/backstage/z-report">财务报表</el-menu-item>
         </el-sub-menu>

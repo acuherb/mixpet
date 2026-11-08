@@ -106,7 +106,7 @@ const getLoginRole = async (): Promise<void> => {
         ElMessage.error('获取用户信息失败，请重试')
       }
     } else {
-      router.push("/backstage")
+      router.push("/doctorPage/d-flow")
     }
   } catch {
     loading.value = false

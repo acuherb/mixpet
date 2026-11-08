@@ -1,5 +1,9 @@
 <template>
   <div class="dash-wrap">
+    <el-alert v-if="loadError" type="error" :closable="false" show-icon style="margin-bottom:12px"
+              title="经营数据未加载" description="当前显示的 0 不代表真实经营情况，请重新加载或联系管理员。">
+      <template #default><el-button size="small" type="danger" plain @click="loadAll">重新加载</el-button></template>
+    </el-alert>
     <!--核心指标卡（第一行：营收）-->
     <div class="stat-grid">
       <div class="stat-card">
@@ -207,14 +211,15 @@ const rankPct = (v: number): number =>
 // 诊疗待办（卡壳就诊：接诊中/待出结果/待手术/待随访）
 const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0, clientPending: 0})
 
-onMounted(() => {
-  reqStatOverview().then(res => {
-    stat.value = res || stat.value
-  }).catch(() => {
-    // 静默，保留默认空数据
-  })
-  reqRecordTodo().then(res => { if (res) todo.value = res }).catch(() => { /* 静默 */ })
-})
+const loadError = ref(false)
+const loadAll = (): void => {
+  loadError.value = false
+  reqStatOverview().then(res => { stat.value = res || stat.value })
+      .catch(() => { loadError.value = true })
+  reqRecordTodo().then(res => { if (res) todo.value = res })
+      .catch(() => { loadError.value = true })
+}
+onMounted(loadAll)
 </script>
 
 <style scoped>
@@ -364,5 +369,11 @@ onMounted(() => {
   color: #606266;
   width: 28px;
   text-align: right;
+}
+
+@media (max-width: 900px) {
+  .dash-wrap { padding: 8px; }
+  :deep(.el-col) { flex: 0 0 50% !important; max-width: 50% !important; }
+  :deep(.el-table) { min-width: 700px; }
 }
 </style>

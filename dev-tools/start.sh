@@ -28,16 +28,27 @@ if [ "${#REMEMBER_ME_KEY}" -lt 32 ] || [ "${#VERIFY_CODE_SECRET}" -lt 32 ]; then
   exit 1
 fi
 
-# 数据库 schema 自检（不自动改库，只提前拦一道）：
-# mapper 已引用 P3/P4 临床列，旧库若没跑迁移，运行时会抛 Unknown column，
-# 被 ExceptionAdvice 兜底成「系统繁忙，请稍后再试！」，表现为诊疗流加载不出数据。
-COLS=""
+# 数据库 schema 自检（fail-fast，不自动改库）：
+# mapper 已引用 P3/P4 临床列，旧库没跑迁移时运行时抛 Unknown column，
+# 被 ExceptionAdvice 兜底成「操作未保存」，表现为诊疗流/收银/化验全线加载不出数据。
+# 缺列直接拦住启动，避免「服务起来了但每个页面都报错」这种最难排查的状态。
+DB_CHECK="unavailable"
 if command -v mysql >/dev/null 2>&1 && [ -n "${DB_USER:-}" ]; then
   COLS=$(MYSQL_PWD="${DB_PASSWORD:-}" mysql -u "$DB_USER" -N pet_mix -e \
-    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='pet_mix' AND TABLE_NAME='medical_record' AND COLUMN_NAME IN ('version','differential_diagnosis')" 2>/dev/null) || COLS=""
+    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='pet_mix' AND TABLE_NAME='medical_record' AND COLUMN_NAME IN ('version','differential_diagnosis','review_status','diagnosis_code')" 2>/dev/null) || COLS=""
+  case "$COLS" in
+    4) DB_CHECK="ok" ;;
+    0|1|2|3) DB_CHECK="missing" ;;
+  esac
 fi
-case "$COLS" in
-  0|1) echo "⚠️ 数据库缺少 P3/P4 临床迁移列，诊疗流会报「系统繁忙」——先执行：bash dev-tools/db-migrate.sh" >&2 ;;
+case "$DB_CHECK" in
+  missing)
+    echo "❌ 数据库缺少 P3/P4 临床迁移列，启动后诊疗流/收银/化验接口都会失败。" >&2
+    echo "   请先执行：bash dev-tools/db-migrate.sh （幂等，只加列/建表）" >&2
+    exit 1 ;;
+  unavailable)
+    echo "⚠️ 无法连库做 schema 自检（缺 mysql 客户端或数据库不可达），继续启动但不保证接口可用；" >&2
+    echo "   若页面报「操作未保存」或 Unknown column，请执行：bash dev-tools/db-migrate.sh" >&2 ;;
 esac
 
 # 中文路径保命：项目在「公共」目录下，mvn/JVM 默认 locale 非 UTF-8 时

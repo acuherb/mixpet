@@ -142,6 +142,12 @@ public class HospitalServiceImpl extends ServiceImpl<HospitalMapper, HospitalRec
                 bill.setTotalMoney(net);
                 bill.setPayStatus(false);
                 bill.setPayType(false);
+                // 补开的新账单继承本次就诊已有账单的会员折扣快照，避免会员被按原价扣款
+                Bill prevBill = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                        .eq(Bill::getRecordId, bill.getRecordId())
+                        .last("limit 1"));
+                if (prevBill != null && prevBill.getDiscount() != null)
+                    bill.setDiscount(prevBill.getDiscount());
                 billMapper.insert(bill);
             }
         }

@@ -106,6 +106,12 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
             bill.setTotalMoney(order.getFee());
             bill.setPayStatus(false);
             bill.setPayType(false);
+            // 补开的新账单继承本次就诊已有账单的会员折扣快照，避免会员被按原价扣款
+            Bill prevBill = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                    .eq(Bill::getRecordId, bill.getRecordId())
+                    .last("limit 1"));
+            if (prevBill != null && prevBill.getDiscount() != null)
+                bill.setDiscount(prevBill.getDiscount());
             billMapper.insert(bill);
         }
         return Result.success("影像开单成功，" + test.getItemName() + " ￥" + order.getFee().toPlainString() + " 已计入账单");

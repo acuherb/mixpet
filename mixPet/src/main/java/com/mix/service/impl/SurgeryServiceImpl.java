@@ -87,6 +87,12 @@ public class SurgeryServiceImpl extends ServiceImpl<SurgeryMapper, Surgery> impl
             bill.setTotalMoney(fee);
             bill.setPayStatus(false);
             bill.setPayType(false);
+            // 补开的新账单继承本次就诊已有账单的会员折扣快照，避免会员被按原价扣款
+            Bill prevBill = billMapper.selectOne(Wrappers.<Bill>lambdaQuery()
+                    .eq(Bill::getRecordId, bill.getRecordId())
+                    .last("limit 1"));
+            if (prevBill != null && prevBill.getDiscount() != null)
+                bill.setDiscount(prevBill.getDiscount());
             billMapper.insert(bill);
         }
         return Result.success("手术安排成功，手术费已计入账单");

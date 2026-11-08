@@ -333,7 +333,7 @@ import {Res} from "@/request/Res";
  │=============列表查询相关===========│
  └───────────────────────────────────┘
  */
-const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 15, status: null})
+const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 20, status: null})
 const statusFilter = ref<boolean | null>(null)
 const list = ref<Page<HospitalDto>>({records: [], total: 0})
 

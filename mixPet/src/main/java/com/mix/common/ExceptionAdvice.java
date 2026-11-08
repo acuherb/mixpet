@@ -73,7 +73,8 @@ public class ExceptionAdvice {
 
     @ExceptionHandler(Exception.class)
     public Result doOtherException(Exception ex) {
-        log.error("系统未预期异常", ex);
-        return Result.error("系统繁忙，请稍后再试！");
+        String ref = "E" + Long.toString(System.currentTimeMillis(), 36).toUpperCase();
+        log.error("系统未预期异常 [{}]", ref, ex);
+        return Result.error("操作未保存，请重试；若持续出现请联系管理员并提供编号 " + ref);
     }
 }

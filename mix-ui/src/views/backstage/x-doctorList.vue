@@ -199,7 +199,7 @@ const qp: YDoctorList = reactive({
   departmentName: '',
   certNull: false,
   numPage: 1,
-  pageSize: 6
+  pageSize: 20
 })
 // 列表展示
 const doctorList = ref<Page<DoctorDto>>({records: [], total: 0})
@@ -252,7 +252,7 @@ const delBatchB = (): void => {
 // 删除单个
 const delOne = (row: Doctor): void => {
   ElMessageBox.confirm(
-      `【${row.doctorName}】已无路可退，只能接受命运的裁决。`,
+      `【${row.doctorName}】删除后不可恢复，请确认。`,
       '删除单个确认',
       {
         confirmButtonText: '确认',
@@ -343,7 +343,7 @@ const formSubmit = async (): Promise<void> => {
       modalView.value = false
       if (modalTit.value == "新增医生") reqAddDoctor(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改医生") reqUpdateDoctor(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

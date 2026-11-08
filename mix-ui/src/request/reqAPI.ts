@@ -54,7 +54,7 @@ reqApi.interceptors.response.use(resp => {
             sessionStorage.removeItem("mixpet_pwd_check_done")
             location.href = "/#/login"
         } else if (code === 403) {
-            ElMessage.warning("未持有操作权限")
+            ElMessage.warning("此功能需要相应权限，请联系管理员开通")
         } else if (code === 1) {
             if (data["msg"] && !url.includes("regMail") && !url.includes("findMail")) {
                 ElMessage.success(data["msg"])
@@ -81,9 +81,9 @@ reqApi.interceptors.response.use(resp => {
         const {status, data} = error.response
         ElMessage.error(`请求失败 (${status}): ${data?.msg || data?.message || '服务器内部错误'}`)
     } else if (error.code === 'ECONNABORTED') {
-        ElMessage.error('请求超时，请检查后端服务')
+        ElMessage.error('请求超时，请重试；若持续出现请联系管理员')
     } else {
-        ElMessage.error('无法连接后端服务，请确认服务已启动')
+        ElMessage.error('暂时无法连接服务，请检查网络或联系管理员')
     }
     return Promise.reject(error);
 });

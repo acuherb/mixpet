@@ -46,6 +46,9 @@ MISSING=$(MYSQL_PWD="$DB_PASSWORD" mysql -u "$DB_USER" -N "$DB_NAME" -e "
 SELECT CONCAT('列:', c.tbl, '.', c.col) FROM (
   SELECT 'bill' tbl,'pay_time' col UNION ALL SELECT 'bill','refund_money' UNION ALL
   SELECT 'medical_record','version' UNION ALL SELECT 'medical_record','differential_diagnosis' UNION ALL
+  SELECT 'medical_record','diagnosis_basis' UNION ALL SELECT 'medical_record','diagnosis_code' UNION ALL
+  SELECT 'medical_record','diagnosis_code_system' UNION ALL SELECT 'medical_record','review_status' UNION ALL
+  SELECT 'medical_record','review_note' UNION ALL SELECT 'medical_record','signed_by' UNION ALL
   SELECT 'lab_order','specimen_type' UNION ALL SELECT 'lab_order','critical_handled' UNION ALL
   SELECT 'lab_order_item','ref_low' UNION ALL SELECT 'image_order','findings') c
 WHERE NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS x
@@ -55,7 +58,10 @@ SELECT CONCAT('表:', t.name) FROM (
   SELECT 'audit_log' name UNION ALL SELECT 'medical_record_revision' UNION ALL SELECT 'lab_ref_range'
   UNION ALL SELECT 'lab_result_revision' UNION ALL SELECT 'client_notification' UNION ALL SELECT 'diagnosis_dict') t
 WHERE NOT EXISTS (SELECT 1 FROM information_schema.TABLES x
-                  WHERE x.TABLE_SCHEMA='$DB_NAME' AND x.TABLE_NAME=t.name);" 2>/dev/null) || MISSING=""
+                  WHERE x.TABLE_SCHEMA='$DB_NAME' AND x.TABLE_NAME=t.name);") || {
+  echo "❌ 迁移校验查询失败（数据库不可达或权限不足），无法确认 schema 完整性" >&2
+  exit 1
+}
 
 if [ -n "$MISSING" ]; then
   echo "❌ 仍有缺失："

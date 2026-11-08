@@ -297,7 +297,7 @@ const qp = reactive({
   drugName: '',
   drugType: '',
   numPage: 1,
-  pageSize: 15
+  pageSize: 20
 })
 // 列表展示
 const drugList = ref<Page<Drug>>({records: [], total: 0})

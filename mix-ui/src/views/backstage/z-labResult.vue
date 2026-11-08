@@ -211,7 +211,7 @@ const isOverdue = (row: LabOrderDto): boolean => {
  │=============列表查询相关============│
  └───────────────────────────────────┘
  */
-const qp = ref<{ numPage: number; pageSize: number; status: number | null }>({numPage: 1, pageSize: 15, status: null})
+const qp = ref<{ numPage: number; pageSize: number; status: number | null }>({numPage: 1, pageSize: 20, status: null})
 const statusFilter = ref<number | null>(null)
 const list = ref<Page<LabOrderDto>>({records: [], total: 0})
 

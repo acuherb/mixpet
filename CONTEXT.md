@@ -69,7 +69,7 @@
 内科 / 骨科 / 化验室 / 美容洗护室 / 外科 / 影像科 / 皮肤科 / 中兽医科 / 眼科与口腔科。保留原 id 与医生外键关联。
 职位称谓：院长(8) / 主任(6) / 主治医师(4) / 护理技师(2) / 实习助理(0)（权限等级不变，仅显示称谓）。
 医生主页（w-doctorOne.vue）：卡片式，工号 DOCTOR-id 派生、入职=createTime、工龄=入职派生、座右铭=自行编辑（doctor_motto），均前端不改库。
-医生工作台（doctorPage/index.vue）：顶部仅「个人中心」，页头待办统计+真实姓名，处理挂号卡实时预览前 3 条，在线咨询卡，底部化验/住院占位。
+~~医生工作台（doctorPage/index.vue）~~ **已于 2026-11-08 删除**：医生端统一为诊疗流 `d-flow.vue`（唯一工作台），旧页面不再注册路由。以下为历史描述：顶部仅「个人中心」，页头待办统计+真实姓名，处理挂号卡实时预览前 3 条，在线咨询卡，底部化验/住院占位。
 
 ## 6. 安全基线（2026-10-12 审计后）
 已修越权：/client/one、/client/page、/appointment/page、/adopt/page、/foster/page → MANAGER；/client、/client/full、/pet/client → NURSE；DELETE /notice/delImg → MANAGER；GET /login/user 剔除密码哈希；PUT /doctorLog/appoint/deal → DOCTOR+归属校验；删除 /power/getPwd 调试接口；ClientDetails 登录查 active=1。
@@ -529,3 +529,32 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **唯一工作台（用户指出的"重构不彻底"）**：移除 `d-flow.vue` 右上角「经典视图」链接、删除旧工作台 `views/doctorPage/index.vue`（1178 行，确认无其它引用）、`d-home` 路由改为 `redirect: 'd-flow'`（仅兼容旧书签，不再渲染第二套工作台）、全局守卫去掉对 `d-home` 的特殊放行、`FlowInline.vue` 注释同步。另加顶层 `/d-flow` → `/doctorPage/d-flow` 别名（用户曾因少写 `/doctorPage` 前缀落到 404 彩蛋页）。
 - **验证**：`npm run build` / `verify-p0.sh`（P0–P6 + 两项新检查）/ `bash -n` 全绿；迁移脚本幂等重跑通过；前端 lint 无错误。
 - **提醒**：从备份恢复库、或在全新机器部署后，必须跑一次 `bash dev-tools/db-migrate.sh`；否则诊疗流、账单、化验结果等引用临床列的接口都会以「系统繁忙」的形式失败，而后端日志里真正的错误是 `Unknown column`。排查时先看 `/tmp/pet-backend.log` 的 `系统未预期异常` 堆栈，不要被前端兜底文案带偏。
+
+### 全面加固（2026-11-08，用户选 C 全量）
+用户诉求："能用、智能、操作简单易上手、真正能用"。四路审查（业务闭环/易用性/健壮性/可运行性）后，阻断级结论逐条回读源码复核，一次性落地 P0–P3。**本节是当前状态，前面各节为当时快照。**
+
+**P0 止血（能完整跑完一次就诊）**
+- 病历联查 `LEFT JOIN bill` 改为按 `record_id` 的聚合子查询：补开第二张账单不再让病历/诊疗流 `TooManyResultsException` 全线崩（`MedicalRecordMapper.xml`）。
+- `cancelRecord` 事务化：写版本留痕 + 作废未付账单 + 释放挂号号源 + 把该次就诊的化验/影像申请单 `is_cancel=1`；两个 mapper 列表查询加 `AND is_cancel = 0`，「待结果」不再有僵尸单。
+- 病历写操作统一 `assertOwner`（普通医生只能改本人接诊，主任/院长 authLv>=6 豁免），覆盖 update/finish/cancel/addPrescription/addPackage/cancelPrescription。
+- 乐观锁版本必传 + `eq(version)` 原子 WHERE + 影响行数校验；审核两次写进同一事务；退回不得推翻已审核通过并清空旧签名。
+- 5 个补开单 service 新建账单时继承本次就诊的会员折扣快照，修会员被按原价扣款；`BillDto` 补齐 discount/discountMoney/realMoney/dispense*/refund* 共 11 个字段（此前 SELECT 了却静默丢弃，收银台显示原价、已发药仍显示待发药）。
+- 前端：员工登录直达 `/doctorPage/d-flow`，后台壳加固定「诊疗流 · 工作台」文字入口；分页组件与各页初始 pageSize 统一 20；`d-flow`/`z-dashboard` 加载失败显示错误态与「重新加载」，不再把故障伪装成"今天没病人/营收 0"；后端兜底文案改「操作未保存…编号 E****」且保留完整堆栈，403/超时/断连文案岗位化。
+
+**P1 上手**
+- 删除确认「焚毁/命运的裁决/尘归尘」等改为岗位语言，「模块框出错」改为「操作未完成，请检查填写内容后重试」。
+- 挂号提交成功后才关窗（失败保留已填数据）；收银按折后 `realMoneyOf` 确认，文案与后端「收款→发药核对」两步一致；占位批量删除改为明确引导退款。
+- 菜单挂上此前有路由无入口的「今日接待 r-flow」「经营驾驶舱 m-flow」；`FlowInline` 补齐 8 个中文页名；假的 `⌘K` 提示改成真正实现的 `Ctrl/⌘ K` 热键；顾客首页改为「预约挂号」CTA；移除"移动端已简化"假提示；经营看板加窄屏断点。
+
+**P2 智能与闭环**
+- **下线假 AI**（用户未提供 API Key）：`ai.enabled=false`/`provider=none`，`MockAiProvider` 改为只抛「未启用」、不再产生关键词假诊断；前端移除接诊页 3 个 AI 按钮/抽屉/请求与假占位文案；保留 `AiProvider` 接口作扩展点（给 Key 后实现 Bean + 打开开关即可，业务代码无需改动）。
+- **当前患者上下文**：`FlowService.withPatient` 让每张流卡片把 `petName/clientName/seaName` 与具体单号（挂号/病历/申请单/账单/随访）带到目标页；`FlowInline` 顶部显示「正在处理：旺财 · 张女士 · 账单 #N」；收银台读 `route.query.seaName` 预填搜索词，同一只宠物不再重复搜。
+- **提醒可消掉 / 随访闭环**：完结就诊时按 `revisit_date` 自动生成一条待随访（进诊疗流待办）；复诊提醒 SQL 排除「已有已完成随访」的病历，疫苗提醒只保留每只宠物最新一针且不再长期堆积。回访完成 → 提醒自然消失，无需新表。
+
+**P3 可信**
+- `start.sh` schema 自检由「静默跳过 + 只警告 + 永远 exit 0」改为 fail-fast：查到缺临床列直接 `exit 1` 并给迁移命令；连不上库时明确告警、不假装通过。
+- `db-migrate.sh` 校验扩展到 14 列 + 6 表，且**查询失败不再被 `|| MISSING=""` 吞成 ✅**。
+- `verify-p0.sh` 新增真连库 schema 校验（4/4）与「AI 假建议不得回流」守卫；`pet_mix.sql` 头部加毁库警告（43 处 DROP，仅限全新空库）。
+
+**验证**：`mvn compile` / `npm run build`（vue-tsc） / `bash dev-tools/db-migrate.sh`（幂等重跑） / `verify-p0.sh`（含真连库 4/4、AI 下线）全绿。
+**仍需用户决策**：接真实 AI 模型需要服务商与 API Key；`pet_mix.sql` 的发票号按 billId、税率免征等历史简化项未动（非税务联网场景）。

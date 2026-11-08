@@ -60,7 +60,7 @@ import {reqAddSupplier, reqDelSupplier, reqSupplierPage, reqUpdateSupplier} from
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
-const qp = reactive({seaName: '', numPage: 1, pageSize: 15})
+const qp = reactive({seaName: '', numPage: 1, pageSize: 20})
 const list = ref<Page<Supplier>>({records: [], total: 0})
 const changePuB = (val: PageQuery): void => { qp.numPage = val.numPage; qp.pageSize = val.pageSize; sendQuery() }
 const sendQuery = (): void => { reqSupplierPage(qp).then(res => { list.value = res }) }

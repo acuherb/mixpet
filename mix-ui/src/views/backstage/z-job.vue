@@ -136,7 +136,7 @@ const formSubmit = async (): Promise<void> => {
       modalView.value = false
       if (modalTit.value == "新增职务") reqAddJob(form.value).then(res => sureFlush(res))
       else if (modalTit.value === "修改职务") reqUpdateJob(form.value).then(res => sureFlush(res))
-      else ElMessageBox.alert('模块框出错')
+      else ElMessageBox.alert('操作未完成，请检查填写内容后重试')
     }
   })
 }

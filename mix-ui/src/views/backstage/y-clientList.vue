@@ -295,7 +295,7 @@ const qp: YClientList = reactive({
   clientName: '',
   auditStatus: null,
   numPage: 1,
-  pageSize: 15
+  pageSize: 20
 })
 // 支持 URL 直达：/backstage/y-clientList?audit=0（医生工作台「待审核顾客」入口）
 // 落到页面自动筛选待审核，不用手工翻页找

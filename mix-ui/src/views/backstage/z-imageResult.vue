@@ -150,7 +150,7 @@ const emit = defineEmits<{
   (e: 'pending-count', count: number): void
 }>()
 
-const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 15, status: null})
+const qp = ref<{ numPage: number; pageSize: number; status: boolean | null }>({numPage: 1, pageSize: 20, status: null})
 const statusFilter = ref<boolean | null>(null)
 const list = ref<Page<ImageOrder>>({records: [], total: 0})
 

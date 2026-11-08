@@ -2,6 +2,10 @@
 -- MariaDB dump 10.19-11.8.6-MariaDB, for debian-linux-gnu (x86_64)
 --
 -- Host: 127.0.0.1    Database: pet_mix
+--
+-- [危险] 本文件是全量基线快照，含 43 处 DROP TABLE IF EXISTS 及演示数据。
+--   导入到已有真实数据的库会先删光全部业务表再重建，仅限「全新空库初始化」！
+--   已有库升级请用幂等迁移：bash dev-tools/db-migrate.sh（只加列/建表，不删数据）。
 -- ------------------------------------------------------
 -- Server version	11.8.6-MariaDB-0+deb13u1 from Debian
 

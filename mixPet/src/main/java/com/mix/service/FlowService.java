@@ -22,6 +22,8 @@ import com.mix.util.UserUtil;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,6 +62,18 @@ public class FlowService {
         this.statisticsService = statisticsService;
     }
 
+    /** 患者上下文随跳转带走：列表页据此预填搜索词，内联抽屉顶部展示「正在处理谁」，
+     *  避免同一只宠物在结果页/收银台被反复搜索、甚至找错人。 */
+    private static String withPatient(String path, String pet, String client, String idKey, Object id) {
+        String sep = path.contains("?") ? "&" : "?";
+        return path + sep + "seaName=" + u(pet) + "&petName=" + u(pet) + "&clientName=" + u(client)
+                + (idKey != null && id != null ? "&" + idKey + "=" + id : "");
+    }
+
+    private static String u(String v) {
+        return URLEncoder.encode(v == null ? "" : v, StandardCharsets.UTF_8);
+    }
+
     public DoctorFlowVo doctorPipeline() {
         LocalDate today = LocalDate.now();
         List<FlowStage> stages = new ArrayList<>();
@@ -74,7 +88,8 @@ public class FlowService {
                     wait.add(new FlowItem("a" + a.getAppointmentId(), a.getPetName(),
                             a.getClientName() + " · " + a.getAppointmentDate().format(DateTimeFormatter.ofPattern("HH:mm")),
                             null, null, "wait", "接诊",
-                            "/doctorPage/d-appoint?appointmentId=" + a.getAppointmentId(), a.getClientName()));
+                            withPatient("/doctorPage/d-appoint?appointmentId=" + a.getAppointmentId(),
+                                    a.getPetName(), a.getClientName(), null, null), a.getClientName()));
                 }
             }
         }
@@ -86,7 +101,8 @@ public class FlowService {
             treat.add(new FlowItem("r" + r.getRecordId(), r.getPetName(),
                     r.getClientName() + " · " + (r.getDiagnosis() == null ? "接诊中" : r.getDiagnosis()),
                     null, null, "treat", "继续接诊",
-                    "/doctorPage/d-appoint?appointmentId=" + r.getAppointmentId(), r.getClientName()));
+                    withPatient("/doctorPage/d-appoint?appointmentId=" + r.getAppointmentId(),
+                            r.getPetName(), r.getClientName(), "recordId", r.getRecordId()), r.getClientName()));
         }
 
         // 3) 待结果：化验待检(0) + 影像待查(false)
@@ -96,12 +112,16 @@ public class FlowService {
                     "化验 · 待回报",
                     Boolean.TRUE.equals(l.getCriticalFlag()) ? "危急" : null,
                     Boolean.TRUE.equals(l.getCriticalFlag()) ? "danger" : null,
-                    "result", "录入化验结果", "/doctorPage/z-examResult?tab=lab", l.getClientName()));
+                    "result", "录入化验结果",
+                    withPatient("/doctorPage/z-examResult?tab=lab", l.getPetName(), l.getClientName(),
+                            "orderId", l.getOrderId()), l.getClientName()));
         }
         for (ImageOrderDto im : imageMapper.selectImageOrderPage(new Page<>(1, 50), false).getRecords()) {
             result.add(new FlowItem("i" + im.getOrderId(), im.getPetName() == null ? im.getItemName() : im.getPetName(),
                     im.getItemName() + " · 待报告", null, null,
-                    "result", "录入影像报告", "/doctorPage/z-examResult?tab=image", im.getClientName()));
+                    "result", "录入影像报告",
+                    withPatient("/doctorPage/z-examResult?tab=image", im.getPetName(), im.getClientName(),
+                            "orderId", im.getOrderId()), im.getClientName()));
         }
 
         // 4) 待结算：账单未收款(0)
@@ -111,7 +131,9 @@ public class FlowService {
             String moneyStr = money != null ? String.format("%.2f", money.doubleValue()) : "0.00";
             pay.add(new FlowItem("b" + b.getBillId(), b.getPetName(),
                     b.getClientName() + " · ￥" + moneyStr, null, null,
-                    "pay", "收款结算", "/doctorPage/y-billList?payStatus=0", b.getClientName()));
+                    "pay", "收款结算",
+                    withPatient("/doctorPage/y-billList?payStatus=0", b.getPetName(), b.getClientName(),
+                            "billId", b.getBillId()), b.getClientName()));
         }
 
         // 5) 待随访：随访未完成(false)
@@ -120,7 +142,9 @@ public class FlowService {
             String due = f.getPlanTime() == null ? "" : f.getPlanTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             follow.add(new FlowItem("f" + f.getFollowId(), f.getPetName(),
                     f.getClientName() + " · 约" + due, null, null,
-                    "follow", "回访", "/doctorPage/z-follow", f.getClientName()));
+                    "follow", "回访",
+                    withPatient("/doctorPage/z-follow", f.getPetName(), f.getClientName(),
+                            "followId", f.getFollowId()), f.getClientName()));
         }
 
         stages.add(wait); stages.add(treat); stages.add(result); stages.add(pay); stages.add(follow);
