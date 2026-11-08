@@ -574,3 +574,10 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 **本地跑 mvn 的环境坑**：本机 `LANG=C` 且默认 JDK 21，在中文路径下直接跑先报 `InvalidPathException: Malformed input`（目录被读成 `??????`），只加 UTF-8 后又报 `release version 17 not supported`。正确写法：`LC_ALL=C.UTF-8 LANG=C.UTF-8 JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64 PATH=/usr/lib/jvm/temurin-17-jdk-amd64/bin:$PATH mvn test`（`start.sh` 已内置同样的 JDK 17 兜底）。
 
 **教训**：面向人的交互必须靠真实页面点一遍来验证；「编译通过 + 静态字符串自检 + 接口 code=1」不等于「用户看得见数据」。以后新增前端页面，至少验渲染、点一个主链路、看一次控制台。
+
+### 个人中心入口 404 与止血（2026-11-08）
+用户从后台个人中心「悬壶济世」按钮进去报 404。根因不在按钮本身，而在 `doctorPage.ts` 的 `redirect: 'd-console'` 是**相对路径**：从 `/doctorPage` 出发被 vue-router 解析为 `/d-console`，顶层无此路由 → `:pathMatch(.*)` → 404 小游戏页；旧书签 `/doctorPage/d-home` 同样中招。用 `createMemoryHistory` 最小复现确认，改绝对路径后三条路径都正常。
+- **修**：`doctorPage.ts` 两处 redirect 改 `/doctorPage/d-console`；`w-doctorOne.vue` 顶部按钮直连操作台；`verify-p0.sh` 同步断言，并新增「doctorPage.ts 不得出现不以 `/` 开头的 redirect + 个人中心不得有裸 `/doctorPage` 链接」守卫（此前静态检查只验字符串存在，没验跳得对）。
+- **顺手清理个人中心**（都是「能用」层面的问题，不含功能取舍）：删「显示/隐藏面板」调试按钮（点一下整页消失像坏了）、删 `v-if="false"` 的外链图床死图、「悬壶济世」改「返回医生操作台」并补「诊疗流全景」固定入口、「这个医生很懒…」改「暂无个人简介，可点「修改资料」补充」、资料保存成功后 `reqGetLoginD()` 局部刷新取代 `location.reload()`、重置密码只在 `res.code===1` 时关窗且密码框可切换明文。
+- **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；真实浏览器以医生账号登录，个人中心顶部两按钮可见，点「返回医生操作台」到 `#/doctorPage/d-console`；从个人中心直达 `/#/doctorPage` 与 `/#/doctorPage/d-home` 均规范化到操作台且不落 404；控制台 0 错误 0 警告。
+- **个人中心结构性改造待用户选**（Tab 化 / 加我的今日数据与快捷入口 / 维持资料页），本次未擅自定结构。

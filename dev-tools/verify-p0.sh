@@ -123,9 +123,14 @@ has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilde
 # 旧经典工作台已删除，旧 URL 统一落到医生操作台；全景看板与操作台双视图互切
 ! has mix-ui/src/views/doctorPage/d-flow.vue '经典视图' \
   && [ ! -f mix-ui/src/views/doctorPage/index.vue ] \
-  && has mix-ui/src/router/doctorPage.ts "redirect: 'd-console'" \
+  && has mix-ui/src/router/doctorPage.ts "redirect: '/doctorPage/d-console'" \
   && ! has mix-ui/src/router/index.ts "path !== '/doctorPage/d-home'" \
   && ok '旧经典工作台已下线' || bad '旧经典工作台已下线'
+# 相对 redirect 会把 /doctorPage 解析成 /d-console 落 404（个人中心入口按钮曾踩中）
+! grep -Eq "redirect: '[^/]" mix-ui/src/router/doctorPage.ts \
+  && ! has mix-ui/src/views/backstage/w-doctorOne.vue 'to="/doctorPage"' \
+  && ok '医生端 redirect 均为绝对路径（裸 /doctorPage 不落 404）' \
+  || bad '医生端 redirect 均为绝对路径（裸 /doctorPage 不落 404）'
 # 面向人的医生操作台：可点击、带患者上下文，命令面板只作加速器
 has mix-ui/src/views/doctorPage/d-console.vue '今日待办' \
   && has mix-ui/src/views/doctorPage/d-console.vue '常用功能' \

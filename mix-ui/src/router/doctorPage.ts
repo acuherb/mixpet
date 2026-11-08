@@ -27,13 +27,14 @@ export const doctorPage: RouteRecordRaw[] = [
             {path: 'inline', component: () => import('@/views/doctorPage/FlowInline.vue')},
         ],
     }, {
-        // 默认进入医生操作台（给人类用的可点击界面），全景看板从顶部一键切换
+        // 默认进入医生操作台（给人类用的可点击界面），全景看板从顶部一键切换。
+        // 必须用绝对路径：相对 'd-console' 从 /doctorPage 出发会被解析成 /d-console → 404。
         path: "",
-        redirect: 'd-console',
+        redirect: '/doctorPage/d-console',
     }, {
         // 旧「经典工作台」已下线；旧书签统一落到医生操作台
         path: "d-home",
-        redirect: 'd-console',
+        redirect: '/doctorPage/d-console',
     }, {
         // 医生的挂号
         path: "d-appoint",

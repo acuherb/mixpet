@@ -1,21 +1,16 @@
 <template>
-  <!--顶部操作条-->
+  <!--顶部操作条：回工作台是最高频动作，固定两个明确入口 -->
   <div class="top-bar">
-    <el-button plain type="warning" @click="isShow = !isShow">
-      {{ isShow ? "隐藏" : "显示" }}面板
-    </el-button>
-    <router-link to="/doctorPage">
-      <el-button type="success">悬壶济世</el-button>
-    </router-link>
+    <span class="bar-title">我的资料</span>
+    <div class="bar-actions">
+      <router-link to="/doctorPage/d-flow"><el-button plain>诊疗流全景</el-button></router-link>
+      <router-link to="/doctorPage/d-console"><el-button type="success">返回医生操作台</el-button></router-link>
+    </div>
   </div>
 
-  <div v-show="isShow" class="profile-page">
+  <div class="profile-page">
     <!--封面横幅-->
-    <div class="banner">
-      <div class="banner-overlay"></div>
-      <img src="https://img.tukuppt.com/ad_preview/00/10/29/jbWQzB3UOL.jpg!/fw/980"
-           class="banner-img" alt="背景" v-if="false" style="display:none"/>
-    </div>
+    <div class="banner"></div>
 
     <!--主体卡片-->
     <div class="profile-card">
@@ -79,7 +74,7 @@
       <!--简介-->
       <div class="intro">
         <div class="intro-title"><el-icon><Document/></el-icon>&nbsp;个人简介</div>
-        <div class="intro-body">{{ doctor.doctorInfo || '这个医生很懒，还没有填写简介~' }}</div>
+        <div class="intro-body">{{ doctor.doctorInfo || '暂无个人简介，可点「修改资料」补充' }}</div>
       </div>
     </div>
   </div>
@@ -159,7 +154,7 @@
         <el-button :disabled="mailBtn.dis" type="primary" @click="sendCheckMail">{{ mailBtn.btnTxt }}</el-button>
       </el-form-item>
       <el-form-item label="新密码" prop="password">
-        <el-input v-model="form2.password" clearable placeholder="新密码"/>
+        <el-input v-model="form2.password" clearable show-password placeholder="新密码"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -200,7 +195,6 @@ const sanitizeTel = () => {
 
 // 设置展示信息
 const doctor = ref<DoctorDto>(exampleDoctorOne())
-const isShow = ref<boolean>(true)
 
 // 头像地址（有照片用下载地址，无则显示默认）
 const avatarUrl = computed(() =>
@@ -318,7 +312,7 @@ const formSubmit = async (): Promise<void> => {
     if (res.code === 1) {
       modalView.value = false
       ElMessage.success('修改成功')
-      setTimeout(() => location.reload(), 500)
+      reqGetLoginD().then(d => { if (d) doctor.value = d })
     } else {
       ElMessage.error(res.msg || '修改失败')
     }
@@ -379,11 +373,14 @@ const form2 = reactive<DoctorResetPwdVo>({
 const myFormRef2 = ref<FormInstance>()
 const formSubmit2 = async (): Promise<void> => {
   await myFormRef2.value?.validate((valid: boolean): void => {
-    if (valid) {
-      // 校验通过，提交
-      reqDoctorResetPwd(form2)
-      pwdModalView.value = false
-    }
+    if (!valid) return
+    reqDoctorResetPwd(form2).then((res: Res) => {
+      if (res.code === 1) {
+        pwdModalView.value = false
+        form2.checkCode = ''
+        form2.password = ''
+      }
+    })
   })
 }
 // 表单校验规则
@@ -424,6 +421,8 @@ const doLogout = (): void => {
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(108,92,231,0.12);
 }
+.bar-title { font-size: 16px; font-weight: 700; color: #1F2D5A; }
+.bar-actions { display: flex; gap: 10px; }
 
 /* 页面容器 */
 .profile-page {
