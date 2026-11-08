@@ -104,6 +104,22 @@ has mixPet/src/main/java/com/mix/ws/FlowNotify.java 'FLOW_REFRESH' \
   && has mixPet/src/main/java/com/mix/controller/FlowController.java '@Secured(RoleConst.MANAGER)' \
   && has mix-ui/src/router/backstage.ts 'minAuthLv: 6' \
   && ok 'P6 状态变更广播/三端实时/权限隔离/内联不脱离' || bad 'P6 状态变更广播/三端实时/权限隔离/内联不脱离'
+# mapper <sql> 自引用会令 MyBatis 在构建 SqlSessionFactory 时无限递归 StackOverflowError，
+# 且纯单元测试不解析 XML 会全绿、直到 spring-boot:run 才炸。静态挡一层 + JUnit 解析挡一层。
+python3 - <<'PY' && ok 'mapper <sql> 片段无自引用' || bad 'mapper <sql> 片段无自引用'
+import re, pathlib, sys
+bad = []
+for f in pathlib.Path('mixPet/src/main/resources/com/mix/mapper').glob('*.xml'):
+    for m in re.finditer(r'<sql\s+id="([^"]+)"\s*>(.*?)</sql>', f.read_text(encoding='utf-8'), re.S):
+        sid, body = m.group(1), m.group(2)
+        if sid in re.findall(r'<include\s+refid="([^"]+)"', body):
+            bad.append(f'{f.name}:{sid}')
+if bad:
+    print('自引用片段: ' + ', '.join(bad), file=sys.stderr)
+    sys.exit(1)
+PY
+has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilder' \
+  && ok 'mapper XML 离线解析测试（挡 StackOverflow）' || bad 'mapper XML 离线解析测试（挡 StackOverflow）'
 bash -n deploy.sh && bash -n dev-tools/start.sh \
   && ok '部署脚本语法' || bad '部署脚本语法'
 

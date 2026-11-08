@@ -59,10 +59,17 @@ sleep 1
 #      表现是日志无 ERROR 直接断在 test-compile。MAVEN_OPTS 限 mvn 自身，
 #      jvmArguments 限 spring-boot:run fork 出来的应用 JVM）
 # 注意：必须先 clean（新增依赖 / 代码改动后不清缓存会编译失败）
+# 两个启动期开关（踩坑记录）：
+#   1) -Dmaven.test.skip=true —— 生产启动不编译/跑测试。spring-boot:run 会触发 test-compile，
+#      偶发因中文路径+增量缓存导致 test 类编译失败、连带阻塞启动；启动脚本本就不需要测试。
+#   2) -Dspring.devtools.restart.enabled=false —— 关掉 devtools 热重启的 restart 类加载器。
+#      它在 fork 子 JVM 时用独立 URLClassLoader 加载中文路径(公共/)下的类会失败，
+#      表现为「NoClassDefFoundError: com/mix/common/Result」等诡异运行时报错。
 cd "$PROJ/mixPet"
 mvn clean
 MAVEN_OPTS="-Xmx400m" setsid mvn spring-boot:run \
-  -Dspring-boot.run.jvmArguments="-Xmx512m" > "$BK_LOG" 2>&1 < /dev/null &
+  -Dmaven.test.skip=true \
+  -Dspring-boot.run.jvmArguments="-Xmx512m -Dspring.devtools.restart.enabled=false" > "$BK_LOG" 2>&1 < /dev/null &
 BK_PID=$!
 echo "后端 PID: $BK_PID  日志: $BK_LOG"
 

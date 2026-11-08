@@ -3,7 +3,15 @@
 <mapper namespace="com.mix.mapper.MedicalRecordMapper">
     <!--病历联查明细列（含账单/科室/诊断编码快照）：selectRecordOne 与 selectRecordPage 共用，避免加列时漏改 -->
     <sql id="mrDetailCols">
-        <include refid="mrDetailCols"/>
+        r.record_id, r.appointment_id, r.pet_id, r.client_id, r.doctor_id,
+        r.chief_complaint, r.present_illness, r.past_history, r.physical_exam, r.diagnosis, r.treatment, r.advice, r.revisit_date, r.origin_record_id, r.internal_note,
+        r.triage_level, r.weight, r.temperature, r.heart_rate, r.respiratory_rate, r.blood_pressure,
+        r.fee_register, r.fee_treat,
+        b.fee_drug, b.total_money, b.pay_status,
+        r.create_time, r.status, r.finish_time, r.cancel_reason,
+        r.version, r.signed_by, r.signed_at, r.review_status, r.review_by, r.review_at, r.review_note,
+        r.differential_diagnosis, r.diagnosis_basis, r.diagnosis_code, r.diagnosis_code_system,
+        p.pet_name, c.client_name, d.doctor_name, dep.department_name
     </sql>
     <!--宠物的就诊史：联查宠物/客户/医生/科室名与账单费用-->
     <select id="selectPetRecords" resultType="com.mix.model.dto.RecordDto">
