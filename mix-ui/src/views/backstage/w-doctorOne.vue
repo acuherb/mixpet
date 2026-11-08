@@ -9,6 +9,40 @@
   </div>
 
   <div class="profile-page">
+    <!--今日概览：打开先看今天要干什么，再看自己的资料 -->
+    <section class="overview">
+      <div class="ov-head">
+        <div>
+          <h2>今日概览</h2>
+          <p class="ov-sub">{{ greeting }}，{{ doctor.doctorName || '医生' }} · 今天还有 <b>{{ totalPending }}</b> 位待处理</p>
+        </div>
+        <div class="ov-actions">
+          <span v-if="lastRefresh" class="ov-time">{{ lastRefresh }} 更新</span>
+          <el-button size="small" :loading="loading" @click="loadOverview"><el-icon><Refresh/></el-icon> 刷新</el-button>
+          <router-link to="/doctorPage/d-console"><el-button size="small" type="primary">去医生操作台</el-button></router-link>
+        </div>
+      </div>
+      <div v-if="loadError" class="ov-error">
+        <span>今日待办未加载，请检查网络或服务状态。</span>
+        <el-button size="small" type="primary" @click="loadOverview">重新加载</el-button>
+      </div>
+      <template v-else>
+        <div class="ov-grid">
+          <button v-for="st in stages" :key="st.key" class="ov-card"
+                  :class="{hot: (st.items?.length || 0) > 0}" @click="goStage(st)">
+            <span class="ov-dot" :class="st.key"></span>
+            <span class="ov-label">{{ st.title }}</span>
+            <b class="ov-num">{{ st.items?.length || 0 }}</b>
+            <span class="ov-go">{{ (st.items?.length || 0) ? (st.actionLabel || '去处理') : '暂无待办' }} →</span>
+          </button>
+        </div>
+        <div class="ov-shortcuts">
+          <span class="ov-sc-title">快捷入口</span>
+          <router-link v-for="a in shortcuts" :key="a.path" :to="a.path" class="ov-sc-link">{{ a.label }}</router-link>
+        </div>
+      </template>
+    </section>
+
     <!--封面横幅-->
     <div class="banner"></div>
 
@@ -171,7 +205,7 @@
 <script lang="ts" setup>
 import {permName, permDesc, PERMISSIONS} from "@/utils/PermissionUtil";
 import {getAge} from "@/utils/TimeUtil";
-import {computed, onMounted, reactive, ref} from "vue";
+import {computed, onBeforeUnmount, onMounted, reactive, ref} from "vue";
 import {useRouter} from "vue-router";
 import {DoctorDto, exampleDoctorOne} from "@/model/DO/DoctorDto";
 import {reqDoctorResetPwd, reqDoctorSendMail, reqGetLoginD, reqUpdateLoginD, reqUpdateDoctor} from "@/request/DoctorApi";
@@ -185,7 +219,9 @@ import UpImg from "@/components/UpImg.vue";
 import {DoctorResetPwdVo} from "@/model/VO/DoctorResetPwdVo";
 import {reqLogout} from "@/request/PowerApi";
 import {clearPwdCheckFlag} from "@/router";
-import {Edit, Key, Document, SwitchButton} from "@element-plus/icons-vue";
+import {Edit, Key, Document, SwitchButton, Refresh} from "@element-plus/icons-vue";
+import {reqDoctorPipeline, type FlowStage} from "@/request/FlowApi";
+import {subscribeFlow} from "@/utils/chatSocket";
 // 手机号只保留数字，最多 11 位
 const sanitizeTel = () => {
   if (form.value.doctorTel) {
@@ -409,6 +445,61 @@ const doLogout = (): void => {
     })
   }).catch(() => ElMessage.info('已取消'))
 }
+
+// ── 今日概览：复用诊疗流快照，让个人中心不只是「名片页」──────────────
+const stages = ref<FlowStage[]>([])
+const loading = ref(false)
+const loadError = ref(false)
+const lastRefresh = ref('')
+const totalPending = computed(() =>
+    stages.value.reduce((n, s) => n + (s.items?.length || 0), 0))
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  return h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'
+})
+// 留在后台壳内的四个高频入口，点完侧边栏还在，不会迷路
+const shortcuts = [
+  {label: '挂号列表', path: '/backstage/y-appointmentList'},
+  {label: '收银台', path: '/backstage/y-billList'},
+  {label: '客户管理', path: '/backstage/y-clientList'},
+  {label: '宠物管理', path: '/backstage/y-petList'},
+]
+
+const loadOverview = async (): Promise<void> => {
+  loading.value = true
+  try {
+    const vo = await reqDoctorPipeline()
+    stages.value = Array.isArray(vo?.stages) ? vo.stages : []
+    loadError.value = false
+    const d = new Date()
+    lastRefresh.value = [d.getHours(), d.getMinutes(), d.getSeconds()]
+        .map(n => String(n).padStart(2, '0')).join(':')
+  } catch {
+    // 后端/网络异常时显式报错，不把故障伪装成「今天 0 位病人」
+    loadError.value = true
+  } finally {
+    loading.value = false
+  }
+}
+// 点环节卡片：回医生操作台并带上环节，由操作台自动选中该环节第一位患者
+const goStage = (st: FlowStage): void => {
+  router.push({path: '/doctorPage/d-console', query: {stage: st.key}})
+}
+const onFlowRefresh = (): void => { loadOverview() }
+let pollTimer: ReturnType<typeof setInterval> | undefined
+let unsubFlow: (() => void) | null = null
+onMounted(() => {
+  loadOverview()
+  pollTimer = setInterval(loadOverview, 30000)
+  unsubFlow = subscribeFlow(onFlowRefresh)
+  window.addEventListener('mixpet:flow-refresh', onFlowRefresh as EventListener)
+})
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer)
+  unsubFlow?.()
+  unsubFlow = null
+  window.removeEventListener('mixpet:flow-refresh', onFlowRefresh as EventListener)
+})
 </script>
 
 <style scoped>
@@ -435,8 +526,57 @@ const doLogout = (): void => {
   padding: 0 20px;
 }
 
+/* 今日概览：打开先看今天要干什么 */
+.overview {
+  margin-top: 16px; padding: 20px 22px 18px; background: #fff;
+  border: 1px solid rgba(108,92,231,0.14); border-radius: 18px;
+  box-shadow: 0 12px 32px -18px rgba(30,42,90,0.35);
+}
+.ov-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.ov-head h2 { margin: 0; font-size: 20px; font-weight: 800; color: #16213E; }
+.ov-sub { margin: 6px 0 0; font-size: 13px; color: #8A93A6; }
+.ov-sub b { color: #E5495F; font-size: 15px; }
+.ov-actions { display: flex; align-items: center; gap: 10px; }
+.ov-time { font-size: 12px; color: #9AA3B5; font-variant-numeric: tabular-nums; }
+.ov-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.ov-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 14px 16px; border: 1px solid rgba(108,92,231,0.12); border-radius: 14px;
+  background: linear-gradient(135deg,#fafbff,#f3f6ff);
+  cursor: pointer; text-align: left; font: inherit; color: inherit;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+}
+.ov-card:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(108,92,231,0.14); border-color: rgba(108,92,231,0.35); }
+.ov-card.hot { background: #fff; border-color: rgba(58,123,255,0.35); }
+.ov-dot { width: 8px; height: 8px; border-radius: 50%; background: #C8CFDD; margin-bottom: 4px; }
+.ov-dot.wait { background: #3A7BFF; }
+.ov-dot.treat { background: #6C5CE7; }
+.ov-dot.result { background: #F5A623; }
+.ov-dot.pay { background: #E5495F; }
+.ov-dot.follow { background: #17A36E; }
+.ov-label { font-size: 13px; color: #6B7590; }
+.ov-num { font-size: 30px; line-height: 1.1; font-weight: 800; color: #1F2D5A; font-variant-numeric: tabular-nums; }
+.ov-go { font-size: 12px; color: #3A7BFF; }
+.ov-error {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 16px; padding: 14px 16px; border-radius: 12px;
+  background: #FFF1F2; border: 1px solid #F7C4C9; color: #B42336; font-size: 13px;
+}
+.ov-shortcuts { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(108,92,231,0.1); }
+.ov-sc-title { font-size: 13px; font-weight: 700; color: #6B7590; margin-right: 4px; }
+.ov-sc-link {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; text-decoration: none;
+  color: #3A5BD9; background: rgba(58,123,255,0.08); border: 1px solid rgba(58,123,255,0.18);
+}
+.ov-sc-link:hover { background: rgba(58,123,255,0.16); }
+@media (max-width: 900px) {
+  .ov-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ov-head { flex-direction: column; }
+}
+
 /* 封面横幅：深色科技渐变 + 光斑 */
 .banner {
+  margin-top: 20px;
   height: 190px;
   border-radius: 20px 20px 0 0;
   background:

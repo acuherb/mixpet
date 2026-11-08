@@ -138,6 +138,13 @@ has mix-ui/src/views/doctorPage/d-console.vue '今日待办' \
   && has mix-ui/src/views/doctorPage/d-flow.vue '医生操作台' \
   && has mix-ui/src/router/index.ts "'/doctorPage/d-console/inline'" \
   && ok '医生操作台（登录首屏/可点击/双视图互切）' || bad '医生操作台（登录首屏/可点击/双视图互切）'
+# 个人中心「今日概览」复用诊疗流快照：加载失败必须显式报错，环节卡要能直达操作台
+has mix-ui/src/views/backstage/w-doctorOne.vue '今日概览' \
+  && has mix-ui/src/views/backstage/w-doctorOne.vue 'reqDoctorPipeline' \
+  && has mix-ui/src/views/backstage/w-doctorOne.vue 'loadError' \
+  && has mix-ui/src/views/doctorPage/d-console.vue 'route.query.stage' \
+  && ok '个人中心今日概览（复用流快照/环节直达/失败态）' \
+  || bad '个人中心今日概览（复用流快照/环节直达/失败态）'
 # 旧库漏跑 P3/P4 迁移会令 /flow/doctorPipeline 抛 Unknown column → 前端「系统繁忙」、诊疗流无数据
 has dev-tools/db-migrate.sh 'p4_clinical' \
   && has deploy.sh 'p4_clinical' \

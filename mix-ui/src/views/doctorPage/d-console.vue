@@ -210,6 +210,17 @@ const select = (c: FlowChip, st: FlowStage): void => {
   if (rid) reqRecordOne(rid).then(vo => { detail.value = vo?.record || null }).catch(() => { detail.value = null })
 }
 
+// 从个人中心「今日概览」点环节卡进来：自动选中该环节第一位患者，少点一次
+let stageQueryApplied = false
+const applyStageQuery = (): void => {
+  if (stageQueryApplied || selected.value) return
+  const key = String(route.query.stage || '')
+  if (!key) return
+  stageQueryApplied = true
+  const st = stages.value.find(s => s.key === key)
+  if (st?.items.length) select(st.items[0], st)
+}
+
 // ── 动作定义（每个都自动带当前患者 query）────────────────────────────
 const stageActions: Record<string, Action[]> = {
   wait: [
@@ -349,7 +360,7 @@ let unsub: (() => void) | null = null
 let pollTimer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
   tick(); clockTimer = setInterval(tick, 1000)
-  loadAll()
+  loadAll().then(applyStageQuery)
   pollTimer = setInterval(loadAll, 20000)
   unsub = subscribeFlow(() => loadAll())
   window.addEventListener('mixpet:flow-refresh', onRefresh as EventListener)
