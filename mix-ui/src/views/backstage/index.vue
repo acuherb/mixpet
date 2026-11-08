@@ -140,18 +140,26 @@ const checkWidth = () => {
     isCollapse.value = true
   }
 }
+// 个人中心与侧边栏各持一份登录医生信息：资料保存后由 w-doctorOne 广播，这里同步刷新，
+// 避免用整页 reload 来同步头像/姓名/权限（权限变化还要即刻反映到菜单可见性）。
+const loadDoctorNow = (): void => {
+  reqGetLoginD().then(res => {
+    if (!res) return
+    doctorNow.photo = res.doctorPhoto || doctorNow.photo
+    doctorNow.name = res.doctorName || doctorNow.name
+    doctorNow.authLv = Number(res.authLv ?? 0)
+  })
+}
 onMounted(() => {
   checkWidth()
   window.addEventListener('resize', checkWidth)
+  window.addEventListener('mixpet:profile-updated', loadDoctorNow)
 })
 onUnmounted(() => {
   window.removeEventListener('resize', checkWidth)
+  window.removeEventListener('mixpet:profile-updated', loadDoctorNow)
 })
-reqGetLoginD().then(res => {
-  doctorNow.photo = res.doctorPhoto
-  doctorNow.name = res.doctorName
-  doctorNow.authLv = res.authLv
-})
+loadDoctorNow()
 </script>
 
 <style lang="scss" scoped>

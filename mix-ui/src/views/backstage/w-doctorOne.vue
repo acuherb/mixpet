@@ -312,7 +312,11 @@ const formSubmit = async (): Promise<void> => {
     if (res.code === 1) {
       modalView.value = false
       ElMessage.success('修改成功')
-      reqGetLoginD().then(d => { if (d) doctor.value = d })
+      reqGetLoginD().then(d => {
+        if (d) doctor.value = d
+        // 后台壳的头像/姓名/权限是独立拉的一份，通知它同步刷新
+        window.dispatchEvent(new Event('mixpet:profile-updated'))
+      })
     } else {
       ElMessage.error(res.msg || '修改失败')
     }
