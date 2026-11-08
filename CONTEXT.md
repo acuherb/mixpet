@@ -511,3 +511,12 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **内联深页不脱离抽屉**：新增 `d-flow/inline` 子路由 + `FlowInline.vue`（白名单 25 个医生端业务页，`defineAsyncComponent` 按 `__flowTarget` 就地渲染）。全局 `beforeEach` 守卫把「从流内深页 `router.push` 到其它医生端业务页」重写为 `d-flow/inline?__flowTarget=<原path>`，并把原 query **平铺**保留（深页 `useRoute().query.recordId` 照常可读）。排除经典视图 `d-home`、流自身、以及「独立页打开」的 `__flowStandalone` 放行标记，避免把用户刻意离开流的操作也拦回抽屉；`d-flow.vue` 的抽屉开合改为 `watch(route.path)` 驱动，守卫重写后抽屉自动保持打开、内容无缝切换。
 - **验证**：`mvn test` / `npm run build` / `verify-p0.sh`（含 P6 检查项）全绿。
 - **仍未做**：仍是「派生快照」而非持久化工作流事件表（无自动外呼/短信触发下一环节）；`FlowInline` 白名单为静态表，新增医生端页面需手动登记；广播只推在线员工、不推顾客（顾客端通知仍走站内信）；三端未做更细的数据行级权限；浏览器实测与真实 WS 联调待做。
+
+### 本地启动故障复盘（2026-11-08）
+P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（提交 `e57a71a`），根因均非业务逻辑、而是构建/运行链路：
+1. **MyBatis `<sql>` 自引用**：早前抽取 mapper 列清单时 `replace_all` 误把 `<sql id="mrDetailCols">` 的内容也替换成 `<include refid="mrDetailCols"/>`，MyBatis 在构建 `SqlSessionFactory` 时 `XMLIncludeTransformer` 无限递归 `StackOverflowError`。原单元测试不构建 `SqlSessionFactory` 所以一直没暴露。
+2. **mapper 缺 `@Mapper`**：P3/P4 新增的 5 个接口（`ClientNotification/DiagnosisDict/LabRefRange/LabResultRevision/MedicalRecordRevision`）漏了 `@Mapper` 注解（项目靠 `@Mapper` 自动注册，无 `@MapperScan`），启动报「No qualifying bean」。
+3. **devtools + 中文路径类加载失败**：`spring-boot:run` 的 devtools `restart` 类加载器在 fork 子 JVM 时，对中文路径（`公共/`）下的类（如 `com.mix.common.Result`）加载失败，表现为诡异 `NoClassDefFoundError`；偶发还会让 `spring-boot:run` 触发的 `test-compile` 失败。
+- **根因共性**：既有测试只跑纯单元测试，**不构建 Spring 上下文，mapper XML 与 bean 注册从未被真实解析**——这是验证盲区。
+- **防复发**：① 新增 `MapperXmlParseTest`（用 `XMLMapperBuilder` 离线解析全部 mapper XML，无需数据库即可抓到 `<sql>` 自引用/递归）；② `verify-p0.sh` 加静态检查（自引用 + 该测试存在）；③ `start.sh` 的 `spring-boot:run` 加 `-Dmaven.test.skip=true` 与 `-Dspring.devtools.restart.enabled=false`，并保留根因注释。修改后 `mvn test` / `npm build` / `verify-p0.sh` / 完整 `start.sh`（后端 86s 就绪、前端 3s）端到端通过。
+- **给后续排查的提醒**：若本地启动再出现「无 ERROR 直接断在 test-compile」或某类 `NoClassDefFoundError`，优先怀疑 devtools restart + 中文路径，不要去改业务代码；且任何 mapper XML / bean 注册的改动，必须用 `mvn test`（已含 XML 解析测试）或真实启动验证，而不能只靠 `mvn compile`。
