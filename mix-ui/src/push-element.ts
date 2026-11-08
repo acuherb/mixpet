@@ -21,6 +21,7 @@ import {
     ElDropdownItem,
     ElDropdownMenu,
     ElEmpty,
+    ElResult,
     ElForm,
     ElFormItem,
     ElIcon,
@@ -141,6 +142,7 @@ export const pushElement = (app: Vpp) => {
         .component("el-descriptions", ElDescriptions as Component)
         .component("el-descriptions-item", ElDescriptionsItem as Component)
         .component("el-empty", ElEmpty as Component)
+        .component("el-result", ElResult as Component)
         .component("el-pagination", ElPagination as Component)
         .component("el-card", ElCard as Component)
         .component("el-timeline", ElTimeline as Component)

@@ -10,9 +10,13 @@
       <div v-if="!isCollapse" class="menu-search">
         <el-input v-model="menuKw" clearable placeholder="搜索菜单" size="small" :prefix-icon="Search"/>
       </div>
-      <router-link to="/doctorPage/d-flow" title="诊疗流（工作台）" style="display:flex;align-items:center;gap:8px;padding:10px 16px;color:#ffd04b;text-decoration:none;font-size:14px;white-space:nowrap">
+      <router-link to="/doctorPage/d-console" title="医生操作台（日常干活）" style="display:flex;align-items:center;gap:8px;padding:10px 16px;color:#ffd04b;text-decoration:none;font-size:14px;white-space:nowrap">
         <el-icon><IconMenu/></el-icon>
-        <span v-if="!isCollapse">诊疗流 · 工作台</span>
+        <span v-if="!isCollapse">医生操作台</span>
+      </router-link>
+      <router-link to="/doctorPage/d-flow" title="诊疗流全景（看进度）" style="display:flex;align-items:center;gap:8px;padding:10px 16px;color:#cbd8ea;text-decoration:none;font-size:13px;white-space:nowrap">
+        <el-icon><DataBoard/></el-icon>
+        <span v-if="!isCollapse">诊疗流全景</span>
       </router-link>
       <router-link to="/backstage" title="个人中心">
         <img :src="'/api/common/download?name='+doctorNow.photo" alt="头像" class="my-avatar"/>

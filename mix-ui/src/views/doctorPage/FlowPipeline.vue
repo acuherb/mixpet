@@ -85,12 +85,15 @@
           <template #prefix><el-icon><Search/></el-icon></template>
         </el-input>
         <div class="palette-list">
-          <div v-for="p in paletteFiltered" :key="p.key" class="palette-item" @click="runPalette(p)">
-            <span class="pi-ico"><el-icon><component :is="p.icon"/></el-icon></span>
-            <span class="pi-label">{{ p.label }}</span>
-            <span class="pi-path">{{ p.hint }}</span>
-          </div>
-          <div v-if="!paletteFiltered.length" class="palette-empty">无匹配</div>
+          <template v-for="g in paletteGroups" :key="g.name">
+            <div class="palette-group">{{ g.name }}</div>
+            <div v-for="p in g.items" :key="p.key" class="palette-item" @click="runPalette(p)">
+              <span class="pi-ico"><el-icon><component :is="p.icon"/></el-icon></span>
+              <span class="pi-label">{{ p.label }}</span>
+              <span class="pi-path">{{ p.hint }}</span>
+            </div>
+          </template>
+          <div v-if="!paletteGroups.length" class="palette-empty">无匹配</div>
         </div>
       </div>
     </el-dialog>
@@ -109,7 +112,7 @@ const props = defineProps<{
   stages: FlowStage[]
   events: {id: number; text: string; time: string; cls: string; icon: any}[]
   lastRefresh: string
-  commands: {key: string; label: string; hint: string; icon: any; path: string}[]
+  commands: {key: string; label: string; hint: string; icon: any; path: string; group?: string}[]
 }>()
 const emit = defineEmits<{
   (e: 'navigate', path: string): void
@@ -151,6 +154,15 @@ const paletteFiltered = computed(() => {
     list = [...matched, ...list]
   }
   return list.slice(0, 20)
+})
+const paletteGroups = computed(() => {
+  const map = new Map<string, typeof paletteFiltered.value>()
+  for (const p of paletteFiltered.value) {
+    const name = (p as any).group || '搜索结果'
+    if (!map.has(name)) map.set(name, [])
+    map.get(name)!.push(p)
+  }
+  return [...map.entries()].map(([name, items]) => ({name, items}))
 })
 const runPalette = (p: {path: string}) => { paletteOpen.value = false; if (p.path) emit('navigate', p.path) }
 </script>
@@ -216,6 +228,7 @@ const runPalette = (p: {path: string}) => { paletteOpen.value = false; if (p.pat
   .dr-tip { color: #b0b6c4; font-size: 12px; line-height: 1.5; }
 }
 .palette { .palette-list { margin-top: 12px; max-height: 50vh; overflow-y: auto; }
+  .palette-group { font-size: 11px; color: #909399; letter-spacing: .5px; padding: 10px 12px 4px; border-top: 1px solid #eef1f6; margin-top: 4px; }
   .palette-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: background .15s; }
   .palette-item:hover { background: #eaf3fa; }
   .pi-ico { color: var(--brand); }

@@ -19,13 +19,21 @@ export const doctorPage: RouteRecordRaw[] = [
             {path: 'inline', component: () => import('@/views/doctorPage/FlowInline.vue')},
         ],
     }, {
-        // 默认进入诊疗流
-        path: "",
-        redirect: 'd-flow',
+        // 医生操作台（登录首屏）：面向人的三栏工作台——今日待办 / 当前患者 / 常用功能宫格。
+        // 与 d-flow 对称，业务页在 inline 子路由的抽屉里就地处理，不跳页。
+        path: "d-console",
+        component: () => import('@/views/doctorPage/d-console.vue'),
+        children: [
+            {path: 'inline', component: () => import('@/views/doctorPage/FlowInline.vue')},
+        ],
     }, {
-        // 旧「经典工作台」已下线：医生端统一收归诊疗流。保留 URL 只为兼容旧书签，不再渲染第二套工作台
+        // 默认进入医生操作台（给人类用的可点击界面），全景看板从顶部一键切换
+        path: "",
+        redirect: 'd-console',
+    }, {
+        // 旧「经典工作台」已下线；旧书签统一落到医生操作台
         path: "d-home",
-        redirect: 'd-flow',
+        redirect: 'd-console',
     }, {
         // 医生的挂号
         path: "d-appoint",

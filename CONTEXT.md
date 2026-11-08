@@ -558,3 +558,19 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 
 **验证**：`mvn compile` / `npm run build`（vue-tsc） / `bash dev-tools/db-migrate.sh`（幂等重跑） / `verify-p0.sh`（含真连库 4/4、AI 下线）全绿。
 **仍需用户决策**：接真实 AI 模型需要服务商与 API Key；`pet_mix.sql` 的发票号按 billId、税率免征等历史简化项未动（非税务联网场景）。
+
+### 医生操作台：面向人类，而非命令面板（2026-11-08，用户选 B）
+用户反馈「医生工作台只能通过搜索（命令面板）启动，毕竟是给人类使用的，不是 AI 操作」。给的 A（全景里加常用入口）/ B（新增操作台作登录首屏，与全景双视图并列）/ C（回到旧经典视图）中用户选 **B**。核心判断：命令面板是熟练用户的**加速器**，不能是主入口；高频动作必须固定位置、可点击、一眼可见。
+- **新增 `d-console.vue` 作登录首屏**：三栏——左「今日待办」按环节列患者卡（点选即设当前患者）、中「当前患者工作区」显示宠物/主人/诊断/主诉/接诊医生与挂号/病历/账单单号，并按环节给动作网格（待诊→开始接诊；接诊中→写病历/开化验/开影像/开处方/打印；待结果→录结果；待结算→收银/发药核对；待随访→回访）、右「常用功能」按岗位分组的固定宫格。顶部有搜索、诊疗流全景、个人中心、退出。
+- **双视图互切，不搞第二套工作台**：`d-flow`（全景流水线）保留给看全局/排队的场景，顶部新增「医生操作台」入口；`d-home` 与默认子路由改为 `redirect: 'd-console'`；`login.vue` 员工登录直达操作台；后台壳固定入口改为「医生操作台 / 诊疗流全景」两条。命令面板保留 `Ctrl/⌘ K` 并按岗位分组补齐清单，但只作加速器。
+- **抽屉与患者上下文贯通两个视图**：新增 `d-console/inline` 子路由，全局守卫 `inlineBase` 同时识别 `d-flow/` 与 `d-console/` 深页并重写回各自 inline 子路由；`FlowInline` 的返回按钮按路径显示「返回操作台 / 返回诊疗流」，顶部「正在处理：宠物 · 客户 / 挂号 #N / 病历 #N」随 query 带进业务页，开单页不再重复搜患者。
+- **真实浏览器验证抓出两个静态检查漏掉的运行期 bug**（编译与 `verify-p0.sh` 全绿也拦不住，必须实测）：
+  1. `push-element.ts` 手动按需注册白名单漏 `ElResult`，控制台刷 `[Vue warn]: Failed to resolve component: el-result` → 补导入与 `.component("el-result", ...)`。
+  2. **长期隐藏**：后端流接口是 `Result.data(vo)`，而 `reqApi` 拦截器 `return data` 返回的是整个 `{code,msg,data}`；`FlowApi.ts` 却声明 `Promise<DoctorFlowVo>` 且调用方直接读 `vo.stages` → 恒为 `undefined`，三个流页面一直静默显示 0 位 / 空泳道。新增 `unwrapFlow(res)`（仅当 `data.stages` 是数组才解包，异常/401 原样返回由调用方兜底）覆盖 doctor/reception/manager 三个接口。
+- **实测结果**：Chromium 真实登录后操作台渲染「今日待办 8 位」+ 4 组功能宫格；点患者卡「三三 张三」中栏出现「挂号 #19 / 病历 #20」与诊断/主诉/医生；点「开化验单」抽屉显示「处理 · 检验开单」「返回操作台」「正在处理：三三 · 张三 / 挂号 #19 / 病历 #20」；`d-flow` 全景 5 个环节（待诊/接诊中/待结果/待结算/待随访）恢复数据；两页控制台 0 错误 0 警告。
+- **自检同步**：`verify-p0.sh` 把原 `redirect: 'd-flow'` 断言改为 `d-console`，并新增「医生操作台（登录首屏/可点击/双视图互切）」一项（校验登录落地、双入口、路由与 inline 守卫）。
+
+**验证**：`npm run build`（vue-tsc） / `bash dev-tools/verify-p0.sh`（含真连库 4/4 与医生操作台新增项） / `mvn test`（8 tests, 0 failures） / 前端 lint 0 错误 0 警告，全绿；浏览器实测见上。
+**本地跑 mvn 的环境坑**：本机 `LANG=C` 且默认 JDK 21，在中文路径下直接跑先报 `InvalidPathException: Malformed input`（目录被读成 `??????`），只加 UTF-8 后又报 `release version 17 not supported`。正确写法：`LC_ALL=C.UTF-8 LANG=C.UTF-8 JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64 PATH=/usr/lib/jvm/temurin-17-jdk-amd64/bin:$PATH mvn test`（`start.sh` 已内置同样的 JDK 17 兜底）。
+
+**教训**：面向人的交互必须靠真实页面点一遍来验证；「编译通过 + 静态字符串自检 + 接口 code=1」不等于「用户看得见数据」。以后新增前端页面，至少验渲染、点一个主链路、看一次控制台。

@@ -1,7 +1,7 @@
 <template>
   <div class="flow-inline">
     <div class="fi-bar">
-      <el-button size="small" @click="backFlow"><el-icon><ArrowLeft/></el-icon> 返回诊疗流</el-button>
+      <el-button size="small" @click="backFlow"><el-icon><ArrowLeft/></el-icon> {{ backLabel }}</el-button>
       <span class="fi-title">{{ title }}</span>
       <el-button size="small" plain @click="openStandalone">独立页打开</el-button>
     </div>
@@ -89,13 +89,17 @@ const idTags = computed<string[]>(() => {
   return pairs.filter(([k]) => route.query[k]).map(([k, label]) => `${label} #${route.query[k]}`)
 })
 
-const backFlow = (): void => { router.push('/doctorPage/d-flow') }
+const backLabel = computed<string>(() => route.path.startsWith('/doctorPage/d-console/') ? '返回操作台' : '返回诊疗流')
+const backFlow = (): void => {
+  router.push(route.path.startsWith('/doctorPage/d-console/') ? '/doctorPage/d-console' : '/doctorPage/d-flow')
+}
 
 /** 独立页打开：拼回原始 query（去掉内部标记），__flowStandalone 让守卫放行，避免又被拦回抽屉 */
 const openStandalone = (): void => {
   const q: Record<string, any> = {...route.query, __flowStandalone: '1'}
   delete q.__flowTarget
-  router.push({path: target.value || '/doctorPage/d-flow', query: q})
+  const fallback = route.path.startsWith('/doctorPage/d-console/') ? '/doctorPage/d-console' : '/doctorPage/d-flow'
+  router.push({path: target.value || fallback, query: q})
 }
 </script>
 

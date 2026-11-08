@@ -58,14 +58,18 @@ const PWD_CHECK_KEY = "mixpet_pwd_check_done"
 router.beforeEach(async (to, from) => {
     const path = to.path
 
-    // 诊疗流内联：深页在抽屉里 router.push 到其它医生端业务页时，重写为 d-flow/inline，
-    // 患者全程不离开这条河。排除流自身、以及「独立页打开」的显式放行标记。
-    if (from.path.startsWith('/doctorPage/d-flow/')
+    // 诊疗流 / 医生操作台内联：深页在抽屉里 router.push 到其它医生端业务页时，
+    // 重写回各自视图的 inline 子路由，患者全程不离开当前工作台。
+    // 排除两个视图自身、以及「独立页打开」的显式放行标记。
+    const inlineBase = from.path.startsWith('/doctorPage/d-flow/') ? '/doctorPage/d-flow/inline'
+        : from.path.startsWith('/doctorPage/d-console/') ? '/doctorPage/d-console/inline' : null
+    if (inlineBase
         && path.startsWith('/doctorPage/')
         && !path.startsWith('/doctorPage/d-flow')
+        && !path.startsWith('/doctorPage/d-console')
         && !to.query.__flowStandalone) {
         return {
-            path: '/doctorPage/d-flow/inline',
+            path: inlineBase,
             query: {...to.query, __flowTarget: path}
         }
     }

@@ -120,12 +120,19 @@ if bad:
 PY
 has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilder' \
   && ok 'mapper XML 离线解析测试（挡 StackOverflow）' || bad 'mapper XML 离线解析测试（挡 StackOverflow）'
-# 医生端唯一工作台：经典视图入口已下线、旧工作台删除、旧 URL 只重定向到诊疗流
+# 旧经典工作台已删除，旧 URL 统一落到医生操作台；全景看板与操作台双视图互切
 ! has mix-ui/src/views/doctorPage/d-flow.vue '经典视图' \
   && [ ! -f mix-ui/src/views/doctorPage/index.vue ] \
-  && has mix-ui/src/router/doctorPage.ts "redirect: 'd-flow'" \
+  && has mix-ui/src/router/doctorPage.ts "redirect: 'd-console'" \
   && ! has mix-ui/src/router/index.ts "path !== '/doctorPage/d-home'" \
-  && ok '医生端唯一工作台（经典视图已下线）' || bad '医生端唯一工作台（经典视图已下线）'
+  && ok '旧经典工作台已下线' || bad '旧经典工作台已下线'
+# 面向人的医生操作台：可点击、带患者上下文，命令面板只作加速器
+has mix-ui/src/views/doctorPage/d-console.vue '今日待办' \
+  && has mix-ui/src/views/doctorPage/d-console.vue '常用功能' \
+  && has mix-ui/src/views/login.vue '/doctorPage/d-console' \
+  && has mix-ui/src/views/doctorPage/d-flow.vue '医生操作台' \
+  && has mix-ui/src/router/index.ts "'/doctorPage/d-console/inline'" \
+  && ok '医生操作台（登录首屏/可点击/双视图互切）' || bad '医生操作台（登录首屏/可点击/双视图互切）'
 # 旧库漏跑 P3/P4 迁移会令 /flow/doctorPipeline 抛 Unknown column → 前端「系统繁忙」、诊疗流无数据
 has dev-tools/db-migrate.sh 'p4_clinical' \
   && has deploy.sh 'p4_clinical' \

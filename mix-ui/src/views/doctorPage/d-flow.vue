@@ -17,6 +17,9 @@
       @navigate="onNavigate"
       @logout="doLogout"
     >
+      <template #nav-right>
+        <li><router-link to="/doctorPage/d-console"><el-icon><HomeFilled/></el-icon> 医生操作台</router-link></li>
+      </template>
     </FlowPipeline>
 
     <!-- 内联抽屉：深页在流内直接处理，不离开这条河（行云流水） -->
@@ -29,7 +32,10 @@
 <script lang="ts" setup>
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {Right, User} from '@element-plus/icons-vue'
+import {
+  Bell, Calendar, Collection, Document, DocumentChecked, Files, FolderOpened, HomeFilled,
+  House, Money, Phone, Picture, Printer, Right, User,
+} from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import FlowPipeline from '@/views/doctorPage/FlowPipeline.vue'
 import {reqDoctorPipeline, type FlowStage} from '@/request/FlowApi'
@@ -52,12 +58,23 @@ const pushEvent = (text: string, cls = 'info', icon: any = Right) => {
 }
 const p = (n: number) => n.toString().padStart(2, '0')
 
+// 命令面板降级为「熟练用户加速器」：完整入口按岗位分组，主界面另有医生操作台可点
 const commands = [
-  {key: 'p-wait', label: '接诊队列', hint: '待诊 → 去接诊', icon: User, path: '/doctorPage/d-appoint'},
-  {key: 'p-result', label: '医技结果录入', hint: '化验 / 影像报告', icon: Right, path: '/doctorPage/z-examResult'},
-  {key: 'p-pay', label: '收银台', hint: '待结算账单', icon: Right, path: '/doctorPage/y-billList?payStatus=0'},
-  {key: 'p-follow', label: '随访提醒', hint: '待回访名单', icon: Right, path: '/doctorPage/z-follow'},
-  {key: 'p-rx', label: '开处方', hint: '进入接诊开单', icon: Right, path: '/doctorPage/d-appoint'},
+  {key: 'c-appoint', label: '接诊 / 写病历', hint: '接诊与开单', group: '接诊与开单', icon: User, path: '/doctorPage/d-appoint'},
+  {key: 'c-queue', label: '挂号 / 接诊队列', hint: '接诊与开单', group: '接诊与开单', icon: Calendar, path: '/doctorPage/y-appointmentList'},
+  {key: 'c-lab', label: '开化验单', hint: '接诊与开单', group: '接诊与开单', icon: Document, path: '/doctorPage/d-lab'},
+  {key: 'c-image', label: '开影像单', hint: '接诊与开单', group: '接诊与开单', icon: Picture, path: '/doctorPage/d-image'},
+  {key: 'c-rx', label: '开处方', hint: '接诊与开单', group: '接诊与开单', icon: Files, path: '/doctorPage/d-rx'},
+  {key: 'c-record', label: '病例中心', hint: '档案与打印', group: '档案与打印', icon: FolderOpened, path: '/doctorPage/d-record'},
+  {key: 'c-print', label: '病历打印', hint: '档案与打印', group: '档案与打印', icon: Printer, path: '/doctorPage/d-recordPrint'},
+  {key: 'c-result', label: '医技结果录入', hint: '结果与报告', group: '结果与报告', icon: DocumentChecked, path: '/doctorPage/z-examResult'},
+  {key: 'c-report', label: '报告单打印', hint: '结果与报告', group: '结果与报告', icon: Printer, path: '/doctorPage/z-examReport'},
+  {key: 'c-bill', label: '收银台', hint: '收费与随访', group: '收费与随访', icon: Money, path: '/doctorPage/y-billList?payStatus=0'},
+  {key: 'c-follow', label: '随访记录', hint: '收费与随访', group: '收费与随访', icon: Phone, path: '/doctorPage/z-follow'},
+  {key: 'c-remind', label: '复诊/疫苗提醒', hint: '收费与随访', group: '收费与随访', icon: Bell, path: '/doctorPage/z-remind'},
+  {key: 'c-hospital', label: '住院登记', hint: '住院与配置', group: '住院与配置', icon: House, path: '/doctorPage/z-hospital'},
+  {key: 'c-diagnosis', label: '诊断字典', hint: '住院与配置', group: '住院与配置', icon: Collection, path: '/doctorPage/z-diagnosis'},
+  {key: 'c-console', label: '切到医生操作台', hint: '视图', group: '视图', icon: Right, path: '/doctorPage/d-console'},
 ]
 
 let snap = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
