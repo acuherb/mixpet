@@ -120,7 +120,19 @@ if bad:
 PY
 has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilder' \
   && ok 'mapper XML 离线解析测试（挡 StackOverflow）' || bad 'mapper XML 离线解析测试（挡 StackOverflow）'
-bash -n deploy.sh && bash -n dev-tools/start.sh \
+# 医生端唯一工作台：经典视图入口已下线、旧工作台删除、旧 URL 只重定向到诊疗流
+! has mix-ui/src/views/doctorPage/d-flow.vue '经典视图' \
+  && [ ! -f mix-ui/src/views/doctorPage/index.vue ] \
+  && has mix-ui/src/router/doctorPage.ts "redirect: 'd-flow'" \
+  && ! has mix-ui/src/router/index.ts "path !== '/doctorPage/d-home'" \
+  && ok '医生端唯一工作台（经典视图已下线）' || bad '医生端唯一工作台（经典视图已下线）'
+# 旧库漏跑 P3/P4 迁移会令 /flow/doctorPipeline 抛 Unknown column → 前端「系统繁忙」、诊疗流无数据
+has dev-tools/db-migrate.sh 'p4_clinical' \
+  && has deploy.sh 'p4_clinical' \
+  && has dev-tools/start.sh 'db-migrate.sh' \
+  && has dev-tools/start.sh 'information_schema.COLUMNS' \
+  && ok '数据库迁移链路（P0/P1/P3/P4 幂等 + 启动 schema 自检）' || bad '数据库迁移链路（P0/P1/P3/P4 幂等 + 启动 schema 自检）'
+bash -n deploy.sh && bash -n dev-tools/start.sh && bash -n dev-tools/db-migrate.sh \
   && ok '部署脚本语法' || bad '部署脚本语法'
 
 # 本机环境检查（CI 无 .env 时跳过）

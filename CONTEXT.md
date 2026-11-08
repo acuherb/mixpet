@@ -508,7 +508,7 @@ adopt：+refuse_reason；pet_transfer：to_client_id 可空
 - **状态变更主动广播（闭环的神经）**：新增 `@FlowChanged(stage,text)` + `FlowNotifyAspect`，在挂号新增、接诊建档、就诊完结、开化验/影像单、结果回报、账单收款、随访完成等 **10 个状态转换点**成功（`Result.code==1`）后，由 `FlowNotify.fire` 经 `ChatEndpoint.broadcastFlow` 向**所有在线员工**推 `FLOW_REFRESH` 帧。注解打在 controller 方法上——被调用 service 的 `@Transactional` 在 `point.proceed()` 返回时已提交，前端收到再拉取不会读到旧数据；业务失败/异常不广播。失效连接逐个忽略，广播失败不影响主业务，前端保留轮询兜底。
 - **WS 类型隔离**：`chatSocket.ts` 拆出 `flowHandlers` 与 `subscribeFlow()`；`onmessage` 按 `data.type==='FLOW_REFRESH'` 分流，系统帧**绝不进入聊天消息流**（否则 `d-chat`/`clientCenter` 会把刷新帧渲染成一条聊天）。最后一个订阅者（含流订阅者）退出才断开。三端流统一 `subscribeFlow` + `mixpet:flow-refresh` 全局事件 + 轮询（医生 20s、前台 20s、管理 30s）。
 - **权限隔离（前后端双保险）**：`FlowService` 新增 `receptionPipeline()`（今日预约/待收银/今日已诊，复用 `IAppointmentService.selectByPage` + `BillMapper`）与 `managerPipeline()`（8 个经营指标环节，复用 `IStatisticsService.selectOverview`）；`FlowController` 三个接口分别 `@Secured`：医生流 `{LOSER,NURSE,DOCTOR,MANAGER}`（工作台首页对所有在岗员工开放，故含 LOSER）、前台流 `{NURSE,MANAGER}`、管理流 `MANAGER`。前端 `backstage.ts` 同步 `r-flow: minAuthLv 2` / `m-flow: minAuthLv 6`。注意后端角色是**累积授予**（authLv 8 含全部角色，0 仅 LOSER），漏掉 LOSER 会让临时工打开工作台首页得到 403 空流。
-- **内联深页不脱离抽屉**：新增 `d-flow/inline` 子路由 + `FlowInline.vue`（白名单 25 个医生端业务页，`defineAsyncComponent` 按 `__flowTarget` 就地渲染）。全局 `beforeEach` 守卫把「从流内深页 `router.push` 到其它医生端业务页」重写为 `d-flow/inline?__flowTarget=<原path>`，并把原 query **平铺**保留（深页 `useRoute().query.recordId` 照常可读）。排除经典视图 `d-home`、流自身、以及「独立页打开」的 `__flowStandalone` 放行标记，避免把用户刻意离开流的操作也拦回抽屉；`d-flow.vue` 的抽屉开合改为 `watch(route.path)` 驱动，守卫重写后抽屉自动保持打开、内容无缝切换。
+- **内联深页不脱离抽屉**：新增 `d-flow/inline` 子路由 + `FlowInline.vue`（白名单 25 个医生端业务页，`defineAsyncComponent` 按 `__flowTarget` 就地渲染）。全局 `beforeEach` 守卫把「从流内深页 `router.push` 到其它医生端业务页」重写为 `d-flow/inline?__flowTarget=<原path>`，并把原 query **平铺**保留（深页 `useRoute().query.recordId` 照常可读）。排除流自身与「独立页打开」的 `__flowStandalone` 放行标记，避免把用户刻意离开流的操作也拦回抽屉（P6 时对 `d-home` 经典视图的特殊放行，已在后续「唯一工作台」收归中随之下线）；`d-flow.vue` 的抽屉开合改为 `watch(route.path)` 驱动，守卫重写后抽屉自动保持打开、内容无缝切换。
 - **验证**：`mvn test` / `npm run build` / `verify-p0.sh`（含 P6 检查项）全绿。
 - **仍未做**：仍是「派生快照」而非持久化工作流事件表（无自动外呼/短信触发下一环节）；`FlowInline` 白名单为静态表，新增医生端页面需手动登记；广播只推在线员工、不推顾客（顾客端通知仍走站内信）；三端未做更细的数据行级权限；浏览器实测与真实 WS 联调待做。
 
@@ -520,3 +520,12 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **根因共性**：既有测试只跑纯单元测试，**不构建 Spring 上下文，mapper XML 与 bean 注册从未被真实解析**——这是验证盲区。
 - **防复发**：① 新增 `MapperXmlParseTest`（用 `XMLMapperBuilder` 离线解析全部 mapper XML，无需数据库即可抓到 `<sql>` 自引用/递归）；② `verify-p0.sh` 加静态检查（自引用 + 该测试存在）；③ `start.sh` 的 `spring-boot:run` 加 `-Dmaven.test.skip=true` 与 `-Dspring.devtools.restart.enabled=false`，并保留根因注释。修改后 `mvn test` / `npm build` / `verify-p0.sh` / 完整 `start.sh`（后端 86s 就绪、前端 3s）端到端通过。
 - **给后续排查的提醒**：若本地启动再出现「无 ERROR 直接断在 test-compile」或某类 `NoClassDefFoundError`，优先怀疑 devtools restart + 中文路径，不要去改业务代码；且任何 mapper XML / bean 注册的改动，必须用 `mvn test`（已含 XML 解析测试）或真实启动验证，而不能只靠 `mvn compile`。
+
+### 「系统繁忙」与唯一工作台收归（2026-11-08）
+用户反馈 `/#/doctorPage/d-flow` 提示「系统繁忙，请稍后再试！」、诊疗流只剩一个动态、经典视图仍在。
+- **根因不是代码 bug，是数据库 schema 落后**：本机 `pet_mix` 从旧备份恢复，**P0/P1/P3/P4 增量迁移从未执行**（缺 5 张表、8 个关键列，含 `medical_record.version`）。`/flow/doctorPipeline` 的病历联查引用 `r.version` 等列 → `SQLSyntaxErrorException: Unknown column` → 被 `ExceptionAdvice.doOtherException` 兜底成 `Result.error("系统繁忙，请稍后再试！")`；前端 `loadAll` 拿不到 stages，页面只剩一条「数据加载失败」事件，这正是用户看到的"只有一个动态"。**离线 XML 解析测试与 `mvn test` 都不连库，抓不到列名缺失**——这是继「不构建 Spring 上下文」之后的第二个验证盲区：一个挡解析期递归，一个挡运行期 schema，互不覆盖。
+- **修复**：执行前全库备份 `/tmp/mixpet_before_migrate_20261108_104206.sql`，按依赖顺序跑 P0→P1→P3→P4；真实登录态 curl `/flow/doctorPipeline` 返回 `code:1`、5 个环节全有数据（待诊/接诊中/待结果/待结算/随访）。
+- **防复发**：① 新增 `dev-tools/db-migrate.sh`（幂等执行四个脚本 + 校验关键表/列）；② `start.sh` 加轻量 schema 自检，缺列时明确提示执行迁移（不自动改库）；③ `deploy.sh` 两处说明补上**漏写的 P4**；④ `verify-p0.sh` 加迁移链路检查。
+- **唯一工作台（用户指出的"重构不彻底"）**：移除 `d-flow.vue` 右上角「经典视图」链接、删除旧工作台 `views/doctorPage/index.vue`（1178 行，确认无其它引用）、`d-home` 路由改为 `redirect: 'd-flow'`（仅兼容旧书签，不再渲染第二套工作台）、全局守卫去掉对 `d-home` 的特殊放行、`FlowInline.vue` 注释同步。另加顶层 `/d-flow` → `/doctorPage/d-flow` 别名（用户曾因少写 `/doctorPage` 前缀落到 404 彩蛋页）。
+- **验证**：`npm run build` / `verify-p0.sh`（P0–P6 + 两项新检查）/ `bash -n` 全绿；迁移脚本幂等重跑通过；前端 lint 无错误。
+- **提醒**：从备份恢复库、或在全新机器部署后，必须跑一次 `bash dev-tools/db-migrate.sh`；否则诊疗流、账单、化验结果等引用临床列的接口都会以「系统繁忙」的形式失败，而后端日志里真正的错误是 `Unknown column`。排查时先看 `/tmp/pet-backend.log` 的 `系统未预期异常` 堆栈，不要被前端兜底文案带偏。

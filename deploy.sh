@@ -21,6 +21,8 @@
 #       db-backup/feature_20261107_p0_payment_audit.sql
 #       db-backup/feature_20261107_p1_appointment_slot.sql
 #       db-backup/feature_20261107_p3_clinical.sql
+#       db-backup/feature_20261107_p4_clinical.sql
+#   - 也可一键幂等补齐：bash dev-tools/db-migrate.sh（本地/旧库升级用）
 #   - 清测试数据（TRUNCATE，不可回滚）不自动执行，见 DEPLOY.md §10.2。
 
 set -euo pipefail
@@ -388,6 +390,6 @@ echo "==> 完成。"
 echo "上线前必做："
 echo "  ① 改默认口令：APP_DEFAULT_PASSWORD 已注入新建/重置账号；存量 admin/yun/ying 到后台「用户管理/医生管理」逐个重置"
 echo "  ② 清测试数据：见 DEPLOY.md §10.2 的 TRUNCATE 脚本（先备份！不可回滚）"
-echo "  ③ 旧库依次执行 P0/P1/P3 三个 feature_20261107_* 迁移脚本；新库直接导入 pet_mix.sql"
+echo "  ③ 旧库依次执行 P0/P1/P3/P4 四个 feature_20261107_* 迁移脚本（或 bash dev-tools/db-migrate.sh 一键幂等补齐）；新库直接导入 pet_mix.sql"
 echo "  ④ 确认域名 DNS 已解析到本机、数据库仅本机监听（bind-address=127.0.0.1）"
 echo "  ⑤ 验证：curl -I https://$DOMAIN 、浏览器登录并打开在线咨询（wss 握手）、systemctl status mixpet"

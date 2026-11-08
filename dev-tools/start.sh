@@ -28,6 +28,18 @@ if [ "${#REMEMBER_ME_KEY}" -lt 32 ] || [ "${#VERIFY_CODE_SECRET}" -lt 32 ]; then
   exit 1
 fi
 
+# 数据库 schema 自检（不自动改库，只提前拦一道）：
+# mapper 已引用 P3/P4 临床列，旧库若没跑迁移，运行时会抛 Unknown column，
+# 被 ExceptionAdvice 兜底成「系统繁忙，请稍后再试！」，表现为诊疗流加载不出数据。
+COLS=""
+if command -v mysql >/dev/null 2>&1 && [ -n "${DB_USER:-}" ]; then
+  COLS=$(MYSQL_PWD="${DB_PASSWORD:-}" mysql -u "$DB_USER" -N pet_mix -e \
+    "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='pet_mix' AND TABLE_NAME='medical_record' AND COLUMN_NAME IN ('version','differential_diagnosis')" 2>/dev/null) || COLS=""
+fi
+case "$COLS" in
+  0|1) echo "⚠️ 数据库缺少 P3/P4 临床迁移列，诊疗流会报「系统繁忙」——先执行：bash dev-tools/db-migrate.sh" >&2 ;;
+esac
+
 # 中文路径保命：项目在「公共」目录下，mvn/JVM 默认 locale 非 UTF-8 时
 # sun.jnu.encoding 会把中文路径解析成 ?????? 直接 InvalidPathException 挂掉
 export LANG=C.UTF-8 LC_ALL=C.UTF-8

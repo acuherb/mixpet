@@ -10,9 +10,6 @@
       @navigate="onNavigate"
       @logout="doLogout"
     >
-      <template #nav-right>
-        <router-link to="/doctorPage/d-home">经典视图</router-link>
-      </template>
     </FlowPipeline>
 
     <!-- 内联抽屉：深页在流内直接处理，不离开这条河（行云流水） -->

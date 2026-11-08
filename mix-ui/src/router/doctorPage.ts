@@ -23,9 +23,9 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "",
         redirect: 'd-flow',
     }, {
-        // 经典工作台（兼容保留）
+        // 旧「经典工作台」已下线：医生端统一收归诊疗流。保留 URL 只为兼容旧书签，不再渲染第二套工作台
         path: "d-home",
-        component: () => import('@/views/doctorPage/index.vue'),
+        redirect: 'd-flow',
     }, {
         // 医生的挂号
         path: "d-appoint",

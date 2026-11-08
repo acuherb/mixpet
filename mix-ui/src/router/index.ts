@@ -38,6 +38,10 @@ const routes: RouteRecordRaw[] = [
         path: '/doctorPage',
         children: [...doctorPage],
     }, {
+        // 便捷别名：诊疗流常被顺手记为 /d-flow，实际是 doctorPage 的子路由
+        path: '/d-flow',
+        redirect: '/doctorPage/d-flow'
+    }, {
         path: '/:pathMatch(.*)',
         name: 'not-found',
         component: () => import('@/views/page404.vue')
@@ -55,11 +59,10 @@ router.beforeEach(async (to, from) => {
     const path = to.path
 
     // 诊疗流内联：深页在抽屉里 router.push 到其它医生端业务页时，重写为 d-flow/inline，
-    // 患者全程不离开这条河。排除经典视图、流自身、以及「独立页打开」的显式放行标记。
+    // 患者全程不离开这条河。排除流自身、以及「独立页打开」的显式放行标记。
     if (from.path.startsWith('/doctorPage/d-flow/')
         && path.startsWith('/doctorPage/')
         && !path.startsWith('/doctorPage/d-flow')
-        && path !== '/doctorPage/d-home'
         && !to.query.__flowStandalone) {
         return {
             path: '/doctorPage/d-flow/inline',

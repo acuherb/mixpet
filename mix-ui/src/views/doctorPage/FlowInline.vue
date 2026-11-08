@@ -19,7 +19,7 @@ import {ArrowLeft} from '@element-plus/icons-vue'
 
 /**
  * 流内联深页容器：按 __flowTarget 从白名单解析组件并就地渲染。
- * 白名单是刻意的——不是所有页面都适合在 76% 抽屉里跑（如经典工作台/登录/404）。
+ * 白名单是刻意的——不是所有页面都适合在 76% 抽屉里跑（如登录/404/独立大页）。
  * 原目标 query 由守卫平铺到当前路由 query，深页 useRoute().query 照常可读 recordId 等参数。
  */
 const route = useRoute()
