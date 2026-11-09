@@ -7,6 +7,8 @@ fail=0
 ok()   { echo "OK   $1"; }
 bad()  { echo "FAIL $1"; fail=1; }
 has()  { grep -q -- "$2" "$1" 2>/dev/null; }
+# 字面匹配：模式含 | < > ( ) 等正则元字符时用这个，避免 BRE 解释导致误判
+hasf() { grep -Fq -- "$2" "$1" 2>/dev/null; }
 
 has mixPet/src/main/java/com/mix/util/JwtUtil.java 'checkSecret' \
   && ok '验证码密钥启动强校验' || bad '验证码密钥启动强校验'
@@ -33,9 +35,12 @@ has mixPet/src/main/java/com/mix/service/impl/BillServiceImpl.java 'eq(Bill::get
 has mixPet/src/main/java/com/mix/common/BizException.java 'RuntimeException' \
   && ! has mixPet/src/main/java/com/mix/service/impl/BillServiceImpl.java 'return Result.error(' \
   && ok '账单事务失败走异常回滚' || bad '账单事务失败走异常回滚'
+# 旧项曾要求 y-billList 里有手写 HTML 转义函数；现凭证改由 Vue 插值渲染（自动转义），
+# 只保留「不得含税务发票要素」这一条原始意图。
 ! has mix-ui/src/views/backstage/y-billList.vue '发票代码' \
-  && has mix-ui/src/views/backstage/y-billList.vue 'const esc =' \
-  && ok '收费凭证文案 + 打印转义' || bad '收费凭证文案 + 打印转义'
+  && ! has mix-ui/src/views/backstage/y-billPrint.vue '发票代码' \
+  && ok '收费凭证不含税务发票要素（Vue 插值自动转义）' \
+  || bad '收费凭证不含税务发票要素（Vue 插值自动转义）'
 has mixPet/src/main/java/com/mix/service/impl/AppointmentServiceImpl.java 'lockDoctor' \
   && has mixPet/src/main/java/com/mix/service/impl/AppointmentServiceImpl.java 'boolean reserve' \
   && ok 'P1 号源统一入口 + 医生行锁' || bad 'P1 号源统一入口 + 医生行锁'
@@ -126,6 +131,19 @@ has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilde
   && has mix-ui/src/router/doctorPage.ts "redirect: '/doctorPage/d-console'" \
   && ! has mix-ui/src/router/index.ts "path !== '/doctorPage/d-home'" \
   && ok '旧经典工作台已下线' || bad '旧经典工作台已下线'
+# 打印文书现代化：不再以 734 公文版式为默认，统一外壳 + A4，收费凭证不再 document.write
+hasf mix-ui/src/styles/report-modern.scss '@page { size: A4' \
+  && hasf mix-ui/src/components/sheet/ReportSheet.vue 'rm-sheet' \
+  && hasf mix-ui/src/main.ts 'report-modern.scss' \
+  && hasf mix-ui/src/components/record/PrintChoiceDialog.vue "ref<'std' | 'mono' | 'color'>('color')" \
+  && hasf mix-ui/src/views/doctorPage/d-recordPrint.vue "?? 'color'" \
+  && ! hasf mix-ui/src/views/doctorPage/d-rx.vue '以 下 为 空 白' \
+  && ! hasf mix-ui/src/views/doctorPage/d-rx.vue '210mm 148mm' \
+  && ! hasf mix-ui/src/views/backstage/y-billList.vue 'document.write' \
+  && hasf mix-ui/src/views/backstage/y-billPrint.vue 'ReportSheet' \
+  && hasf mix-ui/src/views/backstage/z-examReport.vue 'ReportSheet' \
+  && ok '现代化报告（统一外壳/默认现代版/无公文斜线区/无 document.write）' \
+  || bad '现代化报告（统一外壳/默认现代版/无公文斜线区/无 document.write）'
 # 相对 redirect 会把 /doctorPage 解析成 /d-console 落 404（个人中心入口按钮曾踩中）
 ! grep -Eq "redirect: '[^/]" mix-ui/src/router/doctorPage.ts \
   && ! has mix-ui/src/views/backstage/w-doctorOne.vue 'to="/doctorPage"' \

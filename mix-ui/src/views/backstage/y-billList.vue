@@ -515,154 +515,33 @@ const printTicket = async (row: BillDto, justPaidType?: boolean, justPaid = fals
       // 刚收款：payStatus 用 true，payType 用刚才的方式，payTime 用当前时刻
       row = {...row, payStatus: true, payType: justPaidType!, payTime: new Date().toLocaleString('zh-CN')}
     }
-    buildPrintWindow(row, res?.prescriptions ?? [], hosp)
-  }).catch(() => buildPrintWindow(row, [], hosp))
-}
-
-const money = (v: number | null | undefined): string => (v ?? 0).toFixed(2)
-
-/** 打印 HTML 转义：客户姓名/药品名等可录入内容必须转义，防注入与单据错乱 */
-const ESC_MAP: Record<string, string> = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}
-const esc = (v: unknown): string => String(v ?? '').replace(/[&<>"']/g, c => ESC_MAP[c] || c)
-
-const buildPrintWindow = (row: BillDto, prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
-  // 支付方式文案
-  const payTypeText = row.payType ? '现金' : '余额'
-  const payTime = row.payTime || row.createTime || ''
-  // 处方明细行
-  const drugRows = prescriptions.map(p => `
-    <tr>
-      <td>${esc(p.drugName || '')}${p.drugSpec ? ' ' + esc(p.drugSpec) : ''}</td>
-      <td class="r">${p.quantity}${esc(p.drugUnit || '')}</td>
-      <td class="r">${money(p.drugPrice)}</td>
-    </tr>`).join('')
-  const drugSection = prescriptions.length > 0 ? `
-    <div class="sec">
-      <div class="t">处方明细</div>
-      <table>
-        <tr><th class="l">药品</th><th>数量</th><th class="r">单价</th></tr>
-        ${drugRows}
-      </table>
-    </div>` : ''
-  // 备注：诊断/医嘱（可选）
-  const html = `<!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="UTF-8"><title>收银小票</title>
-<style>
-  body{font-family: Consolas, monospace; width: 72mm; margin: 8mm auto; color:#000;
-       font-size: 12px; line-height: 1.5;}
-  h1{font-size: 16px; text-align:center; margin:0 0 2px;}
-  .sub{text-align:center; font-size:11px; color:#333; margin-bottom:8px;}
-  .line{border:none; border-top:1px dashed #000; margin:8px 0;}
-  .row{display:flex; justify-content:space-between;}
-  .row .k{color:#333;}
-  table{width:100%; border-collapse:collapse; font-size:12px;}
-  th,td{text-align:left; padding:2px 0;}
-  th{font-weight:bold;}
-  .r{text-align:right;}
-  .sec{margin-top:4px;}
-  .t{font-weight:bold; margin:4px 0;}
-  .total{font-size:14px; font-weight:bold;}
-  .center{text-align:center; margin-top:10px; font-size:11px;}
-  @media print {body{margin:0; width:72mm;}}
-  /* 80mm 热敏小票：声明纸张尺寸，打印对话框选『80mm 纸』时边距与宽度即正确 */
-  @page {size: 80mm auto; margin: 0;}
-</style></head>
-<body>
-  <h1>${esc(hosp?.name || '宠物医院管理系统')}</h1>
-  <div class="sub">收费小票${esc(hosp?.phone ? ' · ' + hosp.phone : '')}</div>
-  <hr class="line">
-  <div class="row"><span class="k">账单号</span><span>${esc(row.billId)}</span></div>
-  <div class="row"><span class="k">客户</span><span>${esc((row.clientName || '') + (row.clientTel ? ' (' + row.clientTel + ')' : ''))}</span></div>
-  <div class="row"><span class="k">宠物</span><span>${esc(row.petName || '')}</span></div>
-  <div class="row"><span class="k">医生</span><span>${esc(row.doctorName || '')}</span></div>
-  <hr class="line">
-  <div class="row"><span>挂号费</span><span>￥${money(row.feeRegister)}</span></div>
-  <div class="row"><span>诊疗费</span><span>￥${money(row.feeTreat)}</span></div>
-  <div class="row"><span>药费</span><span>￥${money(row.feeDrug)}</span></div>
-  <div class="row"><span>化验费</span><span>￥${money(row.feeLab)}</span></div>
-  <div class="row"><span>影像费</span><span>￥${money(row.feeImage)}</span></div>
-  <div class="row"><span>住院费</span><span>￥${money(row.feeHospital)}</span></div>
-  <div class="row"><span>套餐费</span><span>￥${money(row.feePackage)}</span></div>
-  <div class="row"><span>手术费</span><span>￥${money(row.feeSurgery)}</span></div>
-  ${row.feeImmune && row.feeImmune > 0 ? '<div class="row"><span>疫苗费</span><span>￥' + money(row.feeImmune) + '</span></div>' : ''}
-  ${drugSection}
-  <hr class="line">
-  <div class="row total"><span>合计</span><span>￥${money(row.totalMoney)}</span></div>
-  <hr class="line">
-  <div class="row"><span class="k">支付方式</span><span>${esc(payTypeText)}</span></div>
-  <div class="row"><span class="k">支付时间</span><span>${esc(payTime)}</span></div>
-  <div class="row"><span class="k">收银员</span><span>${esc(row.payBy || '____')}</span></div>
-  <div class="center">谢谢惠顾，祝宠物早日康复！<br>（本小票仅作收据凭证）</div>
-<script>window.onload = function(){ window.print(); }<\/script>
-</body></html>`
-  const w = window.open('', '_blank', 'width=380,height=640')
-  if (w) {
-    w.document.write(html)
-    w.document.close()
-  } else {
-    ElMessage.warning('浏览器拦截了弹窗，请允许本站弹出窗口')
-  }
-}
-
-/** 在独立窗口打印 HTML */
-const openPrintWindow = (title: string, html: string): void => {
-  const w = window.open('', '_blank', 'width=820,height=960')
-  if (!w) {
-    ElMessage.warning('浏览器拦截了弹窗，请允许本站弹出窗口')
-    return
-  }
-  try {
-    w.opener = null
-    w.document.write(html.replace('<title>', '<title>' + title + ' · '))
-    w.document.close()
-  } catch {
-    ElMessage.error('打印页面打开失败，请重试')
-    try { w.close() } catch { /* 忽略 */ }
-  }
-}
-
-/** 数字金额转中文大写（元角分） */
-const moneyCN = (n: number | null | undefined): string => {
-  let num = Math.round((Number(n) || 0) * 100)
-  if (num === 0) return '零元整'
-  const digits = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖']
-  const unit = ['', '拾', '佰', '仟']
-  const bigUnit = ['', '万', '亿', '兆']
-  const yi = Math.floor(num / 100); const fen = num % 100
-  let str = ''
-  if (yi > 0) {
-    let yiStr = ''; let lastZero = false
-    const yiStrRaw = String(yi)
-    for (let i = 0; i < yiStrRaw.length; i++) {
-      const d = Number(yiStrRaw[i])
-      const pos = yiStrRaw.length - 1 - i
-      if (d === 0) {
-        if (!lastZero && yiStr) yiStr += '零'
-        lastZero = true
-      } else {
-        yiStr += digits[d] + unit[pos % 4] + (pos >= 4 ? bigUnit[Math.floor(pos / 4)] : '')
-        lastZero = false
-      }
-    }
-    str += yiStr + '元'
-  }
-  const jiao = Math.floor(fen / 10) % 10
-  const f = fen % 10
-  if (jiao > 0) str += digits[jiao] + '角'
-  else if (yi > 0 && f > 0) str += '零'
-  if (f > 0) str += digits[f] + '分'
-  if (jiao === 0 && f === 0) str += '整'
-  return str
+    openReportPrint('ticket', row, res?.prescriptions ?? [], hosp)
+  }).catch(() => openReportPrint('ticket', row, [], hosp))
 }
 
 /**
- ┌───────────────────────────────────┐
- │=============打印正式发票============│
- └───────────────────────────────────┘
- * A4 收费凭证（院内收据，非税务发票），仅对已结算账单可用
- * 不含税务票据的代码、号码、密码区与税率税额等要素，避免被当作正式发票使用
+ * 收费凭证统一交给 Vue 打印页渲染（y-billPrint.vue）。
+ * 数据一次性经 localStorage 传递、读完即删；不再用字符串模板拼整页 HTML
+ * ——那样既无法复用统一报告样式，还要往新窗口注入脚本触发打印。
  */
+const openReportPrint = (type: 'ticket' | 'receipt', row: BillDto,
+                         prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
+  const key = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  const storageKey = 'mixpet:print:' + key
+  try {
+    localStorage.setItem(storageKey, JSON.stringify({row, prescriptions, hosp}))
+  } catch {
+    ElMessage.error('打印数据准备失败，请重试')
+    return
+  }
+  const url = '/#/backstage/y-billPrint?type=' + type + '&key=' + key
+  if (!window.open(url, '_blank')) {
+    localStorage.removeItem(storageKey)
+    ElMessage.warning('浏览器拦截了弹窗，请允许本站弹出窗口')
+  }
+}
+
+/** A4 收费凭证（院内收据，非税务发票），仅对已结算账单可用 */
 const printInvoice = async (row: BillDto): Promise<void> => {
   if (!row.payStatus) {
     ElMessage.warning('该账单尚未结算，请先收款')
@@ -671,107 +550,8 @@ const printInvoice = async (row: BillDto): Promise<void> => {
   // 打印前拉医院信息（发票抬头/销售方/电话地址，保证最新配置）
   const hosp = await reqHospitalSetting().catch(() => null)
   reqRecordOne(row.recordId || 0).then(res => {
-    buildInvoiceWindow(row, res?.prescriptions ?? [], hosp)
-  }).catch(() => buildInvoiceWindow(row, [], hosp))
-}
-
-const buildInvoiceWindow = (row: BillDto, prescriptions: Prescription[], hosp: HospitalSetting | null): void => {
-  const payTypeText = row.payType ? '现金' : '余额'
-  const payTime = row.payTime || row.createTime || ''
-  // 明细行：挂号/诊疗/药费 + 处方药品逐项
-  const rows: Array<[string, string, string, number]> = [
-    ['门诊挂号服务', '次', '1', row.feeRegister || 0],
-    ['诊疗处置服务', '次', '1', row.feeTreat || 0]
-  ]
-  if (row.feeDrug > 0) {
-    if (prescriptions.length > 0) {
-      prescriptions.forEach(p => rows.push(['药品·' + (p.drugName || ''), p.drugUnit || '盒', String(p.quantity), (p.drugPrice || 0) * p.quantity]))
-    } else {
-      rows.push(['药品费', '项', '1', row.feeDrug])
-    }
-  }
-  if (row.feeLab > 0) {
-    rows.push(['化验检查费', '项', '1', row.feeLab])
-  }
-  if (row.feeImage > 0) {
-    rows.push(['影像检查费', '项', '1', row.feeImage])
-  }
-  if (row.feeHospital > 0) {
-    rows.push(['住院费', '天', '1', row.feeHospital])
-  }
-  if (row.feePackage > 0) {
-    rows.push(['套餐费', '项', '1', row.feePackage])
-  }
-  if (row.feeSurgery > 0) {
-    rows.push(['手术费', '项', '1', row.feeSurgery])
-  }
-  if (row.feeImmune && row.feeImmune > 0) {
-    rows.push(['疫苗费', '项', '1', row.feeImmune])
-  }
-  const totalMoney = row.totalMoney || 0
-  const trs = rows.map(r => `
-    <tr>
-      <td class="l">${esc(r[0])}</td>
-      <td class="c">${esc(r[2])}</td>
-      <td class="c">${esc(r[1])}</td>
-      <td class="r">${money(r[3])}</td>
-      <td class="r">${money(r[3])}</td>
-      <td class="r">—</td>
-    </tr>`).join('')
-  const html = `<!DOCTYPE html>
-<html lang="zh">
-<head><meta charset="UTF-8"><title>收费凭证</title>
-<style>
-  body{font-family: SimSun, serif; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 10mm; color:#000; box-sizing:border-box;}
-  .head{display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #000; padding-bottom:6px;}
-  .head h1{font-size:26px; margin:0; letter-spacing:2px;}
-  .no{text-align:right; font-size:13px; line-height:1.8;}
-  .t2{display:flex; justify-content:space-between; font-size:13px; margin:8px 0;}
-  table{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px;}
-  th,td{border:1px solid #000; padding:4px 5px; text-align:center;}
-  th{background:#f2f2f2; font-weight:bold;}
-  .l{text-align:left;} .r{text-align:right;} .c{text-align:center;}
-  .total-row{font-weight:bold; font-size:13px;}
-  .bottom{margin-top:10px; font-size:12px;}
-  .sign{display:flex; justify-content:space-between; margin-top:6px; font-size:12px;}
-  .foot{margin-top:16px; font-size:11px; color:#333; text-align:center; border-top:1px solid #999; padding-top:6px;}
-  @media print{body{margin:0; padding:10mm;}}
-  /* A4 收费凭证：声明 A4 纸张 */
-  @page {size: A4; margin: 0;}
-</style></head>
-<body>
-  <div class="head">
-    <h1>${esc(hosp?.name || '宠物医院管理系统')} · 收费凭证</h1>
-    <div class="no">凭证编号：${esc(row.billId)}<br>开具日期：${esc(payTime)}</div>
-  </div>
-  <div class="t2">
-    <span>客户名称：${esc(row.clientName || '')}</span>
-    <span>单据类型：院内收费凭证（非税务发票）</span>
-  </div>
-  <div class="t2">
-    <span>客户电话：${esc(row.clientTel || '')}</span>
-    <span>收款单位：${esc(hosp?.name || '宠物医院管理系统')}</span>
-  </div>
-  <table>
-    <tr><th class="l" style="width:34%">收费项目</th><th style="width:10%">数量</th><th style="width:10%">单位</th><th style="width:15%">单价</th><th style="width:15%">金额</th><th style="width:16%">备注</th></tr>
-    ${trs}
-    <tr class="total-row"><td class="l" colspan="4">合计（大写）：${moneyCN(totalMoney)}</td><td class="r">${money(totalMoney)}</td><td>—</td></tr>
-  </table>
-  <div class="bottom">
-    <p>合计（大写）：${moneyCN(totalMoney)}　（小写）：￥${money(totalMoney)}</p>
-    <p>备注：宠物诊疗服务费。宠物：${esc(row.petName || '')}，医生：${esc(row.doctorName || '')}，支付方式：${esc(payTypeText)}。</p>
-  </div>
-  <div class="sign">
-    <span>收款人：${esc(row.payBy || '________')}</span>
-    <span>复核：________</span>
-    <span>经手人：________</span>
-    <span>收款单位(盖章)：</span>
-  </div>
-  <div class="foot">${esc(hosp?.phone ? '电话：' + hosp.phone + '　' : '')}${esc(hosp?.address || '')}</div>
-  <div class="foot">本单据为院内收费凭证，非税务发票，不作报销发票使用；如需发票请按当地税务规定另行开具</div>
-<script>window.onload = function(){ window.print(); }<\/script>
-</body></html>`
-  openPrintWindow('收费凭证_' + row.billId, html)
+    openReportPrint('receipt', row, res?.prescriptions ?? [], hosp)
+  }).catch(() => openReportPrint('receipt', row, [], hosp))
 }
 
 /**

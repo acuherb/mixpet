@@ -1,0 +1,167 @@
+/**
+ * 统一报告设计语言（report-modern，2026-11-09）
+ * 用于：电子病历 / 处方笺 / 检验·影像报告单 / 申请单 / 知情同意书 / 收费凭证。
+ *
+ * 与 rx-modern 的区别：不再按 734 号公文表格排版（无全框线、无三联、无固定横版、
+ * 无「以下为空白」斜线区、无针打字号），改为品牌头 + 患者信息条 + 卡片分区 +
+ * 结果色标 + 清晰签名区。业务字段与编号/留痕数据一个不少，只是换呈现方式。
+ */
+:root {
+  --rm-brand: #1E6FA8;
+  --rm-brand-2: #4BA3E0;
+}
+
+.rm-page {
+  padding: 20px;
+  background: #f3f6fb;
+  min-height: 100vh;
+}
+.no-print.rm-toolbar {
+  max-width: 210mm;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.rm-sheet {
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 auto 18px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(31, 45, 61, .12);
+  box-sizing: border-box;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* 品牌头 */
+.rm-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 28px 20px;
+  background: linear-gradient(135deg, var(--rm-brand) 0%, var(--rm-brand-2) 100%);
+  color: #fff;
+}
+.rm-hosp { font-size: 21px; font-weight: 700; letter-spacing: .5px; line-height: 1.35; }
+.rm-doc-title { margin-top: 5px; font-size: 12px; letter-spacing: 4px; color: rgba(255, 255, 255, .88); }
+.rm-head-meta { text-align: right; font-size: 12px; line-height: 1.8; font-variant-numeric: tabular-nums; }
+.rm-doc-no {
+  display: inline-block; padding: 3px 12px; border-radius: 20px;
+  background: rgba(255, 255, 255, .2); font-weight: 600;
+}
+
+/* 患者信息条 */
+.rm-patient {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 18px;
+  padding: 18px 28px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #e8edf5;
+}
+.rm-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rm-k { font-size: 11px; color: #8a93a6; letter-spacing: .5px; }
+.rm-v { font-size: 14px; font-weight: 600; color: #1f2d5a; word-break: break-all; }
+
+/* 正文分区 */
+.rm-body { padding: 6px 28px 10px; }
+.rm-sec { margin: 18px 0; break-inside: avoid; }
+.rm-sec-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 700; color: #1f2d5a;
+  padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 2px solid #e8edf5;
+}
+.rm-sec-title::before {
+  content: ""; width: 4px; height: 14px; border-radius: 3px;
+  background: var(--rm-brand);
+}
+.rm-text {
+  font-size: 13px; line-height: 1.9; color: #3d4663;
+  white-space: pre-wrap; word-break: break-word;
+}
+.rm-kv { display: flex; gap: 10px; font-size: 13px; line-height: 1.9; }
+.rm-kv .rm-k { min-width: 76px; flex-shrink: 0; }
+.rm-muted { color: #9aa3b5; font-size: 12px; }
+
+/* 表格：只有横向细线，无竖框 */
+.rm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rm-table th {
+  text-align: left; font-size: 11px; font-weight: 600; color: #8a93a6;
+  letter-spacing: .5px; padding: 8px 10px; border-bottom: 1px solid #dce4f0;
+}
+.rm-table td { padding: 10px; border-bottom: 1px solid #eef2f8; color: #303a55; }
+.rm-table tbody tr:nth-child(even) { background: #fafbfe; }
+.rm-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rm-table .abn { color: #d97706; font-weight: 700; }
+.rm-abn { color: #d97706; font-weight: 700; }
+.rm-crit { color: #d03050; font-weight: 700; }
+.rm-ok { color: #17a36e; }
+.rm-chip {
+  display: inline-block; padding: 2px 9px; border-radius: 12px; font-size: 11px;
+  background: rgba(217, 119, 6, .1); color: #b45309;
+}
+.rm-chip.crit { background: rgba(208, 48, 80, .1); color: #c81e42; }
+.rm-alert {
+  margin: 12px 0; padding: 12px 16px; border-radius: 10px; font-size: 13px;
+  background: #fff1f2; border: 1px solid #f7c4c9; color: #b42336; line-height: 1.7;
+}
+.rm-note {
+  margin: 10px 0; padding: 12px 16px; border-radius: 10px; font-size: 13px;
+  background: #f6f8fc; border: 1px solid #e8edf5; color: #3d4663; line-height: 1.8;
+}
+.rm-total {
+  display: flex; justify-content: flex-end; align-items: baseline; gap: 12px;
+  padding: 14px 0; font-size: 14px; color: #1f2d5a;
+}
+.rm-total b { font-size: 24px; color: var(--rm-brand); font-variant-numeric: tabular-nums; }
+
+/* 签名与页脚 */
+.rm-sign {
+  display: flex; flex-wrap: wrap; gap: 14px 28px;
+  padding: 16px 28px; border-top: 1px solid #e8edf5; background: #fcfdff;
+}
+.rm-sign-item { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+.rm-foot {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 28px 18px; font-size: 11px; color: #a8abb2;
+  border-top: 1px solid #f0f3f8;
+}
+.rm-print-time { font-variant-numeric: tabular-nums; }
+
+/* 热敏小票：仍用同一套语言，只是收窄 */
+.rm-page.rm-ticket { padding: 12px; }
+.rm-ticket .rm-sheet { width: 80mm; }
+.rm-ticket .rm-head { padding: 12px 14px; }
+.rm-ticket .rm-hosp { font-size: 14px; }
+.rm-ticket .rm-doc-title { font-size: 10px; letter-spacing: 2px; }
+.rm-ticket .rm-patient { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 10px 14px; gap: 6px 10px; }
+.rm-ticket .rm-body { padding: 2px 14px 6px; }
+.rm-ticket .rm-sec { margin: 10px 0; }
+.rm-ticket .rm-table td, .rm-ticket .rm-table th { padding: 5px 4px; font-size: 11px; }
+.rm-ticket .rm-sign, .rm-ticket .rm-foot { padding: 10px 14px; font-size: 10px; }
+.rm-ticket .rm-total b { font-size: 18px; }
+
+@page { size: A4; margin: 12mm; }
+
+@media print {
+  html, body { background: #fff !important; }
+  .rm-page { padding: 0; background: #fff; min-height: 0; }
+  .no-print { display: none !important; }
+  .rm-sheet { width: 100%; max-width: none; margin: 0; border-radius: 0; box-shadow: none; }
+  .rm-sec, .rm-table, .rm-patient, .rm-sign { break-inside: avoid; }
+  .rm-head, .rm-patient, .rm-chip, .rm-alert { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media (max-width: 900px) {
+  .rm-page { padding: 12px; }
+  .rm-sheet { width: 100%; }
+  .rm-patient { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rm-head, .rm-body, .rm-patient, .rm-sign, .rm-foot { padding-left: 16px; padding-right: 16px; }
+}

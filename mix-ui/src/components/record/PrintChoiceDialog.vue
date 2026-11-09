@@ -13,8 +13,8 @@
       <div :class="['pc-card', {active: mode === 'rx'}]" @click="pickRx">
         <div class="pc-ico ico-rx"><el-icon :size="24"><Tickets/></el-icon></div>
         <div class="pc-txt">
-          <h4>兽用处方笺（国标）</h4>
-          <p>734号规范格式：一式三联/编号/执业兽医与发药人签名，适合宠主带走与检查留档</p>
+          <h4>兽用处方笺</h4>
+          <p>现代 A4 报告：药品用法用量、开方兽医与发药人留痕，适合宠主带走</p>
         </div>
       </div>
     </div>
@@ -41,8 +41,8 @@
         <div class="rx-form-row">
           <span class="rx-label">联次</span>
           <el-radio-group v-model="copies">
-            <el-radio :label="1">仅第三联（动物主人留存）</el-radio>
-            <el-radio :label="3">三联全打</el-radio>
+            <el-radio :label="1">单页报告（推荐）</el-radio>
+            <el-radio :label="3">三联全打（归档用）</el-radio>
           </el-radio-group>
         </div>
         <div class="rx-form-row">
@@ -66,7 +66,7 @@
           <span v-else class="ro">{{ rx.dispenser }}</span>
         </div>
         <el-alert :closable="false" show-icon type="info"
-                  title="处方笺打印后仍需手签盖章；电子病历在完结时由接诊医师签名，可在病历页查看版本与审核状态。"/>
+                  title="开方兽医与发药人信息由系统留痕；如需纸质签名可在报告签名区手签。电子病历完结时由接诊医师签名，可在病历页查看版本与审核状态。"/>
       </div>
       <div class="pv-preview">
         <iframe v-if="rxPreviewSrc" :src="rxPreviewSrc" class="pv-frame" title="处方笺预览"/>
@@ -115,12 +115,12 @@ watch(() => props.modelValue, (v: boolean) => {
   if (v) mode.value = props.preset === 'rx' ? 'rx' : 'record'
 })
 
-/*===== 电子病历：模板宫格（国标病历/黑白简化/彩色详情版） =====*/
-const style = ref<'std' | 'mono' | 'color'>('std')
+/*===== 电子病历：模板宫格（默认现代报告，旧版式降级为兼容归档） =====*/
+const style = ref<'std' | 'mono' | 'color'>('color')
 const tpls = [
-  {style: 'std' as const, name: '国标病历', desc: '黑白规范 · 纸质归档', color: '#1F2D3D', icon: Document},
-  {style: 'mono' as const, name: '黑白简化', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer},
-  {style: 'color' as const, name: '彩色详情版', desc: '完整内容 · 发宠主', color: '#1E6FA8', icon: Picture}
+  {style: 'color' as const, name: '现代报告（推荐）', desc: '品牌配色 · 完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
+  {style: 'std' as const, name: '归档版（黑白）', desc: '公文表格 · 旧纸质归档兼容', color: '#1F2D3D', icon: Document},
+  {style: 'mono' as const, name: '黑白兼容版', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer}
 ]
 const recSrc = computed(() =>
     '/#/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + style.value)

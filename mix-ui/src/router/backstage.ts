@@ -28,6 +28,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "y-billList",
         component: () => import('@/views/backstage/y-billList.vue')
     }, {
+        // 收费凭证打印页（统一报告外壳，独立窗口，数据一次性传递）
+        path: "y-billPrint",
+        component: () => import('@/views/backstage/y-billPrint.vue')
+    }, {
         // 批量入库（Excel 粘贴导入）
         path: "y-drugInbound",
         component: () => import('@/views/backstage/y-drugInbound.vue')

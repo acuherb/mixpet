@@ -98,15 +98,9 @@ const doPrint = (): void => window.print()
 </script>
 
 <style lang="scss" scoped>
-/* 法定单据现代设计语言（与处方笺/申请单同一套） */
+/* 沿用统一报告设计语言；@page 由全局 report-modern 统一声明 */
 @import "@/styles/rx-modern.scss";
-
-/* 同意书私有：A4 竖版 + 风险告知段排版 */
-@page {
-  size: A4;
-  margin: 0;
-}
-.rx-sheet { min-height: 297mm; }
+.rx-sheet { min-height: 260mm; }
 
 .rx-risks {
   font-size: 13px;

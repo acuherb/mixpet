@@ -4,16 +4,16 @@
     <div class="no-print rp-toolbar">
       <el-button @click="router.back()">返回</el-button>
       <el-radio-group v-model="style">
-        <el-radio-button value="std">国标病历</el-radio-button>
-        <el-radio-button value="mono">黑白简化</el-radio-button>
-        <el-radio-button value="color">彩色详情版</el-radio-button>
+        <el-radio-button value="color">现代报告（推荐）</el-radio-button>
+        <el-radio-button value="std">归档版（黑白）</el-radio-button>
+        <el-radio-button value="mono">黑白兼容版</el-radio-button>
       </el-radio-group>
       <el-button :disabled="!full" type="primary" @click="doPrint">打印</el-button>
-      <el-button :disabled="!full" :loading="pdfing" type="success" @click="exportPdf">导出 PDF 文件</el-button>
-      <span class="rp-hint">「导出 PDF 文件」直接下载电子病历；打印目标选“另存为 PDF”亦可</span>
+      <el-button :disabled="!full" :loading="pdfing" @click="exportPdf">截图版 PDF（兼容）</el-button>
+      <span class="rp-hint">推荐用「打印」并选“另存为 PDF”：文字可选、矢量清晰；右侧按钮为截图兼容版</span>
     </div>
 
-    <!-- ═══════════ 国标病历（黑白规范，适合纸质归档） ═══════════ -->
+    <!-- ═══════════ 归档版（黑白公文表格，仅兼容旧纸质归档） ═══════════ -->
     <div v-if="full && style === 'std'" class="rp-sheet">
       <div v-if="hosp.name" class="rp-hosp-name">{{ hosp.name }}</div>
       <div class="rp-title">宠物病历记录</div>
@@ -270,7 +270,7 @@ const router = useRouter()
 const full = ref<RecordFull | null>(null)
 const pet = ref<Pet | null>(null)
 const loading = ref(true)
-const style = ref<'std' | 'mono' | 'color'>((route.query.style as 'std' | 'mono' | 'color' | undefined) ?? 'std')
+const style = ref<'std' | 'mono' | 'color'>((route.query.style as 'std' | 'mono' | 'color' | undefined) ?? 'color')
 
 onMounted(() => {
   const recordId = Number(route.query.recordId)
@@ -336,7 +336,7 @@ const exportPdf = (): void => {
   const el = document.querySelector('.rp-sheet') as HTMLElement | null
   if (!el || !full.value) return
   pdfing.value = true
-  const tplName = style.value === 'std' ? '国标病历' : style.value === 'mono' ? '黑白简化' : '彩色详情版'
+  const tplName = style.value === 'std' ? '归档版' : style.value === 'mono' ? '黑白兼容版' : '现代报告'
   html2pdf().set({
     margin: 8,
     filename: `病历-No.${full.value.record.recordId}-${tplName}.pdf`,

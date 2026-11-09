@@ -120,15 +120,7 @@ const doPrint = (): void => window.print()
 </script>
 
 <style lang="scss" scoped>
-/* 法定单据现代设计语言（与处方笺/同意书同一套：品牌头/卡片分区/字段网格） */
+/* 沿用统一报告设计语言（品牌头/卡片分区/字段网格）；@page 由全局 report-modern 统一声明 */
 @import "@/styles/rx-modern.scss";
-
-/* 申请单私有：A4 竖版 */
-@page {
-  size: A4;
-  margin: 0;
-}
-.rx-sheet {
-  min-height: 297mm;
-}
+.rx-sheet { min-height: 260mm; }
 </style>

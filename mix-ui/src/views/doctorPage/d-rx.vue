@@ -10,7 +10,7 @@
     </div>
 
     <div v-if="rx">
-      <!-- 按联次渲染纸张：copies=1 仅第三联(动物主人留存)；copies=3 三联全打 -->
+      <!-- 默认单页现代报告；仅归档需要时按 copies 展开三联 -->
       <div v-for="pg in pages" :key="pg.no" class="rx-sheet">
         <!-- 品牌头：医院名 + 品牌渐变（后台医院资料可改）；联次与编号右侧角标 -->
         <div class="rx-head" :style="{background: `linear-gradient(135deg, ${brand} 0%, #4ba3e0 100%)`}">
@@ -20,11 +20,11 @@
           </div>
           <div class="rx-meta">
             <span class="rx-copy-tag">{{ pg.label }}</span>
-            <div class="rx-no">编号 {{ rx.printNo || ('No.' + (rx.rxNo || rx.recordId)) }}</div>
+            <div class="rx-no">编号 {{ displayNo }}</div>
           </div>
         </div>
 
-        <!-- 前记：字段网格（下划线填写式改为现代网格，字段一个不少——734号要求） -->
+        <!-- 前记：患者与就诊信息（字段与留痕数据一个不少，只换呈现方式） -->
         <div class="rx-sec">
           <div class="rx-sec-tit">前 记</div>
           <div class="rx-grid">
@@ -66,10 +66,6 @@
                   <td>{{ usageText(it) }}</td>
                   <td>{{ rx.withdrawalPeriod || '—' }}</td>
                 </tr>
-                <!-- Rp 后空白处打印前自动划斜线（禁止假数据填充——734号合规保留） -->
-                <tr class="rx-blank"><td colspan="5"/></tr>
-                <tr class="rx-blank"><td colspan="5"/></tr>
-                <tr class="rx-blank-end"><td colspan="5">以 下 为 空 白</td></tr>
                 <tr class="rx-amount-row"><td colspan="5">金额（小写）：￥{{ (rx.totalAmount ?? 0).toFixed(2) }}</td></tr>
               </tbody>
             </table>
@@ -86,7 +82,7 @@
           </div>
         </div>
 
-        <div class="rx-foot">注：“{{ hosp.name || 'xxxxxxx' }} 处方笺”中，“{{ hosp.name || 'xxxxxxx' }}”为从事动物诊疗活动的单位名称。</div>
+        <div class="rx-foot">开方兽医、注册号与发药人信息由系统留痕；本处方笺仅供本次诊疗使用。</div>
         <!-- 打印时间仅作留痕小字 -->
         <div class="rx-print-time">打印时间：{{ nowText() }}</div>
       </div>
@@ -97,7 +93,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {reqRxSheet} from "@/request/RecordApi";
 import {RxSheet} from "@/model/entiy/RxSheet";
@@ -108,17 +104,22 @@ import {ElMessage} from "element-plus";
 const route = useRoute()
 const router = useRouter()
 const rx = ref<RxSheet | null>(null)
+// 后端补号 / 本地回退都可能自带 No. 或 RX- 前缀，统一显示避免「No.No.20」
+const displayNo = computed(() => {
+  const n = String(rx.value?.printNo || rx.value?.rxNo || rx.value?.recordId || '—')
+  return /^(No\.|RX-)/i.test(n) ? n : 'No.' + n
+})
 const loading = ref(true)
 // 品牌信息（医院名+品牌色）：后台「医院资料」改即时生效，与系统/邮件同源
 const {hosp, brand, load: loadBrand} = useBrand()
 
-// 联次定义：文字标注，不用颜色区分（734号：一式三联，机构/药房/动物主人）
+// 默认单页现代报告；仅当归档需要（后端 copies=3）才恢复三联
 const allCopies = [
-  {no: 1, label: '第一联 动物诊疗机构留存'},
-  {no: 2, label: '第二联 兽药房留存'},
-  {no: 3, label: '第三联 动物主人留存'}
+  {no: 1, label: '机构留存'},
+  {no: 2, label: '药房留存'},
+  {no: 3, label: '宠主留存'}
 ]
-const pages = ref(allCopies.filter(c => c.no === 3))
+const pages = ref([allCopies[2]])
 
 onMounted(() => {
   const recordId = Number(route.query.recordId)
@@ -138,7 +139,7 @@ onMounted(() => {
   if (route.query.pdf === '1') setTimeout(() => exportPdf(), 500)
 })
 
-// 导出真实 PDF（小规格横版 210×148mm）：html2pdf 按需动态加载，不进首屏 chunk
+// 截图兼容版 PDF（A4 竖版）；推荐用「打印 → 另存为 PDF」得到文字可选的矢量文件
 const pdfing = ref(false)
 const exportPdf = async (): Promise<void> => {
   const el = document.querySelector('.rx-sheet') as HTMLElement | null
@@ -152,7 +153,7 @@ const exportPdf = async (): Promise<void> => {
       filename: `处方笺-${sheet.printNo || sheet.rxNo || sheet.recordId}.pdf`,
       image: {type: 'jpeg', quality: 0.95},
       html2canvas: {scale: 2},
-      jsPDF: {unit: 'mm', format: [210, 148], orientation: 'landscape'}
+      jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
     }).from(el).save()
   } catch {
     ElMessage.error('PDF 导出失败')
@@ -179,14 +180,10 @@ const usageText = (it: any): string => {
 /* 法定单据现代设计语言：品牌头/卡片分区/字段网格/现代药品表（rx-modern.scss 共享） */
 @import "@/styles/rx-modern.scss";
 
-/* 处方笺私有：小规格横版 210mm × 148mm（S1：先只做小规格） */
-@page {
-  size: 210mm 148mm;
-  margin: 0;
-}
+/* A4 竖版现代报告：@page 由全局 report-modern 统一声明 */
 .rx-page {
   padding: 16px;
-  background: #f5f6fa;
+  background: #f3f6fb;
   min-height: 100vh;
 }
 .rx-toolbar {
@@ -195,8 +192,7 @@ const usageText = (it: any): string => {
   text-align: right;
 }
 .rx-sheet {
-  width: 210mm;
-  min-height: 148mm;
+  min-height: 260mm;
   padding-bottom: 8px;
 }
 </style>
