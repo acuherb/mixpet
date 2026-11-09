@@ -175,7 +175,10 @@ has mix-ui/src/views/doctorPage/d-console.vue '今日待办' \
 has mix-ui/src/views/login.vue '/backstage/m-flow' \
   && has mix-ui/src/views/login.vue 'authLv' \
   && hasf mix-ui/src/views/backstage/index.vue '业务查询 / 对账' \
-  && hasf mix-ui/src/views/backstage/index.vue '管理设置' \
+  && hasf mix-ui/src/views/backstage/index.vue '经营配置' \
+  && hasf mix-ui/src/views/backstage/index.vue '临床字典' \
+  && hasf mix-ui/src/views/backstage/index.vue '组织与人员' \
+  && hasf mix-ui/src/views/backstage/index.vue '系统与安全' \
   && ! hasf mix-ui/src/views/backstage/index.vue '运营管理' \
   && hasf mix-ui/src/views/doctorPage/d-console.vue '后台管理' \
   && hasf mix-ui/src/views/doctorPage/d-flow.vue '后台管理' \
@@ -185,6 +188,15 @@ has mix-ui/src/views/login.vue '/backstage/m-flow' \
   && [ "$(grep -c 'minAuthLv: 6' mix-ui/src/router/backstage.ts)" -ge 16 ] \
   && ok '三端职责 B（登录分首屏/菜单分组/两端互切/管理页权限门槛）' \
   || bad '三端职责 B（登录分首屏/菜单分组/两端互切/管理页权限门槛）'
+# 后台菜单结构化整理：用户卡/短分组/侧栏加宽/搜索联动空组隐藏
+hasf mix-ui/src/views/backstage/index.vue 'side-user' \
+  && hasf mix-ui/src/views/backstage/index.vue 'groupMatch' \
+  && hasf mix-ui/src/views/backstage/index.vue 'default-openeds' \
+  && hasf mix-ui/src/views/backstage/index.vue 'openGroups' \
+  && hasf mix-ui/src/views/backstage/index.vue 'width: 208px' \
+  && ! hasf mix-ui/src/views/backstage/index.vue 'el-menu-item-group' \
+  && ok '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）' \
+  || bad '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）'
 # 个人中心「今日概览」复用诊疗流快照：加载失败必须显式报错，环节卡要能直达操作台
 has mix-ui/src/views/backstage/w-doctorOne.vue '今日概览' \
   && has mix-ui/src/views/backstage/w-doctorOne.vue 'reqDoctorPipeline' \

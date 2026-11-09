@@ -639,3 +639,17 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 **验证**：`npm run build`（vue-tsc + vite）/ `bash dev-tools/verify-p0.sh`（含 `.env` 强值、真连库 4/4）/ 前端 lint 0 错误 0 警告，全绿。真实 Chromium 双账号（前端 3120 + 后端 8085）：`admin`(8) 登录落 `#/backstage/m-flow`，侧栏三组标题为「经营决策 / 管理设置 / 业务查询 / 对账」，重复 4 项不在 DOM、档案 4 项在；点侧栏「医生操作台」到 `d-console` 顶部出现「后台管理」，`d-flow` 顶部同样出现；`yun`(4) 登录落 `#/doctorPage/d-console`，两个医生端顶部均无「后台管理」，进 `#/backstage` 个人中心只见「业务查询 / 对账」组且 8 项齐全；URL 直达 `#/backstage/y-drugList`(6) 与 `#/backstage/z-backup`(8) 均被弹回 `#/doctorPage/d-console`，admin 进 `z-backup` 正常。两会话控制台 0 错误 0 警告。
 **环境坑**：`playwright-cli` 不在 PATH，实际在 `~/.npm/_npx/423231821c231c73/node_modules/.bin/`；默认 `--browser=chrome` 找 `/opt/google/chrome/chrome`（本机没装），须显式 `--browser=chromium` 才会用 `~/.cache/ms-playwright/chromium-1247`。演示账号密码见 README（`admin`/`yun` 均 `123456`），`.env` 的 `APP_DEFAULT_PASSWORD` 是新用户初始口令，不是存量演示账号的密码。
 **边界**：本轮只调前端职责与可见性，后端 `@Secured` 与 `DoctorDetails` 的 switch 累加逻辑未动；`authLv` 变更后需刷新页面才会重新拉取（菜单与两端入口都是各自挂载时取一次）。
+
+### 后台菜单结构化整理（B）+ 角色/权限/职务只读盘点（2026-11-09）
+
+用户反馈上一轮只解决「职责分组」，观感仍乱。浏览器截图定位 5 处：顶部 3 个手写裸链接与 `el-menu` 不同套组件、72px 大头像与「个人中心」菜单项重复、180px 侧栏长标签被截断、管理设置一组 18 项 + 2 个灰字小标题展开要滚很久、搜索只过滤菜单项会留下空组标题。
+
+- **改 `backstage/index.vue`**：顶部统一为「用户卡（34px 头像 + 姓名 + 权限名 → 个人中心）+ 两条三端互切链接」，删掉重复的「个人中心」菜单项；侧栏 180→208px；长标签缩短（经营驾驶舱、今日接待）；原「管理设置」18 项拆成 4 个独立二级组（经营配置 6 / 临床字典 3 / 组织与人员 4 / 系统与安全 5），每组 ≤6 项并按使用频次排，删掉 `el-menu-item-group` 灰字小标题；统一一级 38px/13px 与二级 40px 缩进。18 项按语义自然分成 4 组，比硬凑 3 组（必有一组超 6 项）更清楚。
+- **搜索联动**：`groupLabels` 供 `groupMatch` 判定整组是否命中，未命中组用 `v-show` 隐藏组标题（不留空组），命中组由 `default-openeds` 自动展开，全无命中显示「没有匹配的菜单」；管理者专属组对普通医生不参与命中，`query` 组对管理者只按可见的 4 个档案项判定。
+- **踩坑（连错两次，都是靠浏览器实测才发现）**：① 一开始用 `v-if` 移除未命中组 + `ElMenu.open()`，`subMenus.value[index]` 因分组被卸载而 undefined，抛 `TypeError`；改 `v-show` 并弃用内部 API，改走 `default-openeds` + `el-menu :key` 重建。② 改完仍不展开，在浏览器里读 `el.__vueParentComponent.props` 才发现 `openGroups` 给的是分组键 `org`，而 sub-menu 的 `index` 是 `g-org`，**前缀没对上**；`map(k => 'g-' + k)` 后正常。搜索时同时清掉 `default-active` 并关闭 accordion，避免 active 项所在组抢占唯一展开名额。
+- **验证**：`npm run build` / `verify-p0.sh`（新增「后台菜单 B」守卫）/ lint 全绿；Chromium 实测 6 个分组标题、208px、用户卡显示「管理员 / 超级管理员」；搜「排班」只剩「组织与人员」且自动展开、只显示「医生排班」，搜「字典」只剩临床字典 2 项，清空后恢复 active 组展开，控制台 0 错误 0 警告。删掉 `el-menu-item-group` 后 accordion 也恢复正常（此前多组能同时展开）。
+
+**角色 / 权限 / 职务盘点（只读，未改任何数据）**：
+- **设计合理**：`auth_lv` 5 档（8/6/4/2/0）与职称 `job` 解耦（`PermissionUtil.ts` 明写「职称是人事标签，权限是操作许可」）、`DoctorDetails` 无 break switch 累加继承、前端 `isManager>=6` / `isAdmin>=8` 三者一致；`DoctorController` 的 save/update/delete 全为 `@Secured(ADMIN)`，个人中心权限下拉 `v-if="isAdmin"`，没有普通账号自助提权的口子。
+- **数据问题**：① 8 个员工账号全是 2022-12～2023-02 的演示数据（yun/ais/tom/zdz/ra9/lzg/zhong 等化名），`is_del` 全 0 无离职/停用态；② 权限分布 8(1) / 4(6) / 2(1)，**没有 6 级管理员**，导致 17 个 `minAuthLv:6` 的管理页实际只有 admin 能进；③ 9 个科室的 `head_id` 只有骨科正确，其余 8 个负责人都属别的科室，且有 2 人各兼 2 个科室；④ 「科室主任」2 人只有 `auth_lv=4`，「院长」admin 却挂在「中兽医科」；职务字典 10 项里 6 项无人使用（含「营业员」）；⑤ 2026-10 新增的外科/影像科/皮肤科/眼科与口腔科**没有任何医生归属**；⑥ 菜单里对 `>=6` 可见的「医生列表」后端是 ADMIN-only，将来真建 6 级账号会出现「看得到、改不了」。
+- **处置**：等用户确认后再动数据。建议软删演示账号（有历史病历/处方引用，不做物理删）、补一个 6 级管理员、重填 `head_id` 并在科室管理加「负责人须属本科室」校验、给新科室配医生或暂时下架、把医生列表可见性收到 `isAdmin` 或放宽后端 update（同时禁止改 `authLv`）。
