@@ -13,7 +13,7 @@
       :stages="stages"
       :events="events"
       :last-refresh="lastRefresh"
-      :commands="commands"
+      :commands="visibleCommands"
       @navigate="onNavigate"
       @logout="doLogout"
     >
@@ -31,7 +31,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {
   Bell, Calendar, Collection, Document, DocumentChecked, Files, FolderOpened, HomeFilled,
@@ -44,13 +44,18 @@ import {reqLogout} from '@/request/PowerApi'
 import {reqGetLoginD} from '@/request/DoctorApi'
 import {subscribeFlow} from '@/utils/chatSocket'
 import {clearPwdCheckFlag} from '@/router'
+import {canOpenAction} from '@/utils/PermissionUtil'
 
 const router = useRouter()
 const route = useRoute()
 
 // 管理者（MANAGER=6 / ADMIN=8）才在顶部看到「后台管理」互切入口；取不到权限时按普通医生处理
 const isManager = ref(false)
-reqGetLoginD().then(d => { isManager.value = Number(d?.authLv ?? 0) >= 6 }).catch(() => {})
+const authLv = ref(0)
+reqGetLoginD().then(d => {
+  authLv.value = Number(d?.authLv ?? 0)
+  isManager.value = authLv.value >= 6
+}).catch(() => {})
 
 const loadError = ref(false)
 const stages = ref<FlowStage[]>([])
@@ -82,6 +87,9 @@ const commands = [
   {key: 'c-diagnosis', label: '诊断字典', hint: '住院与配置', group: '住院与配置', icon: Collection, path: '/doctorPage/z-diagnosis'},
   {key: 'c-console', label: '切到医生操作台', hint: '视图', group: '视图', icon: Right, path: '/doctorPage/d-console'},
 ]
+
+// 管理账号只做管理：命令面板同样不提供临床作业入口
+const visibleCommands = computed(() => commands.filter(c => canOpenAction(c.path || '', authLv.value)))
 
 let snap = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
 const loadAll = async (): Promise<void> => {

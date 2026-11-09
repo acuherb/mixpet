@@ -97,7 +97,7 @@
       <aside class="col col-func">
         <div class="col-head"><h2>常用功能</h2><span class="func-hint">按岗位分组</span></div>
         <div class="func-scroll">
-          <div v-for="g in funcGroups" :key="g.title" class="func-group">
+          <div v-for="g in visibleGroups" :key="g.title" class="func-group">
             <div class="fg-title">{{ g.title }}</div>
             <div class="fg-grid">
               <button v-for="f in g.items" :key="f.path" class="func-btn" @click="openAction(f.path)">
@@ -145,6 +145,7 @@ import {reqLogout} from '@/request/PowerApi'
 import {reqGetLoginD} from '@/request/DoctorApi'
 import {subscribeFlow} from '@/utils/chatSocket'
 import {clearPwdCheckFlag} from '@/router'
+import {canOpenAction} from '@/utils/PermissionUtil'
 
 type Action = {label: string; path: string; icon: any}
 
@@ -153,7 +154,11 @@ const route = useRoute()
 
 // 管理者（MANAGER=6 / ADMIN=8）才在顶部看到「后台管理」互切入口；取不到权限时按普通医生处理
 const isManager = ref(false)
-reqGetLoginD().then(d => { isManager.value = Number(d?.authLv ?? 0) >= 6 }).catch(() => {})
+const authLv = ref(0)
+reqGetLoginD().then(d => {
+  authLv.value = Number(d?.authLv ?? 0)
+  isManager.value = authLv.value >= 6
+}).catch(() => {})
 
 // ── 数据 ──────────────────────────────────────────────────────────────
 const loadError = ref(false)
@@ -258,6 +263,7 @@ const commonActions: Action[] = [
 const currentActions = computed<Action[]>(() => {
   const key = selectedStage.value?.key || ''
   return [...(stageActions[key] || []), ...commonActions.slice(0, 2)]
+    .filter(a => canOpenAction(a.path, authLv.value))
 })
 
 const funcGroups: {title: string; items: Action[]}[] = [
@@ -286,6 +292,11 @@ const funcGroups: {title: string; items: Action[]}[] = [
     {label: '参考区间', path: '/doctorPage/z-refRange', icon: DataLine},
   ]},
 ]
+
+// 管理账号(>=6)只做管理：隐藏临床作业入口；医护(<4)隐藏需 DOCTOR 资格的开单/开方
+const visibleGroups = computed(() => funcGroups
+  .map(g => ({...g, items: g.items.filter(i => canOpenAction(i.path, authLv.value))}))
+  .filter(g => g.items.length > 0))
 
 // ── 抽屉（与 d-flow 同机制，守卫会把深页跳转重写回 d-console/inline）──
 const inlineOpen = ref(false)
@@ -331,9 +342,10 @@ const openPalette = () => { paletteOpen.value = true }
 type PaletteHit = {key: string; label: string; hint: string; path?: string; chip?: FlowChip; stage?: FlowStage}
 const allCommands = computed<PaletteHit[]>(() => {
   const list: PaletteHit[] = []
-  for (const g of funcGroups) for (const f of g.items)
+  for (const g of visibleGroups.value) for (const f of g.items)
     list.push({key: 'f' + f.path, label: f.label, hint: g.title, path: f.path})
-  for (const a of commonActions) list.push({key: 'c' + a.path, label: a.label, hint: '通用操作', path: a.path})
+  for (const a of commonActions) if (canOpenAction(a.path, authLv.value))
+    list.push({key: 'c' + a.path, label: a.label, hint: '通用操作', path: a.path})
   return list
 })
 const paletteResults = computed<PaletteHit[]>(() => {

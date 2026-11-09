@@ -6,16 +6,18 @@
       <el-button plain size="large" type="primary" @click="queryB">搜索</el-button>
     </div>
     <slot name="right"></slot>
-    <el-button plain size="large" type="success" @click="addRoleB">新增{{ role }}</el-button>
-    <el-button plain size="large" type="danger" @click="delBatchB">批量删除</el-button>
+    <el-button v-if="writable" plain size="large" type="success" @click="addRoleB">新增{{ role }}</el-button>
+    <el-button v-if="writable" plain size="large" type="danger" @click="delBatchB">批量删除</el-button>
   </div>
 </template>
 
 <script lang="ts" setup>
 /*=====后台的操作行，包括了查询、添加、批量删除=====*/
-defineProps<{
+withDefaults(defineProps<{
   role: string
-}>()
+  /** 只有具备后端写权限的角色才显示新增/批量删除 */
+  writable?: boolean
+}>(), {writable: true})
 const emit = defineEmits<{
   (e: "query"): void,
   (e: "addRole"): void,

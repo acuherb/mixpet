@@ -70,7 +70,7 @@ public class DepartmentController {
     }
 
     @DeleteMapping("/batch/{ids}")
-    @Secured(RoleConst.MANAGER)
+    @Secured(RoleConst.ADMIN)
     public Result deleteGroup(@PathVariable List<Integer> ids) {
         return departService.deleteByIds(ids);
     }

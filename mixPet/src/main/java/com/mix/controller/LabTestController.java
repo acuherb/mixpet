@@ -26,9 +26,9 @@ public class LabTestController {
         this.labTestService = labTestService;
     }
 
-    /** 启用中的检验项（医生开单勾选用） */
+    /** 启用中的检验项（开单勾选、字典下拉都要用；非临床动作，按在职员工基线放行） */
     @GetMapping
-    @Secured(RoleConst.DOCTOR)
+    @Secured(RoleConst.NURSE)
     public List<LabTest> listActive() {
         return labTestService.lambdaQuery()
                 .eq(LabTest::getActive, true)

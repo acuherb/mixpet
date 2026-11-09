@@ -1,6 +1,6 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="科室" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :writable="isAdmin" role="科室" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.departmentName" clearable placeholder="科室名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
@@ -22,9 +22,9 @@
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
         <el-button-group>
-          <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
+          <el-button v-if="isAdmin" :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
           <el-button :icon="View" circle type="primary" @click="showDoctor(scope.row)"/>
-          <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
+          <el-button v-if="isAdmin" :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
         </el-button-group>
       </template>
     </el-table-column>
@@ -82,6 +82,10 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
+
+// 科室增删改后端是 @Secured(ADMIN)：超管可改，6 级管理员只能查看
+const isAdmin = ref(false)
+reqGetLoginD().then(d => { isAdmin.value = Number(d?.authLv ?? 0) >= 8 }).catch(() => {})
 import {Delete, Edit, View} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
@@ -93,7 +97,7 @@ import {Page} from "@/model/DO/Page";
 import {DepartDto} from "@/model/DO/DepartDto";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
-import {reqDoctorByDepartId, reqDoctorName} from "@/request/DoctorApi";
+import {reqDoctorByDepartId, reqDoctorName, reqGetLoginD} from "@/request/DoctorApi";
 import {NameDo} from "@/model/DO/NameDo";
 import {getAge} from "@/utils/TimeUtil";
 import {Doctor} from "@/model/entiy/Doctor";

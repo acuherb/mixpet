@@ -653,3 +653,17 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **设计合理**：`auth_lv` 5 档（8/6/4/2/0）与职称 `job` 解耦（`PermissionUtil.ts` 明写「职称是人事标签，权限是操作许可」）、`DoctorDetails` 无 break switch 累加继承、前端 `isManager>=6` / `isAdmin>=8` 三者一致；`DoctorController` 的 save/update/delete 全为 `@Secured(ADMIN)`，个人中心权限下拉 `v-if="isAdmin"`，没有普通账号自助提权的口子。
 - **数据问题**：① 8 个员工账号全是 2022-12～2023-02 的演示数据（yun/ais/tom/zdz/ra9/lzg/zhong 等化名），`is_del` 全 0 无离职/停用态；② 权限分布 8(1) / 4(6) / 2(1)，**没有 6 级管理员**，导致 17 个 `minAuthLv:6` 的管理页实际只有 admin 能进；③ 9 个科室的 `head_id` 只有骨科正确，其余 8 个负责人都属别的科室，且有 2 人各兼 2 个科室；④ 「科室主任」2 人只有 `auth_lv=4`，「院长」admin 却挂在「中兽医科」；职务字典 10 项里 6 项无人使用（含「营业员」）；⑤ 2026-10 新增的外科/影像科/皮肤科/眼科与口腔科**没有任何医生归属**；⑥ 菜单里对 `>=6` 可见的「医生列表」后端是 ADMIN-only，将来真建 6 级账号会出现「看得到、改不了」。
 - **处置**：等用户确认后再动数据。建议软删演示账号（有历史病历/处方引用，不做物理删）、补一个 6 级管理员、重填 `head_id` 并在科室管理加「负责人须属本科室」校验、给新科室配医生或暂时下架、把医生列表可见性收到 `isAdmin` 或放宽后端 update（同时禁止改 `authLv`）。
+- **后续澄清**：用户指出医生/宠主/宠物数据全部是测试样本，不谈数据清理，讨论的是**角色、职务、权限分类与功能划分本身**是否合理。故上面「处置」里的数据清理建议暂不执行，下面按模型落地。
+
+### 角色/权限/职务讨论 → A 方案落地（2026-11-09）
+
+结论：五档 `auth_lv` + 三端分离方向成立，问题在「角色常量名」「职务」「功能入口」三套没对齐。用户选 **A（只对齐、不动模型）**，并定下规则：**admin 只做管理；即使院长本人也是执业兽医，也应另建医生账号处理临床业务**，这样处方笺上的开方人与账号职责才对得上。测试数据可随意分配角色用于验证。
+
+- **后端（唯一一处模型调整）**：`DoctorDetails` 把原来无 `break` 的 switch 累加改成显式 `rolesOf(int)`：8 = ADMIN+MANAGER+NURSE+LOSER，6 = MANAGER+NURSE+LOSER，4 = DOCTOR+NURSE+LOSER，2 = NURSE+LOSER，0 = LOSER。**6/8 不再继承 DOCTOR**，因此过不了纯 `@Secured(DOCTOR)` 的临床写操作（写病历/开处方/开化验单/开影像单/处理挂号）；仍保留 NURSE，因为后端大量接口把 NURSE 当「在职员工基线」，去掉会让管理员连后台页面都打不开。
+  - 盘点过纯 DOCTOR 接口：`MedicalRecordController.save/update/addPrescription/addPackage`、`LabOrderController.createOrder`、`ImageOrderController.createOrder`、`AppointmentController.update/delete`、`DoctorLogController.dealAppoint`、`LabTestController.listActive`、`AiController.assist`。其中 `listActive` 是**字典下拉查询、不是临床动作**，改回 `@Secured(NURSE)`，否则后台检验项字典页会因管理岗失去 DOCTOR 而 403。
+  - **边界（A 不做的部分）**：注解里同时含 MANAGER/ADMIN/NURSE 的查询与审核类接口，管理岗仍可访问（管理需要）；彻底隔离需 B 方案拆「资格」维度。职务 job 仍只是展示字段，不参与权限与数据范围。
+- **顺手堵越权**：`DepartmentController.deleteGroup` 批量删除科室原为 `@Secured(MANAGER)`，单条删除却是 `ADMIN` —— 6 级账号能批量删却不能删单个；统一改为 `ADMIN`。
+- **前端按档位裁剪**：新增 `PermissionUtil.canOpenAction(path, authLv)` 集中判定（`CLINICAL_WRITE` 需 DOCTOR 资格，`CLINICAL_WORK` 管理账号不展示），`d-console` 的功能宫格/当前环节动作/命令面板、`d-flow` 的命令面板都走它；管理账号(>=6) 只看到查询/打印/档案/配置，医护(<4) 不看到开单/开方。`BackOpCol` 加 `writable`，`x-doctorList` / `x-departmentList` 的增删改只对 `isAdmin` 显示（后端本来就只 ADMIN）。`PERMISSIONS` 里 8/6 的描述改为「不含临床开方与写病历」。
+- **测试数据分配**（用户授权）：`zhong` 改为 `auth_lv=6, job_id=2`，形成 8(admin) / 6(zhong) / 4(6 人) / 2(ra9) 完整档位；admin 保持 8 且定位纯管理。
+- **验证**：`mvn test`（含新增 `DoctorDetailsRoleTest.managerAndAdminAreNotClinicians`，锁住 6/8 不得有 DOCTOR）/ `npm run build` / `verify-p0.sh`（新增「权限档 A」守卫）/ lint 全绿；按 `dev-tools/start.sh` 重启前后端让新角色映射生效。真实 Chromium 三账号：`admin`(8) 落 `#/backstage/m-flow`、用户卡「超级管理员」、`fetch /api/lab/records` 返回 `{"code":403,"msg":"没有角色权限"}`、功能宫格只剩 3 组查询/打印/档案/配置、医生列表新增按钮可见；`zhong`(6) 同样落后台、同样 403、临床入口隐藏，医生列表新增按钮隐藏（只读）；`yun`(4) 落 `#/doctorPage/d-console`、`/api/lab/records` 返回 `[]`（放行）、四组功能宫格完整，URL 直达 `#/backstage/x-doctorList` 被守卫弹回操作台。三会话控制台 0 错误 0 警告。
+- **踩坑**：① `playwright-cli` 的元素 ref 在不同 session 可能是 `e11` 也可能是 `f1e11`，硬编码会静默填不进表单（表现为「登录没跳转」），改成从 `snapshot` 动态解析 ref。② 项目接口权限不足返回的是 HTTP 200 + 业务体 `code:403`，不是 HTTP 403，判断要看响应体。③ 改了 `DoctorDetails` 必须重启后端（启动脚本关了 devtools 热重启），只跑 `mvn test` 不会让运行中的 JVM 换类。

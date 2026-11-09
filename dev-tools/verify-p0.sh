@@ -197,6 +197,19 @@ hasf mix-ui/src/views/backstage/index.vue 'side-user' \
   && ! hasf mix-ui/src/views/backstage/index.vue 'el-menu-item-group' \
   && ok '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）' \
   || bad '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）'
+# 权限档 A：管理账号不具备临床资格 + 越权路径修复 + 前端入口按档位裁剪
+has mixPet/src/main/java/com/mix/security/details/DoctorDetails.java 'rolesOf' \
+  && hasf mixPet/src/test/java/com/mix/security/details/DoctorDetailsRoleTest.java 'managerAndAdminAreNotClinicians' \
+  && ! hasf mixPet/src/main/java/com/mix/controller/DepartmentController.java '@Secured(RoleConst.MANAGER)' \
+  && ! hasf mixPet/src/main/java/com/mix/controller/LabTestController.java '@Secured(RoleConst.DOCTOR)' \
+  && has mix-ui/src/utils/PermissionUtil.ts 'canOpenAction' \
+  && has mix-ui/src/views/doctorPage/d-console.vue 'visibleGroups' \
+  && has mix-ui/src/views/doctorPage/d-flow.vue 'visibleCommands' \
+  && has mix-ui/src/components/row/BackOpCol.vue 'writable' \
+  && has mix-ui/src/views/backstage/x-doctorList.vue 'isAdmin' \
+  && has mix-ui/src/views/backstage/x-departmentList.vue 'isAdmin' \
+  && ok '权限档 A（管理岗无临床资格/越权修复/入口按档位裁剪）' \
+  || bad '权限档 A（管理岗无临床资格/越权修复/入口按档位裁剪）'
 # 个人中心「今日概览」复用诊疗流快照：加载失败必须显式报错，环节卡要能直达操作台
 has mix-ui/src/views/backstage/w-doctorOne.vue '今日概览' \
   && has mix-ui/src/views/backstage/w-doctorOne.vue 'reqDoctorPipeline' \

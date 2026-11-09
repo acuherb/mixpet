@@ -1,6 +1,6 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="医生" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :writable="isAdmin" role="医生" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.doctorName" clearable placeholder="医生姓名 / 手机号 / 账号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-input v-model="qp.departmentName" clearable placeholder="科室名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <!-- 注册号缺失筛选：一键筛出未维护执业注册号的医生（处方笺必需项） -->
@@ -66,7 +66,7 @@
     </el-table-column>
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
-        <el-button-group>
+        <el-button-group v-if="isAdmin">
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row)"/>
         </el-button-group>
@@ -151,6 +151,10 @@
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
+
+// 医生增删改后端是 @Secured(ADMIN)：超管可改，6 级管理员只能查看
+const isAdmin = ref(false)
+reqGetLoginD().then(d => { isAdmin.value = Number(d?.authLv ?? 0) >= 8 }).catch(() => {})
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
@@ -161,7 +165,7 @@ import {getAge, getDaysFromToday} from "@/utils/TimeUtil";
 import {DoctorDto} from "@/model/DO/DoctorDto";
 import TagSex from "@/components/show/TagSex.vue";
 import {Page} from "@/model/DO/Page";
-import {reqAddDoctor, reqDelDoctor, reqDelDoctorBatch, reqDoctorList, reqUpdateDoctor} from "@/request/DoctorApi";
+import {reqAddDoctor, reqDelDoctor, reqDelDoctorBatch, reqDoctorList, reqUpdateDoctor, reqGetLoginD} from "@/request/DoctorApi";
 import {Res} from "@/request/Res";
 import {Doctor} from "@/model/entiy/Doctor";
 import {exampleDoctorOne} from "@/model/DO/DoctorDto";
