@@ -120,9 +120,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-surgery",
         redirect: "/doctorPage/z-surgery"
     }, {
-        // 电子病历模板
+        // 电子病历模板（临床字典：留在后台壳内渲染，保持侧栏可见）
         path: "z-template",
-        redirect: "/doctorPage/z-template"
+        meta: {minAuthLv: 6},
+        component: () => import('@/views/backstage/z-template.vue')
     }, {
         // 手术/麻醉知情同意书（可打印）
         path: "z-consent",
@@ -164,9 +165,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "y-petList",
         component: () => import('@/views/backstage/y-petList.vue')
     }, {
-        // 检验项字典
+        // 检验项字典（临床字典：留在后台壳内渲染，保持侧栏可见）
         path: "z-labTest",
-        redirect: "/doctorPage/z-labTest"
+        meta: {minAuthLv: 6},
+        component: () => import('@/views/backstage/z-labTest.vue')
     }, {
         // 医技结果录入：统一入口（化验+影像）
         path: "z-examResult",
@@ -180,9 +182,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-hospital",
         redirect: "/doctorPage/z-hospital"
     }, {
-        // 影像项字典
+        // 影像项字典（临床字典：留在后台壳内渲染，保持侧栏可见）
         path: "z-imageTest",
-        redirect: "/doctorPage/z-imageTest"
+        meta: {minAuthLv: 6},
+        component: () => import('@/views/backstage/z-imageTest.vue')
     }, {
         // 影像报告录入（兼容旧路径，重定向到统一入口）
         path: "z-imageResult",

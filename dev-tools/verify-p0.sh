@@ -203,6 +203,15 @@ hasf mix-ui/src/views/backstage/index.vue 'side-user' \
   && ! hasf mix-ui/src/views/doctorPage/FlowInline.vue '处方笺档案' \
   && ok '处方笺档案入口收敛（病例中心打印替代）' \
   || bad '处方笺档案入口收敛（病例中心打印替代）'
+# 临床字典三项必须留在后台壳内渲染：曾误配 redirect 到 /doctorPage，点开后侧栏整块消失
+! hasf mix-ui/src/router/backstage.ts 'redirect: "/doctorPage/z-labTest"' \
+  && ! hasf mix-ui/src/router/backstage.ts 'redirect: "/doctorPage/z-imageTest"' \
+  && ! hasf mix-ui/src/router/backstage.ts 'redirect: "/doctorPage/z-template"' \
+  && [ "$(grep -A3 'path: "z-labTest"' mix-ui/src/router/backstage.ts | grep -c 'component:')" -ge 1 ] \
+  && [ "$(grep -A3 'path: "z-imageTest"' mix-ui/src/router/backstage.ts | grep -c 'component:')" -ge 1 ] \
+  && [ "$(grep -A3 'path: "z-template"' mix-ui/src/router/backstage.ts | grep -c 'component:')" -ge 1 ] \
+  && ok '临床字典（后台壳内渲染/侧栏不丢失）' \
+  || bad '临床字典（后台壳内渲染/侧栏不丢失）'
 # 权限档 A：管理账号不具备临床资格 + 越权路径修复 + 前端入口按档位裁剪
 has mixPet/src/main/java/com/mix/security/details/DoctorDetails.java 'rolesOf' \
   && hasf mixPet/src/test/java/com/mix/security/details/DoctorDetailsRoleTest.java 'managerAndAdminAreNotClinicians' \

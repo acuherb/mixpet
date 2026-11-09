@@ -693,3 +693,14 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **删除「处方笺档案」菜单**：用户认为处方笺打印在病例中心即可，该菜单无意义。移除三处入口 —— 后台「业务查询 / 对账」组菜单项、医生操作台 `d-console` 功能宫格（含 `actionTitles` 映射）、`FlowInline` 内联页标题映射。`z-rxArchive.vue` 页面与两条 `router` 路由**保留**，旧 URL 仍可直达，避免断链。
   - **边界（需用户知晓）**：处方笺档案页同时承载「补打 / 作废」责任留痕链路（`RxPrintController.voidBy` 仍 `@Secured(MANAGER+ADMIN)`）。删除 UI 入口后，普通员工失去直接作废 / 补打处方的界面；病例中心的打印弹窗（`PrintChoiceDialog` 的兽用处方笺模式）只管打印、不含作废。若将来仍需保留作废能力，应在病例中心补入口或单独保留该页入口。
 - **验证**：`npm run build` / `verify-p0.sh`（新增「处方笺档案入口收敛」守卫）/ lint 全绿；Chromium 实测 `admin` 个人中心 `scrollTop` 能到 `max(414)` 且底部「个人简介」可见（修复前恒为 0、看不到），`d-console` 宫格已无「处方笺档案」；`yun`(4) 后台菜单与医生端宫格均无该入口；两会话控制台 0 错误 0 警告。
+
+### 临床字典三项打开后侧栏消失（2026-11-09）
+
+用户反馈 admin 在后台点「临床字典」里的检验项字典 / 影像项字典 / 病历模板，左侧菜单栏整块不见。
+
+- **根因**：`backstage.ts` 里这三条是 `redirect: "/doctorPage/z-labTest"`（另两条同理），菜单 `index` 却是 `/backstage/z-labTest`。一点就离开 `/backstage` 父壳、进入 `/doctorPage` 壳，后台 `aside` 自然消失。浏览器实测 `hash` 变成 `#/doctorPage/z-*`，`aside`/`.backstage` 均为 `false`。
+- **修复**：三条改为在后台壳内直接渲染 `component: () => import('@/views/backstage/z-*.vue')`，并补 `meta.minAuthLv: 6` 与菜单 `v-if="isManager"`、后端 `MANAGER` 对齐。页面文件本来就在 `views/backstage/` 下、内部无硬编码医生端跳转，改子路由无副作用；`doctorPage.ts` 里同三条路由保留（诊断字典/参考区间等医生端入口仍可用）。
+  - 后端核对：`LabTestController` / `ImageTestController` 的分页与增删改全为 `MANAGER`，`RecordTemplateController` 是「读 `DOCTOR+NURSE`、写 `MANAGER+ADMIN`」，管理岗(6/8 含 NURSE+MANAGER) 均可正常读写，不存在「看得到点不动」。
+- **自检**：`verify-p0.sh` 新增「临床字典」守卫，禁止三条回退为 `/doctorPage` redirect，并要求各自有 `component`。
+- **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；Chromium 实测 admin 真实点击三项后 `hash` 保持 `#/backstage/z-*`、侧栏保留、菜单项 `is-active` 高亮正确、页面数据（尿比重 SG / 腹部B超 / 犬瘟热初诊）正常加载，控制台 0 错误 0 警告（此前 redirect 到医生端时的 `<Transition>` 多根节点警告也一并消失）；`yun`(4) URL 直达三条均被守卫弹回 `#/doctorPage/d-console`。
+- **踩坑**：`el-menu-item` 渲染后 DOM 上**没有** `index` 属性（`index` 只是 Vue prop），用 `getAttribute('index')` 定位点击会静默不生效、看起来像「点不动」；浏览器验证应按 `innerText` 定位或用 CLI 的 `snapshot` ref。
