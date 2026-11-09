@@ -153,6 +153,12 @@ hasf mix-ui/src/styles/report-modern.scss '@page { size: A4' \
   && hasf mix-ui/src/views/doctorPage/d-recordPrint.vue 'class="rp-sheet rp-color"' \
   && ok '电子病历只保留现代彩版（黑白两版已删除）' \
   || bad '电子病历只保留现代彩版（黑白两版已删除）'
+# 打印预览布局：处方笺 A4 全宽预览（曾因删宫格误删 .pv-body 样式 + 210mm 固定宽被裁切）
+hasf mix-ui/src/components/record/PrintChoiceDialog.vue '.pv-body {' \
+  && hasf mix-ui/src/components/record/PrintChoiceDialog.vue '.rx-body { flex-direction: column' \
+  && hasf mix-ui/src/views/doctorPage/d-rx.vue '@media (max-width: 860px)' \
+  && ok '打印预览布局（处方笺全宽 A4 / 窄容器自适应）' \
+  || bad '打印预览布局（处方笺全宽 A4 / 窄容器自适应）'
 # 相对 redirect 会把 /doctorPage 解析成 /d-console 落 404（个人中心入口按钮曾踩中）
 ! grep -Eq "redirect: '[^/]" mix-ui/src/router/doctorPage.ts \
   && ! has mix-ui/src/views/backstage/w-doctorOne.vue 'to="/doctorPage"' \

@@ -195,4 +195,11 @@ const usageText = (it: any): string => {
   min-height: 260mm;
   padding-bottom: 8px;
 }
+
+/* 预览窗口（iframe）比 A4 窄时自适应，避免 210mm 纸张被横向裁切、内容看不全 */
+@media (max-width: 860px) {
+  .rx-page { padding: 8px; }
+  .rx-sheet { width: 100%; }
+  .rx-toolbar { max-width: 100%; }
+}
 </style>

@@ -26,9 +26,20 @@
       </div>
     </div>
 
-    <!-- 二级：处方笺（联次 + 补录 + 预览） -->
-    <div v-else-if="mode === 'rx'" v-loading="rxLoading" class="pv-body">
-      <div class="rx-form">
+    <!-- 二级：处方笺（补录条 + 全宽 A4 预览） -->
+    <div v-else-if="mode === 'rx'" class="pv-body rx-body">
+      <div class="rx-bar">
+        <el-button size="small" plain @click="showRxForm = !showRxForm">
+          {{ showRxForm ? '收起' : '展开' }}补录与联次
+        </el-button>
+        <span class="rx-bar-info">
+          联次：{{ copies === 1 ? '单页报告' : '三联全打' }}
+          <template v-if="missingCount"> · 可补录 {{ missingCount }} 项</template>
+        </span>
+        <el-button size="small" @click="openPrintPage(rxPreviewSrc)">全屏预览</el-button>
+      </div>
+
+      <div v-if="showRxForm" class="rx-form">
         <div class="rx-form-row">
           <span class="rx-label">联次</span>
           <el-radio-group v-model="copies">
@@ -59,7 +70,9 @@
         <el-alert :closable="false" show-icon type="info"
                   title="开方兽医与发药人信息由系统留痕；如需纸质签名可在报告签名区手签。电子病历完结时由接诊医师签名，可在病历页查看版本与审核状态。"/>
       </div>
+
       <div class="pv-preview">
+        <div v-if="rxLoading" class="pv-loading">正在加载处方数据…</div>
         <iframe v-if="rxPreviewSrc" :src="rxPreviewSrc" class="pv-frame" title="处方笺预览"/>
       </div>
     </div>
@@ -128,6 +141,13 @@ const rxLoading = ref(false)
 const copies = ref(1)
 const fill = reactive({hairColor: '', species: '', withdrawalPeriod: '', dispenser: ''})
 const rxPreviewSrc = computed(() => '/#/doctorPage/d-rx?recordId=' + props.recordId)
+// 补录条默认收起：预览优先占满宽度，需要改信息时再展开
+const showRxForm = ref(false)
+const missingCount = computed(() => {
+  const r = rx.value
+  if (!r) return 0
+  return [r.hairColor, r.species, r.withdrawalPeriod, r.dispenser].filter(v => !v).length
+})
 /** 选到处方笺：拉一次当前处方数据（补录项只读/可录展示） */
 const pickRx = (): void => {
   mode.value = 'rx'
@@ -197,38 +217,42 @@ const prepareAndPrint = (): void => {
   .pc-choice { grid-template-columns: 1fr; }
 }
 
-/* 二级：现代报告预览 */
+/* 二级：预览区（电子病历与处方笺共用） */
+.pv-body {
+  display: flex;
+  gap: 16px;
+  height: 72vh;
+}
 .pv-preview {
-  flex: 1; min-width: 0;
+  position: relative;
+  flex: 1; min-width: 0; min-height: 0;
   border: 1px solid #ebeef5; border-radius: 8px;
   overflow: hidden; background: #f5f6fa;
 }
-.pv-frame { width: 100%; height: 100%; border: none; }
+.pv-frame { display: block; width: 100%; height: 100%; border: none; }
+.pv-loading { padding: 16px; font-size: 13px; color: #8a93a6; }
 .pv-tip { float: left; font-size: 12px; color: #909399; line-height: 32px; }
 
-/* 处方笺：联次 + 补录表单 */
+/* 处方笺：补录条 + 全宽 A4 预览（不再左右分栏挤窄 210mm 纸张） */
+.rx-body { flex-direction: column; gap: 10px; }
+.rx-bar {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  padding: 6px 12px; border: 1px solid #ebeef5; border-radius: 8px; background: #fbfdff;
+}
+.rx-bar-info { flex: 1; font-size: 12px; color: #8a93a6; }
 .rx-form {
-  width: 300px;
-  flex-shrink: 0;
-  overflow-y: auto;
-  padding-right: 4px;
+  flex-shrink: 0; max-height: 230px; overflow-y: auto;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px;
+  padding: 12px 16px; border: 1px solid #ebeef5; border-radius: 8px; background: #fafbfe;
+  .el-alert { grid-column: 1 / -1; }
 }
 .rx-form-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  .rx-label {
-    width: 64px; flex-shrink: 0;
-    font-size: 13px; color: #606266;
-    text-align: right;
-  }
+  display: flex; align-items: center; gap: 10px;
+  .rx-label { width: 64px; flex-shrink: 0; font-size: 13px; color: #606266; text-align: right; }
   .ro { font-size: 13px; color: #303133; }
 }
 @media (max-width: 768px) {
-  .pv-body { flex-direction: column; height: auto; }
-  .pv-tpls { width: 100%; flex-direction: row; }
-  .rx-form { width: 100%; }
-  .pv-preview { min-height: 50vh; }
+  .pv-body { height: 76vh; }
+  .rx-form { grid-template-columns: 1fr; }
 }
 </style>

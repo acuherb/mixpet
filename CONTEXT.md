@@ -615,3 +615,10 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **`verify-p0.sh`**：现代化报告块里两条「默认 color」断言换成稳定锚点，新增「电子病历只保留现代彩版」守卫（禁止 `'std'` / `'mono'` / `rp-mono` 再出现，且必须仍有 `class="rp-sheet rp-color"`）。
 - **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；浏览器实测 `d-recordPrint?recordId=20`：只有 1 张 `.rp-sheet.rp-color`、0 个切换按钮、工具栏「现代报告」、无黑白版文案、控制台 0 错误。
 - **顺带发现、本次未改（既有问题，待用户定优先级）**：病例中心 `RecordDetailFull` 用了 `v-loading` 但该指令未在 `push-element.ts` 全局注册（Vue warn: Failed to resolve directive: loading），且 `reqRecordFull` 的 `.then` 没有 `.catch`，接口返回空时弹窗会永久停在「加载中…」，从病例中心就进不了统一打印弹窗；另有 `ElOption value=null` 的 prop 类型警告。这三条与本轮删版式无关，浏览器实测点击链路时才发现。
+
+### 打印处方笺预览窗口优化（2026-11-09，用户反馈「很窄的显示框，内容显示不好」）
+- **根因两条**：① 上一节删模板宫格时按「`/* 二级：模板宫格 + 预览 */` → `.pv-preview {`」切片，**误把 `.pv-body { display:flex; gap:16px; height:72vh }` 一起删掉**，预览 iframe 失去横向布局与明确高度，`height:100%` 塌陷，这是主因；② 处方笺 `.rx-sheet` 固定 210mm（794px），弹窗处方笺分支左侧还有 300px 补录表单，预览区在中小屏上更窄。浏览器实测：窗口 700px 时 `.rx-page` 的 `scrollWidth=810 > clientWidth=700`，A4 横向溢出 110px 被裁切。
+- **修**：`PrintChoiceDialog.vue` 恢复 `.pv-body` 基础布局，并给 `.pv-preview` 补 `position:relative; min-height:0`，让 iframe 的 100% 高度真正生效；处方笺分支由左右分栏改**上下结构**——补录表单收进顶部可折叠条（默认收起，条上直接显示当前联次与「可补录 N 项」），预览独占全宽；新增「全屏预览」按钮直接开独立打印页；去掉未注册的 `v-loading`，改成明确文字加载态。`d-rx.vue` 加 `@media (max-width:860px)`，让 `.rx-sheet` 宽度随容器收缩。
+- **`verify-p0.sh`** 新增「打印预览布局」守卫：`.pv-body` 必须存在、处方笺必须上下结构、窄屏媒体查询必须在。
+- **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；浏览器实测 `d-rx` 在 1200/700/560px 下纸张宽 794/684/544px，不再溢出。**弹窗真实点击链路仍未实测成功**：病例中心 `RecordDetailFull` 的既有取数问题让档案弹窗停在「加载中…」（换 recordId 也一样），接诊向导的处方笺快捷入口又必须先按步骤推进；故弹窗布局本身只做了静态/CSS 验证，待那个既有问题修掉后再走一次真实点击。
+- **教训**：删 SCSS 块时按注释切片会连带删掉相邻的基础布局规则；以后删样式只按明确选择器切片，并把「基础布局规则仍存在」写进自检（已做）。
