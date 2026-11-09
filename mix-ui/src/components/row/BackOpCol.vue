@@ -6,8 +6,8 @@
       <el-button plain size="large" type="primary" @click="queryB">搜索</el-button>
     </div>
     <slot name="right"></slot>
-    <el-button v-if="writable" plain size="large" type="success" @click="addRoleB">新增{{ role }}</el-button>
-    <el-button v-if="writable" plain size="large" type="danger" @click="delBatchB">批量删除</el-button>
+    <el-button v-if="writable && canAdd" plain size="large" type="success" @click="addRoleB">新增{{ role }}</el-button>
+    <el-button v-if="writable && canDelete" plain size="large" type="danger" @click="delBatchB">批量删除</el-button>
   </div>
 </template>
 
@@ -15,9 +15,12 @@
 /*=====后台的操作行，包括了查询、添加、批量删除=====*/
 withDefaults(defineProps<{
   role: string
-  /** 只有具备后端写权限的角色才显示新增/批量删除 */
+  /** 总开关：整个页面是否可写 */
   writable?: boolean
-}>(), {writable: true})
+  /** 新增与批量删除可能属于不同权限档，分开控制 */
+  canAdd?: boolean
+  canDelete?: boolean
+}>(), {writable: true, canAdd: true, canDelete: true})
 const emit = defineEmits<{
   (e: "query"): void,
   (e: "addRole"): void,

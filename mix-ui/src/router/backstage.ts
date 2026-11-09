@@ -128,8 +128,9 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-consent",
         redirect: "/doctorPage/z-consent"
     },{
-        // 领养表
+        // 领养表（整模块后端为 MANAGER，低档不给入口）
         path: "y-adoptList",
+        meta: {minAuthLv: 6},
         component: () => import('@/views/backstage/y-adoptList.vue')
     }, {
         // 挂号表

@@ -39,7 +39,7 @@ public class RxPrintController {
 
     /** 处方笺档案分页（管理端调档/留档） */
     @GetMapping("/archive")
-    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    @Secured(RoleConst.NURSE)
     public Page<RxArchiveVo> archive(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,

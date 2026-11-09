@@ -1,7 +1,7 @@
 <template>
   <div class="list-page">
     <!--操作框-->
-    <BackOpCol role="宠物" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+    <BackOpCol :can-delete="isManager" role="宠物" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
       <el-input v-model="qp.petName" clearable placeholder="宠物名 / 品种 / 芯片号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
       <el-input v-model="qp.clientName" clearable placeholder="主人姓名 / 手机号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
       <template #left>
@@ -69,18 +69,20 @@
         <template #default="scope">
           <el-button-group>
             <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
-            <el-button v-if="scope.row.clientId" circle type="primary" title="过户给新主人" @click="openTransfer(scope.row)">过</el-button>
-            <el-button v-if="scope.row.clientId" circle type="warning" title="入栏（有主变无主，可被领养）" @click="intakePet(scope.row)">栏</el-button>
+            <el-button v-if="isManager && scope.row.clientId" circle type="primary" title="过户给新主人" @click="openTransfer(scope.row)">过</el-button>
+            <el-button v-if="isManager && scope.row.clientId" circle type="warning" title="入栏（有主变无主，可被领养）" @click="intakePet(scope.row)">栏</el-button>
             <el-button circle type="info" title="查看过户历史" @click="openHistory(scope.row)">档</el-button>
             <el-button circle type="success" title="一页式健康档案" @click="openHealth(scope.row)">康</el-button>
-            <el-button v-if="scope.row.active !== false"
-                       :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
-            <template v-else-if="scope.row.petSource === 1">
-              <!-- 顾客自建宠物待审核：可审核通过，也可驳回删除 -->
-              <el-button :icon="Refresh" circle type="success" title="审核通过" @click="restorePet(scope.row)"/>
-              <el-button :icon="Delete" circle type="danger" title="驳回（删除该宠物）" @click="delOne(scope.row)"/>
+            <template v-if="isManager">
+              <el-button v-if="scope.row.active !== false"
+                         :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
+              <template v-else-if="scope.row.petSource === 1">
+                <!-- 顾客自建宠物待审核：可审核通过，也可驳回删除 -->
+                <el-button :icon="Refresh" circle type="success" title="审核通过" @click="restorePet(scope.row)"/>
+                <el-button :icon="Delete" circle type="danger" title="驳回（删除该宠物）" @click="delOne(scope.row)"/>
+              </template>
+              <el-button v-else :icon="Refresh" circle type="success" title="恢复启用" @click="restorePet(scope.row)"/>
             </template>
-            <el-button v-else :icon="Refresh" circle type="success" title="恢复启用" @click="restorePet(scope.row)"/>
           </el-button-group>
         </template>
       </el-table-column>
@@ -376,6 +378,10 @@ const onAgeInput = () => {
   }
 }
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {canManage, useAuthLv} from '@/utils/PermissionUtil'
+
+const authLv = useAuthLv()
+const isManager = computed(() => canManage(authLv.value))
 import {debounce} from "@/utils/DebounceUtil";
 import {PageQuery, YPetList} from "@/model/VO/BackQuery";
 import {PetDto} from "@/model/DO/PetDto";

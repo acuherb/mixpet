@@ -210,6 +210,23 @@ has mixPet/src/main/java/com/mix/security/details/DoctorDetails.java 'rolesOf' \
   && has mix-ui/src/views/backstage/x-departmentList.vue 'isAdmin' \
   && ok '权限档 A（管理岗无临床资格/越权修复/入口按档位裁剪）' \
   || bad '权限档 A（管理岗无临床资格/越权修复/入口按档位裁剪）'
+# 业务页收尾：按钮按档位裁剪 + 读接口门槛归位 + 领养模块入口收敛
+has mix-ui/src/utils/PermissionUtil.ts 'useAuthLv' \
+  && hasf mix-ui/src/components/row/BackOpCol.vue 'canDelete' \
+  && has mix-ui/src/views/backstage/y-clientList.vue 'isManager' \
+  && has mix-ui/src/views/backstage/y-petList.vue 'isManager' \
+  && has mix-ui/src/views/backstage/y-fosterList.vue 'isManager' \
+  && has mix-ui/src/views/backstage/y-appointmentList.vue 'canClinicallyEdit' \
+  && has mix-ui/src/views/backstage/z-rxArchive.vue 'isManager' \
+  && hasf mix-ui/src/views/backstage/y-billList.vue ':can-add="false"' \
+  && [ "$(grep -A1 '@GetMapping("/page")' mixPet/src/main/java/com/mix/controller/BillController.java | grep -c 'RoleConst.NURSE')" -ge 1 ] \
+  && [ "$(grep -A1 '@GetMapping("/page")' mixPet/src/main/java/com/mix/controller/FosterController.java | grep -c 'RoleConst.NURSE')" -ge 1 ] \
+  && [ "$(grep -A1 '@GetMapping("/archive")' mixPet/src/main/java/com/mix/controller/RxPrintController.java | grep -c 'RoleConst.NURSE')" -ge 1 ] \
+  && [ "$(grep -A1 'archive/void' mixPet/src/main/java/com/mix/controller/RxPrintController.java | grep -c 'MANAGER')" -ge 1 ] \
+  && hasf mix-ui/src/views/backstage/index.vue 'queryManagerOnly' \
+  && [ "$(grep -A2 'path: "y-adoptList"' mix-ui/src/router/backstage.ts | grep -c 'minAuthLv: 6')" -ge 1 ] \
+  && ok '业务页收尾（按钮按档位可见/读门槛归位/领养入口收敛）' \
+  || bad '业务页收尾（按钮按档位可见/读门槛归位/领养入口收敛）'
 # 个人中心「今日概览」复用诊疗流快照：加载失败必须显式报错，环节卡要能直达操作台
 has mix-ui/src/views/backstage/w-doctorOne.vue '今日概览' \
   && has mix-ui/src/views/backstage/w-doctorOne.vue 'reqDoctorPipeline' \

@@ -1,6 +1,6 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="寄养" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :writable="isManager" role="寄养" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.petName" clearable placeholder="宠物名 / 品种" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-input v-model="qp.clientName" clearable placeholder="寄养人姓名 / 手机号" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <template #left>
@@ -44,7 +44,7 @@
     <el-table-column label="订单备注" prop="fosterInfo" min-width="110" show-overflow-tooltip/>
     <el-table-column fixed="right" label="操作" width="180">
       <template #default="scope">
-        <el-button-group>
+        <el-button-group v-if="isManager">
           <el-button v-if="(scope.row.status ?? 0) === 0" size="small" type="primary" @click="startFoster(scope.row)">开始寄养</el-button>
           <el-button v-if="(scope.row.status ?? 0) === 1" size="small" type="success" @click="openBack(scope.row)">接回结算</el-button>
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
@@ -146,9 +146,13 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref, watch} from 'vue'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {canManage, useAuthLv} from '@/utils/PermissionUtil'
+
+const authLv = useAuthLv()
+const isManager = computed(() => canManage(authLv.value))
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YFosterList} from "@/model/VO/BackQuery";

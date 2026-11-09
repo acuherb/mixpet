@@ -56,7 +56,7 @@
           <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
           <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
           <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
+          <el-menu-item v-if="isManager" v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
         </el-sub-menu>
 
         <!-- ═══ 经营配置（改一次、用很久的门面与定价） ═══ -->
@@ -142,10 +142,11 @@ const checkWidth = () => {
 type GroupKey = 'stat' | 'query' | 'biz' | 'clinic' | 'org' | 'sys'
 const managerGroups: GroupKey[] = ['stat', 'biz', 'clinic', 'org', 'sys']
 const queryStaffOnly = ['今日接待', '挂号列表', '收银台', '处方笺档案']
-const queryCommon = ['客户管理', '宠物管理', '寄养管理', '活体领养']
+const queryCommon = ['客户管理', '宠物管理', '寄养管理']
+const queryManagerOnly = ['活体领养']  // 领养整模块后端是 @Secured(MANAGER)，低档连列表都取不到
 const groupLabels: Record<GroupKey, string[]> = {
   stat: ['经营驾驶舱', '经营看板', '财务报表'],
-  query: [...queryStaffOnly, ...queryCommon],
+  query: [...queryStaffOnly, ...queryCommon, ...queryManagerOnly],
   biz: ['药品管理', '服务套餐', '医院资料', '供应商管理', '会员等级', '次卡模板'],
   clinic: ['检验项字典', '影像项字典', '病历模板'],
   org: ['医生列表', '医生排班', '科室列表', '职务/职称'],
@@ -160,7 +161,10 @@ const groupMatch = (g: GroupKey): boolean => {
   const kw = menuKw.value.trim()
   if (!kw) return true
   // 管理者看不到 query 组里那 4 个重复入口，搜索时也不该因它们命中而显示空组
-  const labels = g === 'query' && isManager.value ? queryCommon : groupLabels[g]
+  // 查询组：低档只看得到 queryCommon；管理者看得到档案项 + 领养，看不到那 4 个医生端重复入口
+  const labels = g === 'query'
+    ? (isManager.value ? [...queryCommon, ...queryManagerOnly] : queryCommon)
+    : groupLabels[g]
   return labels.some(l => l.includes(kw))
 }
 const searching = computed(() => !!menuKw.value.trim())

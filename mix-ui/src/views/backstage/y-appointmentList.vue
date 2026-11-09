@@ -1,6 +1,6 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="挂号" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :can-delete="canClinicallyEdit(authLv)" role="挂号" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-select v-model="qp.seaType" size="large" @change="nowQuery">
       <el-option :value="0" label="挂号人"/>
       <el-option :value="1" label="宠物"/>
@@ -34,7 +34,7 @@
     </el-table-column>
     <el-table-column fixed="right" label="操作">
       <template #default="scope">
-        <el-button-group>
+        <el-button-group v-if="canClinicallyEdit(authLv)">
           <el-button :icon="Edit" circle type="warning" @click="showDialog(scope.row)"/>
           <el-button :icon="Delete" circle type="danger" @click="delOne(scope.row.appointmentId)"/>
         </el-button-group>
@@ -95,6 +95,9 @@
 import {onMounted, reactive, ref, watch} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {canClinicallyEdit, useAuthLv} from '@/utils/PermissionUtil'
+
+const authLv = useAuthLv()
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YAppointList} from "@/model/VO/BackQuery";

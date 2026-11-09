@@ -1,3 +1,6 @@
+import {ref} from 'vue'
+import {reqGetLoginD} from '@/request/DoctorApi'
+
 /**
  * 权限等级（auth_lv）说明：固定 5 档，驱动 Spring Security 角色，与"职称(job)"解耦。
  * 角色不再简单累加：NURSE 是「在职员工基线」(>=2 都有)，DOCTOR 是「临床开方资格」(仅 4 档)，
@@ -24,6 +27,19 @@ export const permName = (lv: number): string =>
 /** 权限等级 -> 能干什么的说明 */
 export const permDesc = (lv: number | null | undefined): string =>
     PERMISSIONS.find(p => p.lv === lv)?.desc ?? ''
+
+/** 各页面共用：拉一次当前登录员工的权限档，异步回来后按钮可见性自动更新 */
+export const useAuthLv = () => {
+    const authLv = ref(0)
+    reqGetLoginD().then(d => { authLv.value = Number(d?.authLv ?? 0) }).catch(() => {})
+    return authLv
+}
+
+/** 可过 @Secured(MANAGER) / ADMIN+MANAGER 门槛（管理账号） */
+export const canManage = (lv: number | null | undefined): boolean => Number(lv ?? 0) >= 6
+
+/** 可过纯 @Secured(DOCTOR) 门槛；管理账号现在不带 DOCTOR，只有 4 档可以 */
+export const canClinicallyEdit = (lv: number | null | undefined): boolean => Number(lv ?? 0) === 4
 
 /** 需要 DOCTOR 资格（后端纯 @Secured(DOCTOR)）的临床写操作入口 */
 const CLINICAL_WRITE = new Set([

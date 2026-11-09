@@ -1,6 +1,6 @@
 <template>
   <!--操作框-->
-  <BackOpCol role="收费" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :can-add="false" :can-delete="false" role="收费" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.seaName" clearable placeholder="客户姓名 / 手机号 / 宠物名" size="large" @input="debQuery" @keyup.enter="nowQuery"/>
     <el-select v-model="qp.payStatus" size="large" style="width: 120px" @change="nowQuery">
       <el-option :value="-1" label="全部"/>

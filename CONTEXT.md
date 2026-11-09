@@ -667,3 +667,20 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **测试数据分配**（用户授权）：`zhong` 改为 `auth_lv=6, job_id=2`，形成 8(admin) / 6(zhong) / 4(6 人) / 2(ra9) 完整档位；admin 保持 8 且定位纯管理。
 - **验证**：`mvn test`（含新增 `DoctorDetailsRoleTest.managerAndAdminAreNotClinicians`，锁住 6/8 不得有 DOCTOR）/ `npm run build` / `verify-p0.sh`（新增「权限档 A」守卫）/ lint 全绿；按 `dev-tools/start.sh` 重启前后端让新角色映射生效。真实 Chromium 三账号：`admin`(8) 落 `#/backstage/m-flow`、用户卡「超级管理员」、`fetch /api/lab/records` 返回 `{"code":403,"msg":"没有角色权限"}`、功能宫格只剩 3 组查询/打印/档案/配置、医生列表新增按钮可见；`zhong`(6) 同样落后台、同样 403、临床入口隐藏，医生列表新增按钮隐藏（只读）；`yun`(4) 落 `#/doctorPage/d-console`、`/api/lab/records` 返回 `[]`（放行）、四组功能宫格完整，URL 直达 `#/backstage/x-doctorList` 被守卫弹回操作台。三会话控制台 0 错误 0 警告。
 - **踩坑**：① `playwright-cli` 的元素 ref 在不同 session 可能是 `e11` 也可能是 `f1e11`，硬编码会静默填不进表单（表现为「登录没跳转」），改成从 `snapshot` 动态解析 ref。② 项目接口权限不足返回的是 HTTP 200 + 业务体 `code:403`，不是 HTTP 403，判断要看响应体。③ 改了 `DoctorDetails` 必须重启后端（启动脚本关了 devtools 热重启），只跑 `mvn test` 不会让运行中的 JVM 换类。
+
+### A 收尾：业务页「看得到、点不动」清完（2026-11-09）
+
+用户「补完吧」指上一轮留下的客户/宠物/领养等页面的 MANAGER-only 按钮。盘完发现其实是两类问题，不能只藏按钮：
+
+- **读接口比写接口还严（3 处，改后端）**：`/bill/page`、`/foster/page`、`/record/rx/archive` 原来都是 `MANAGER(6)`，但收款/发药/退款、寄养 `save`、处方补打都是 `NURSE(2)` —— 前台能收款却看不到账单列表。统一把这三个查询降回 `@Secured(NURSE)`；`RxPrintController.voidBy`（处方作废）仍保持 `MANAGER+ADMIN`，责任留痕不放松。
+- **写需高档、页面却对所有人可见（改前端）**：`PermissionUtil` 新增 `useAuthLv()` 共用 composable + `canManage(>=6)` / `canClinicallyEdit(===4)`；`BackOpCol` 拆出 `canAdd` / `canDelete`（新增与批量删除常属不同档）。
+  - 客户管理：审核通过/拒绝、停用/启用、重置密码、删除、批量删除 → `isManager`；编辑/充值/会员保留给 2+。
+  - 宠物管理：过户、入栏、审核、删除/停用、恢复启用 → `isManager`；编辑、过户历史、健康档案保留。
+  - 寄养：列表可读，但 `update/back/delete` 全要 6，整组操作按钮 → `isManager`。
+  - 挂号：`update/delete/deleteGroup` 是纯 `DOCTOR(4)`，管理岗现在不带 DOCTOR，所以编辑/删除与批量删除 → `canClinicallyEdit(authLv)`；新增是 `NURSE(2)`，保留给医护。
+  - 处方笺档案：作废 → `isManager`，补打/打印保留。
+  - 收银台：顺手隐藏「新增收费」（页面根本没绑 `addRole`）和「批量删除」（点开只弹「账单不允许删除」提示）两个无效按钮。
+  - **条件链坑**：`v-if` / `v-else` 成对出现的按钮不能各自加 `v-if`（会破坏链，且低档会掉进 else 分支看到按钮），统一用 `<template v-if="isManager">` 把整段包起来，内部条件链保持原样。
+- **领养整模块是 MANAGER 专属**：菜单项改为 `v-if="isManager"`，路由补 `meta: {minAuthLv: 6}`（URL 直达也会被拦），搜索组标签拆出 `queryManagerOnly` 避免低档搜「领养」命中空组。
+- **验证**：`npm run build` / `mvn test` / `verify-p0.sh`（新增「业务页收尾」守卫）/ lint 全绿；重启前后端后 Chromium 三账号实测：`yun`(4) 与 `ra9`(2) 对 `/api/adopt/page` 均 DENY，对 `/api/bill/page`、`/api/foster/page`、`/api/record/rx/archive` 都拿到数据；客户页无批量删除/停用按钮、菜单无「活体领养」、URL 直达领养被弹回操作台；挂号页 4 档有批量删除、2 档只剩新增。`zhong`(6) 领养菜单与页面可用、客户页按钮齐全、挂号批量删除隐藏。三会话页面自身 0 错误。
+- **踩坑**：探测接口必须带分页参数（`?numPage=1&pageSize=5`），否则参数绑定失败被 `ExceptionAdvice` 兜底成「操作未保存」，**根本没走到 `@Secured`**，会误判成「权限通过」；`RxPrintController` 前缀是 `/record/rx` 而不是 `/rxPrint`；验证期控制台那条 404 来自探测 URL 写错，与页面无关。

@@ -33,7 +33,7 @@ public class FosterController {
     }
 
     @GetMapping("/page")
-    @Secured(RoleConst.MANAGER)
+    @Secured(RoleConst.NURSE)
     public IPage<FosterDto> getPage(int numPage, int pageSize, String clientName, String petName) {
         return fosterService.selectByPage(clientName, petName, numPage, pageSize);
     }

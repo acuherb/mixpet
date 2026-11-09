@@ -1,7 +1,7 @@
 <template>
   <div class="list-page">
   <!--操作框-->
-  <BackOpCol role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
+  <BackOpCol :can-delete="isManager" role="用户" @addRole="addRoleB" @delBatch="delBatchB" @query="nowQuery">
     <el-input v-model="qp.clientName" clearable placeholder="姓名 / 手机号 / 身份证" size="large" style="width: 220px" @input="debQuery" @keyup.enter="nowQuery"/>
     <!-- 审核状态筛选：待审核置顶显示，医生工作台「待审核顾客」直达时自动选中 -->
     <el-select v-model="qp.auditStatus" clearable placeholder="审核状态" size="large" style="width: 140px; margin-left: 12px" @change="nowQuery">
@@ -52,7 +52,7 @@
         <el-tag v-else-if="scope.row.auditStatus === 2" type="danger" size="small"
                 :title="scope.row.auditReason || ''">已拒绝{{ scope.row.auditReason ? ' ⓘ' : '' }}</el-tag>
         <el-tag v-else type="success" size="small">已通过</el-tag>
-        <div v-if="scope.row.auditStatus === 0" style="margin-top:4px">
+        <div v-if="isManager && scope.row.auditStatus === 0" style="margin-top:4px">
           <el-button size="small" type="success" link @click="auditClient(scope.row, 1)">通过</el-button>
           <el-button size="small" type="danger" link @click="auditClient(scope.row, 2)">拒绝</el-button>
         </div>
@@ -80,10 +80,12 @@
           <el-button :icon="Edit" circle type="warning" title="编辑" @click="showDialog(scope.row)"/>
           <el-button :icon="Coin" circle type="primary" title="充值余额" @click="recharge(scope.row)"/>
           <el-button circle type="success" title="会员/次卡/积分" @click="openMember(scope.row)">员</el-button>
-          <el-button v-if="scope.row.active" circle type="warning" title="停用账号" @click="toggleActive(scope.row)">停</el-button>
-          <el-button v-else circle type="success" title="启用账号" @click="toggleActive(scope.row)">启</el-button>
-          <el-button :icon="Key" circle type="info" title="重置密码" @click="resetPwd(scope.row)"/>
-          <el-button :icon="Delete" circle type="danger" title="删除" @click="delOne(scope.row)"/>
+          <template v-if="isManager">
+            <el-button v-if="scope.row.active" circle type="warning" title="停用账号" @click="toggleActive(scope.row)">停</el-button>
+            <el-button v-else circle type="success" title="启用账号" @click="toggleActive(scope.row)">启</el-button>
+            <el-button :icon="Key" circle type="info" title="重置密码" @click="resetPwd(scope.row)"/>
+            <el-button :icon="Delete" circle type="danger" title="删除" @click="delOne(scope.row)"/>
+          </template>
         </el-button-group>
       </template>
     </el-table-column>
@@ -242,7 +244,7 @@
 
 <script lang="ts" setup>
 
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {useRoute} from 'vue-router'
 
 const ageInput = ref<string>('')
@@ -263,6 +265,10 @@ const onAgeInput = () => {
 }
 import {Coin, Delete, Edit, Key} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
+import {canManage, useAuthLv} from '@/utils/PermissionUtil'
+
+const authLv = useAuthLv()
+const isManager = computed(() => canManage(authLv.value))
 import {debounce} from "@/utils/DebounceUtil";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery, YClientList} from "@/model/VO/BackQuery";

@@ -35,7 +35,7 @@ public class BillController {
      * @param payStatus 0未付 1已付，-1 或不传查全部
      */
     @GetMapping("/page")
-    @Secured(RoleConst.MANAGER)
+    @Secured(RoleConst.NURSE)
     public IPage<BillDto> getPage(int numPage, int pageSize, String seaName, Integer payStatus) {
         return billService.selectByPage(seaName, payStatus == null ? -1 : payStatus, numPage, pageSize);
     }

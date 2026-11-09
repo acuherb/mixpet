@@ -64,7 +64,7 @@
           <template #default="s">
             <el-button v-if="s.row.status !== 'VOID'" link type="primary" @click="reprint(s.row)">补打</el-button>
             <el-button link type="info" @click="goRecord(s.row.recordId)">病历详情</el-button>
-            <el-button v-if="s.row.status !== 'VOID'" link type="danger" @click="voidRx(s.row)">作废</el-button>
+            <el-button v-if="isManager && s.row.status !== 'VOID'" link type="danger" @click="voidRx(s.row)">作废</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -74,8 +74,12 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
+import {canManage, useAuthLv} from '@/utils/PermissionUtil'
+
+const authLv = useAuthLv()
+const isManager = computed(() => canManage(authLv.value))
 import PageHead from "@/components/row/PageHead.vue";
 import BackPage from "@/components/row/BackPage.vue";
 import {PageQuery} from "@/model/VO/BackQuery";
