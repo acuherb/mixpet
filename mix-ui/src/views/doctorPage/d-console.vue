@@ -277,7 +277,6 @@ const funcGroups: {title: string; items: Action[]}[] = [
     {label: '医技结果录入', path: '/doctorPage/z-examResult', icon: DocumentChecked},
     {label: '报告单打印', path: '/doctorPage/z-examReport', icon: Printer},
     {label: '申请单打印', path: '/doctorPage/z-requisition', icon: Tickets},
-    {label: '处方笺档案', path: '/doctorPage/z-rxArchive', icon: Files},
   ]},
   {title: '收费与随访', items: [
     {label: '收银台', path: '/doctorPage/y-billList', icon: Money},
@@ -310,7 +309,7 @@ const actionTitles: Record<string, string> = {
   '/doctorPage/z-follow': '随访', '/doctorPage/z-remind': '复诊/疫苗提醒',
   '/doctorPage/z-immune': '免疫接种', '/doctorPage/z-hospital': '住院登记',
   '/doctorPage/z-surgery': '手术记录', '/doctorPage/z-examReport': '报告单打印',
-  '/doctorPage/z-requisition': '申请单打印', '/doctorPage/z-rxArchive': '处方笺档案',
+  '/doctorPage/z-requisition': '申请单打印',
   '/doctorPage/z-diagnosis': '诊断字典', '/doctorPage/z-refRange': '参考区间',
 }
 const titleOf = (p: string): string => {

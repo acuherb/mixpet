@@ -197,6 +197,12 @@ hasf mix-ui/src/views/backstage/index.vue 'side-user' \
   && ! hasf mix-ui/src/views/backstage/index.vue 'el-menu-item-group' \
   && ok '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）' \
   || bad '后台菜单 B（统一用户卡/短分组/搜索联动/空组隐藏）'
+# 处方笺档案入口收敛：打印改由病例中心承担，菜单/宫格不再提供入口（页面与路由保留以兼容旧 URL）
+! hasf mix-ui/src/views/backstage/index.vue '处方笺档案' \
+  && ! hasf mix-ui/src/views/doctorPage/d-console.vue '处方笺档案' \
+  && ! hasf mix-ui/src/views/doctorPage/FlowInline.vue '处方笺档案' \
+  && ok '处方笺档案入口收敛（病例中心打印替代）' \
+  || bad '处方笺档案入口收敛（病例中心打印替代）'
 # 权限档 A：管理账号不具备临床资格 + 越权路径修复 + 前端入口按档位裁剪
 has mixPet/src/main/java/com/mix/security/details/DoctorDetails.java 'rolesOf' \
   && hasf mixPet/src/test/java/com/mix/security/details/DoctorDetailsRoleTest.java 'managerAndAdminAreNotClinicians' \

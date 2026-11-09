@@ -52,7 +52,6 @@
           <el-menu-item v-if="doctorNow.authLv >= 2 && !isManager" v-show="menuMatch('今日接待')" index="/backstage/r-flow">今日接待</el-menu-item>
           <el-menu-item v-if="!isManager" v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
           <el-menu-item v-if="!isManager" v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
-          <el-menu-item v-if="!isManager" v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
           <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
           <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
           <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
@@ -141,7 +140,7 @@ const checkWidth = () => {
 // 组标签只服务于搜索联动，路由与权限仍以模板里的 index / v-if 为准。
 type GroupKey = 'stat' | 'query' | 'biz' | 'clinic' | 'org' | 'sys'
 const managerGroups: GroupKey[] = ['stat', 'biz', 'clinic', 'org', 'sys']
-const queryStaffOnly = ['今日接待', '挂号列表', '收银台', '处方笺档案']
+const queryStaffOnly = ['今日接待', '挂号列表', '收银台']
 const queryCommon = ['客户管理', '宠物管理', '寄养管理']
 const queryManagerOnly = ['活体领养']  // 领养整模块后端是 @Secured(MANAGER)，低档连列表都取不到
 const groupLabels: Record<GroupKey, string[]> = {
@@ -314,7 +313,8 @@ loadDoctorNow()
   main {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     box-sizing: border-box;
     padding: 12px;
     background-color: #F0EAD6;

@@ -64,7 +64,7 @@ const titles: Record<string, string> = {
   'z-surgery': '手术记录', 'z-hospital': '入院登记', 'z-immune': '免疫接种',
   'd-record': '病例中心', 'd-recordPrint': '病历打印', 'd-chat': '咨询',
   'y-appointmentList': '挂号列表', 'z-examReport': '报告单打印', 'z-requisition': '申请单打印',
-  'z-rxArchive': '处方笺档案', 'z-labTest': '检验项字典', 'z-imageTest': '影像项字典',
+  'z-labTest': '检验项字典', 'z-imageTest': '影像项字典',
   'z-template': '病历模板', 'z-consent': '知情同意书', 'z-remind': '复诊/疫苗提醒',
   'z-refRange': '参考区间', 'z-diagnosis': '诊断字典',
 }

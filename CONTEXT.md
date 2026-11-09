@@ -684,3 +684,12 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **领养整模块是 MANAGER 专属**：菜单项改为 `v-if="isManager"`，路由补 `meta: {minAuthLv: 6}`（URL 直达也会被拦），搜索组标签拆出 `queryManagerOnly` 避免低档搜「领养」命中空组。
 - **验证**：`npm run build` / `mvn test` / `verify-p0.sh`（新增「业务页收尾」守卫）/ lint 全绿；重启前后端后 Chromium 三账号实测：`yun`(4) 与 `ra9`(2) 对 `/api/adopt/page` 均 DENY，对 `/api/bill/page`、`/api/foster/page`、`/api/record/rx/archive` 都拿到数据；客户页无批量删除/停用按钮、菜单无「活体领养」、URL 直达领养被弹回操作台；挂号页 4 档有批量删除、2 档只剩新增。`zhong`(6) 领养菜单与页面可用、客户页按钮齐全、挂号批量删除隐藏。三会话页面自身 0 错误。
 - **踩坑**：探测接口必须带分页参数（`?numPage=1&pageSize=5`），否则参数绑定失败被 `ExceptionAdvice` 兜底成「操作未保存」，**根本没走到 `@Secured`**，会误判成「权限通过」；`RxPrintController` 前缀是 `/record/rx` 而不是 `/rxPrint`；验证期控制台那条 404 来自探测 URL 写错，与页面无关。
+
+### 我的资料页显示不全 + 处方笺档案入口收敛（2026-11-09）
+
+两个小修，均经浏览器实测。
+
+- **「我的资料」页内容只显示一半**：根因是 `backstage/index.vue` 的 `main { overflow: hidden }` 叠加 `.backstage { height:100vh; display:flex; overflow:hidden }`。长页面（今日概览 + 资料卡片）`scrollHeight≈1314 > clientHeight≈900`，被直接裁掉且无法滚动。改成 `overflow-x: hidden; overflow-y: auto`，内容超出时 main 内部可纵向滚动，长页面不再被截半。宽度不是问题（`.profile-page` 已 `max-width:1120px; margin:auto` 居中）。
+- **删除「处方笺档案」菜单**：用户认为处方笺打印在病例中心即可，该菜单无意义。移除三处入口 —— 后台「业务查询 / 对账」组菜单项、医生操作台 `d-console` 功能宫格（含 `actionTitles` 映射）、`FlowInline` 内联页标题映射。`z-rxArchive.vue` 页面与两条 `router` 路由**保留**，旧 URL 仍可直达，避免断链。
+  - **边界（需用户知晓）**：处方笺档案页同时承载「补打 / 作废」责任留痕链路（`RxPrintController.voidBy` 仍 `@Secured(MANAGER+ADMIN)`）。删除 UI 入口后，普通员工失去直接作废 / 补打处方的界面；病例中心的打印弹窗（`PrintChoiceDialog` 的兽用处方笺模式）只管打印、不含作废。若将来仍需保留作废能力，应在病例中心补入口或单独保留该页入口。
+- **验证**：`npm run build` / `verify-p0.sh`（新增「处方笺档案入口收敛」守卫）/ lint 全绿；Chromium 实测 `admin` 个人中心 `scrollTop` 能到 `max(414)` 且底部「个人简介」可见（修复前恒为 0、看不到），`d-console` 宫格已无「处方笺档案」；`yun`(4) 后台菜单与医生端宫格均无该入口；两会话控制台 0 错误 0 警告。
