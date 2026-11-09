@@ -594,7 +594,7 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 ### 打印文书现代化：不再按农业部 734 号公文排版（2026-11-09，用户选 B）
 用户反馈「所有需要打印的东西都不友好，以前为了照顾农业部734号改得特别丑」，给了 A（只换默认）/ B（全量统一现代报告，复用流快照式的设计语言、零新增后端）/ C（打印体系重做 + 模板可配 + 二维码）三案，用户选 **B**。核心判断：设计语言本来就现成（`rx-modern.scss` 2026-10-24 已重构品牌头/卡片分区/`case-doc.scss` 已有彩色病历），丑的是「734 号被当成唯一默认」和几处漏网的黑白公文页，不必从零设计。
 - **新建统一报告层**：`styles/report-modern.scss`（品牌头 / 患者信息条 / 分区卡片 / 无竖框表格 / 异常·危急值色标 / 签名区 / 页脚 / 全局 `@page A4` / `@media print` / 900px 断点 / 80mm 小票窄幅）+ `components/sheet/ReportSheet.vue`（`title/docNo/hospName/brand/fields/signers/footer/printTime/ticket` props + `toolbar` 具名 slot + 默认正文 slot），`main.ts` 全局引入一次样式。
-- **病历**：`d-recordPrint.vue` 默认 `style` 从 `std` 改 `color`，`PrintChoiceDialog.vue` 默认改 `color` 且模板宫格把现代报告排第一；`std/mono` 不删，降级标注「归档版 / 黑白兼容版」；弹窗一级卡片去掉「（国标）」与「734号规范格式」文案；导出按钮改「截图版 PDF（兼容）」，明确提示优先用「打印 → 另存为 PDF」拿文字可选的矢量文件。
+- **病历**：`d-recordPrint.vue` 默认 `style` 从 `std` 改 `color`，`PrintChoiceDialog.vue` 默认改 `color` 且模板宫格把现代报告排第一；弹窗一级卡片去掉「（国标）」与「734号规范格式」文案；导出按钮改「截图版 PDF（兼容）」，明确提示优先用「打印 → 另存为 PDF」拿文字可选的矢量文件。**用户随后追加要求只留现代彩版，`std/mono` 已整套删除，见下一节**。
 - **处方笺 `d-rx.vue`**：默认单页（后端 `copies=3` 才恢复三联，保留归档能力）、删「以下为空白」三条斜线行与 734 脚注、去掉私有 `@page 210mm 148mm` 横版改全局 A4、`exportPdf` 改 `a4/portrait`；新增 `displayNo` 统一编号前缀，修掉回退时显示的「编号 No.No.20」。
 - **检验/影像报告单 `z-examReport.vue`**：整页重做为 `ReportSheet` + `rm-table`，异常值橙色 / 危急值红色提示条 / 正常绿色，临床诊断、标本与时间、影像所见·诊断·DICOM 分区；删掉原来 24px 标题 + 全表格线的 scoped 黑白样式；加载中与「未找到报告单」都有明确态。
 - **收费凭证**：`y-billList.vue` 删掉 `document.write` 拼整页 HTML（含手工 `esc` 转义与注入脚本触发打印），新增 `y-billPrint.vue` + `backstage/y-billPrint` 路由。数据经 `localStorage` 一次性传递、**读完即删**（含客户电话，不长期留存），失效链接显示明确提示；A4 凭证 / 80mm 小票两种版式共用同一外壳；修掉中文大写金额尾部多「零」（170 → 壹佰柒拾元整，原为壹佰柒拾零元整）。
@@ -607,3 +607,11 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
   4. 自检里把 `PrintChoiceDialog.vue` 路径写成 `components/report/`（实为 `record/`），且含 `| <>` 的模式被 BRE 解释 → 新增 `hasf()`（`grep -Fq`）做字面匹配，修路径。
 - **验证**：`npm run build` / `verify-p0.sh`（新增「现代化报告」与「收费凭证不含税务发票要素」两项）/ lint 全绿；真实浏览器：病历默认「现代报告（推荐）」彩色版、处方笺单页 A4 且无空白斜线区且编号 `No.20`、检验报告与影像报告均渲染统一外壳（8 个患者字段）、`lab orderId=1 → image orderId=8` 不刷新浏览器即切换、A4 凭证「实付合计 ￥170.00 / 壹佰柒拾元整」、80mm 小票版式与数据读后即删、控制台 0 错误 0 警告。
 - **边界**：headless 浏览器无法验证真实打印对话框的分页与「另存为 PDF」输出，需真机打印预览确认；截图式 PDF 保留为兼容选项；模板可配、二维码验真、批量合并打印属 C 方案未做。
+
+### 电子病历删除两套黑白版式（2026-11-09，用户追加要求）
+用户：「电子病例只保留现代彩版就行，黑白版的两个不要了」。这是用户自己拍板的取舍，按原话整套删除，不留隐藏开关。
+- **`d-recordPrint.vue`**：删 `std`（黑白公文表格）与 `mono`（黑白简化）两套模板、工具栏的版式切换 `el-radio-group`（只剩一个选项时让用户「选」是多余动作，改成静态「现代报告」标识）、只服务这两版的 `stdSections` / `labAbnormalCount` / `petChip` computed，以及对应死 CSS（`.rp-mono` / `.rm-*` / `.rp-table` / `.rp-sec` / `.rp-sign` / `.rp-foot` / `.rp-hosp-name` / `.rp-title` / `.rp-no`）。彩色版从 `v-else-if` 改为唯一 `v-if="full"`；`.rp-sheet` 默认 `2px solid #333` 黑框改现代细边；`exportPdf` 的模板名固定「现代报告」。
+- **`PrintChoiceDialog.vue`**：删模板宫格、`style` ref、`tpls` 数组与 `Picture/Printer` 图标；预览 iframe 全宽；`recSrc` 不再拼 `&style=`（打印页也不再读 `route.query.style`）。
+- **`verify-p0.sh`**：现代化报告块里两条「默认 color」断言换成稳定锚点，新增「电子病历只保留现代彩版」守卫（禁止 `'std'` / `'mono'` / `rp-mono` 再出现，且必须仍有 `class="rp-sheet rp-color"`）。
+- **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；浏览器实测 `d-recordPrint?recordId=20`：只有 1 张 `.rp-sheet.rp-color`、0 个切换按钮、工具栏「现代报告」、无黑白版文案、控制台 0 错误。
+- **顺带发现、本次未改（既有问题，待用户定优先级）**：病例中心 `RecordDetailFull` 用了 `v-loading` 但该指令未在 `push-element.ts` 全局注册（Vue warn: Failed to resolve directive: loading），且 `reqRecordFull` 的 `.then` 没有 `.catch`，接口返回空时弹窗会永久停在「加载中…」，从病例中心就进不了统一打印弹窗；另有 `ElOption value=null` 的 prop 类型警告。这三条与本轮删版式无关，浏览器实测点击链路时才发现。

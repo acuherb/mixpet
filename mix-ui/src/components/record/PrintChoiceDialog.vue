@@ -19,17 +19,8 @@
       </div>
     </div>
 
-    <!-- 二级：电子病历（模板宫格 + 实时预览） -->
+    <!-- 二级：电子病历（现代报告实时预览，全宽） -->
     <div v-if="mode === 'record'" class="pv-body">
-      <div class="pv-tpls">
-        <div v-for="t in tpls" :key="t.style" :class="['pv-tpl', {active: style === t.style}]" @click="style = t.style">
-          <div class="pv-tpl-ico" :style="{background: t.color}">
-            <el-icon :size="22"><component :is="t.icon"/></el-icon>
-          </div>
-          <div class="pv-tpl-name">{{ t.name }}</div>
-          <div class="pv-tpl-desc">{{ t.desc }}</div>
-        </div>
-      </div>
       <div class="pv-preview">
         <iframe v-if="recSrc" :src="recSrc" class="pv-frame" title="病历打印预览"/>
       </div>
@@ -89,7 +80,7 @@
 
 <script lang="ts" setup>
 import {computed, reactive, ref, watch} from 'vue'
-import {Document, Picture, Printer, Tickets} from "@element-plus/icons-vue";
+import {Document, Tickets} from "@element-plus/icons-vue";
 import {reqRxSheet} from "@/request/RecordApi";
 import {reqRxPrintPrepare} from "@/request/RxApi";
 import {RxSheet} from "@/model/entiy/RxSheet";
@@ -115,15 +106,9 @@ watch(() => props.modelValue, (v: boolean) => {
   if (v) mode.value = props.preset === 'rx' ? 'rx' : 'record'
 })
 
-/*===== 电子病历：模板宫格（默认现代报告，旧版式降级为兼容归档） =====*/
-const style = ref<'std' | 'mono' | 'color'>('color')
-const tpls = [
-  {style: 'color' as const, name: '现代报告（推荐）', desc: '品牌配色 · 完整内容 · 发宠主', color: '#1E6FA8', icon: Picture},
-  {style: 'std' as const, name: '归档版（黑白）', desc: '公文表格 · 旧纸质归档兼容', color: '#1F2D3D', icon: Document},
-  {style: 'mono' as const, name: '黑白兼容版', desc: '单色紧凑 · 针打友好', color: '#7f8c98', icon: Printer}
-]
+/*===== 电子病历：只保留现代彩色报告，预览直连打印页 =====*/
 const recSrc = computed(() =>
-    '/#/doctorPage/d-recordPrint?recordId=' + props.recordId + '&style=' + style.value)
+    '/#/doctorPage/d-recordPrint?recordId=' + props.recordId)
 const framePrint = (): void => {
   const f = document.querySelector('.pv-frame') as HTMLIFrameElement | null
   if (!f?.contentWindow) { ElMessage.warning('预览尚未加载完成，请稍后重试'); return }
@@ -212,37 +197,7 @@ const prepareAndPrint = (): void => {
   .pc-choice { grid-template-columns: 1fr; }
 }
 
-/* 二级：模板宫格 + 预览 */
-.pv-body {
-  display: flex;
-  gap: 16px;
-  height: 72vh;
-}
-.pv-tpls {
-  width: 190px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
-}
-.pv-tpl {
-  border: 2px solid #ebeef5;
-  border-radius: 10px;
-  padding: 14px 10px;
-  text-align: center;
-  cursor: pointer;
-  transition: all .2s;
-  &:hover { border-color: #c6e2ff; }
-  &.active { border-color: #1E6FA8; background: #f0f7fc; }
-  .pv-tpl-ico {
-    width: 40px; height: 40px; margin: 0 auto 8px;
-    border-radius: 10px; color: #fff;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .pv-tpl-name { font-size: 13px; font-weight: 700; color: #1F2D3D; }
-  .pv-tpl-desc { font-size: 11px; color: #909399; margin-top: 2px; }
-}
+/* 二级：现代报告预览 */
 .pv-preview {
   flex: 1; min-width: 0;
   border: 1px solid #ebeef5; border-radius: 8px;

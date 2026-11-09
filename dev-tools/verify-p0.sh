@@ -135,8 +135,8 @@ has mixPet/src/test/java/com/mix/mapper/MapperXmlParseTest.java 'XMLMapperBuilde
 hasf mix-ui/src/styles/report-modern.scss '@page { size: A4' \
   && hasf mix-ui/src/components/sheet/ReportSheet.vue 'rm-sheet' \
   && hasf mix-ui/src/main.ts 'report-modern.scss' \
-  && hasf mix-ui/src/components/record/PrintChoiceDialog.vue "ref<'std' | 'mono' | 'color'>('color')" \
-  && hasf mix-ui/src/views/doctorPage/d-recordPrint.vue "?? 'color'" \
+  && hasf mix-ui/src/components/record/PrintChoiceDialog.vue '现代报告实时预览' \
+  && hasf mix-ui/src/views/doctorPage/d-recordPrint.vue '现代彩色报告（电子病历唯一版式）' \
   && ! hasf mix-ui/src/views/doctorPage/d-rx.vue '以 下 为 空 白' \
   && ! hasf mix-ui/src/views/doctorPage/d-rx.vue '210mm 148mm' \
   && ! hasf mix-ui/src/views/backstage/y-billList.vue 'document.write' \
@@ -144,6 +144,15 @@ hasf mix-ui/src/styles/report-modern.scss '@page { size: A4' \
   && hasf mix-ui/src/views/backstage/z-examReport.vue 'ReportSheet' \
   && ok '现代化报告（统一外壳/默认现代版/无公文斜线区/无 document.write）' \
   || bad '现代化报告（统一外壳/默认现代版/无公文斜线区/无 document.write）'
+# 电子病历只保留现代彩版（用户 2026-11-09 决定删除黑白两版）
+! hasf mix-ui/src/views/doctorPage/d-recordPrint.vue "'std'" \
+  && ! hasf mix-ui/src/views/doctorPage/d-recordPrint.vue "'mono'" \
+  && ! hasf mix-ui/src/views/doctorPage/d-recordPrint.vue 'rp-mono' \
+  && ! hasf mix-ui/src/components/record/PrintChoiceDialog.vue "'std'" \
+  && ! hasf mix-ui/src/components/record/PrintChoiceDialog.vue "'mono'" \
+  && hasf mix-ui/src/views/doctorPage/d-recordPrint.vue 'class="rp-sheet rp-color"' \
+  && ok '电子病历只保留现代彩版（黑白两版已删除）' \
+  || bad '电子病历只保留现代彩版（黑白两版已删除）'
 # 相对 redirect 会把 /doctorPage 解析成 /d-console 落 404（个人中心入口按钮曾踩中）
 ! grep -Eq "redirect: '[^/]" mix-ui/src/router/doctorPage.ts \
   && ! has mix-ui/src/views/backstage/w-doctorOne.vue 'to="/doctorPage"' \

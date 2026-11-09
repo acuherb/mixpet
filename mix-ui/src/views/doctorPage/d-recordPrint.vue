@@ -3,142 +3,14 @@
     <!-- 工具栏（不打印） -->
     <div class="no-print rp-toolbar">
       <el-button @click="router.back()">返回</el-button>
-      <el-radio-group v-model="style">
-        <el-radio-button value="color">现代报告（推荐）</el-radio-button>
-        <el-radio-button value="std">归档版（黑白）</el-radio-button>
-        <el-radio-button value="mono">黑白兼容版</el-radio-button>
-      </el-radio-group>
+      <span class="rp-badge">现代报告</span>
       <el-button :disabled="!full" type="primary" @click="doPrint">打印</el-button>
       <el-button :disabled="!full" :loading="pdfing" @click="exportPdf">截图版 PDF（兼容）</el-button>
       <span class="rp-hint">推荐用「打印」并选“另存为 PDF”：文字可选、矢量清晰；右侧按钮为截图兼容版</span>
     </div>
 
-    <!-- ═══════════ 归档版（黑白公文表格，仅兼容旧纸质归档） ═══════════ -->
-    <div v-if="full && style === 'std'" class="rp-sheet">
-      <div v-if="hosp.name" class="rp-hosp-name">{{ hosp.name }}</div>
-      <div class="rp-title">宠物病历记录</div>
-      <div class="rp-no">编号：No.{{ full.record.recordId }}<span style="float:right">{{ fmt(full.record.createTime) }}</span></div>
-
-      <!-- 前记：畜主 / 宠物 / 诊疗信息分三组，避免宠物属性混在畜主行 -->
-      <table class="rp-table">
-        <tbody>
-          <tr>
-            <td class="k">畜主</td><td class="v">{{ full.record.clientName }}</td>
-            <td class="k">病历号</td><td class="v">No.{{ full.record.recordId }}</td>
-          </tr>
-          <tr>
-            <td class="k">宠物名</td><td class="v">{{ full.record.petName }}</td>
-            <td class="k">品种</td><td class="v">{{ petVariety || '—' }}</td>
-            <td class="k">性别</td><td class="v">{{ petSex == null ? '—' : (petSex ? '公' : '母') }}</td>
-          </tr>
-          <tr>
-            <td class="k">年龄</td><td class="v">{{ petBirthday ? getAge(petBirthday) : '—' }}</td>
-            <td class="k">体重</td><td class="v">{{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}</td>
-            <td class="k">芯片号</td><td class="v">{{ petChip || '—' }}</td>
-          </tr>
-          <tr>
-            <td class="k">科室</td><td class="v">{{ full.record.departmentName || '—' }}</td>
-            <td class="k">接诊兽医</td><td class="v">{{ full.record.doctorName }}</td>
-            <td class="k">复诊日期</td><td class="v">{{ full.record.revisitDate || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-for="sec in stdSections" :key="sec.label" class="rp-sec">
-        <div class="rp-sec-tit">{{ sec.label }}</div>
-        <div class="rp-sec-body">{{ sec.value || '—' }}</div>
-      </div>
-
-      <!-- 辅助检查 -->
-      <div class="rp-sec">
-        <div class="rp-sec-tit">辅助检查</div>
-        <div class="rp-sec-body">
-          <template v-if="full.labOrders.length || full.imageOrders.length">
-            <div v-for="o in full.labOrders" :key="'l' + o.order.orderId">
-              化验单 #{{ o.order.orderId }}（{{ o.order.status ? '已出结果' : '待检验' }}）：
-              <span v-for="(it, i) in o.items" :key="i">{{ it.itemName }}<span v-if="it.resultValue"> {{ it.resultValue }}{{ it.itemUnit || '' }}<b v-if="it.isAbnormal" style="color:#c00">(异常)</b></span><span v-if="i < o.items.length - 1">；</span></span>
-            </div>
-            <div v-for="o in full.imageOrders" :key="'i' + o.orderId">
-              影像 #{{ o.orderId }} {{ o.itemName }}（{{ o.status ? '已出报告' : '待检查' }}）<span v-if="o.reportText">：{{ o.reportText }}</span>
-            </div>
-          </template>
-          <template v-else>无</template>
-        </div>
-      </div>
-
-      <!-- 处方用药 -->
-      <div class="rp-sec">
-        <div class="rp-sec-tit">处方用药</div>
-        <table v-if="full.prescriptions.length" class="rp-table">
-          <thead>
-            <tr><th style="width:30%">药品</th><th style="width:18%">规格</th><th style="width:12%">数量</th><th style="width:40%">用法用量</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="(p, i) in full.prescriptions" :key="i">
-              <td>{{ p.drugName }}</td><td>{{ p.drugSpec || '—' }}</td><td>{{ p.quantity }}</td><td>{{ p.usageInfo || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <div v-else class="rp-sec-body">无</div>
-      </div>
-
-      <table class="rp-table rp-sign">
-        <tbody>
-          <tr>
-            <td class="k">执业兽医</td><td class="v">{{ full.record.doctorName }}</td>
-            <td class="k">电子签名</td><td class="v">{{ full.record.signedBy || '待完结签名' }}</td>
-            <td class="k">签名日期</td><td class="v">{{ fmt(full.record.signedAt || full.record.createTime).slice(0, 10) }}</td>
-          </tr>
-          <tr>
-            <td class="k">病历版本</td><td class="v">V{{ full.record.version ?? 1 }}</td>
-            <td class="k">审核状态</td><td class="v">{{ full.record.reviewStatus === 1 ? '已审核' : '待审核' }}</td>
-            <td class="k">审核人/日期</td><td class="v">{{ full.record.reviewBy || '—' }} {{ fmt(full.record.reviewAt).slice(0, 10) }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="rp-foot">本病历依据《兽医处方格式及应用规范》相关要求书写，仅限本院存档使用。</div>
-    </div>
-
-    <!-- ═══════════ 黑白简化（紧凑一页，针打友好：流式分区+精简列） ═══════════ -->
-    <div v-else-if="full && style === 'mono'" class="rp-sheet rp-mono">
-      <div class="rm-head">
-        <span class="rm-hosp">{{ hosp.name || '动物诊疗机构' }}</span>
-        <span class="rm-title">宠物病历记录（简化）</span>
-        <span class="rm-no">No.{{ full.record.recordId }} · {{ fmt(full.record.createTime) }}</span>
-      </div>
-      <div class="rm-line">
-        <b>畜主</b>{{ full.record.clientName }}｜<b>宠物</b>{{ full.record.petName }}（{{ petSex == null ? '—' : (petSex ? '公' : '母') }} · {{ petVariety || '—' }} · {{ petBirthday ? getAge(petBirthday) : '—' }} · {{ full.record.weight != null ? full.record.weight + 'kg' : '—' }}）｜<b>科室</b>{{ full.record.departmentName || '—' }}｜<b>兽医</b>{{ full.record.doctorName }}
-      </div>
-      <div class="rm-line"><b>主诉：</b>{{ full.record.chiefComplaint || '—' }}</div>
-      <div class="rm-line"><b>现病史：</b>{{ full.record.presentIllness || '—' }}</div>
-      <div class="rm-line"><b>既往病史：</b>{{ full.record.pastHistory || '—' }}</div>
-      <div class="rm-line"><b>体格检查：</b>{{ full.record.physicalExam || '—' }}</div>
-      <div class="rm-line"><b>诊断：</b>{{ full.record.diagnosis || '—' }}</div>
-      <div class="rm-line"><b>治疗方案：</b>{{ full.record.treatment || '—' }}</div>
-      <div class="rm-line"><b>医嘱：</b>{{ full.record.advice || '—' }}（复诊：{{ full.record.revisitDate || '无需' }}）</div>
-      <!-- 处方：紧凑三列 -->
-      <table v-if="full.prescriptions.length" class="rm-table">
-        <thead><tr><th style="width:44%">药品</th><th style="width:12%">数量</th><th style="width:44%">用法</th></tr></thead>
-        <tbody>
-          <tr v-for="(p, i) in full.prescriptions" :key="i">
-            <td>{{ p.drugName }}</td><td>{{ p.quantity }}</td><td>{{ p.usageInfo || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else class="rm-line"><b>处方：</b>无</div>
-      <!-- 检验/影像：仅摘要（异常项标红） -->
-      <div v-if="full.labOrders.length || full.imageOrders.length" class="rm-line">
-        <b>检验：</b>{{ full.labOrders.length }} 单（异常 {{ labAbnormalCount }} 项）｜<b>影像：</b>{{ full.imageOrders.length }} 单
-      </div>
-      <div class="rm-sign">
-        <span>执业兽医：{{ full.record.doctorName }}（电子签名：{{ full.record.signedBy || '待完结' }}）V{{ full.record.version ?? 1 }}</span>
-        <span>日期：{{ fmt(full.record.signedAt || full.record.createTime).slice(0, 10) }}</span>
-      </div>
-      <div class="rm-foot">简化版仅作针式打印快速留档，完整内容以国标病历/详情版为准。</div>
-    </div>
-
-    <!-- ═══════════ 彩色详情版（电子病例 / 发宠主） ═══════════ -->
-    <div v-else-if="full && style === 'color'" class="rp-sheet rp-color">
+    <!-- 现代彩色报告（电子病历唯一版式） -->
+    <div v-if="full" class="rp-sheet rp-color">
       <div class="rc-head">
         <div class="rc-head-l">
           <div class="rc-hosp">{{ hosp.name || 'mixpet 宠物医院' }}</div>
@@ -270,7 +142,6 @@ const router = useRouter()
 const full = ref<RecordFull | null>(null)
 const pet = ref<Pet | null>(null)
 const loading = ref(true)
-const style = ref<'std' | 'mono' | 'color'>((route.query.style as 'std' | 'mono' | 'color' | undefined) ?? 'color')
 
 onMounted(() => {
   const recordId = Number(route.query.recordId)
@@ -290,24 +161,8 @@ onMounted(() => {
 const petVariety = computed(() => pet.value?.petVariety ?? '')
 const petSex = computed(() => pet.value?.petSex ?? null)
 const petBirthday = computed(() => pet.value?.petBirthday ?? null)
-const petChip = computed(() => pet.value?.petChip ?? '')
 
 const fmt = (t: string | null | undefined): string => (t || '').replace('T', ' ').slice(0, 16)
-
-// 国标病历分区（按规范病历结构）
-const stdSections = computed(() => {
-  const r = full.value?.record
-  if (!r) return []
-  return [
-    {label: '主诉', value: r.chiefComplaint},
-    {label: '现病史', value: r.presentIllness},
-    {label: '既往病史', value: r.pastHistory},
-    {label: '体格检查', value: r.physicalExam},
-    {label: '诊断', value: r.diagnosis},
-    {label: '治疗方案', value: r.treatment},
-    {label: '医嘱', value: r.advice}
-  ]
-})
 
 // 彩色详情版分区（不含辅助检查/处方——它们有专门卡片）
 const colorSections = computed(() => {
@@ -325,18 +180,13 @@ const colorSections = computed(() => {
 
 const doPrint = (): void => window.print()
 
-// 黑白简化版：检验异常项计数（摘要行用）
-const labAbnormalCount = computed(() =>
-    (full.value?.labOrders || []).reduce(
-        (s, o) => s + (o.items || []).filter(it => it.isAbnormal).length, 0))
-
 // 导出真实 PDF 文件（html2pdf：当前模板纸张 → A4 PDF，文件名带病历号与模板名）
 const pdfing = ref(false)
 const exportPdf = (): void => {
   const el = document.querySelector('.rp-sheet') as HTMLElement | null
   if (!el || !full.value) return
   pdfing.value = true
-  const tplName = style.value === 'std' ? '归档版' : style.value === 'mono' ? '黑白兼容版' : '现代报告'
+  const tplName = '现代报告'
   html2pdf().set({
     margin: 8,
     filename: `病历-No.${full.value.record.recordId}-${tplName}.pdf`,
@@ -360,117 +210,19 @@ const exportPdf = (): void => {
   align-items: center;
   gap: 12px;
   .rp-hint { font-size: 12px; color: #909399; }
+  .rp-badge {
+    font-size: 12px; color: #1E6FA8; background: #eef6fc;
+    border: 1px solid #cfe4f5; border-radius: 14px; padding: 4px 12px;
+  }
 }
 .rp-sheet {
   max-width: 760px;
   margin: 0 auto 24px;
   background: #fff;
-  border: 2px solid #333;
+  border: 1px solid #e8edf5;
+  border-radius: 12px;
   padding: 24px 28px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-/* ═══ 黑白简化版：紧凑一页（11px、窄行距、流式分区、单色） ═══ */
-.rp-mono {
-  padding: 16px 20px;
-
-  .rm-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    border-bottom: 2px solid #000;
-    padding-bottom: 4px;
-    margin-bottom: 6px;
-
-    .rm-hosp { font-size: 12px; font-weight: 700; }
-    .rm-title { font-size: 15px; font-weight: 800; letter-spacing: 2px; }
-    .rm-no { font-size: 10px; color: #333; }
-  }
-  .rm-line {
-    font-size: 11px;
-    line-height: 1.55;
-    color: #111;
-    padding: 1px 0;
-    b { display: inline-block; min-width: 62px; font-weight: 700; }
-  }
-  .rm-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 4px 0;
-
-    th, td {
-      border: 1px solid #000;
-      padding: 2px 4px;
-      font-size: 10px;
-      line-height: 1.4;
-    }
-    th { background: #f2f2f2; text-align: center; }
-  }
-  .rm-sign {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
-    font-size: 11px;
-    color: #111;
-  }
-  .rm-foot {
-    margin-top: 6px;
-    font-size: 9px;
-    color: #666;
-    border-top: 1px dashed #999;
-    padding-top: 3px;
-  }
-}
-
-.rp-hosp-name {
-  text-align: center;
-  font-size: 15px;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-.rp-title {
-  text-align: center;
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: 8px;
-  margin-bottom: 4px;
-}
-.rp-no {
-  text-align: left;
-  font-size: 13px;
-  color: #555;
-  margin-bottom: 12px;
-  overflow: hidden;
-}
-.rp-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 12px;
-  td, th { border: 1px solid #333; padding: 7px 8px; font-size: 13px; }
-  .k { background: #f0f2f5; width: 76px; text-align: center; white-space: nowrap; }
-  th { background: #f0f2f5; text-align: center; }
-  .v { min-width: 60px; }
-}
-.rp-sec {
-  margin-bottom: 10px;
-  .rp-sec-tit {
-    font-weight: 700;
-    font-size: 14px;
-    margin-bottom: 3px;
-    &::before { content: "■ "; color: #555; }
-  }
-  .rp-sec-body {
-    font-size: 13px;
-    line-height: 1.7;
-    padding-left: 14px;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-}
-.rp-sign td { height: 42px; }
-.rp-foot {
-  font-size: 11px;
-  color: #888;
-  margin-top: 10px;
+  box-shadow: 0 8px 28px rgba(31, 45, 61, .1);
 }
 .rp-empty {
   text-align: center;
