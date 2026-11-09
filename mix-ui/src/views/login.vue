@@ -62,6 +62,7 @@ import {ElMessage, FormInstance, FormRules} from "element-plus";
 import {Lock, User} from "@element-plus/icons-vue";
 import {reqGetLogin, reqLogin, reqLoginUser} from "@/request/PowerApi";
 import {LoginVo, RoleEnum} from "@/model/VO/LoginVo";
+import {reqGetLoginD} from "@/request/DoctorApi";
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -92,7 +93,8 @@ const toLogin = async (): Promise<void> => {
 }
 
 // 登录成功后按角色跳转（失败时停留登录页并提示，不盲目进后台）：
-// 顾客需首次改密（pwdChanged=false 先去 changePwd），医生/管理员进后台
+// 顾客需首次改密（pwdChanged=false 先去 changePwd）；
+// 员工按权限分首屏：管理者(authLv>=6) 进后台经营驾驶舱，医生/医护(<6) 进医生操作台。
 const getLoginRole = async (): Promise<void> => {
   try {
     const resp = await reqGetLogin()
@@ -106,7 +108,13 @@ const getLoginRole = async (): Promise<void> => {
         ElMessage.error('获取用户信息失败，请重试')
       }
     } else {
-      router.push("/doctorPage/d-console")
+      // 取不到权限时兜底进医生操作台（所有员工都能用），不盲跳后台管理页
+      try {
+        const d = await reqGetLoginD()
+        router.push(Number(d?.authLv ?? 0) >= 6 ? "/backstage/m-flow" : "/doctorPage/d-console")
+      } catch {
+        router.push("/doctorPage/d-console")
+      }
     }
   } catch {
     loading.value = false

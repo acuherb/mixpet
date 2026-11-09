@@ -18,6 +18,7 @@
       @logout="doLogout"
     >
       <template #nav-right>
+        <li v-if="isManager"><router-link to="/backstage/m-flow"><el-icon><Setting/></el-icon> 后台管理</router-link></li>
         <li><router-link to="/doctorPage/d-console"><el-icon><HomeFilled/></el-icon> 医生操作台</router-link></li>
       </template>
     </FlowPipeline>
@@ -34,17 +35,22 @@ import {onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {
   Bell, Calendar, Collection, Document, DocumentChecked, Files, FolderOpened, HomeFilled,
-  House, Money, Phone, Picture, Printer, Right, User,
+  House, Money, Phone, Picture, Printer, Right, Setting, User,
 } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import FlowPipeline from '@/views/doctorPage/FlowPipeline.vue'
 import {reqDoctorPipeline, type FlowStage} from '@/request/FlowApi'
 import {reqLogout} from '@/request/PowerApi'
+import {reqGetLoginD} from '@/request/DoctorApi'
 import {subscribeFlow} from '@/utils/chatSocket'
 import {clearPwdCheckFlag} from '@/router'
 
 const router = useRouter()
 const route = useRoute()
+
+// 管理者（MANAGER=6 / ADMIN=8）才在顶部看到「后台管理」互切入口；取不到权限时按普通医生处理
+const isManager = ref(false)
+reqGetLoginD().then(d => { isManager.value = Number(d?.authLv ?? 0) >= 6 }).catch(() => {})
 
 const loadError = ref(false)
 const stages = ref<FlowStage[]>([])

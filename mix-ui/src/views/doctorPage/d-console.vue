@@ -10,6 +10,7 @@
         <ul class="nav">
           <li><a class="nav-link" @click="openPalette"><el-icon><Search/></el-icon> 搜索 <kbd>Ctrl/⌘ K</kbd></a></li>
           <li><router-link to="/doctorPage/d-flow"><el-icon><DataLine/></el-icon> 诊疗流全景</router-link></li>
+          <li v-if="isManager"><router-link to="/backstage/m-flow"><el-icon><Setting/></el-icon> 后台管理</router-link></li>
           <li><router-link to="/backstage"><el-icon><User/></el-icon> 个人中心</router-link></li>
           <li><a class="nav-logout" @click="doLogout"><el-icon><SwitchButton/></el-icon> 退出</a></li>
         </ul>
@@ -134,13 +135,14 @@ import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {
   Bell, Calendar, ChatDotRound, Collection, DataLine, Document, DocumentChecked, EditPen, Files,
-  FirstAidKit, FolderOpened, House, Money, Phone, Picture, Printer, Refresh, Right, Search,
+  FirstAidKit, FolderOpened, House, Money, Phone, Picture, Printer, Refresh, Right, Search, Setting,
   SwitchButton, Tickets, User, UserFilled,
 } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {reqDoctorPipeline, type FlowChip, type FlowStage} from '@/request/FlowApi'
 import {reqRecordOne} from '@/request/RecordApi'
 import {reqLogout} from '@/request/PowerApi'
+import {reqGetLoginD} from '@/request/DoctorApi'
 import {subscribeFlow} from '@/utils/chatSocket'
 import {clearPwdCheckFlag} from '@/router'
 
@@ -148,6 +150,10 @@ type Action = {label: string; path: string; icon: any}
 
 const router = useRouter()
 const route = useRoute()
+
+// 管理者（MANAGER=6 / ADMIN=8）才在顶部看到「后台管理」互切入口；取不到权限时按普通医生处理
+const isManager = ref(false)
+reqGetLoginD().then(d => { isManager.value = Number(d?.authLv ?? 0) >= 6 }).catch(() => {})
 
 // ── 数据 ──────────────────────────────────────────────────────────────
 const loadError = ref(false)

@@ -171,6 +171,20 @@ has mix-ui/src/views/doctorPage/d-console.vue '今日待办' \
   && has mix-ui/src/views/doctorPage/d-flow.vue '医生操作台' \
   && has mix-ui/src/router/index.ts "'/doctorPage/d-console/inline'" \
   && ok '医生操作台（登录首屏/可点击/双视图互切）' || bad '医生操作台（登录首屏/可点击/双视图互切）'
+# 三端职责 B：后台=管理设置/经营决策，医生操作台=临床日常；登录按 authLv 分首屏
+has mix-ui/src/views/login.vue '/backstage/m-flow' \
+  && has mix-ui/src/views/login.vue 'authLv' \
+  && hasf mix-ui/src/views/backstage/index.vue '业务查询 / 对账' \
+  && hasf mix-ui/src/views/backstage/index.vue '管理设置' \
+  && ! hasf mix-ui/src/views/backstage/index.vue '运营管理' \
+  && hasf mix-ui/src/views/doctorPage/d-console.vue '后台管理' \
+  && hasf mix-ui/src/views/doctorPage/d-flow.vue '后台管理' \
+  && has mix-ui/src/views/doctorPage/d-console.vue 'isManager' \
+  && has mix-ui/src/views/doctorPage/d-flow.vue 'isManager' \
+  && has mix-ui/src/router/index.ts '/backstage/m-flow' \
+  && [ "$(grep -c 'minAuthLv: 6' mix-ui/src/router/backstage.ts)" -ge 16 ] \
+  && ok '三端职责 B（登录分首屏/菜单分组/两端互切/管理页权限门槛）' \
+  || bad '三端职责 B（登录分首屏/菜单分组/两端互切/管理页权限门槛）'
 # 个人中心「今日概览」复用诊疗流快照：加载失败必须显式报错，环节卡要能直达操作台
 has mix-ui/src/views/backstage/w-doctorOne.vue '今日概览' \
   && has mix-ui/src/views/backstage/w-doctorOne.vue 'reqDoctorPipeline' \

@@ -82,13 +82,16 @@ router.beforeEach(async (to, from) => {
         } catch {
             return "/login"
         }
+        // meta.minAuthLv 与后台菜单分组、后端 @Secured 对齐；权限不足时回各自首屏，
+        // 不再一律弹到 /backstage（普通医生该回医生操作台，管理者才回经营驾驶舱）。
         const minLv = Number(to.meta?.minAuthLv ?? 0)
         if (minLv > 0) {
             try {
                 const doctor = await reqGetLoginD()
-                if (!doctor || Number((doctor as any).authLv ?? 0) < minLv) {
+                const authLv = Number((doctor as any)?.authLv ?? 0)
+                if (!doctor || authLv < minLv) {
                     ElMessage.warning("该页面需要更高权限")
-                    return "/backstage"
+                    return authLv >= 6 ? "/backstage/m-flow" : "/doctorPage/d-console"
                 }
             } catch {
                 return "/login"

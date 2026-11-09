@@ -622,3 +622,20 @@ P6 提交后本地 `bash dev-tools/start.sh` 连踩**三坑**，逐一修复（�
 - **`verify-p0.sh`** 新增「打印预览布局」守卫：`.pv-body` 必须存在、处方笺必须上下结构、窄屏媒体查询必须在。
 - **验证**：`npm run build` / `verify-p0.sh` / lint 全绿；浏览器实测 `d-rx` 在 1200/700/560px 下纸张宽 794/684/544px，不再溢出。**弹窗真实点击链路仍未实测成功**：病例中心 `RecordDetailFull` 的既有取数问题让档案弹窗停在「加载中…」（换 recordId 也一样），接诊向导的处方笺快捷入口又必须先按步骤推进；故弹窗布局本身只做了静态/CSS 验证，待那个既有问题修掉后再走一次真实点击。
 - **教训**：删 SCSS 块时按注释切片会连带删掉相邻的基础布局规则；以后删样式只按明确选择器切片，并把「基础布局规则仍存在」写进自检（已做）。
+
+### 三端职责收敛 / admin 重叠规划（2026-11-09，用户选 B）
+
+用户确认的三端理解：宠主端 `/` + `/reception`、医生操作台 `/doctorPage`（临床日常，改个人资料也在这里）、后台 `/backstage`（全院级管理设置与经营决策）。「admin 两边功能重叠」不是两套实现，而是**同一批组件挂在两套路由壳下 + 两个入口**：admin(`authLv=8`) 因此在后台和医生端都能看到挂号/收银/处方笺档案等作业页。B 方案按「后台只留管理设置 + 经营决策，业务入口降级为查档/对账」收敛，不动后端权限模型。
+
+- **菜单重分组**：`backstage/index.vue` 从「运营管理 / 经营分析 / 系统设置 / 组织管理」改为「经营决策 / 管理设置（`全院配置·定价字典` + `组织与人员` 两个 `el-menu-item-group`）/ 业务查询·对账」。业务组挪到最后，并对 `isManager` 隐藏 4 个与医生端完全重复的作业入口（今日接待、挂号列表、收银台、处方笺档案）；寄养/客户/宠物/领养档案页保留给所有员工。**旧路由一条没删**，URL 仍可直达，避免断链。
+- **登录分首屏**：`login.vue` 员工登录成功后取 `reqGetLoginD().authLv`，`>=6` 进 `/backstage/m-flow`（经营驾驶舱），`<6` 进 `/doctorPage/d-console`；接口失败兜底进医生操作台（所有员工可用），不盲跳后台。选 `m-flow` 而非 `z-dashboard`，因为前者本就有 `minAuthLv:6` 且是管理层专属实时指标页。
+- **两端互切闭环**：`d-console.vue` 顶部 nav、`d-flow.vue` 的 `#nav-right` 各加一个仅 `isManager` 可见的「后台管理 → /backstage/m-flow」；后台侧栏原有「医生操作台 / 诊疗流全景」保留。普通医生看不到管理入口，管理者不用记 URL。
+- **路由门槛与菜单、后端对齐**：`backstage.ts` 给 15 个管理设置/组织/经营页补 `meta.minAuthLv: 6`，加原有 `m-flow`/`z-auditLog` 共 17 条；`z-backup:8`、`r-flow:2` 保持。后端佐证：`ReportController`/`MemberController`/`ServicePackageController`/`SysDictController`/`NoticeController`/`SupplierController`/`JobController`/`AuditLogController` 均为 `MANAGER`/`ADMIN`，`ScheduleController` 写操作、`MsgController` 清理、`FlowController.managerPipeline` 亦为 `MANAGER`。
+  - **取舍**：`StatisticsController`(经营看板)、`DoctorController`(查看)、`HospitalController`(医院资料) 的读接口后端允许 `DOCTOR`/`NURSE`，前端仍按职责统一收紧到管理者；后端注解一行未改，只是提前给友好提示。业务查档/打印/发药页一律不设 `meta`，避免把普通医生挡在临床工具外，写操作继续由 `@Secured` 真拦截。
+  - **没有给 `/doctorPage` 父级加 `meta.minAuthLv`**：`to.meta` 会继承到所有子路由，内联抽屉每次 `router.push` 都会多打一次 `/doctorLog`，而守卫里该接口异常会 `return "/login"`（偶发失败即被踢出登录）；且 `d-console` 常用功能有「诊断字典 / 参考区间」等普通医生要用的页面，设 6 会误挡。
+- **守卫回落**：`router/index.ts` 权限不足不再一律 `return "/backstage"`，按 `authLv` 回各自首屏（`>=6` 经营驾驶舱，否则医生操作台），否则普通医生误点管理链接会被丢进后台壳。
+- **自检**：`verify-p0.sh` 新增「三端职责 B」守卫（登录分流字符串、新组名且旧「运营管理」不得回归、两端互切入口与 `isManager`、管理页 `minAuthLv: 6` 计数 ≥16）。
+
+**验证**：`npm run build`（vue-tsc + vite）/ `bash dev-tools/verify-p0.sh`（含 `.env` 强值、真连库 4/4）/ 前端 lint 0 错误 0 警告，全绿。真实 Chromium 双账号（前端 3120 + 后端 8085）：`admin`(8) 登录落 `#/backstage/m-flow`，侧栏三组标题为「经营决策 / 管理设置 / 业务查询 / 对账」，重复 4 项不在 DOM、档案 4 项在；点侧栏「医生操作台」到 `d-console` 顶部出现「后台管理」，`d-flow` 顶部同样出现；`yun`(4) 登录落 `#/doctorPage/d-console`，两个医生端顶部均无「后台管理」，进 `#/backstage` 个人中心只见「业务查询 / 对账」组且 8 项齐全；URL 直达 `#/backstage/y-drugList`(6) 与 `#/backstage/z-backup`(8) 均被弹回 `#/doctorPage/d-console`，admin 进 `z-backup` 正常。两会话控制台 0 错误 0 警告。
+**环境坑**：`playwright-cli` 不在 PATH，实际在 `~/.npm/_npx/423231821c231c73/node_modules/.bin/`；默认 `--browser=chrome` 找 `/opt/google/chrome/chrome`（本机没装），须显式 `--browser=chromium` 才会用 `~/.cache/ms-playwright/chromium-1247`。演示账号密码见 README（`admin`/`yun` 均 `123456`），`.env` 的 `APP_DEFAULT_PASSWORD` 是新用户初始口令，不是存量演示账号的密码。
+**边界**：本轮只调前端职责与可见性，后端 `@Secured` 与 `DoctorDetails` 的 switch 累加逻辑未动；`authLv` 变更后需刷新页面才会重新拉取（菜单与两端入口都是各自挂载时取一次）。

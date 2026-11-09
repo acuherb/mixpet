@@ -37,67 +37,65 @@
           <span>个人中心</span>
         </el-menu-item>
 
-        <!-- ═══ 运营管理（前台/护士/医生日常作业线；临床诊疗请在医生工作台） ═══ -->
-        <el-sub-menu index="g-ops">
-          <template #title>
-            <el-icon><Tickets/></el-icon>
-            <span>运营管理</span>
-          </template>
-          <el-menu-item v-if="doctorNow.authLv >= 2" v-show="menuMatch('今日接待')" index="/backstage/r-flow">今日接待 · 到店/待收银/已诊</el-menu-item>
-          <el-menu-item v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
-          <el-menu-item v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
-          <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
-          <el-menu-item v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
-        </el-sub-menu>
-
-        <!-- ═══ 经营分析（院长/管理者） ═══ -->
+        <!-- ═══ 经营决策（管理者登录首屏） ═══ -->
         <el-sub-menu v-if="isManager" index="g-stat">
           <template #title>
             <el-icon><DataBoard/></el-icon>
-            <span>经营分析</span>
+            <span>经营决策</span>
           </template>
           <el-menu-item v-show="menuMatch('经营驾驶舱')" index="/backstage/m-flow">经营驾驶舱 · 实时指标</el-menu-item>
           <el-menu-item v-show="menuMatch('经营看板')" index="/backstage/z-dashboard">经营看板</el-menu-item>
           <el-menu-item v-show="menuMatch('财务报表')" index="/backstage/z-report">财务报表</el-menu-item>
         </el-sub-menu>
 
-        <!-- ═══ 系统设置（院长/管理者：定价规则/字典/组织/门面配置） ═══ -->
+        <!-- ═══ 管理设置（全院配置 + 组织人员，只在后台做） ═══ -->
         <el-sub-menu v-if="isManager" index="g-config">
           <template #title>
             <el-icon><Setting/></el-icon>
-            <span>系统设置</span>
+            <span>管理设置</span>
           </template>
-          <el-menu-item v-show="menuMatch('药品管理')" index="/backstage/y-drugList">药品管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('服务套餐')" index="/backstage/z-package">服务套餐</el-menu-item>
-          <el-menu-item v-show="menuMatch('供应商管理')" index="/backstage/z-supplier">供应商管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('会员等级')" index="/backstage/z-memberLevel">会员等级</el-menu-item>
-          <el-menu-item v-show="menuMatch('次卡模板')" index="/backstage/z-countCard">次卡模板</el-menu-item>
-          <el-menu-item v-show="menuMatch('医院资料')" index="/backstage/y-hospitalInfo">医院资料</el-menu-item>
-          <el-menu-item v-show="menuMatch('检验项字典')" index="/backstage/z-labTest">检验项字典</el-menu-item>
-          <el-menu-item v-show="menuMatch('影像项字典')" index="/backstage/z-imageTest">影像项字典</el-menu-item>
-          <el-menu-item v-show="menuMatch('病历模板')" index="/backstage/z-template">病历模板</el-menu-item>
-          <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
-          <el-menu-item v-show="menuMatch('公告管理')" index="/backstage/y-noticeList">公告管理</el-menu-item>
-          <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
-          <!-- 数据备份/还原：仅超管（毁库操作，后端 /backup/restore 也限 ADMIN） -->
-          <el-menu-item v-if="isAdmin" v-show="menuMatch('数据备份')" index="/backstage/z-backup">数据备份</el-menu-item>
-          <!-- 操作日志：高危写操作留痕（管理者以上可查） -->
-          <el-menu-item v-show="menuMatch('操作日志')" index="/backstage/z-auditLog">操作日志</el-menu-item>
+          <el-menu-item-group title="全院配置 · 定价字典">
+            <el-menu-item v-show="menuMatch('医院资料')" index="/backstage/y-hospitalInfo">医院资料</el-menu-item>
+            <el-menu-item v-show="menuMatch('药品管理')" index="/backstage/y-drugList">药品管理</el-menu-item>
+            <el-menu-item v-show="menuMatch('服务套餐')" index="/backstage/z-package">服务套餐</el-menu-item>
+            <el-menu-item v-show="menuMatch('供应商管理')" index="/backstage/z-supplier">供应商管理</el-menu-item>
+            <el-menu-item v-show="menuMatch('会员等级')" index="/backstage/z-memberLevel">会员等级</el-menu-item>
+            <el-menu-item v-show="menuMatch('次卡模板')" index="/backstage/z-countCard">次卡模板</el-menu-item>
+            <el-menu-item v-show="menuMatch('检验项字典')" index="/backstage/z-labTest">检验项字典</el-menu-item>
+            <el-menu-item v-show="menuMatch('影像项字典')" index="/backstage/z-imageTest">影像项字典</el-menu-item>
+            <el-menu-item v-show="menuMatch('病历模板')" index="/backstage/z-template">病历模板</el-menu-item>
+            <el-menu-item v-show="menuMatch('系统设置')" index="/backstage/z-setting">系统设置</el-menu-item>
+            <el-menu-item v-show="menuMatch('公告管理')" index="/backstage/y-noticeList">公告管理</el-menu-item>
+            <el-menu-item v-show="menuMatch('聊天数据清理')" index="/backstage/z-chatClean">聊天数据清理</el-menu-item>
+            <!-- 数据备份/还原：仅超管（毁库操作，后端 /backup/restore 也限 ADMIN） -->
+            <el-menu-item v-if="isAdmin" v-show="menuMatch('数据备份')" index="/backstage/z-backup">数据备份</el-menu-item>
+            <!-- 操作日志：高危写操作留痕（管理者以上可查） -->
+            <el-menu-item v-show="menuMatch('操作日志')" index="/backstage/z-auditLog">操作日志</el-menu-item>
+          </el-menu-item-group>
+          <el-menu-item-group title="组织与人员">
+            <el-menu-item v-show="menuMatch('科室列表')" index="/backstage/x-departmentList">科室列表</el-menu-item>
+            <el-menu-item v-show="menuMatch('职务/职称')" index="/backstage/z-job">职务/职称</el-menu-item>
+            <el-menu-item v-show="menuMatch('医生列表')" index="/backstage/x-doctorList">医生列表</el-menu-item>
+            <el-menu-item v-show="menuMatch('医生排班')" index="/backstage/z-schedule">医生排班</el-menu-item>
+          </el-menu-item-group>
         </el-sub-menu>
 
-        <!-- ═══ 组织管理（院长/管理者） ═══ -->
-        <el-sub-menu v-if="isManager" index="g-org">
+        <!-- ═══ 业务查询 / 对账（次要入口）：日常诊疗一律在医生操作台 ═══
+             与医生操作台重复的作业页不再向管理者展示，但旧 URL 全部保留可直达；
+             普通医生/医护仍从后台做档案查询与对账。 -->
+        <el-sub-menu index="g-query">
           <template #title>
-            <el-icon><OfficeBuilding/></el-icon>
-            <span>组织管理</span>
+            <el-icon><Tickets/></el-icon>
+            <span>业务查询 / 对账</span>
           </template>
-          <el-menu-item v-show="menuMatch('科室列表')" index="/backstage/x-departmentList">科室列表</el-menu-item>
-          <el-menu-item v-show="menuMatch('职务/职称')" index="/backstage/z-job">职务/职称</el-menu-item>
-          <el-menu-item v-show="menuMatch('医生列表')" index="/backstage/x-doctorList">医生列表</el-menu-item>
-          <el-menu-item v-show="menuMatch('医生排班')" index="/backstage/z-schedule">医生排班</el-menu-item>
+          <el-menu-item v-if="doctorNow.authLv >= 2 && !isManager" v-show="menuMatch('今日接待')" index="/backstage/r-flow">今日接待 · 到店/待收银/已诊</el-menu-item>
+          <el-menu-item v-if="!isManager" v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
+          <el-menu-item v-if="!isManager" v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
+          <el-menu-item v-if="!isManager" v-show="menuMatch('处方笺档案')" index="/backstage/z-rxArchive">处方笺档案</el-menu-item>
+          <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </aside>
@@ -108,7 +106,7 @@
 </template>
 
 <script lang="ts" setup>
-import {DataBoard, Tickets, Setting, Search, Expand, Fold, Menu as IconMenu, OfficeBuilding} from '@element-plus/icons-vue'
+import {DataBoard, Tickets, Setting, Search, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
 
@@ -118,8 +116,8 @@ const doctorNow = reactive({
   authLv: 0
 })
 
-// 是否管理者（MANAGER=6 / ADMIN=8）：经营分析与系统设置组对其可见
-// 临床诊疗（接诊/化验/影像/手术/住院/免疫/随访）已收拢医生工作台，后台不再挂入口
+// 是否管理者（MANAGER=6 / ADMIN=8）：经营决策与管理设置组对其可见；
+// 业务查询/对账组里与医生操作台重复的作业入口对其隐藏（临床日常不在这里）。
 const isManager = computed(() => doctorNow.authLv >= 6)
 // 是否超管（ADMIN=8）：数据备份/还原等毁库操作仅其可见可为
 const isAdmin = computed(() => doctorNow.authLv >= 8)
