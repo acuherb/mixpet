@@ -188,7 +188,9 @@ const printLegacy = (row: ImageOrder, full: boolean): void => {
   const name = row.itemName + ' ' + (row.groupName || '')
   const isB = /B超|超声|彩超|腹部超声/i.test(name) && !/X光|DR|拍片|放射/i.test(name)
   const tpl = (isB ? 'TypeB' : 'TypeX') + (full ? 'Full' : '')
-  router.push('/doctorPage/z-mrtPrint?tpl=' + tpl + '&recordId=' + row.recordId + '&orderId=' + row.orderId)
+  // __flowStandalone=1：A5/A4 打印版式必须在独立页，工作台抽屉里会被重写成空白内联页
+  router.push('/doctorPage/z-mrtPrint?tpl=' + tpl + '&recordId=' + row.recordId
+    + '&orderId=' + row.orderId + '&__flowStandalone=1')
 }
 
 const modalView = ref(false)

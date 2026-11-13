@@ -10,14 +10,17 @@
           <el-option v-for="o in IMAGE_TPLS" :key="o.v" :label="o.l" :value="o.v"/>
         </el-option-group>
       </el-select>
-      <el-button :disabled="!sheet" type="primary" @click="doPrint">打印</el-button>
+      <el-button :disabled="!sheet || !!error" type="primary" @click="doPrint">打印</el-button>
       <template v-if="isCheckup">
         <el-input v-model="petIdInput" clearable placeholder="宠物ID（可空，空白表手写）" style="width: 190px"/>
         <el-button @click="loadPet">载入档案</el-button>
       </template>
-      <span class="mp-hint">
-        版式移植自老系统 {{ sheet?.name || tpl }} · {{ sizeText }}
-        <template v-if="!hasData"> · 未载入数据，打印空白表</template>
+      <span class="mp-hint" :class="{'mp-err': error}">
+        <template v-if="error">{{ error }}</template>
+        <template v-else>
+          版式移植自老系统 {{ sheet?.name || tpl }} · {{ sizeText }}
+          <template v-if="!hasData"> · 未载入数据，打印空白表</template>
+        </template>
       </span>
     </div>
 
@@ -40,6 +43,7 @@
 <script lang="ts" setup>
 import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
+import {ElMessage} from 'element-plus'
 import {reqImageByRecord, reqImageRequisition} from '@/request/ImageApi'
 import {reqPetArchive} from '@/request/PetApi'
 import {Requisition} from '@/model/entiy/Requisition'
@@ -77,6 +81,8 @@ const tpl = ref(String(route.query.tpl || 'CheckupTijian'))
 const sheet = ref<Sheet | null>(null)
 const loaded = ref(false)
 const data = ref<Record<string, string>>({})
+/** 数据/版式加载失败：禁止打印，避免输出串单或缺患者信息的空白文书 */
+const error = ref('')
 const petIdInput = ref(String(route.query.petId || ''))
 const isCheckup = computed(() => tpl.value.startsWith('Checkup'))
 const hasData = computed(() => Object.keys(data.value).length > 0)
@@ -93,16 +99,27 @@ const mountPageStyle = (s: Sheet): void => {
 const loadSheet = (): void => {
   loaded.value = false
   sheet.value = null
+  pageStyle?.remove()   // 切模板失败时不能沿用上一模板的纸张尺寸
   fetch(import.meta.env.BASE_URL + 'mrt/' + tpl.value + '.json')
     .then(r => r.ok ? r.json() : Promise.reject(new Error('missing')))
-    .then((s: Sheet) => { sheet.value = s; mountPageStyle(s); loaded.value = true })
-    .catch(() => { loaded.value = true })
+    .then((s: Sheet) => {
+      if (!s || !Array.isArray(s.comps) || !s.w || !s.h) throw new Error('bad layout')
+      sheet.value = s
+      mountPageStyle(s)
+      loaded.value = true
+    })
+    .catch(() => {
+      loaded.value = true
+      error.value = `版式 ${tpl.value} 加载失败，请刷新页面重试`
+    })
 }
 
 /* ---------------- 数据注入 ---------------- */
 const fmt = (t: string | null | undefined): string => (t || '').replace('T', ' ').slice(0, 16) || '—'
 const nowText = (): string => new Date().toLocaleString('zh-CN')
-const photoUrl = (p: string): string => p.startsWith('http') || p.startsWith('/') ? p : '/img/' + p
+// 报告附件走 /api/common/downReport（与 UpImg.vue 的 upReportFile 配对），/img/ 并不存在
+const photoUrl = (p: string): string => p.startsWith('http') || p.startsWith('/')
+  ? p : '/api/common/downReport?name=' + encodeURIComponent(p)
 
 const baseFromReq = (r: Requisition): Record<string, string> => {
   const d: Record<string, string> = {
@@ -159,13 +176,14 @@ const loadImageData = (): void => {
         } catch { /* 非 JSON 忽略 */ }
       }
       data.value = dx
-    }).catch(() => undefined)
-  }).catch(() => { data.value = {} })
+    }).catch(() => { error.value = '影像报告明细加载失败，请刷新重试' })
+  }).catch(() => { data.value = {}; error.value = '影像申请单加载失败，请检查单号或权限' })
 }
 
 const loadPetData = (petId: number): void => {
   if (!petId) { data.value = {}; return }
   reqPetArchive(petId).then(a => {
+    if (!a || !a.pet) { data.value = {}; error.value = `未找到宠物 ${petId} 的档案`; return }
     const c: any = a.client, p: any = a.pet, st: any = a.stat
     const d: Record<string, string> = {
       COMPANY_NAME: hosp.value.name || '动物诊疗机构',
@@ -183,16 +201,18 @@ const loadPetData = (petId: number): void => {
       M_DOCT_FULLNAME: '', yishi: '', DESCRIPTION: '', jianyi: '',
     }
     data.value = d
-  }).catch(() => { data.value = {} })
+  }).catch(() => { data.value = {}; error.value = '宠物档案加载失败，请检查宠物ID或权限' })
 }
 
 const loadPet = (): void => {
   const id = Number(petIdInput.value)
-  if (id) router.replace({query: {...route.query, petId: String(id)}})
-  loadPetData(id)
+  // 只改 query，由 watch 统一重取（避免与 loadAll 重复请求）
+  router.replace({query: {...route.query, petId: id ? String(id) : undefined}})
 }
 
 const loadAll = (): void => {
+  error.value = ''
+  data.value = {}
   loadSheet()
   if (isCheckup.value) loadPetData(Number(route.query.petId || petIdInput.value))
   else loadImageData()
@@ -236,7 +256,6 @@ const compStyle = (c: Comp): Record<string, string> => {
 
 const onTplChange = (): void => {
   router.replace({query: {...route.query, tpl: tpl.value}})
-  loadAll()
 }
 const doPrint = (): void => window.print()
 const goBack = (): void => {
@@ -244,14 +263,30 @@ const goBack = (): void => {
   else window.close()
 }
 
-watch(() => route.query.tpl, v => {
-  const t = String(v || 'CheckupTijian')
-  if (t !== tpl.value) { tpl.value = t; loadAll() }
+// 品牌名异步到达（晚于 immediate watch 的数据注入）时补进版式
+watch(() => hosp.value.name, n => {
+  if (n) data.value = {...data.value, COMPANY_NAME: n}
 })
+
+// 同一路由换单据（orderId/recordId/petId）Vue 会复用组件：必须全部监听，
+// 否则版式/患者信息停留在上一份，打印会串单（参照 z-examReport 的同类处理）
+watch(() => [route.query.tpl, route.query.petId, route.query.orderId, route.query.recordId], () => {
+  tpl.value = String(route.query.tpl || 'CheckupTijian')
+  petIdInput.value = String(route.query.petId || '')
+  loadAll()
+}, {immediate: true})
 onMounted(() => {
   loadBrand()
-  loadAll()
-  if (route.query.auto === '1') setTimeout(() => window.print(), 900)
+  if (route.query.auto === '1') {
+    // 等版式与数据都就绪再打印，最多等 6 秒；失败则提示而不是打半张纸
+    const tick = (n: number): void => {
+      if (error.value) { ElMessage.error(error.value); return }
+      if (sheet.value && loaded.value) { window.print(); return }
+      if (n > 0) setTimeout(() => tick(n - 1), 300)
+      else ElMessage.error('报告数据加载超时，未执行打印')
+    }
+    tick(20)
+  }
 })
 onBeforeUnmount(() => pageStyle?.remove())
 </script>
@@ -260,6 +295,7 @@ onBeforeUnmount(() => pageStyle?.remove())
 .mp-page { padding: 16px; background: #f3f6fb; min-height: 100vh; }
 .mp-bar { max-width: 230mm; margin: 0 auto 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .mp-hint { color: #8a93a6; font-size: 12px; }
+.mp-err { color: #d03050; font-weight: 600; }
 .mp-sheet {
   margin: 0 auto; background: #fff; position: relative;
   box-shadow: 0 2px 16px rgba(30, 111, 168, .10); color: #000;

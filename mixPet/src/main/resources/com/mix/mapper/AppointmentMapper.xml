@@ -65,7 +65,9 @@
           AND a.client_id = b.client_id
           AND a.pet_id = c.pet_id
           AND doctor_id = #{doctorId}
+        <!-- 顾客端「医生号源」不需要 1.2 万条历史挂号，只取最近 200 条 -->
         order by appointment_date desc
+        LIMIT 200
     </select>
     <!--根据用户查询订单-->
     <select id="getClient" resultType="com.mix.model.dto.AppointmentDto">
@@ -86,6 +88,7 @@
         AND a.department_id = d.department_id
         AND a.client_id = #{clientId}
         order by appointment_date desc
+        LIMIT 300
     </select>
     <!--医生：已登录查询订单-->
     <select id="getDoctorLog" resultType="com.mix.model.dto.AppointmentDto2">
@@ -113,8 +116,10 @@
         <!-- 接诊工作台只服务当日工作：历史已处理单由「病例中心」分页查询，
              ETL 迁入的 1.2 万条历史挂号不能一次性拉回前端渲染（会卡死浏览器）。
              保留全部待处理，已处理只取近 90 天，并封顶 300 条兜底。 -->
-        AND (a.is_suc = 0 OR a.appointment_date >= DATE_SUB(NOW(), INTERVAL 90 DAY))
-        order by a.is_suc, appointment_date desc
+        <!-- 爽约单 is_suc 仍为 0（markMiss 只置 miss），不能算「待处理」占用名额；
+             近 90 天窗口仍会带回爽约单，供「已处理」页签查询 -->
+        AND ((a.is_suc = 0 AND a.miss = 0) OR a.appointment_date >= DATE_SUB(NOW(), INTERVAL 90 DAY))
+        order by a.is_suc, a.miss, appointment_date desc
         LIMIT 300
     </select>
 </mapper>

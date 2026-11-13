@@ -214,7 +214,9 @@ const reload = (): void => load()
 onMounted(load)
 
 const fmt = (t?: string | null): string => (t || '').replace('T', ' ').slice(0, 16) || '—'
-const photoUrl = (p: string): string => (p.startsWith('http') || p.startsWith('/') ? p : '/img/' + p)
+// 头像走 /api/common/download（与 UpImg.vue 一致），/img/ 目录并不存在
+const photoUrl = (p: string): string => (p.startsWith('http') || p.startsWith('/')
+  ? p : '/api/common/download?name=' + encodeURIComponent(p))
 const ageText = computed<string>(() => {
   const b = a.value?.pet?.petBirthday
   if (!b) return ''
@@ -274,7 +276,7 @@ const rxOf = (recordId: number): any[] => a.value?.prescriptions?.[recordId] || 
 const doPrint = (): void => window.print()
 // 老系统 7 种体检表（空白/带宠物档案），版式由 .mrt 转换
 const printCheckup = (): void => {
-  router.push('/doctorPage/z-mrtPrint?tpl=CheckupTijian&petId=' + petId.value)
+  router.push('/doctorPage/z-mrtPrint?tpl=CheckupTijian&petId=' + petId.value + '&__flowStandalone=1')
 }
 const openWin = (path: string): void => { window.open(path, '_blank') }
 // 病历打印页路由名是 d-recordPrint（z-surgeryPrint / z-hospitalPrint 同级，别混用）

@@ -347,7 +347,7 @@
                   <el-select :ref="(el: any) => setCellRef(scope.$index, 'drug', el)" v-model="scope.row.drugId"
                              filterable remote reserve-keyword :remote-method="filterDrug"
                              placeholder="输入药品名检索" size="small" style="width: 100%"
-                             @focus="drugQuery = ''" @change="onDrugPicked(scope.$index, scope.row)">
+                             @change="onDrugPicked(scope.$index, scope.row)">
                     <el-option v-for="d in drugOptions" :key="d.drugId"
                                :disabled="d.drugStock === 0"
                                :label="`${d.drugName}（￥${d.drugPrice}/${d.drugUnit}，库存${d.drugStock}）`"
@@ -846,6 +846,7 @@ onMounted(() => {
       const target = appoint.value.find(a => a.appointmentId === aid)
       if (target) openTreat(target)
       else if (times < 5) setTimeout(() => tryOpen(times + 1), 200)
+      else ElMessage.warning('该挂号不在当前医生的近期接诊队列（可能是历史单或归属其他医生），请到病例中心打开')
     }
     tryOpen(0)
   }
@@ -856,8 +857,11 @@ const queryAppoint = () => {
     // 即使接口异常返回全量历史，也绝不把上万张卡片交给浏览器渲染
     const list = res || []
     appoint.value = list.length > 300 ? list.slice(0, 300) : list
-    if (list.length >= 300) ElMessage.info('接诊列表仅显示待处理与近 90 天记录，更早就诊请到病例中心查询')
+    if (list.length > 300) ElMessage.info('接诊列表仅显示待处理与近 90 天记录，更早就诊请到病例中心查询')
     loadRecordStatus()
+  }).catch(() => {
+    appoint.value = []
+    ElMessage.error('接诊队列加载失败，请刷新重试')
   })
 }
 // 已处理挂号对应的病历状态（0接诊中 1已完结 2已作废），用于卡片标签
@@ -1475,9 +1479,10 @@ const addRoleB = (): void => {
 const formSubmit = async (): Promise<void> => {
   await myFormRef.value?.validate((valid: boolean): void => {
     if (valid) {
-      modalView.value = false
+      // 成功后才关窗：失败时保留已填的宠物/时间/描述，并给出原因
       reqDoctorAddAppoint(form.value).then(res => {
         if (res.code === 1) {
+          modalView.value = false
           queryAppoint()
           // 新增成功（后端随 data 返回单号）弹凭证卡；医生端即接诊医生本人，不再展示医生行
           if (res.data) {
@@ -1491,8 +1496,8 @@ const formSubmit = async (): Promise<void> => {
               doctorName: ''
             })
           }
-        }
-      })
+        } else ElMessage.error(res.msg || '挂号保存失败，请核对号源后重试')
+      }).catch(() => ElMessage.error('挂号保存失败，请检查网络后重试'))
     }
   })
 }

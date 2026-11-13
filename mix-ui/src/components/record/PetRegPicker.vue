@@ -59,7 +59,7 @@
               <span class="rc-meta">余 {{ d.maxCount }}</span>
             </div>
           </template>
-          <div v-else class="rc-empty">今日无排班</div>
+          <div v-else class="rc-empty">{{ scheduleFailed ? '排班加载失败' : '今日无排班' }}</div>
         </div>
         <div class="rc-card">
           <div class="rc-tit">上次就诊</div>
@@ -86,6 +86,7 @@
 
 <script lang="ts" setup>
 import {computed, ref, watch} from 'vue'
+import {ElMessage} from 'element-plus'
 import {reqPetArchive, reqPetSearch} from '@/request/PetApi'
 import {reqScheduleAll} from '@/request/ScheduleApi'
 import {PetDto} from '@/model/DO/PetDto'
@@ -121,11 +122,14 @@ const optLabel = (p: PetDto): string =>
 defineExpose({archive})
 
 const doSearch = (kw: string): void => {
+  // 空关键词后端返回最近 20 条有主宠物，用于下拉首次展开（不再出现空面板）
   const key = (kw || '').trim()
-  if (!key) { options.value = []; return }
   searching.value = true
   reqPetSearch(key).then(res => {
     options.value = res || []
+  }).catch(() => {
+    options.value = []
+    ElMessage.error('宠物检索失败，请检查网络或权限')
   }).finally(() => { searching.value = false })
 }
 // 点开下拉时展示一屏最近的候选，避免空面板
@@ -148,14 +152,24 @@ const loadArchive = (petId: number): void => {
         clientTel: res.client?.clientTel ?? null
       } as PetDto, ...options.value]
     }
-  }).catch(() => { archive.value = null })
+  }).catch(() => {
+    archive.value = null
+    // 档案接口失败也补一个占位 option，避免下拉回显成裸 ID
+    if (!options.value.some(o => o.petId === petId)) {
+      options.value = [{
+        petId, petName: '宠物 ' + petId, petVariety: null, petSex: null,
+        clientId: props.clientId ?? null, clientName: null, clientTel: null
+      } as unknown as PetDto, ...options.value]
+    }
+  })
 }
 
 const onPick = (val: number | undefined): void => {
   if (val == null) { onClear(); return }
   const p = options.value.find(o => o.petId === val)
   emit('update:petId', val)
-  emit('update:clientId', p?.clientId ?? null)
+  // 后端 AppointmentController 要求 clientId 非空；档案未带出时用外部已选值兜底
+  emit('update:clientId', p?.clientId ?? archive.value?.client?.clientId ?? props.clientId ?? null)
   loadArchive(val)
 }
 const onClear = (): void => {
@@ -172,7 +186,9 @@ watch(() => props.petId, (v) => {
 
 // 今日医生：排班总览按「今天周几」过滤（weekday 1周一…7周日；period 1上午 2下午）
 const schedules = ref<DoctorSchedule[]>([])
-reqScheduleAll().then(res => { schedules.value = res || [] }).catch(() => {})
+const scheduleFailed = ref(false)
+reqScheduleAll().then(res => { schedules.value = res || [] })
+  .catch(() => { scheduleFailed.value = true })
 const todayDoctors = computed<DoctorSchedule[]>(() => {
   const weekday = new Date().getDay() || 7
   return schedules.value

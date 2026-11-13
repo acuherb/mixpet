@@ -63,8 +63,9 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
 
     @Override
     public List<PetDto> searchReg(String kw) {
-        if (kw == null || kw.isBlank()) return List.of();
-        return baseMapper.searchReg(kw.trim());
+        // 空关键词 = 下拉首次展开时展示最近 20 条有主宠物（老系统「一屏候选」体验）；
+        // mapper 的 <if> 会跳过过滤条件，SQL 自带 LIMIT 20
+        return baseMapper.searchReg(kw == null ? "" : kw.trim());
     }
 
     @Override
