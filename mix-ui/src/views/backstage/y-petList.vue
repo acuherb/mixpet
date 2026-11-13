@@ -72,7 +72,7 @@
             <el-button v-if="isManager && scope.row.clientId" circle type="primary" title="过户给新主人" @click="openTransfer(scope.row)">过</el-button>
             <el-button v-if="isManager && scope.row.clientId" circle type="warning" title="入栏（有主变无主，可被领养）" @click="intakePet(scope.row)">栏</el-button>
             <el-button circle type="info" title="查看过户历史" @click="openHistory(scope.row)">档</el-button>
-            <el-button circle type="success" title="一页式健康档案" @click="openHealth(scope.row)">康</el-button>
+            <el-button circle type="success" title="完整就诊档案：病历/处方/免疫/住院/手术/化验/影像" @click="openHealth(scope.row)">康</el-button>
             <template v-if="isManager">
               <el-button v-if="scope.row.active !== false"
                          :icon="Delete" circle type="danger" title="删除/停用" @click="delOne(scope.row)"/>
@@ -360,6 +360,7 @@
 
 import {Delete, Edit, Refresh} from "@element-plus/icons-vue"
 import {computed, onMounted, reactive, ref} from 'vue'
+import {useRouter} from 'vue-router'
 
 const ageInput = ref<string>('')
 const onDialogOpen = () => {
@@ -628,9 +629,10 @@ const openHistory = (row: Pet): void => {
 // ============ 一页式健康档案 ============
 const healthView = ref(false)
 const healthPetId = ref<number | null>(null)
+// 完整就诊档案页（z-petArchive）：时间线聚合病历/处方/免疫/住院/手术/化验/影像
+const router = useRouter()
 const openHealth = (row: Pet): void => {
-  healthPetId.value = row.petId
-  healthView.value = true
+  router.push({path: '/backstage/z-petArchive', query: {petId: row.petId}})
 }
 
 // ============ 过户相关 ============

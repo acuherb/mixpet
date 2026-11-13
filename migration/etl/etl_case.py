@@ -56,7 +56,9 @@ def build_records(rep: EtlReport):
             continue
         created = parse_dt(r["DATETIME"]) or parse_dt(r["MDF_DATE"]) or datetime.now()
         st = (clean(r["STATUS"]) or "C").upper()
-        status = 1 if st == "C" else 0
+        # mixpet 状态：0接诊中 / 1已完结 / 2已作废
+        # 老库 C(完成)→1；P(预约未就诊)→2作废——若落 0 会让医生工作台冒出上千条假待办
+        status = 1 if st == "C" else 2
         # 诊断：INIT_DIAG 为主，INIT_DIAG1/2 是补充诊断
         diags = [clean(r["INIT_DIAG"], 200), clean(r["INIT_DIAG1"], 40), clean(r["INIT_DIAG2"], 40)]
         diagnosis = clean("；".join([d for d in diags if d]), 255)

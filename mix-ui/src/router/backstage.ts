@@ -51,6 +51,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-recordList",
         redirect: "/doctorPage/d-record"
     }, {
+        // 宠物就诊档案（完整时间线：病历/处方/免疫/住院/手术/化验/影像）
+        path: "z-petArchive",
+        component: () => import('@/views/backstage/z-petArchive.vue')
+    }, {
         // 处方笺档案（调档/补打/作废）
         path: "z-rxArchive",
         redirect: "/doctorPage/z-rxArchive"

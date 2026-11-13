@@ -65,9 +65,10 @@
       <el-table-column label="就诊时间" min-width="140">
         <template #default="scope">{{ getDisplayTime(scope.row.createTime) }}</template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="70">
+      <el-table-column fixed="right" label="操作" width="120">
         <template #default="scope">
           <el-button size="small" type="primary" link @click.stop="openDetail(scope.row)">查看</el-button>
+          <el-button size="small" type="success" link @click.stop="openArchive(scope.row)">档案</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -102,7 +103,16 @@ import {reqGetLoginD} from "@/request/DoctorApi";
 import {Page} from "@/model/DO/Page";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {getDisplayTime} from "@/utils/TimeUtil";
+import {useRouter} from "vue-router";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
+
+const router = useRouter()
+
+/** 跳到该宠物的完整就诊档案（同院医生看病史的主要入口） */
+const openArchive = (row: RecordDto): void => {
+  if (!row.petId) return
+  router.push({path: '/backstage/z-petArchive', query: {petId: row.petId}})
+}
 
 // 是否默认只看当前登录医生的病历；后台全量病例中心传 false（缺省 true 仅医生端使用）
 const props = defineProps<{ defaultMine?: boolean }>()

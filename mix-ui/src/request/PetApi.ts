@@ -6,6 +6,7 @@ import {PetDto} from "@/model/DO/PetDto";
 import {Res} from "@/request/Res";
 import {NameDo} from "@/model/DO/NameDo";
 import {PetHealth} from "@/model/entiy/PetHealth";
+import {PetArchive} from "@/model/DO/PetArchive";
 
 // 主页查询宠物
 export const reqFourPet = (): Promise<Page<Pet>> =>
@@ -19,6 +20,9 @@ export const reqPetOne = (petId: number): Promise<Pet> =>
 // 一页式宠物健康档案
 export const reqPetHealth = (petId: number): Promise<PetHealth> =>
     reqApi<string, PetHealth>("pet/health/" + petId)
+// 宠物就诊档案（完整时间线：病历/处方/免疫/住院/手术/化验/影像）
+export const reqPetArchive = (petId: number): Promise<PetArchive> =>
+    reqApi<string, PetArchive>("pet/archive/" + petId)
 // 查看用户的宠物
 export const reqClientPet = (): Promise<Pet[]> =>
     reqApi<string, Pet[]>("pet/clientOne")
