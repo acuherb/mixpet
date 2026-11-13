@@ -15,6 +15,7 @@ import com.mix.mapper.LabResultRevisionMapper;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.LabOrderItemMapper;
 import com.mix.mapper.LabOrderMapper;
+import com.mix.mapper.LabPanelMemberMapper;
 import com.mix.mapper.LabTestMapper;
 import com.mix.mapper.PetMapper;
 import com.mix.model.dto.LabOrderDto;
@@ -52,6 +53,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
     private final DoctorMapper doctorMapper;
     private final LabRefRangeMapper labRefRangeMapper;
     private final LabResultRevisionMapper labResultRevisionMapper;
+    private final LabPanelMemberMapper panelMemberMapper;
     private final IClientNotificationService notificationService;
     private static final ObjectMapper SNAPSHOT = new ObjectMapper();
 
@@ -61,6 +63,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
                                PetMapper petMapper, DoctorMapper doctorMapper,
                                LabRefRangeMapper labRefRangeMapper,
                                LabResultRevisionMapper labResultRevisionMapper,
+                               LabPanelMemberMapper panelMemberMapper,
                                IClientNotificationService notificationService) {
         this.recordService = recordService;
         this.labTestMapper = labTestMapper;
@@ -70,6 +73,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
         this.doctorMapper = doctorMapper;
         this.labRefRangeMapper = labRefRangeMapper;
         this.labResultRevisionMapper = labResultRevisionMapper;
+        this.panelMemberMapper = panelMemberMapper;
         this.notificationService = notificationService;
     }
 
@@ -79,32 +83,39 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
         if (vo == null || vo.getRecordId() == null) throw new BizException("缺少病历信息");
         MedicalRecord record = recordService.getById(vo.getRecordId());
         if (record == null) throw new BizException("病历不存在");
-        if (vo.getTestIds() == null || vo.getTestIds().isEmpty()) throw new BizException("请至少选择一项检验");
-        // 校验检验项并累计费用（价格以字典为准）
+        List<Integer> testIds = vo.getTestIds() == null ? new ArrayList<>() : vo.getTestIds();
+        List<Integer> panelIds = vo.getPanelIds() == null ? new ArrayList<>() : vo.getPanelIds();
+        if (testIds.isEmpty() && panelIds.isEmpty()) throw new BizException("请至少选择一项检验或套组");
+        // 校验检验项/套组并累计费用（价格以字典为准；套组只收一次费，成员不重复计费）
         BigDecimal fee = BigDecimal.ZERO;
+        BigDecimal cost = BigDecimal.ZERO;
         List<LabOrderItem> items = new ArrayList<>();
         // 参考区间按宠物物种/性别/月龄分层匹配，命中结果冗余进明细快照
         Pet pet = petMapper.selectById(record.getPetId());
-        for (Integer testId : vo.getTestIds()) {
+        // 套组：每个套组收一次开单价（累加进价），其下成员只生成结果明细、不计费
+        for (Integer panelId : panelIds) {
+            LabTest panel = labTestMapper.selectById(panelId);
+            if (panel == null || Boolean.FALSE.equals(panel.getActive()) || !Boolean.TRUE.equals(panel.getIsPanel()))
+                throw new BizException("化验套组不存在或不可用");
+            if (panel.getPanelPrice() != null) fee = fee.add(panel.getPanelPrice());
+            if (panel.getPanelCost() != null) cost = cost.add(panel.getPanelCost());
+            List<LabPanelMember> members = panelMemberMapper.selectList(Wrappers.<LabPanelMember>lambdaQuery()
+                    .eq(LabPanelMember::getPanelId, panelId).orderByAsc(LabPanelMember::getSortOrder));
+            for (LabPanelMember m : members) {
+                LabTest mt = labTestMapper.selectById(m.getMemberTestId());
+                if (mt == null || Boolean.FALSE.equals(mt.getActive()))
+                    throw new BizException("套组成员项不存在或已停用");
+                LabOrderItem it = buildItem(mt, pet, panelId);
+                it.setPanelName(panel.getTestName());
+                items.add(it);
+            }
+        }
+        // 独立单项：逐项计费
+        for (Integer testId : testIds) {
             LabTest test = labTestMapper.selectById(testId);
             if (test == null || Boolean.FALSE.equals(test.getActive()))
                 throw new BizException("检验项不存在或已停用");
-            LabOrderItem item = new LabOrderItem();
-            item.setTestId(test.getTestId());
-            item.setItemName(test.getTestName());
-            item.setItemGroup(test.getTestGroup());
-            item.setItemUnit(test.getTestUnit());
-            item.setRefRange(test.getRefRange());
-            LabRefRange range = findRange(test.getTestId(), pet);
-            if (range != null) {
-                item.setRefLow(range.getRefLow());
-                item.setRefHigh(range.getRefHigh());
-                item.setCriticalLow(range.getCriticalLow());
-                item.setCriticalHigh(range.getCriticalHigh());
-                if (range.getRefText() != null && !range.getRefText().isBlank())
-                    item.setRefRange(range.getRefText());
-            }
-            items.add(item);
+            items.add(buildItem(test, pet, null));
             if (test.getTestPrice() != null) fee = fee.add(test.getTestPrice());
         }
         // 归属以病历为准，不信任前端
@@ -115,6 +126,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
         order.setDoctorId(doctor.getDoctorId());
         order.setOrderNote(vo.getOrderNote());
         order.setFee(fee);
+        order.setCost(cost);
         order.setStatus(false);
         this.save(order);
         for (LabOrderItem item : items) {
@@ -155,6 +167,27 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
             billMapper.insert(bill);
         }
         return Result.success("开单成功，化验费已计入账单（￥" + fee.toPlainString() + "）");
+    }
+
+    /** 构造一条化验明细快照（名称/单位/参考区间/危急值），panelId 标识所属套组（null=独立单项） */
+    private LabOrderItem buildItem(LabTest test, Pet pet, Integer panelId) {
+        LabOrderItem item = new LabOrderItem();
+        item.setTestId(test.getTestId());
+        item.setPanelId(panelId);
+        item.setItemName(test.getTestName());
+        item.setItemGroup(test.getTestGroup());
+        item.setItemUnit(test.getTestUnit());
+        item.setRefRange(test.getRefRange());
+        LabRefRange range = findRange(test.getTestId(), pet);
+        if (range != null) {
+            item.setRefLow(range.getRefLow());
+            item.setRefHigh(range.getRefHigh());
+            item.setCriticalLow(range.getCriticalLow());
+            item.setCriticalHigh(range.getCriticalHigh());
+            if (range.getRefText() != null && !range.getRefText().isBlank())
+                item.setRefRange(range.getRefText());
+        }
+        return item;
     }
 
     @Override

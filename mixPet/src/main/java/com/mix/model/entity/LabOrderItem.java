@@ -21,6 +21,10 @@ public class LabOrderItem implements Serializable {
 
     private Integer orderId;
     private Integer testId;
+    /** 所属套组id(lab_test.test_id)，null=独立单项；套组只收一次费，成员不重复计费 */
+    private Integer panelId;
+    /** 套组名称快照，null=独立单项 */
+    private String panelName;
     /** 冗余：开单时项目名 */
     private String itemName;
     private String itemGroup;

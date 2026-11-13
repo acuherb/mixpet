@@ -17,31 +17,36 @@
     <el-table-column type="expand" width="40">
       <template #default="scope">
         <div class="rows">
-          <p v-if="scope.row.items && scope.row.items.length" class="lab-tit">检验明细</p>
-          <el-table :data="scope.row.items || []" size="small" border>
-            <el-table-column label="检验项" min-width="160" prop="itemName"/>
-            <el-table-column label="结果值" width="130">
-              <template #default="it">
-                <span v-if="it.row.resultValue">{{ it.row.resultValue }}</span>
-                <el-tag v-else size="small" type="info">未录入</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="参考范围" width="120" prop="refRange"/>
-            <el-table-column label="单位" width="80" prop="itemUnit"/>
-            <el-table-column label="异常" width="80">
-              <template #default="it">
-                <el-tag v-if="it.row.isAbnormal" size="small" type="danger">异常</el-tag>
-                <el-tag v-else-if="it.row.resultValue" size="small" type="success">正常</el-tag>
-                <span v-else>/</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="危急" width="80">
-              <template #default="it">
-                <el-tag v-if="it.row.criticalFlag" size="small" type="danger" effect="dark">危急值</el-tag>
-                <span v-else>—</span>
-              </template>
-            </el-table-column>
-          </el-table>
+          <template v-if="scope.row.items && scope.row.items.length">
+            <template v-for="sec in groupItems(scope.row.items)" :key="sec.title || 'single'">
+              <p v-if="sec.title" class="lab-tit lab-panel">{{ sec.title }}</p>
+              <el-table :data="sec.items" size="small" border>
+                <el-table-column label="检验项" min-width="160" prop="itemName"/>
+                <el-table-column label="结果值" width="130">
+                  <template #default="it">
+                    <span v-if="it.row.resultValue">{{ it.row.resultValue }}</span>
+                    <el-tag v-else size="small" type="info">未录入</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="参考范围" width="120" prop="refRange"/>
+                <el-table-column label="单位" width="80" prop="itemUnit"/>
+                <el-table-column label="异常" width="80">
+                  <template #default="it">
+                    <el-tag v-if="it.row.isAbnormal" size="small" type="danger">异常</el-tag>
+                    <el-tag v-else-if="it.row.resultValue" size="small" type="success">正常</el-tag>
+                    <span v-else>/</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="危急" width="80">
+                  <template #default="it">
+                    <el-tag v-if="it.row.criticalFlag" size="small" type="danger" effect="dark">危急值</el-tag>
+                    <span v-else>—</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </template>
+          </template>
+          <p v-else class="lab-note">暂无明细</p>
           <p v-if="scope.row.resultBy" class="lab-note">
             小结：<span>{{ scope.row.resultNote || '无' }}</span>
             <em>（录入人：{{ scope.row.resultBy }}）</em>
@@ -55,6 +60,14 @@
     <el-table-column label="开单医生" min-width="100" prop="doctorName" show-overflow-tooltip/>
     <el-table-column label="诊断" min-width="120" prop="diagnosis" show-overflow-tooltip/>
     <el-table-column label="检验费(元)" prop="fee" width="100" sortable/>
+    <el-table-column label="成本(元)" width="100">
+      <template #default="scope">{{ scope.row.cost != null ? Number(scope.row.cost).toFixed(2) : '—' }}</template>
+    </el-table-column>
+    <el-table-column label="毛利(元)" width="100" sortable>
+      <template #default="scope">
+        <span :class="{ 'neg': profit(scope.row) < 0 }">{{ profit(scope.row).toFixed(2) }}</span>
+      </template>
+    </el-table-column>
     <el-table-column label="开单时间" width="160" prop="createTime"/>
     <el-table-column label="状态" width="110">
       <template #default="scope">
@@ -125,29 +138,32 @@
       <!-- 结果表：现代样式 -->
       <div class="case-sec">
         <div class="case-sec-tit">检 验 结 果</div>
-        <el-table :data="itemForms" size="small" class="case-table">
-          <el-table-column label="检验项" min-width="150" prop="itemName"/>
-          <el-table-column label="参考范围" width="120" prop="refRange"/>
-          <el-table-column label="结果值" width="150">
-            <template #default="scope">
-              <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值" @blur="autoAbnormal(scope.row)"/>
-              <span v-else :class="{ 'abnormal-text': scope.row.isAbnormal }">{{ scope.row.resultValue || '—' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="异常（预检）" width="120">
-            <template #default="scope">
-              <el-switch v-if="!readonly" v-model="scope.row.isAbnormal" active-text="是" inactive-text="否"/>
-              <el-tag v-else-if="scope.row.isAbnormal" size="small" type="danger">异常</el-tag>
-              <el-tag v-else size="small" type="success">正常</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="危急" width="80">
-            <template #default="scope">
-              <el-tag v-if="scope.row.criticalFlag" size="small" type="danger" effect="dark">危急</el-tag>
-              <span v-else>—</span>
-            </template>
-          </el-table-column>
-        </el-table>
+        <template v-for="sec in groupItems(itemForms)" :key="sec.title || 'single'">
+          <p v-if="sec.title" class="case-panel-tit">{{ sec.title }}</p>
+          <el-table :data="sec.items" size="small" class="case-table">
+            <el-table-column label="检验项" min-width="150" prop="itemName"/>
+            <el-table-column label="参考范围" width="120" prop="refRange"/>
+            <el-table-column label="结果值" width="150">
+              <template #default="scope">
+                <el-input v-if="!readonly" v-model="scope.row.resultValue" placeholder="填写结果值" @blur="autoAbnormal(scope.row)"/>
+                <span v-else :class="{ 'abnormal-text': scope.row.isAbnormal }">{{ scope.row.resultValue || '—' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="异常（预检）" width="120">
+              <template #default="scope">
+                <el-switch v-if="!readonly" v-model="scope.row.isAbnormal" active-text="是" inactive-text="否"/>
+                <el-tag v-else-if="scope.row.isAbnormal" size="small" type="danger">异常</el-tag>
+                <el-tag v-else size="small" type="success">正常</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="危急" width="80">
+              <template #default="scope">
+                <el-tag v-if="scope.row.criticalFlag" size="small" type="danger" effect="dark">危急</el-tag>
+                <span v-else>—</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
         <p class="lab-note">最终异常/危急判定以服务端按参考区间复算结果为准，保存后不可手工覆盖。</p>
       </div>
       <!-- 小结与附件 -->
@@ -193,6 +209,31 @@ import {reqLabByRecord, reqLabCancel, reqLabOrderPage, reqHandleCritical, reqRev
 import UpImg from "@/components/UpImg.vue";
 import {ElMessage, ElMessageBox} from "element-plus";
 import {Res} from "@/request/Res";
+
+/**
+ * 把化验明细按套组分组：同套组的成员归到一组并标套组名，独立单项归到「单项」组。
+ * 返回的是原对象引用（非拷贝），编辑结果值仍绑定到原始 itemForms。
+ */
+const groupItems = (list?: LabOrderItem[]): { title: string | null; items: LabOrderItem[] }[] => {
+  const arr = list || []
+  const map = new Map<string, LabOrderItem[]>()
+  const order: string[] = []
+  for (const it of arr) {
+    const key = it.panelName || '__single__'
+    if (!map.has(key)) { map.set(key, []); order.push(key) }
+    map.get(key)!.push(it)
+  }
+  // 套组在前、独立单项在后
+  order.sort((a, b) => (a === '__single__' ? 1 : 0) - (b === '__single__' ? 1 : 0))
+  return order.map(k => ({title: k === '__single__' ? null : k, items: map.get(k)!}))
+}
+
+/** 毛利 = 检验费 - 成本（套组进价合计） */
+const profit = (row: LabOrderDto): number => {
+  const fee = Number(row.fee ?? 0)
+  const cost = Number(row.cost ?? 0)
+  return Math.round((fee - cost) * 100) / 100
+}
 
 const emit = defineEmits<{
   (e: 'pending-count', count: number): void
@@ -439,6 +480,20 @@ onMounted(() => {
   font-size: 13px;
   color: #606266;
   margin: 0 0 6px;
+}
+.lab-tit.lab-panel {
+  color: #2f5597;
+  font-weight: 600;
+  margin-top: 10px;
+}
+.case-panel-tit {
+  font-size: 13px;
+  color: #2f5597;
+  font-weight: 600;
+  margin: 10px 0 4px;
+}
+.neg {
+  color: #f56c6c;
 }
 .lab-note {
   font-size: 13px;

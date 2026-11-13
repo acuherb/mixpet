@@ -8,6 +8,12 @@ export interface LabTest {
     testUnit: string | null;
     refRange: string | null;
     testPrice: number | null;
+    /** 是否套组：true=套组(只收一次费) false=单项 */
+    isPanel: boolean;
+    /** 套组开单价(元) */
+    panelPrice: number | null;
+    /** 套组进价/试剂盘成本(元) */
+    panelCost: number | null;
     active: boolean;
 }
 
@@ -22,6 +28,9 @@ export const exampleLabTest = (): LabTest => {
         testUnit: "",
         refRange: "",
         testPrice: 0,
+        isPanel: false,
+        panelPrice: 0,
+        panelCost: 0,
         active: true
     }
 }

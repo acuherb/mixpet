@@ -29,6 +29,12 @@ public class LabTest implements Serializable {
     private String refRange;
     /** 单价(元) */
     private BigDecimal testPrice;
+    /** 是否套组：1=套组(只收一次费) 0=单项 */
+    private Boolean isPanel;
+    /** 套组开单价(元)，is_panel=1 时使用 */
+    private BigDecimal panelPrice;
+    /** 套组进价/试剂盘成本(元)，用于毛利统计 */
+    private BigDecimal panelCost;
     /** 启停（停用后不可再开单） */
     private Boolean active;
 

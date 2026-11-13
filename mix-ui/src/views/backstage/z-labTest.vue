@@ -5,6 +5,10 @@
     <el-select v-model="qp.testGroup" clearable placeholder="全部分组" size="large" style="width: 110px" @change="nowQuery">
       <el-option v-for="t in labGroupOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
     </el-select>
+    <el-select v-model="qp.isPanel" clearable placeholder="全部类型" size="large" style="width: 110px" @change="nowQuery">
+      <el-option label="单项" :value="0"/>
+      <el-option label="套组" :value="1"/>
+    </el-select>
     <template #left>
       <span v-if="roleIdList.length > 0" class="sel-tip">
         已选 <b>{{ roleIdList.length }}</b> 项
@@ -18,7 +22,13 @@
             stripe
             @selection-change="handleSelectionChange">
     <el-table-column type="selection" width="30"/>
-    <el-table-column label="检验项" min-width="150" prop="testName" show-overflow-tooltip/>
+    <el-table-column label="类型" width="80">
+      <template #default="scope">
+        <el-tag v-if="scope.row.isPanel" size="small" type="warning">套组</el-tag>
+        <el-tag v-else size="small">单项</el-tag>
+      </template>
+    </el-table-column>
+    <el-table-column label="检验项/套组" min-width="160" prop="testName" show-overflow-tooltip/>
     <el-table-column label="分组" width="90">
       <template #default="scope">
         <el-tag size="small">{{ scope.row.testGroup || '未分组' }}</el-tag>
@@ -26,7 +36,12 @@
     </el-table-column>
     <el-table-column label="单位" width="90" prop="testUnit" show-overflow-tooltip/>
     <el-table-column label="参考范围" min-width="120" prop="refRange" show-overflow-tooltip/>
-    <el-table-column label="单价(元)" prop="testPrice" sortable width="100"/>
+    <el-table-column label="单价/开单价(元)" width="120">
+      <template #default="scope">{{ scope.row.isPanel ? (scope.row.panelPrice ?? '-') : (scope.row.testPrice ?? '-') }}</template>
+    </el-table-column>
+    <el-table-column label="进价(元)" width="100">
+      <template #default="scope">{{ scope.row.isPanel && scope.row.panelCost != null ? scope.row.panelCost : '—' }}</template>
+    </el-table-column>
     <el-table-column label="状态" width="80">
       <template #default="scope">
         <el-tag v-if="scope.row.active" size="small" type="success">启用</el-tag>
@@ -45,25 +60,51 @@
   <!--分页条-->
   <BackPage :total="list.total" @changePu="changePuB"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="500px" :close-on-click-modal="false">
-    <el-form ref="myFormRef" :model="form" :rules="rules" label-width="90px">
-      <el-form-item label="检验项" prop="testName">
-        <el-input v-model="form.testName" clearable maxlength="64" placeholder="如：白细胞计数"/>
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="560px" :close-on-click-modal="false">
+    <el-form ref="myFormRef" :model="form" :rules="rules" label-width="96px">
+      <el-form-item label="是否套组">
+        <el-switch v-model="form.isPanel" active-text="套组(一次收费)" inactive-text="单项" @change="onPanelSwitch"/>
+      </el-form-item>
+      <el-form-item label="名称" prop="testName">
+        <el-input v-model="form.testName" clearable maxlength="64" :placeholder="form.isPanel ? '如：生化30项' : '如：白细胞计数'"/>
       </el-form-item>
       <el-form-item label="分组" prop="testGroup">
         <el-select v-model="form.testGroup" filterable placeholder="选择分组（在系统设置维护）">
           <el-option v-for="t in labGroupOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
         </el-select>
       </el-form-item>
-      <el-form-item label="单位" prop="testUnit">
-        <el-input v-model="form.testUnit" clearable maxlength="32" placeholder="如：10^9/L"/>
-      </el-form-item>
-      <el-form-item label="参考范围" prop="refRange">
-        <el-input v-model="form.refRange" clearable maxlength="64" placeholder="如：6.0-17.0"/>
-      </el-form-item>
-      <el-form-item label="单价(元)" prop="testPrice">
-        <el-input-number v-model="form.testPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
-      </el-form-item>
+
+      <!-- 单项字段 -->
+      <template v-if="!form.isPanel">
+        <el-form-item label="单位" prop="testUnit">
+          <el-input v-model="form.testUnit" clearable maxlength="32" placeholder="如：10^9/L"/>
+        </el-form-item>
+        <el-form-item label="参考范围" prop="refRange">
+          <el-input v-model="form.refRange" clearable maxlength="64" placeholder="如：6.0-17.0"/>
+        </el-form-item>
+        <el-form-item label="单价(元)" prop="testPrice">
+          <el-input-number v-model="form.testPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+        </el-form-item>
+      </template>
+
+      <!-- 套组字段 -->
+      <template v-else>
+        <el-form-item label="开单价(元)" prop="panelPrice">
+          <el-input-number v-model="form.panelPrice" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="进价(元)" prop="panelCost">
+          <el-input-number v-model="form.panelCost" :max="99999" :min="0" :precision="2" :step="1" style="width: 100%"/>
+        </el-form-item>
+        <el-form-item label="成员项目" prop="memberIds">
+          <el-select v-model="memberIds" multiple filterable placeholder="选择该套组包含的单项的项目" style="width: 100%">
+            <el-option-group v-for="g in singleGroupKeys" :key="g" :label="g">
+              <el-option v-for="t in singleByGroup[g]" :key="t.testId" :label="t.testName" :value="t.testId"/>
+            </el-option-group>
+          </el-select>
+          <div class="member-tip">套组按一次开单价收费，下面成员只录结果、不重复计费</div>
+        </el-form-item>
+      </template>
+
       <el-form-item label="状态">
         <el-switch v-model="form.active" active-text="启用" inactive-text="停用"/>
       </el-form-item>
@@ -76,7 +117,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref} from 'vue'
+import {onMounted, reactive, ref, computed} from 'vue'
 import {Delete, Edit} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
@@ -86,7 +127,7 @@ import {exampleLabTest, LabTest} from "@/model/entiy/LabTest";
 import {reqDictByType} from "@/request/DictApi";
 import {SysDict} from "@/model/entiy/SysDict";
 import {Page} from "@/model/DO/Page";
-import {reqAddLabTest, reqDelLabTest, reqLabTestPage, reqUpdateLabTest} from "@/request/LabApi";
+import {reqAddLabPanel, reqAddLabTest, reqDelLabPanel, reqDelLabTest, reqLabPanels, reqLabTestList, reqLabTestPage, reqUpdateLabPanel, reqUpdateLabTest} from "@/request/LabApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -102,6 +143,7 @@ reqDictByType('lab_group').then(r => { labGroupOpts.value = r || [] })
 const qp = reactive({
   testName: '',
   testGroup: '',
+  isPanel: null as number | null,
   numPage: 1,
   pageSize: 20
 })
@@ -149,15 +191,37 @@ const delOne = (row: LabTest): void => {
       '删除确认',
       {confirmButtonText: '确认', cancelButtonText: '取消', type: 'warning'}
   ).then(() => {
-    reqDelLabTest(row.testId).then(res => sureFlush(res))
+    const fn = row.isPanel ? reqDelLabPanel : reqDelLabTest
+    fn(row.testId).then(res => sureFlush(res))
   }).catch(() => ElMessage.info('删除取消'))
 }
 const batchDel = (ids: number[]): void => {
-  Promise.all(ids.map(id => reqDelLabTest(id))).then(() => sendQuery())
+  Promise.all(ids.map(id => {
+    const row = list.value.records.find(r => r.testId === id)
+    return (row?.isPanel ? reqDelLabPanel : reqDelLabTest)(id)
+  })).then(() => sendQuery())
 }
 const sureFlush = (res: Res): void => {
   if (res.code === 1) sendQuery()
 }
+
+/**
+ ┌───────────────────────────────────┐
+ │=============成员单项源============│
+ └───────────────────────────────────┘
+ */
+const singleTests = ref<LabTest[]>([])
+reqLabTestList().then(res => { singleTests.value = (res || []).filter(t => !t.isPanel) })
+const singleByGroup = computed(() => {
+  const map: Record<string, LabTest[]> = {}
+  singleTests.value.forEach(t => {
+    const g = t.testGroup || '其他'
+    if (!map[g]) map[g] = []
+    map[g].push(t)
+  })
+  return map
+})
+const singleGroupKeys = computed(() => Object.keys(singleByGroup.value))
 
 /**
  ┌───────────────────────────────────┐
@@ -166,8 +230,10 @@ const sureFlush = (res: Res): void => {
  */
 const modalView = ref(false)
 const modalTit = ref<"新增检验项" | "修改检验项">("修改检验项")
+const memberIds = ref<number[]>([])
 const addRoleB = (): void => {
   form.value = exampleLabTest()
+  memberIds.value = []
   myFormRef.value?.resetFields()
   modalTit.value = "新增检验项"
   modalView.value = true
@@ -175,8 +241,21 @@ const addRoleB = (): void => {
 const showDialog = (row: LabTest): void => {
   myFormRef.value?.clearValidate()
   form.value = {...row}
+  memberIds.value = []
+  if (row.isPanel && row.testId) {
+    // 载入套组成员
+    reqLabPanels().then(panels => {
+      const p = (panels || []).find(x => x.panel.testId === row.testId)
+      memberIds.value = (p?.members || []).map(m => m.testId)
+    })
+  }
   modalView.value = true
   modalTit.value = "修改检验项"
+}
+const onPanelSwitch = (): void => {
+  // 切换类型时清空对方专属字段，避免脏数据
+  if (form.value.isPanel) { form.value.testPrice = 0; form.value.testUnit = ''; form.value.refRange = '' }
+  else { form.value.panelPrice = 0; form.value.panelCost = 0; memberIds.value = [] }
 }
 
 /**
@@ -188,16 +267,21 @@ const form = ref<LabTest>(exampleLabTest())
 const myFormRef = ref<FormInstance>()
 const formSubmit = async (): Promise<void> => {
   await myFormRef.value?.validate((valid: boolean): void => {
-    if (valid) {
-      modalView.value = false
-      if (modalTit.value == "新增检验项") reqAddLabTest(form.value).then(res => sureFlush(res))
-      else if (modalTit.value === "修改检验项") reqUpdateLabTest(form.value).then(res => sureFlush(res))
+    if (!valid) return
+    modalView.value = false
+    const isPanel = !!form.value.isPanel
+    if (modalTit.value == "新增检验项") {
+      if (isPanel) reqAddLabPanel({panel: form.value, memberIds: memberIds.value}).then(res => sureFlush(res))
+      else reqAddLabTest(form.value).then(res => sureFlush(res))
+    } else {
+      if (isPanel) reqUpdateLabPanel({panel: form.value, memberIds: memberIds.value}).then(res => sureFlush(res))
+      else reqUpdateLabTest(form.value).then(res => sureFlush(res))
     }
   })
 }
 const rules = reactive<FormRules>({
   "testName": [
-    {required: true, message: '请输入检验项名', trigger: 'blur'},
+    {required: true, message: '请输入名称', trigger: 'blur'},
   ]
 })
 
@@ -220,5 +304,11 @@ onMounted(() => {
 .sel-tip b {
   font-size: 16px;
   margin: 0 2px;
+}
+.member-tip {
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+  margin-top: 4px;
 }
 </style>

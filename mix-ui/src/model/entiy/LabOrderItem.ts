@@ -5,6 +5,10 @@ export interface LabOrderItem {
     itemId: number;
     orderId: number;
     testId: number | null;
+    /** 所属套组id，null=独立单项 */
+    panelId: number | null;
+    /** 套组名称快照，null=独立单项 */
+    panelName: string | null;
     itemName: string;
     itemGroup: string | null;
     itemUnit: string | null;

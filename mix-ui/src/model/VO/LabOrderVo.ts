@@ -5,6 +5,8 @@ export interface LabOrderVo {
     recordId: number;
     orderNote: string;
     testIds: number[];
+    /** 套组 test_id 列表，每个套组只收一次费 */
+    panelIds?: number[];
 }
 
 /**

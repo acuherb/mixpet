@@ -28,6 +28,8 @@ public class LabOrder implements Serializable {
     private String orderNote;
     /** 化验费合计(元) */
     private BigDecimal fee;
+    /** 化验成本(元)=套组进价合计，用于毛利（独立单项无成本，记 0） */
+    private BigDecimal cost;
     /** 0待检验 1已出结果 */
     private Boolean status;
     /** 化验小结/结论 */

@@ -3,6 +3,8 @@ package com.mix.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.common.Result;
 import com.mix.model.entity.LabTest;
+import com.mix.model.vo.LabPanelSaveVo;
+import com.mix.model.vo.LabPanelVo;
 import com.mix.security.model.RoleConst;
 import com.mix.service.ILabTestService;
 import com.mix.util.StrUtil;
@@ -39,8 +41,8 @@ public class LabTestController {
     /** 字典分页（后台管理） */
     @GetMapping("/page")
     @Secured(RoleConst.MANAGER)
-    public IPage<LabTest> getPage(int numPage, int pageSize, String testName, String testGroup) {
-        return labTestService.selectByPage(testName, testGroup, numPage, pageSize);
+    public IPage<LabTest> getPage(int numPage, int pageSize, String testName, String testGroup, Integer isPanel) {
+        return labTestService.selectByPage(testName, testGroup, isPanel, numPage, pageSize);
     }
 
     @PostMapping
@@ -67,5 +69,33 @@ public class LabTestController {
     @Secured(RoleConst.MANAGER)
     public Result delete(@PathVariable Integer id) {
         return Result.choice("删除", labTestService.deleteById(id));
+    }
+
+    /** 套组列表（含成员单项），医生开单选择套组用；非临床动作按在职员工基线放行 */
+    @GetMapping("/panels")
+    @Secured(RoleConst.NURSE)
+    public List<LabPanelVo> listPanels() {
+        return labTestService.listPanelsWithMembers();
+    }
+
+    /** 新增套组（含成员） */
+    @PostMapping("/panel")
+    @Secured(RoleConst.MANAGER)
+    public Result savePanel(@RequestBody LabPanelSaveVo vo) {
+        return Result.choice("添加套组", labTestService.savePanel(vo));
+    }
+
+    /** 修改套组（含成员） */
+    @PutMapping("/panel")
+    @Secured(RoleConst.MANAGER)
+    public Result updatePanel(@RequestBody LabPanelSaveVo vo) {
+        return Result.choice("修改套组", labTestService.updatePanel(vo));
+    }
+
+    /** 删除套组（同步删成员；被引用则套组头停用） */
+    @DeleteMapping("/panel/{id}")
+    @Secured(RoleConst.MANAGER)
+    public Result deletePanel(@PathVariable Integer id) {
+        return Result.choice("删除套组", labTestService.deletePanel(id));
     }
 }

@@ -35,6 +35,7 @@ SCRIPTS=(
   feature_20261113_level_discount.sql
   feature_20261113_wechat.sql
   feature_20261113_lab_ref_range.sql
+  feature_20261113_lab_panel.sql
   feature_20261113_prescription_days.sql
   feature_20261113_quarantine.sql
   feature_20261113_legacy_keys.sql

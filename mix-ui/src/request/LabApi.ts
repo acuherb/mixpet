@@ -4,6 +4,7 @@ import {Res} from "@/request/Res";
 import {LabTest} from "@/model/entiy/LabTest";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
 import {LabOrderVo, LabResultVo} from "@/model/VO/LabOrderVo";
+import {LabPanelVo, LabPanelSaveVo} from "@/model/VO/LabPanel";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {Requisition} from "@/model/entiy/Requisition";
 
@@ -11,8 +12,20 @@ import {Requisition} from "@/model/entiy/Requisition";
 // 启用中的检验项（医生开单勾选）
 export const reqLabTestList = (): Promise<LabTest[]> =>
     reqApi<string, LabTest[]>("labTest")
+// 套组列表（含成员），医生开单选套组
+export const reqLabPanels = (): Promise<LabPanelVo[]> =>
+    reqApi<string, LabPanelVo[]>("labTest/panels")
+// 新增套组（含成员）
+export const reqAddLabPanel = (data: LabPanelSaveVo): Promise<Res> =>
+    reqApi.post<string, Res>("labTest/panel", data)
+// 修改套组（含成员）
+export const reqUpdateLabPanel = (data: LabPanelSaveVo): Promise<Res> =>
+    reqApi.put<string, Res>("labTest/panel", data)
+// 删除套组
+export const reqDelLabPanel = (id: number): Promise<Res> =>
+    reqApi.delete<string, Res>("labTest/panel/" + id)
 // 后台字典分页
-export const reqLabTestPage = (params: { numPage: number; pageSize: number; testName?: string; testGroup?: string }): Promise<Page<LabTest>> =>
+export const reqLabTestPage = (params: { numPage: number; pageSize: number; testName?: string; testGroup?: string; isPanel?: number | null }): Promise<Page<LabTest>> =>
     reqApi<string, Page<LabTest>>("labTest/page", {params})
 // 新增检验项
 export const reqAddLabTest = (data: LabTest): Promise<Res> =>

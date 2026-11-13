@@ -22,6 +22,20 @@
             </template>
           </el-checkbox-group>
         </el-form-item>
+        <el-form-item label="检验套组">
+          <div class="panel-area">
+            <el-checkbox-group v-model="form.panelIds">
+              <el-checkbox v-for="p in panels" :key="p.panel.testId" :label="p.panel.testId" border>
+                {{ p.panel.testName }}<span class="price">￥{{ p.panel.panelPrice ?? '-' }}</span>
+              </el-checkbox>
+            </el-checkbox-group>
+            <div v-for="p in panels" v-show="form.panelIds.includes(p.panel.testId)" :key="'m' + p.panel.testId" class="panel-members">
+              <span class="pm-tit">含 {{ p.members.length }} 项：</span>
+              <span v-for="m in p.members" :key="m.testId" class="m-chip">{{ m.testName }}</span>
+            </div>
+            <p v-if="!panels.length" class="panel-tip">暂无套组，可在「系统设置 / 检验项字典」配置生化30项等成套项目</p>
+          </div>
+        </el-form-item>
         <el-form-item label="检验目的">
           <el-input v-model="form.orderNote" :rows="2" maxlength="255" placeholder="填写检验目的/临床备注，可留空" type="textarea"/>
         </el-form-item>
@@ -95,7 +109,8 @@ import {useRoute} from 'vue-router'
 import {RecordDto} from "@/model/DO/RecordDto";
 import {LabTest} from "@/model/entiy/LabTest";
 import {LabOrderDto} from "@/model/DO/LabOrderDto";
-import {reqCreateLabOrder, reqDoctorRecords, reqLabByRecord, reqLabTestList} from "@/request/LabApi";
+import {reqCreateLabOrder, reqDoctorRecords, reqLabByRecord, reqLabPanels, reqLabTestList} from "@/request/LabApi";
+import {LabPanelVo} from "@/model/VO/LabPanel";
 import {ElMessage} from "element-plus";
 
 /**
@@ -105,22 +120,25 @@ import {ElMessage} from "element-plus";
  */
 const records = ref<RecordDto[]>([])
 const tests = ref<LabTest[]>([])
+const panels = ref<LabPanelVo[]>([])
 const orders = ref<LabOrderDto[]>([])
 const loading = ref(false)
 
-const form = reactive<{ recordId: number | null; testIds: number[]; orderNote: string }>({
+const form = reactive<{ recordId: number | null; testIds: number[]; panelIds: number[]; orderNote: string }>({
   recordId: null,
   testIds: [],
+  panelIds: [],
   orderNote: ''
 })
 
 const recordLabel = (r: RecordDto): string =>
     `#${r.recordId} ${r.petName || ''}（${r.clientName || ''}）`
 
-// 检验项按分组聚合
+// 单项（非套组）按分组聚合
+const singleTests = computed(() => tests.value.filter(t => !t.isPanel))
 const byGroup = computed(() => {
   const map: Record<string, LabTest[]> = {}
-  tests.value.forEach(t => {
+  singleTests.value.forEach(t => {
     const g = t.testGroup || '其他'
     if (!map[g]) map[g] = []
     map[g].push(t)
@@ -129,12 +147,18 @@ const byGroup = computed(() => {
 })
 const groupKeys = computed(() => Object.keys(byGroup.value))
 
-const totalFee = computed(() =>
-    form.testIds.reduce((sum, id) => {
-      const t = tests.value.find(x => x.testId === id)
-      return sum + (t?.testPrice ?? 0)
-    }, 0)
-)
+// 合计 = 独立单项单价之和 + 套组开单价之和（套组只收一次费）
+const totalFee = computed(() => {
+  let s = form.testIds.reduce((sum, id) => {
+    const t = singleTests.value.find(x => x.testId === id)
+    return sum + (t?.testPrice ?? 0)
+  }, 0)
+  s += form.panelIds.reduce((sum, id) => {
+    const p = panels.value.find(x => x.panel.testId === id)
+    return sum + (p?.panel.panelPrice ?? 0)
+  }, 0)
+  return s
+})
 
 /**
  ┌───────────────────────────────────┐
@@ -143,17 +167,21 @@ const totalFee = computed(() =>
  */
 const submitOrder = (): void => {
   if (!form.recordId) { ElMessage.warning('请先选择病历'); return }
-  if (form.testIds.length === 0) { ElMessage.warning('请至少勾选一项检验'); return }
+  if (form.testIds.length === 0 && form.panelIds.length === 0) {
+    ElMessage.warning('请至少勾选一项检验或套组'); return
+  }
   loading.value = true
   reqCreateLabOrder({
     recordId: form.recordId,
     orderNote: form.orderNote,
-    testIds: form.testIds
+    testIds: form.testIds,
+    panelIds: form.panelIds
   }).then(res => {
     if (res.code === 1) {
       ElMessage.success(res.msg || '开单成功')
       form.orderNote = ''
       form.testIds = []
+      form.panelIds = []
       loadOrders()
     }
   }).finally(() => {
@@ -197,6 +225,9 @@ onMounted(() => {
   reqLabTestList().then(res => {
     tests.value = res || []
   })
+  reqLabPanels().then(res => {
+    panels.value = res || []
+  })
   // 从就诊汇总跳转过来：预填本次病历
   const rid = Number(route.query.recordId)
   if (rid) {
@@ -228,6 +259,42 @@ onMounted(() => {
 .price {
   color: #e6a23c;
   margin-left: 4px;
+}
+.panel-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.panel-area .el-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.panel-members {
+  padding: 6px 10px;
+  background: #f5f9ff;
+  border: 1px dashed #cfe0ff;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #5a6b85;
+}
+.pm-tit {
+  color: #2f5597;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.m-chip {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 1px 8px;
+  background: #eaf2ff;
+  border-radius: 10px;
+  color: #3a6ea5;
+}
+.panel-tip {
+  font-size: 12px;
+  color: #909399;
+  margin: 0;
 }
 .order-head {
   font-size: 13px;

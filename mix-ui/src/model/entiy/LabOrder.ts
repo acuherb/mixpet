@@ -9,6 +9,8 @@ export interface LabOrder {
     doctorId: number;
     orderNote: string | null;
     fee: number | null;
+    /** 成本(元)=套组进价合计，用于毛利 */
+    cost?: number | null;
     /** false待检验 true已出结果 */
     status: boolean;
     resultNote: string | null;
