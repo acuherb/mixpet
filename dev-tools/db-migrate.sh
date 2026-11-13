@@ -34,6 +34,7 @@ SCRIPTS=(
   feature_20261113_service_items.sql
   feature_20261113_level_discount.sql
   feature_20261113_wechat.sql
+  feature_20261113_lab_ref_range.sql
 )
 for s in "${SCRIPTS[@]}"; do
   f="$PROJ/db-backup/$s"
