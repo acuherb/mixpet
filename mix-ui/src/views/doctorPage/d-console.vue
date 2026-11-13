@@ -380,6 +380,7 @@ const actionTitles: Record<string, string> = {
   '/doctorPage/z-surgery': '手术记录', '/doctorPage/z-examReport': '报告单打印',
   '/doctorPage/z-requisition': '申请单打印',
   '/doctorPage/z-diagnosis': '诊断字典', '/doctorPage/z-refRange': '参考区间',
+  '/backstage/z-petArchive': '就诊档案',
 }
 const titleOf = (p: string): string => {
   const base = p.split('?')[0]
@@ -387,8 +388,14 @@ const titleOf = (p: string): string => {
 }
 const openAction = (path: string): void => {
   if (!path) return
-  const q: Record<string, any> = {...currentQuery.value, __flowTarget: path}
-  inlineTitle.value = '处理 · ' + titleOf(path)
+  // 把路径自带的 query 拆出来：__flowTarget 只留裸路径（否则 FlowInline 按整串查白名单会失配），
+  // 参数平铺为路由 query，被渲染的深页用 useRoute().query 正常读取（如 petId / recordId）
+  const qi = path.indexOf('?')
+  const base = qi >= 0 ? path.slice(0, qi) : path
+  const extra: Record<string, any> = {}
+  if (qi >= 0) new URLSearchParams(path.slice(qi + 1)).forEach((v, k) => { extra[k] = v })
+  const q: Record<string, any> = {...currentQuery.value, ...extra, __flowTarget: base}
+  inlineTitle.value = '处理 · ' + titleOf(base)
   inlineOpen.value = true
   router.push({path: '/doctorPage/d-console/inline', query: q})
 }
