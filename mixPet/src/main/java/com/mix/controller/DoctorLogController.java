@@ -143,7 +143,10 @@ public class DoctorLogController {
             appointment.setPetOwnerId(pet != null ? pet.getClientId() : appointment.getClientId());
             if (appointment.getIsSuc() == null) appointment.setIsSuc(false);
             // 与后台/顾客端共用带行锁的写入口，杜绝医生端绕过容量校验造成超卖
-            return Result.choice("添加", appointService.reserve(appointment, true));
+            boolean ok = appointService.reserve(appointment, true);
+            if (!ok) return Result.choice("添加", false);
+            // 挂号凭证卡需要单号（msg 置空避免拦截器重复 toast）
+            return Result.data(appointment.getAppointmentId());
         } else return Result.error("未获取登录信息");
     }
 

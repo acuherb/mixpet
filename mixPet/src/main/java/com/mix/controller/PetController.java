@@ -80,6 +80,16 @@ public class PetController {
         return petService.selectNoClient();
     }
 
+    /**
+     * 挂号检索：输入 宠物名/主人姓名/手机号/宠物卡号 任意一个关键词，
+     * 返回宠物+主人轻量信息；选中后前端用 /pet/archive/{petId} 带出完整档案。
+     */
+    @GetMapping("/search")
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER, RoleConst.ADMIN})
+    public List<PetDto> searchReg(String kw) {
+        return petService.searchReg(kw);
+    }
+
     @GetMapping("/page")
     @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
     public IPage<PetDto> getPage(int numPage, int pageSize, String petName, String clientName) {

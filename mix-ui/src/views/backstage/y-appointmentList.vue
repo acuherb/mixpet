@@ -43,12 +43,15 @@
   </el-table>
   <!--分页条-->
   <BackPage :total="appointList.total" @changePu="changePuB"/>
+  <!--挂号成功凭证卡-->
+  <AppointTicket ref="ticketRef"/>
   <!--修改、新增时的模态框-->
-  <el-dialog v-model="modalView" :title="modalTit" draggable width="60%">
+  <el-dialog v-model="modalView" :title="modalTit" draggable width="78%">
     <!--表单-->
     <el-form ref="myFormRef" :model="form" :rules="rules" label-width="120px">
-      <el-form-item label="简介" prop="appointmentInfo">
-        <el-input v-model="form.appointmentInfo" clearable placeholder="无"/>
+      <el-form-item label="宠物档案" prop="petId">
+        <!-- 老系统式录入路径：卡号/手机号/宠物名一框检索，选中带出档案与今日医生 -->
+        <PetRegPicker ref="petRegRef" v-model:pet-id="form.petId" v-model:client-id="form.clientId" style="width: 100%"/>
       </el-form-item>
       <el-form-item label="就诊时间" prop="appointmentDate">
         <el-date-picker
@@ -59,15 +62,8 @@
             type="datetime"
         />
       </el-form-item>
-      <el-form-item label="主人" prop="clientId">
-        <el-select v-model="form.clientId" filterable placeholder="选择用户" @change="form.petId=null">
-          <el-option v-for="d in clientNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
-        </el-select>
-      </el-form-item>
-      <el-form-item label="宠物" prop="petId">
-        <el-select v-model="form.petId" filterable placeholder="选择宠物">
-          <el-option v-for="d in petNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
-        </el-select>
+      <el-form-item label="简介" prop="appointmentInfo">
+        <el-input v-model="form.appointmentInfo" clearable placeholder="无"/>
       </el-form-item>
       <el-form-item label="科室" prop="departmentId">
         <el-select v-model="form.departmentId" filterable placeholder="选择科室" @change="form.doctorId=null">
@@ -110,9 +106,9 @@ import {Res} from "@/request/Res";
 import {reqDepartNameHaveDoctor} from "@/request/DepartApi";
 import {NameDo} from "@/model/DO/NameDo";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
-import {reqClientNameHavePet} from "@/request/ClientApi";
-import {reqPetNameByClientId} from "@/request/PetApi";
 import {reqDoctorNameByDepartId} from "@/request/DoctorApi";
+import PetRegPicker from "@/components/record/PetRegPicker.vue";
+import AppointTicket from "@/components/card/AppointTicket.vue";
 
 /**
  ┌───────────────────────────────────┐
@@ -207,7 +203,24 @@ const delOne = (id: number): void => {
 }
 // 确定请求的返回值，然后刷新
 const sureFlush = (res: Res): void => {
-  if (res.code === 1) { modalView.value = false; sendQuery() }
+  if (res.code === 1) {
+    modalView.value = false
+    sendQuery()
+    // 新增成功（后端随 data 返回单号）弹凭证卡：挂上了/几点/找谁/单号；修改返回无 data 仅刷新
+    if (res.data) {
+      const dep = departmentNameL.value.find(d => d.roleId === form.value.departmentId)
+      const doc = doctorNameL.value.find(d => d.roleId === form.value.doctorId)
+      const arc = petRegRef.value?.archive
+      ticketRef.value?.open({
+        appointId: res.data,
+        date: <string>form.value.appointmentDate,
+        petName: arc?.pet.petName || '',
+        clientName: arc?.client?.clientName || '',
+        departmentName: dep?.roleName || '',
+        doctorName: doc?.roleName || ''
+      })
+    }
+  }
   else ElMessage.error(res.msg || '保存失败，请检查填写内容后重试')
 }
 
@@ -223,9 +236,6 @@ const modalTit = ref<"新增挂号" | "修改挂号">("修改挂号")
 const addRoleB = (): void => {
   form.value = exampleAppoint()
   myFormRef.value?.resetFields()
-  reqClientNameHavePet(null).then(res => {
-    clientNameL.value = res;
-  })
   reqDepartNameHaveDoctor(null).then(res => {
     departmentNameL.value = res;
   })
@@ -246,9 +256,6 @@ const showDialog = (row: Appoint) => {
   form.value.departmentId = row.departmentId
   form.value.doctorId = row.doctorId
   // ===赋值完成===
-  reqClientNameHavePet(form.value.clientId).then(res => {
-    clientNameL.value = res;
-  })
   reqDepartNameHaveDoctor(form.value.departmentId).then(res => {
     departmentNameL.value = res;
   })
@@ -262,8 +269,8 @@ const showDialog = (row: Appoint) => {
  └───────────────────────────────────┘
  */
 // 表单的数据
-const clientNameL = ref<NameDo[]>([]) // 下拉框用户名
-const petNameL = ref<NameDo[]>([])
+const petRegRef = ref<InstanceType<typeof PetRegPicker>>()
+const ticketRef = ref<InstanceType<typeof AppointTicket>>()
 const doctorNameL = ref<NameDo[]>([])
 const departmentNameL = ref<NameDo[]>([])
 const form = ref<Appoint>(exampleAppoint()) // 空的默认值
@@ -287,11 +294,8 @@ const rules = reactive<FormRules>({
   "appointmentDate": [
     {required: true, message: '请输入日期', trigger: 'blur'},
   ],
-  "clientId": [
-    {required: true, message: '请选择用户', trigger: 'blur'},
-  ],
   "petId": [
-    {required: true, message: '请选择宠物', trigger: 'blur'},
+    {required: true, message: '请检索并选择宠物', trigger: 'change'},
   ],
   "departmentId": [
     {required: true, message: '请选择科室', trigger: 'blur'},
@@ -301,13 +305,6 @@ const rules = reactive<FormRules>({
   ],
 })
 
-// 在用户改变时，查询宠物名
-watch(() => form.value.clientId, (newValue): void => {
-  if (newValue == 0 || newValue == null) return;
-  reqPetNameByClientId(newValue, <number>form.value.petId).then(res => {
-    petNameL.value = res
-  })
-})
 // 在科室改变时，查询医生名
 watch(() => form.value.departmentId, (newValue): void => {
   if (newValue == 0 || newValue == null) return;

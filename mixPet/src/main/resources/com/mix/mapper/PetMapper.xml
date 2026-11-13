@@ -18,6 +18,25 @@
             and (b.client_name like #{clientKw} or b.client_tel like #{clientKw})
         </if>
     </select>
+    <!--挂号检索：宠物名/品种/芯片号、主人姓名/手机号、宠物卡号，一框通查-->
+    <select id="searchReg" resultType="com.mix.model.dto.PetDto">
+        SELECT a.pet_id, a.pet_name, a.pet_variety, a.pet_sex, a.pet_birthday,
+               a.client_id, b.client_name, b.client_tel
+        FROM pet AS a
+        LEFT JOIN client AS b ON a.client_id = b.client_id
+        WHERE a.is_del = 0 AND a.pet_alive = 1 AND a.client_id IS NOT NULL
+        <if test="kw != null and kw != ''">
+            <bind name="kwLike" value="'%'+kw+'%'"/>
+            AND (a.pet_name LIKE #{kwLike}
+              OR a.pet_variety LIKE #{kwLike}
+              OR a.pet_chip LIKE #{kwLike}
+              OR b.client_name LIKE #{kwLike}
+              OR b.client_tel LIKE #{kwLike}
+              OR CAST(a.pet_id AS CHAR) = #{kw})
+        </if>
+        ORDER BY a.pet_id DESC
+        LIMIT 20
+    </select>
     <!--查询:主页待领养-->
     <select id="selectFour" resultType="com.mix.model.entity.Pet">
         SELECT pet_id,

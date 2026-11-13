@@ -5,4 +5,6 @@ import {Pet} from "@/model/entiy/Pet";
  */
 export interface PetDto extends Pet {
     clientName: string | null
+    /** 主人手机号（挂号/检索场景展示） */
+    clientTel: string | null
 }

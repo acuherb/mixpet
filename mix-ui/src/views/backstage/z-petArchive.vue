@@ -272,7 +272,8 @@ const rxOf = (recordId: number): any[] => a.value?.prescriptions?.[recordId] || 
 // ---- 打印 / 跳转 ----
 const doPrint = (): void => window.print()
 const openWin = (path: string): void => { window.open(path, '_blank') }
-const printRecord = (row: any): void => openWin('/#/doctorPage/z-recordPrint?recordId=' + row.recordId)
+// 病历打印页路由名是 d-recordPrint（z-surgeryPrint / z-hospitalPrint 同级，别混用）
+const printRecord = (row: any): void => openWin('/#/doctorPage/d-recordPrint?recordId=' + row.recordId)
 const printSurgery = (row: any): void => openWin('/#/doctorPage/z-surgeryPrint?surgeryId=' + row.surgeryId)
 const printHospital = (row: any): void =>
     openWin('/#/doctorPage/z-hospitalPrint?hospitalId=' + row.hospitalId + '&recordId=' + row.recordId)

@@ -30,7 +30,7 @@
 - 完整映射规则定案：见 FIELD_MAPPING §2.7.1。
 - 收费逐项明细不再强求（对账按 bill 金额口径）；统一服务项字典降级 P2。
 
-### P0-5 化验参考值在商品主档里——✅ 规则定案（2026-11-13），实现归 step 2 ETL
+### P0-5 化验参考值在商品主档里——✅ 规则定案 + ✅ 已实现（2026-11-13 step 2 ETL 落地）
 - lab_ref_range 表结构确认（species/年龄段/ref_low/ref_high/ref_text），与 epbmaster 参考值列完全对得上。
 - 转换规则已写死：FIELD_MAPPING §2.7.2（DOG/CAT 系列 → 按物种+年龄段拆行，"low-high"拆上下限，非数值写 ref_text）。
 - 迁移工具开发时按此规格实现转换器，无遗留决策。
@@ -40,7 +40,38 @@
 - 应用点：开方时按 drug.drug_type 查类别折扣率**折进处方净单价**（MedicalRecordServiceImpl 初始/追加开方两处），bill.discount 仍只放等级折扣 → real_money 生成列/退款/报表零改动，两类折扣自然叠加。
 - 管理：z-memberLevel 新增「类别折扣」编辑弹窗；PetSystem 多身份按拍板取最高权益迁入，原身份记 remark。
 
-## P1 —— 切换后 3 个月内需补齐（期间走老系统只读兜底）
+## P1 —— ✅ 2026-11-13 数据裁决：全部豁免/闭环，无新开发
+
+老库(petsprod) 实测数据裁决（sqlcmd 统计，2026-11-13）：
+
+| # | 差距 | 老库数据量 | 裁决 |
+|---|---|---|---|
+| 1 | 疗程卡SA/限次卡ES | **0 / 0** | 豁免：门店从未使用 |
+| 2 | 多仓库/调拨/盘点 | — | 永久豁免（单仓） |
+| 3 | 效期/批次 | estockinitem 效期 **4626** 条 | **功能已存在**：y-drugList 有效期列/入库效期/预警抽屉(低库存+近效期)/工作台近效期计数均已实现；数据随 step 2 ETL（epbmaster→drug 带 DATE_EXPIRATION）迁入，无新开发 |
+| 4 | 员工提成 | epbmaster.COMMISSION_RATE 非空 **0** | 豁免 |
+| 5 | 专科检查模板 | 皮肤 176(CHECK_STR 仅 29 填写，结构化字段 ~10%) / 体检 24 / 牙科 3 / 眼科 0 | 豁免：真实填充率极低，record_template 机制已存在可医生自建 |
+| 6 | 病理/微生物药敏 | 1 / 0 | 豁免 |
+| 7 | 日结单 | erptdayfinish **0** | 豁免（老系统也没用过，/report/finance 口径已覆盖） |
+| 8 | 美容工作流 | ehairingcard 32 | 暂缓：低频，出现真实痛点再做 |
+
+## ✅ step 2 迁移 ETL 落地（2026-11-13 下午，未提交 git）
+
+三个脚本全幂等（dry-run → --apply 可重复执行，重跑不翻倍）：
+
+| 脚本 | 落地内容 | 对账结果 |
+|---|---|---|
+| `etl/etl_drug.py` | epbmaster A 态库存商品 607 → drug（段码+关键词双级品类分类：用品364/西药144/保健64/外用18/驱虫10/疫苗7；效期 607 全带；库存以 estocks 为准）；美容次卡 14 → count_card_template | drug 623=16 手工+607 迁移，全部带 expire_date |
+| `etl/etl_lab_ref.py` | 生产库检验段码(054/057/058/059/062/447/452/386-388)参考值 → lab_ref_range 369 行全挂 test_id；lab_test 三级名称匹配（精确→缩写→别名）命中 156 行，仅新建 62 项；扩展段(DOG2/3/4)与主段同值去重（1220→369 行） | lab_test 134→196 |
+| `etl/etl_bill.py` | epetcaseinvoice 未收款 5 条 → bill（fee_* 按 LINK_TYPE 归项、pay_type 主支付映射微信/团购→现金、pay_status=0）；已完成付款 31040 张历史单不迁（老系统只读） | 5/5 写入，1 张纯零售单 record_id 置空 |
+
+前置 SQL：`db-backup/feature_20261113_drug_legacy.sql`（drug.legacy_part_no）、`feature_20261113_bill_legacy.sql`（bill.legacy_bill_no）。
+
+注意：bill.real_money/discount_money 是 STORED GENERATED（=total×discount），ETL 写 discount 系数（两位小数），尾差 <0.5 已逐单核对无警告。
+
+step 2 剩余（非 ETL）：体检报告 7 种 / B超 X光 打印页（前端）；切库后 inventory 期初以 estocks 口径已在 drug.drug_stock 落地。
+
+> 原表（2026-11-13 上午版，留档）：
 
 | # | 差距 | PetSystem 依据 | 说明 |
 |---|---|---|---|

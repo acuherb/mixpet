@@ -69,12 +69,17 @@ def main(apply_mode: bool):
         qual_map.setdefault(r["PART_NUM"], []).append(r["DESC"])
 
     # ---- 2. 源数据：检验项行（有任一参考值列非垃圾值） ----
+    # 生产库(petsprod)检验料号是段码编码（实测 2026-11-13）：
+    #   054 血常规 / 057+058 生化 / 059 离子 / 062 凝血 / 447 生理(血压) / 452+386-388 快检定性
+    # 药品行（034/038 等）也借用这些列存剂量（§2.7.2），段码白名单排除；
+    # 057 段混有"斯马特生化N项盘(库存)"商品行（已随 etl_drug 入 drug），此处跳过
     cols = list(SEG_MAP.keys())
     col_expr = ", ".join(cols)
     src = mssql_query(f"""
         SELECT PART_NUM, DESCRIPT, UOM, {col_expr}
         FROM epbmaster
-        WHERE (LOWER(PART_NUM) LIKE 'y%' OR LOWER(PART_NUM) LIKE 'dev-%')
+        WHERE LEFT(PART_NUM,3) IN ('054','057','058','059','062','447','452','386','387','388')
+          AND DESCRIPT NOT LIKE '%项盘(库存)%'
     """)
     rep.source_rows = len(src)
 
@@ -93,10 +98,16 @@ def main(apply_mode: bool):
                 continue
             species, amin, amax = SEG_MAP[col]
             low, high, text = parse_ref(raw)
-            if col in EXT_COLS and low is not None:
-                # 扩展段无年龄边界依据：数值不拆，整段原文进 ref_text
-                text, low, high = raw, None, None
-                rep.warn(f"[{pno}] {col}（{name}）数值参考值缺年龄段定义，暂存 ref_text 原文: {raw}")
+            if col in EXT_COLS:
+                # 扩展段（DOG2/3/4…）实测与同物种主段值完全相同（老程序复制值），
+                # 无年龄边界依据 → 与主段同值则跳过去冗余；不同值才保留 ref_text 原文
+                main_col = col.rstrip("234")  # DOG2→DOG / DOG_Y3→DOG_Y
+                main_raw = (r.get(main_col) or "").strip()
+                if raw == main_raw:
+                    continue
+                if low is not None:
+                    text, low, high = raw, None, None
+                rep.warn(f"[{pno}] {col}（{name}）扩展段与主段值不同，暂存 ref_text 原文: {raw}")
             if text is None and pno in qual_map and pno not in seen_qual:
                 # 定性项：选项拼入 ref_text（每个 PART_NUM 只拼一次，挂成年段行）
                 text = "定性选项: " + " / ".join(qual_map[pno])
@@ -121,17 +132,58 @@ def main(apply_mode: bool):
             rep.warn(f"[{pno}] {name} 纯定性项（无数值列），挂犬/不限月龄，需人工归物种")
 
     # ---- 3. lab_test 映射（兜底 ref_range + test_id 回填） ----
+    # 名称匹配三级：精确 → 英文缩写（老"WBC白细胞数目/..."、新"白细胞计数(WBC)"）→ 别名表
+    import re as _re
+    ABBR_RE_PAREN = _re.compile(r"\(([A-Za-z][A-Za-z0-9#+\-]{1,9})\)")
+    ABBR_RE_UPPER = _re.compile(r"\b([A-Z]{2,6}[0-9]*)\b")
+
+    def abbrs(name):
+        out = set()
+        for m in ABBR_RE_PAREN.findall(name):
+            out.add(m.upper())
+        for m in ABBR_RE_UPPER.findall(name):
+            out.add(m)
+        return out
+
+    # 保守别名：仅配明确同一检验项（宁可新建也不错配）
+    ALIAS = {
+        "总胆红素(TB)": "总胆红素 TBIL",
+        "碱性磷酸酶(ALP)": "碱性磷酸酶 ALKP",
+        "总胆固醇(TC)": "胆固醇 CHOL",
+        "钙(Ca)": "血钙 Ca(mmol/L)",
+        "Ca++": "血钙 Ca(mmol/L)",
+        "Cl-": "氯 Cl(mmol/L)",
+        "Na": "钠 Na(mmol/L)",
+        "Na+": "钠 Na(mmol/L)",
+        "K": "钾 K(mmol/L)",
+    }
+
     conn = mysql_conn() if apply_mode else None
     if apply_mode:
         cur = conn.cursor()
         cur.execute("SELECT test_id, test_name FROM lab_test WHERE is_del=0")
-        test_by_name = {t["test_name"].strip(): t["test_id"] for t in cur.fetchall()}
+        tests = cur.fetchall()
     else:
         cur = None
-        test_by_name = {}
+        # dry-run 也要加载映射以报出真实命中率
+        _c = mysql_conn()
+        with _c.cursor() as _cur:
+            _cur.execute("SELECT test_id, test_name FROM lab_test WHERE is_del=0")
+            tests = _cur.fetchall()
+        _c.close()
+    test_by_name = {t["test_name"].strip(): t["test_id"] for t in tests}
+    abbr_idx = {}
+    for t in tests:
+        for a in abbrs(t["test_name"]):
+            abbr_idx.setdefault(a, t["test_id"])
+    alias_idx = {k: test_by_name[v] for k, v in ALIAS.items() if v in test_by_name}
+
     match_new, match_hit = [], 0
     for row in rep.rows:
-        tid = test_by_name.get(row["item_name"])
+        nm = row["item_name"].strip()
+        tid = test_by_name.get(nm) or next(
+            (abbr_idx[a] for a in abbrs(nm) if a in abbr_idx), None
+        ) or alias_idx.get(nm)
         row["test_id"] = tid
         if tid:
             match_hit += 1

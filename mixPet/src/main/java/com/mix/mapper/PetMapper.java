@@ -23,6 +23,14 @@ import java.util.List;
 public interface PetMapper extends BaseMapper<Pet> {
     IPage<PetDto> selectPetPage(IPage<PetDto> page, String petName, String clientName);
 
+    /**
+     * 挂号检索：一个关键词同时匹配 宠物名/品种/芯片号、主人姓名/手机号、宠物卡号
+     *
+     * @param kw 关键词
+     * @return 宠物+主人轻量信息，最多 20 条
+     */
+    List<PetDto> searchReg(@Param("kw") String kw);
+
     IPage<Pet> selectFour(IPage<Pet> page);
 
     @Select("SELECT pet_id as roleId, pet_name as roleName FROM pet WHERE is_del=0")

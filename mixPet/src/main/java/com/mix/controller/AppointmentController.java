@@ -97,7 +97,10 @@ public class AppointmentController {
         if (check.code() == 0) return check;
         Pet pet = petService.getById(appointment.getPetId());
         appointment.setPetOwnerId(pet != null ? pet.getClientId() : appointment.getClientId());
-        return Result.choice("添加", appointmentService.reserve(appointment, true));
+        boolean ok = appointmentService.reserve(appointment, true);
+        if (!ok) return Result.choice("添加", false);
+        // 挂号凭证卡需要单号：insert 后实体 id 已回填，随 data 返回（msg 置空避免拦截器重复 toast）
+        return Result.data(appointment.getAppointmentId());
     }
 
     /** 顾客自己预约挂号：挂号人强制为登录人，且只能挂自己名下的宠物 */

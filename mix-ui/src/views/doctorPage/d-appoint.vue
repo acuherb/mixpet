@@ -117,15 +117,9 @@
               type="datetime"
           />
         </el-form-item>
-        <el-form-item label="主人" prop="clientId">
-          <el-select v-model="form.clientId" filterable placeholder="选择用户" @change="form.petId=null">
-            <el-option v-for="d in clientNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="宠物" prop="petId">
-          <el-select v-model="form.petId" filterable placeholder="选择宠物">
-            <el-option v-for="d in petNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
-          </el-select>
+        <el-form-item label="宠物档案" prop="petId">
+          <!-- 卡号/手机号/宠物名一框检索，选中带出档案摘要 -->
+          <PetRegPicker ref="petRegRef" v-model:pet-id="form.petId" v-model:client-id="form.clientId" dense style="width: 100%"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -136,8 +130,12 @@
       </template>
     </el-dialog>
 
+    <!--挂号成功凭证卡-->
+    <AppointTicket ref="ticketRef"/>
+
     <!--接诊弹窗：向导式（问诊检查 → 诊断医嘱 → 处置开单 → 完结结算）-->
-    <el-dialog v-model="treatView" :close-on-click-modal="false" :before-close="beforeCloseTreat" top="4vh" width="94%" style="max-width: 800px">
+    <!-- 接诊向导全屏化：单屏容纳病历+开单，不再层叠弹窗 -->
+    <el-dialog v-model="treatView" :close-on-click-modal="false" :before-close="beforeCloseTreat" fullscreen>
       <template #header>
         <span style="font-weight: bold">接诊向导 · {{ stepTitles[activeStep] }}</span>
         <el-tag v-if="treatAppoint" style="margin-left: 8px" type="warning">
@@ -300,12 +298,29 @@
         </div>
       </el-form>
 
-      <!-- 第三步：处置开单（处方 / 手术 / 套餐） -->
+      <!-- 第三步：处置开单（左：病历摘要只读 · 右：处方/手术/套餐/检验/影像，单屏完成） -->
       <div v-show="activeStep === 2 && treatRecordId > 0" class="treat-step">
-        <div class="order-summary">
-          已建病历 #{{ treatRecordId }} · 挂号+诊疗 ￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }} · 当前合计
-          <b style="color:#f56c6c">￥{{ treatTotal() }}</b>
-        </div>
+        <div class="order-layout">
+        <aside class="order-side">
+          <div class="side-tit">病历摘要 · #{{ treatRecordId }}</div>
+          <div class="side-field"><span class="k">宠物</span><span class="v">{{ treatAppoint?.petName }} · {{ treatAppoint?.clientName }}</span></div>
+          <div class="side-field"><span class="k">体重</span><span class="v">{{ recordForm.weight != null ? recordForm.weight + ' kg' : '未填写（算量依据）' }}</span></div>
+          <div class="side-field"><span class="k">诊断</span><span class="v">{{ recordForm.diagnosis || '（未填写）' }}</span></div>
+          <div class="side-field"><span class="k">医嘱</span><span class="v">{{ recordForm.advice || '（无）' }}</span></div>
+          <div class="side-fee">
+            <span>挂号+诊疗 ￥{{ ((recordForm.feeRegister||0)+(recordForm.feeTreat||0)).toFixed(2) }}</span>
+            <b>合计 ￥{{ treatTotal() }}</b>
+          </div>
+          <div class="side-orders">
+            <span :class="{on: savedRx.length}">处方 {{ savedRx.length }}</span>
+            <span :class="{on: savedSurgery.length}">手术 {{ savedSurgery.length }}</span>
+            <span :class="{on: savedPkg.length}">套餐 {{ savedPkg.length }}</span>
+            <span :class="{on: labCount}">检验 {{ labCount }}</span>
+            <span :class="{on: imageCount}">影像 {{ imageCount }}</span>
+          </div>
+          <p class="side-tip">开单即计入账单；检验/影像在右侧对应页签开单，随时回看合计</p>
+        </aside>
+        <section class="order-main">
         <el-alert v-if="orderLocked" :title="treatStatus === 2 ? '该就诊已作废，单据只读' : '该就诊已完结，单据只读'"
                   show-icon :closable="false" type="warning" style="margin-bottom: 10px"/>
         <el-tabs v-model="activeTab">
@@ -328,7 +343,10 @@
             <el-table :data="prescriptions" border size="small">
               <el-table-column label="药品" min-width="180">
                 <template #default="scope">
-                  <el-select v-model="scope.row.drugId" filterable placeholder="选择药品" size="small" style="width: 100%" @change="doseCalc(scope.row)">
+                  <!-- 键盘流：药品选中后自动聚焦数量，一路 Enter 到用法，末行回车自动加行 -->
+                  <el-select :ref="(el: any) => setCellRef(scope.$index, 'drug', el)" v-model="scope.row.drugId"
+                             filterable placeholder="选择药品" size="small" style="width: 100%"
+                             @change="onDrugPicked(scope.$index, scope.row)">
                     <el-option v-for="d in drugList" :key="d.drugId"
                                :disabled="d.drugStock === 0"
                                :label="`${d.drugName}（￥${d.drugPrice}/${d.drugUnit}，库存${d.drugStock}）`"
@@ -338,24 +356,32 @@
               </el-table-column>
               <el-table-column label="数量" min-width="120">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.quantity" :max="99" :min="1" size="small" style="width: 90px"/>
+                  <el-input-number :ref="(el: any) => setCellRef(scope.$index, 'qty', el)" v-model="scope.row.quantity"
+                                   :max="99" :min="1" size="small" style="width: 90px"
+                                   @keyup.enter="focusCell(scope.$index, 'times')"/>
                   <!-- 算量提示：与自动算量一致=绿色；医生改过数量=红色警示 -->
                   <div v-if="scope.row.doseTip" :class="['dose-tip', {changed: scope.row.doseQty != null && scope.row.quantity !== scope.row.doseQty}]">{{ scope.row.doseTip }}</div>
                 </template>
               </el-table-column>
               <el-table-column label="频次(次/日)" width="105">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.dailyTimes" :max="12" :min="1" size="small" style="width: 80px" @change="recalcDose(scope.row)"/>
+                  <el-input-number :ref="(el: any) => setCellRef(scope.$index, 'times', el)" v-model="scope.row.dailyTimes"
+                                   :max="12" :min="1" size="small" style="width: 80px"
+                                   @change="recalcDose(scope.row)" @keyup.enter="focusCell(scope.$index, 'days')"/>
                 </template>
               </el-table-column>
               <el-table-column label="天数" width="85">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.durationDays" :max="90" :min="1" size="small" style="width: 70px" @change="recalcDose(scope.row)"/>
+                  <el-input-number :ref="(el: any) => setCellRef(scope.$index, 'days', el)" v-model="scope.row.durationDays"
+                                   :max="90" :min="1" size="small" style="width: 70px"
+                                   @change="recalcDose(scope.row)" @keyup.enter="focusCell(scope.$index, 'usage')"/>
                 </template>
               </el-table-column>
               <el-table-column label="用法" min-width="140">
                 <template #default="scope">
-                  <el-input v-model="scope.row.usageInfo" clearable maxlength="64" placeholder="如：每日2次，每次1片" size="small"/>
+                  <el-input :ref="(el: any) => setCellRef(scope.$index, 'usage', el)" v-model="scope.row.usageInfo"
+                            clearable maxlength="64" placeholder="如：每日2次，每次1片" size="small"
+                            @keyup.enter="rxRowDone(scope.$index)"/>
                 </template>
               </el-table-column>
               <el-table-column label="小计" width="80">
@@ -557,6 +583,8 @@
             <p v-if="savedImage.length === 0" style="color:#999">尚未开影像单</p>
           </el-tab-pane>
         </el-tabs>
+        </section>
+        </div>
         </div>
       </div>
 
@@ -717,13 +745,12 @@ import {AppointDto2} from "@/model/DO/AppointDto2";
 import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {reqUpdateAppoint} from "@/request/AppointApi";
-import {computed, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
+import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
 import {onBeforeRouteLeave} from "vue-router";
-import {NameDo} from "@/model/DO/NameDo";
 import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
-import {reqPetNameByClientId} from "@/request/PetApi";
-import {reqClientNameHavePet} from "@/request/ClientApi";
+import PetRegPicker from "@/components/record/PetRegPicker.vue";
+import AppointTicket from "@/components/card/AppointTicket.vue";
 import {Delete, InfoFilled, Notebook, Plus, Printer} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";
@@ -811,9 +838,6 @@ const filteredDone = computed(() =>
         : doneAppoint.value)
 onMounted(() => {
   queryAppoint()
-  reqClientNameHavePet(null).then(res => {
-    clientNameL.value = res;
-  })
   // 从医生工作台「去接诊」直达：自动打开指定挂号单的接诊向导
   const aid = Number(route.query.appointmentId)
   if (aid) {
@@ -1149,6 +1173,26 @@ const pkgOf = (packageId: number): ServicePackage | undefined => packageList.val
 const addPrescription = (): void => { prescriptions.value.push(examplePrescription()) }
 const addPackage = (): void => { packages.value.push(examplePackage()) }
 
+/* ===== 处方键盘流：药品→数量→频次→天数→用法 一路 Enter，末行回车自动加行（老系统录入习惯） ===== */
+const cellRefs = new Map<string, { focus: () => void }>()
+const setCellRef = (row: number, field: string, el: { focus: () => void } | null): void => {
+  const key = `${row}-${field}`
+  if (el) cellRefs.set(key, el)
+  else cellRefs.delete(key)
+}
+const focusCell = (row: number, field: string): void => {
+  nextTick(() => cellRefs.get(`${row}-${field}`)?.focus?.())
+}
+const onDrugPicked = (row: number, r: Prescription): void => {
+  doseCalc(r)
+  focusCell(row, 'qty')
+}
+// 用法行回车：聚焦下一行药品；已是最后一行则自动加一行再聚焦
+const rxRowDone = (row: number): void => {
+  if (row === prescriptions.value.length - 1) addPrescription()
+  focusCell(row + 1, 'drug')
+}
+
 // 常见配伍禁忌规则（药品名关键字命中即提示，属辅助风险提醒而非硬阻断）
 const drugConflicts: Array<[string, string]> = [
   ['阿莫西林', '庆大霉素'], ['恩诺沙星', '甲硝唑'], ['甲硝唑', '头孢'],
@@ -1393,8 +1437,8 @@ const recordRules = reactive<FormRules>({
  └───────────────────────────────────┘
  */
 const modalView = ref(false)
-const clientNameL = ref<NameDo[]>([])
-const petNameL = ref<NameDo[]>([])
+const petRegRef = ref<InstanceType<typeof PetRegPicker>>()
+const ticketRef = ref<InstanceType<typeof AppointTicket>>()
 const form = ref<Appoint>(exampleAppoint())
 const myFormRef = ref<FormInstance>()
 const addRoleB = (): void => {
@@ -1407,7 +1451,21 @@ const formSubmit = async (): Promise<void> => {
     if (valid) {
       modalView.value = false
       reqDoctorAddAppoint(form.value).then(res => {
-        if (res.code === 1) queryAppoint()
+        if (res.code === 1) {
+          queryAppoint()
+          // 新增成功（后端随 data 返回单号）弹凭证卡；医生端即接诊医生本人，不再展示医生行
+          if (res.data) {
+            const arc = petRegRef.value?.archive
+            ticketRef.value?.open({
+              appointId: res.data,
+              date: <string>form.value.appointmentDate,
+              petName: arc?.pet.petName || '',
+              clientName: arc?.client?.clientName || '',
+              departmentName: '',
+              doctorName: ''
+            })
+          }
+        }
       })
     }
   })
@@ -1415,14 +1473,8 @@ const formSubmit = async (): Promise<void> => {
 const rules = reactive<FormRules>({
   "appointmentInfo": [{required: true, message: '请输入描述', trigger: 'blur'}],
   "appointmentDate": [{required: true, message: '请输入日期', trigger: 'blur'}],
-  "clientId": [{required: true, message: '请选择用户', trigger: 'change'}],
-  "petId": [{required: true, message: '请选择宠物', trigger: 'change'}],
-})
-watch(() => form.value.clientId, (newValue): void => {
-  if (newValue == 0 || newValue == null) return;
-  reqPetNameByClientId(newValue, <number>form.value.petId).then(res => {
-    petNameL.value = res
-  })
+  "clientId": [{required: true, message: '请检索并选择宠物', trigger: 'change'}],
+  "petId": [{required: true, message: '请检索并选择宠物', trigger: 'change'}],
 })
 
 /* ===== 诊断编码字典（SOAP 的 A：结构化编码 + 体系） ===== */
@@ -1645,7 +1697,71 @@ onBeforeRouteLeave(async () => {
 }
 .sc-fee.draft { color: #a8abb2; b { color: #a8abb2; } }
 .phase-tip { margin: 4px 0 0 90px; font-size: 12px; color: #909399; }
-.order-summary { padding: 8px 12px; background: #f5f7fa; border-radius: 4px; margin-bottom: 10px; font-size: 14px; }
+/* 第三步：左病历摘要 · 右开单区 单屏布局 */
+.order-layout {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.order-side {
+  flex: 0 0 250px;
+  padding: 12px 14px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  position: sticky;
+  top: 0;
+
+  .side-tit {
+    font-size: 13px;
+    font-weight: 700;
+    color: #303133;
+    margin-bottom: 8px;
+  }
+  .side-field {
+    display: flex;
+    gap: 8px;
+    font-size: 13px;
+    margin-bottom: 6px;
+
+    .k { color: #909399; flex-shrink: 0; }
+    .v { color: #303133; font-weight: 600; word-break: break-all; }
+  }
+  .side-fee {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin: 10px 0 6px;
+    padding-top: 8px;
+    border-top: 1px dashed #dcdfe6;
+    font-size: 13px;
+    color: #606266;
+
+    b { color: #f56c6c; font-size: 16px; }
+  }
+  .side-orders {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    span {
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #eceff4;
+      color: #909399;
+      font-size: 12px;
+
+      &.on { background: #e1f0e1; color: #67c23a; font-weight: 600; }
+    }
+  }
+  .side-tip {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #c0c4cc;
+    line-height: 1.5;
+  }
+}
+.order-main { flex: 1; min-width: 0; }
 .treat-total { float: left; font-size: 15px; }
 
 /* 检验/影像向导内嵌开单 */
@@ -1818,6 +1934,8 @@ onBeforeRouteLeave(async () => {
 /* 移动端接诊向导简化：隐藏复杂表单，只保留查看和关键操作 */
 @media (max-width: 768px) {
   .treat-step { min-height: auto; }
+  .order-layout { flex-direction: column; }
+  .order-side { flex: none; width: 100%; position: static; }
   .exam-tags { display: none; }
   .rx-weight-bar { font-size: 11px; padding: 4px 8px; }
   .settle-cards { grid-template-columns: 1fr; }

@@ -542,7 +542,11 @@ const auditClient = (row: Client, status: number): void => {
 }
 const doAudit = (id: number, status: number, reason?: string): void => {
   reqAuditClient(id, status, reason).then(res => {
-    if (res.code === 1) { sendQuery() }
+    if (res.code === 1) {
+      sendQuery()
+      // 通知侧边栏刷新「客户管理」待审角标
+      window.dispatchEvent(new Event('mixpet:audit-updated'))
+    }
     else ElMessage.error(res.msg || '操作失败')
   }).catch(() => ElMessage.error('网络异常，请重试'))
 }

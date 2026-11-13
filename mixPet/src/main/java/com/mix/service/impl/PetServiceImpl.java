@@ -62,6 +62,12 @@ public class PetServiceImpl extends ServiceImpl<PetMapper, Pet> implements IPetS
     }
 
     @Override
+    public List<PetDto> searchReg(String kw) {
+        if (kw == null || kw.isBlank()) return List.of();
+        return baseMapper.searchReg(kw.trim());
+    }
+
+    @Override
     public IPage<Pet> selectFour(int numPage, int pageSize) {
         return baseMapper.selectFour(new Page<>(numPage, pageSize));
     }

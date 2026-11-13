@@ -30,9 +30,9 @@ public class ScheduleController {
         return scheduleService.listByDoctor(doctorId);
     }
 
-    /** 排班总览（全部启用项） */
+    /** 排班总览（全部启用项；挂号/接诊场景需要按周几过滤出「今日医生」） */
     @GetMapping("/all")
-    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN, RoleConst.DOCTOR, RoleConst.NURSE})
     public List<DoctorSchedule> all() {
         return scheduleService.listAll();
     }

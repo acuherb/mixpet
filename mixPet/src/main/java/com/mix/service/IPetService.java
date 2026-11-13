@@ -45,6 +45,14 @@ public interface IPetService extends IService<Pet> {
     IPage<PetDto> selectByPage(String petName, String clientName, int numPage, int pageSize);
 
     /**
+     * 挂号检索：宠物名/品种/芯片号、主人姓名/手机号、宠物卡号一框通查
+     *
+     * @param kw 关键词
+     * @return 宠物+主人轻量信息（最多 20 条）
+     */
+    List<PetDto> searchReg(String kw);
+
+    /**
      * 主页的待领养宠物查询
      */
     IPage<Pet> selectFour(int numPage, int pageSize);

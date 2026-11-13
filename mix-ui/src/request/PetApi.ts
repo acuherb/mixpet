@@ -23,6 +23,9 @@ export const reqPetHealth = (petId: number): Promise<PetHealth> =>
 // 宠物就诊档案（完整时间线：病历/处方/免疫/住院/手术/化验/影像）
 export const reqPetArchive = (petId: number): Promise<PetArchive> =>
     reqApi<string, PetArchive>("pet/archive/" + petId)
+// 挂号检索：宠物名/主人姓名/手机号/宠物卡号 一框通查
+export const reqPetSearch = (kw: string): Promise<PetDto[]> =>
+    reqApi<string, PetDto[]>("pet/search", {params: {kw}})
 // 查看用户的宠物
 export const reqClientPet = (): Promise<Pet[]> =>
     reqApi<string, Pet[]>("pet/clientOne")

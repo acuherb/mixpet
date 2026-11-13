@@ -52,7 +52,9 @@
           <el-menu-item v-if="doctorNow.authLv >= 2 && !isManager" v-show="menuMatch('今日接待')" index="/backstage/r-flow">今日接待</el-menu-item>
           <el-menu-item v-if="!isManager" v-show="menuMatch('挂号列表')" index="/backstage/y-appointmentList">挂号列表</el-menu-item>
           <el-menu-item v-if="!isManager" v-show="menuMatch('收银台')" index="/backstage/y-billList">收银台</el-menu-item>
-          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">客户管理</el-menu-item>
+          <el-menu-item v-show="menuMatch('客户管理')" index="/backstage/y-clientList">
+            客户管理<span v-if="auditPending > 0 && isManager" class="menu-badge">{{ auditPending > 99 ? '99+' : auditPending }}</span>
+          </el-menu-item>
           <el-menu-item v-show="menuMatch('宠物管理')" index="/backstage/y-petList">宠物管理</el-menu-item>
           <el-menu-item v-show="menuMatch('寄养管理')" index="/backstage/y-fosterList">寄养管理</el-menu-item>
           <el-menu-item v-if="isManager" v-show="menuMatch('活体领养')" index="/backstage/y-adoptList">活体领养</el-menu-item>
@@ -108,6 +110,7 @@
 import {DataBoard, Document, Lock, OfficeBuilding, Setting, Search, Tickets, Expand, Fold, Menu as IconMenu} from '@element-plus/icons-vue'
 import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import {reqGetLoginD} from "@/request/DoctorApi";
+import {reqClientList} from "@/request/ClientApi";
 
 const doctorNow = reactive({
   name: "",
@@ -201,6 +204,23 @@ onUnmounted(() => {
   window.removeEventListener('mixpet:profile-updated', loadDoctorNow)
 })
 loadDoctorNow()
+
+/* 待审核顾客角标：注册审核闭环——管理员不点进客户管理也能看到有新注册待审 */
+const auditPending = ref(0)
+const loadAuditPending = (): void => {
+  if (!isManager.value) return
+  reqClientList({numPage: 1, pageSize: 1, clientName: '', auditStatus: 0})
+      .then(res => { auditPending.value = res.total || 0 })
+      .catch(() => {})
+}
+onMounted(() => {
+  loadAuditPending()
+  // 客户管理页审核完成后广播刷新角标
+  window.addEventListener('mixpet:audit-updated', loadAuditPending)
+})
+onUnmounted(() => {
+  window.removeEventListener('mixpet:audit-updated', loadAuditPending)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -326,6 +346,21 @@ loadDoctorNow()
 aside :deep(.el-sub-menu__title),
 aside :deep(.el-menu-item) { height: 38px; line-height: 38px; font-size: 13px; }
 aside:not(.collapsed) :deep(.el-sub-menu .el-menu-item) { padding-left: 40px !important; font-size: 12.5px; }
+
+/* 菜单待办角标（客户管理·待审核等） */
+aside :deep(.menu-badge) {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 8px;
+  background: #f56c6c;
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+aside.collapsed :deep(.menu-badge) { display: none; }
 
 /* 无奈之举，各个弹出框中的input太宽了 */
 ::deep(.el-form-item) {
