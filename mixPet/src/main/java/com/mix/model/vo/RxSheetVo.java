@@ -66,4 +66,7 @@ public class RxSheetVo {
     private String dispenser;
     /** 处方笺状态 VALID/VOID（未打印为 null） */
     private String supplementStatus;
+
+    /** 就诊号（medical_record.appointment_id，734号公告处方笺「就诊号」栏） */
+    private Integer appointmentId;
 }

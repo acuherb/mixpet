@@ -478,6 +478,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         vo.setDiagnosis(record.getDiagnosis());
         vo.setDoctorName(record.getDoctorName());
         vo.setDepartmentName(record.getDepartmentName());
+        vo.setAppointmentId(record.getAppointmentId());
         // 宠物信息（品种/性别/生日/体重/芯片）
         Pet pet = petMapper.selectById(record.getPetId());
         if (pet != null) {

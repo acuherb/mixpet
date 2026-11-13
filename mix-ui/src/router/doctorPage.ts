@@ -104,6 +104,10 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "z-rxArchive",
         component: () => import('@/views/backstage/z-rxArchive.vue'),
     }, {
+        // 检疫单（开具/补打）：版式移植自 PetSystem ReportPris_jianyi（A5 横向）
+        path: "z-quarantine",
+        component: () => import('@/views/doctorPage/z-quarantine.vue'),
+    }, {
         // 检验/影像报告单打印
         path: "z-examReport",
         component: () => import('@/views/backstage/z-examReport.vue'),

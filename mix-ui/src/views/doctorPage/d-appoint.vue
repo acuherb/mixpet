@@ -350,7 +350,7 @@
               </el-table-column>
               <el-table-column label="天数" width="85">
                 <template #default="scope">
-                  <el-input-number v-model="scope.row.days" :max="90" :min="1" size="small" style="width: 70px" @change="recalcDose(scope.row)"/>
+                  <el-input-number v-model="scope.row.durationDays" :max="90" :min="1" size="small" style="width: 70px" @change="recalcDose(scope.row)"/>
                 </template>
               </el-table-column>
               <el-table-column label="用法" min-width="140">
@@ -1115,7 +1115,7 @@ const appendExam = (tag: string): void => {
 // 按已算出的单次剂量×频次×天数重算数量（频次/天数变更时触发）
 const recalcDose = (row: Prescription): void => {
   if (row.singleDose == null || row.singleDose <= 0) return
-  row.quantity = Math.max(1, Math.ceil(row.singleDose * (row.dailyTimes || 1) * (row.days || 1)))
+  row.quantity = Math.max(1, Math.ceil(row.singleDose * (row.dailyTimes || 1) * (row.durationDays || 1)))
   row.doseQty = row.quantity
 }
 // 处方自动算量：药品配置了剂量规则时，算单次剂量并按 单次×频次×天数 填数量（医生可改）
@@ -1128,7 +1128,7 @@ const doseCalc = (row: Prescription): void => {
     row.singleDoseUnit = unit
     recalcDose(row)
     if (!row.usageInfo) row.usageInfo = `每次${d.doseFixed}${unit}，每日${row.dailyTimes || 1}次`
-    row.doseTip = `固定单次用量 ${d.doseFixed}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.days || 1}天`
+    row.doseTip = `固定单次用量 ${d.doseFixed}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.durationDays || 1}天`
   } else if (d.dosePerKg != null && d.dosePerKg > 0) {
     const w = recordForm.value.weight
     if (w == null) {
@@ -1140,7 +1140,7 @@ const doseCalc = (row: Prescription): void => {
     row.singleDoseUnit = unit
     recalcDose(row)
     if (!row.usageInfo) row.usageInfo = `每次${row.singleDose}${unit}，每日${row.dailyTimes || 1}次`
-    row.doseTip = `按体重 ${w}kg 算得单次约 ${dose.toFixed(2)}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.days || 1}天`
+    row.doseTip = `按体重 ${w}kg 算得单次约 ${dose.toFixed(2)}${unit}；数量=单次×${row.dailyTimes || 1}次/日×${row.durationDays || 1}天`
   } else {
     row.doseTip = ''
   }
@@ -1183,7 +1183,7 @@ const saveRx = (): void => {
 const afterConflictCheck = (ps: Prescription[]): void => {
   // 数量与「单次剂量×频次×天数」算量结果一致性校验（防计费数量与医嘱用量脱节）
   const mismatch = ps.filter(p => p.singleDose != null && p.singleDose > 0 &&
-      p.quantity !== Math.ceil(p.singleDose * (p.dailyTimes || 1) * (p.days || 1)))
+      p.quantity !== Math.ceil(p.singleDose * (p.dailyTimes || 1) * (p.durationDays || 1)))
   const doSave = (): void => {
     rxSaving.value = true
     reqAddRecordPrescription({recordId: treatRecordId.value, prescriptions: ps}).then(res => {

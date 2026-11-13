@@ -14,6 +14,8 @@ export interface RxSheet {
     printNo: string | null;
     /** 联次份数 1=仅第三联 3=三联全打 */
     copies: number | null;
+    /** 就诊号（medical_record.appointment_id） */
+    appointmentId?: number | null;
     /** 毛色（pet.pet_color 或补录） */
     hairColor: string | null;
     /** 动物种类（补录） */
@@ -51,6 +53,8 @@ export interface RxItem {
     dailyTimes?: number | null;
     singleDose?: number | null;
     singleDoseUnit?: string | null;
+    /** 用药天数（734号公告处方笺「天数」列；后端列 duration_days） */
+    durationDays?: number | null;
     usageInfo: string | null;
 }
 

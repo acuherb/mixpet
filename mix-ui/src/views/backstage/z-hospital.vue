@@ -609,7 +609,7 @@ const submitImport = (): void => {
       doseUnit: p.singleDoseUnit ?? null,
       frequency: p.dailyTimes ? `每日${p.dailyTimes}次` : null,
       route: p.usageInfo || null,
-      days: p.days ?? null,
+      days: p.durationDays ?? null,
       startDate: today,
       remark: `由本病历处方导入（数量${p.quantity}${p.drugUnit || ''}）`
     }

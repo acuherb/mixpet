@@ -60,9 +60,10 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="180">
+        <el-table-column fixed="right" label="操作" width="215">
           <template #default="s">
             <el-button v-if="s.row.status !== 'VOID'" link type="primary" @click="reprint(s.row)">补打</el-button>
+            <el-button link type="warning" @click="openQuarantine(s.row)">检疫单</el-button>
             <el-button link type="info" @click="goRecord(s.row.recordId)">病历详情</el-button>
             <el-button v-if="isManager && s.row.status !== 'VOID'" link type="danger" @click="voidRx(s.row)">作废</el-button>
           </template>
@@ -191,6 +192,11 @@ const voidRx = (row: RxArchiveVo): void => {
 /** 跳病例中心查看病历 */
 const goRecord = (recordId: number): void => {
   router.push('/backstage/z-recordList?recordId=' + recordId)
+}
+
+/** 检疫单：已开具则直接补打（draft 接口会返回原单），否则进入开具表单 */
+const openQuarantine = (row: RxArchiveVo): void => {
+  window.open('/#/doctorPage/z-quarantine?recordId=' + row.recordId, '_blank')
 }
 
 onMounted(() => {

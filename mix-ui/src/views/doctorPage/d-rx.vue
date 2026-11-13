@@ -36,6 +36,7 @@
             <div class="rx-field"><span class="rx-k">动物毛色</span><span class="rx-v">{{ rx.hairColor || '—' }}</span></div>
             <div class="rx-field"><span class="rx-k">体重</span><span class="rx-v">{{ rx.petWeight != null ? rx.petWeight + ' kg' : '—' }}</span></div>
             <div class="rx-field"><span class="rx-k">年（日）龄</span><span class="rx-v">{{ rx.petBirthday ? getAge(rx.petBirthday) : '—' }}</span></div>
+            <div class="rx-field"><span class="rx-k">就诊号</span><span class="rx-v">{{ rx.appointmentId ? 'No.' + rx.appointmentId : '—' }}</span></div>
             <div class="rx-field"><span class="rx-k">诊费合计</span><span class="rx-v">￥{{ (rx.totalAmount ?? 0).toFixed(2) }}</span></div>
           </div>
         </div>
@@ -51,22 +52,28 @@
             <table class="rx-items">
               <thead>
                 <tr>
-                  <th style="width: 30%">兽药名称</th>
-                  <th style="width: 15%">规格</th>
-                  <th style="width: 10%">数量</th>
-                  <th style="width: 28%">用法用量</th>
-                  <th style="width: 17%">休药期</th>
+                  <th style="width: 24%">兽药名称</th>
+                  <th style="width: 14%">规格</th>
+                  <th style="width: 7%">单位</th>
+                  <th style="width: 7%">数量</th>
+                  <th style="width: 9%">单价</th>
+                  <th style="width: 17%">用法</th>
+                  <th style="width: 16%">用量</th>
+                  <th style="width: 6%">天数</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(it, i) in rx.items" :key="i">
-                  <td>{{ it.drugName }}{{ it.drugUnit ? '（' + it.drugUnit + '）' : '' }}</td>
+                  <td>{{ it.drugName }}</td>
                   <td>{{ it.drugSpec || '—' }}</td>
+                  <td>{{ it.drugUnit || '—' }}</td>
                   <td>{{ it.quantity }}</td>
-                  <td>{{ usageText(it) }}</td>
-                  <td>{{ rx.withdrawalPeriod || '—' }}</td>
+                  <td>{{ it.drugPrice != null ? '￥' + Number(it.drugPrice).toFixed(2) : '—' }}</td>
+                  <td>{{ it.usageInfo || '—' }}</td>
+                  <td>{{ doseText(it) }}</td>
+                  <td>{{ it.durationDays != null ? it.durationDays : '—' }}</td>
                 </tr>
-                <tr class="rx-amount-row"><td colspan="5">金额（小写）：￥{{ (rx.totalAmount ?? 0).toFixed(2) }}</td></tr>
+                <tr class="rx-amount-row"><td colspan="8">金额（小写）：￥{{ (rx.totalAmount ?? 0).toFixed(2) }}　　休药期：{{ rx.withdrawalPeriod || '—' }}</td></tr>
               </tbody>
             </table>
           </div>
@@ -82,7 +89,7 @@
           </div>
         </div>
 
-        <div class="rx-foot">开方兽医、注册号与发药人信息由系统留痕；本处方笺仅供本次诊疗使用。</div>
+        <div class="rx-foot">（此方三日内有效）　开方兽医、注册号与发药人信息由系统留痕；本处方笺仅供本次诊疗使用。</div>
         <!-- 打印时间仅作留痕小字 -->
         <div class="rx-print-time">打印时间：{{ nowText() }}</div>
       </div>
@@ -166,13 +173,12 @@ const fmt = (t: string | null): string => (t || '').replace('T', ' ').slice(0, 1
 const nowText = (): string => new Date().toLocaleString('zh-CN')
 const doPrint = (): void => window.print()
 
-/** 用法展示：有结构化单次剂量时展示「单次X×每日Y次」，否则回退自由文本 */
-const usageText = (it: any): string => {
+/** 用量（734号公告「用量」列）：结构化单次剂量×频次；无结构化数据留空交医生手写 */
+const doseText = (it: any): string => {
   if (it.singleDose != null) {
-    const s = `单次${it.singleDose}${it.singleDoseUnit || ''}×每日${it.dailyTimes || 1}次`
-    return it.usageInfo ? `${s}（${it.usageInfo}）` : s
+    return `单次${it.singleDose}${it.singleDoseUnit || ''}×每日${it.dailyTimes || 1}次`
   }
-  return it.usageInfo || '—'
+  return '—'
 }
 </script>
 
