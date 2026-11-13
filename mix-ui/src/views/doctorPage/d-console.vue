@@ -34,19 +34,26 @@
           <el-button size="small" :loading="loading" circle @click="loadAll" title="刷新"><el-icon><Refresh/></el-icon></el-button>
         </div>
         <div class="todo-scroll">
+          <div class="todo-collapse-ctrl">
+            <a @click="collapseAll">全部收起</a><span class="cc-sep">·</span><a @click="expandAll">全部展开</a>
+          </div>
           <div v-for="st in stages" :key="st.key" class="todo-group">
-            <div class="todo-group-head" :class="{hot: st.items.length}">
+            <div class="todo-group-head" :class="{hot: st.items.length, open: !isCollapsed(st.key)}" @click="toggleGroup(st.key)">
+              <el-icon class="chev"><ArrowRight/></el-icon>
               <span class="dot" :class="st.key"></span>{{ st.title }}
               <b>{{ st.items.length }}</b>
             </div>
-            <button v-for="c in st.items" :key="c.key" class="todo-card"
-                    :class="{active: selected?.key === c.key}" @click="select(c, st)">
-              <div class="tc-line"><b>{{ c.petName || '—' }}</b><span>{{ c.clientName || '' }}</span></div>
-              <div class="tc-sub">{{ c.sub }}</div>
-              <div class="tc-next">{{ c.nextLabel || '去处理' }} <el-icon><Right/></el-icon></div>
-              <span v-if="c.flag" class="tc-flag">{{ c.flag }}</span>
-            </button>
-            <div v-if="!st.items.length" class="todo-empty">暂无</div>
+            <div v-show="!isCollapsed(st.key)" class="todo-cards">
+              <button v-for="c in st.items" :key="c.key" class="todo-card"
+                      :class="{active: selected?.key === c.key}" @click="select(c, st)">
+                <div class="tc-line"><b>{{ c.petName || '—' }}</b><span>{{ c.clientName || '' }}</span></div>
+                <div class="tc-sub">{{ c.sub }}</div>
+                <div class="tc-next">{{ c.nextLabel || '去处理' }} <el-icon><Right/></el-icon></div>
+                <span v-if="c.flag" class="tc-flag">{{ c.flag }}</span>
+              </button>
+              <div v-if="!st.items.length" class="todo-empty">暂无</div>
+            </div>
+            <div v-if="isCollapsed(st.key) && st.items.length" class="todo-collapsed">已折叠 {{ st.items.length }} 位 · 点击展开</div>
           </div>
         </div>
       </section>
@@ -76,19 +83,38 @@
               <span v-for="t in idTags" :key="t">{{ t }}</span>
             </div>
           </div>
-          <div class="action-head">本环节常用操作 <small>点击后在右侧抽屉打开，不离开操作台</small></div>
+
+          <!-- 就诊档案预览：挂号后医生可快速了解该宠物的既往就诊概况 -->
+          <div v-if="selected?.petId" class="archive-preview">
+            <div class="ap-head" :class="{open: archiveOpen}" @click="archiveOpen = !archiveOpen">
+              <el-icon class="chev"><ArrowRight/></el-icon>
+              <span class="ap-tit">就诊档案预览</span>
+              <span v-if="archive && archive.stat" class="ap-meta">
+                累计 {{ archive.stat.visitCount }} 次 · 上次 {{ shortDate(archive.stat.lastVisit) }}
+              </span>
+              <el-button size="small" link type="primary" style="margin-left:auto" @click.stop="openArchive">完整档案</el-button>
+            </div>
+            <div v-show="archiveOpen" class="ap-body">
+              <el-skeleton v-if="archiveLoading" :rows="3" animated/>
+              <template v-else-if="archive">
+                <div v-if="!archive.visits.length" class="ap-empty">该宠物暂无历史就诊记录（新患宠）</div>
+                <div v-for="v in recentVisits" :key="v.recordId" class="ap-visit" @click="openRecord(v.recordId)">
+                  <span class="ap-date">{{ shortDate(v.createTime) }}</span>
+                  <span class="ap-diag">{{ v.diagnosis || '（未填诊断）' }}</span>
+                  <el-icon class="ap-go"><Right/></el-icon>
+                </div>
+              </template>
+              <div v-else class="ap-empty">档案加载失败</div>
+            </div>
+          </div>
+
+          <div class="action-head">本环节常用操作 <small>针对当前患者，点击后在右侧抽屉打开</small></div>
           <div class="action-grid">
             <button v-for="a in currentActions" :key="a.path" class="action-btn" @click="openAction(a.path)">
               <el-icon class="ab-ico"><component :is="a.icon"/></el-icon>
               <span>{{ a.label }}</span>
             </button>
-          </div>
-          <div class="action-head">通用操作</div>
-          <div class="action-grid compact">
-            <button v-for="a in commonActions" :key="a.path" class="action-btn" @click="openAction(a.path)">
-              <el-icon class="ab-ico"><component :is="a.icon"/></el-icon>
-              <span>{{ a.label }}</span>
-            </button>
+            <p v-if="!currentActions.length" class="action-empty">该环节暂无专属操作，请从右侧「常用功能」选择</p>
           </div>
         </template>
       </section>
@@ -134,13 +160,14 @@
 import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {
-  Bell, Calendar, ChatDotRound, Collection, DataLine, Document, DocumentChecked, EditPen, Files,
+  ArrowRight, Bell, Calendar, ChatDotRound, Collection, DataLine, Document, DocumentChecked, EditPen, Files,
   FirstAidKit, FolderOpened, House, Money, Phone, Picture, Printer, Refresh, Right, Search, Setting,
   SwitchButton, Tickets, User, UserFilled,
 } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {reqDoctorPipeline, type FlowChip, type FlowStage} from '@/request/FlowApi'
 import {reqRecordOne} from '@/request/RecordApi'
+import {reqPetArchive} from '@/request/PetApi'
 import {reqLogout} from '@/request/PowerApi'
 import {reqGetLoginD} from '@/request/DoctorApi'
 import {subscribeFlow} from '@/utils/chatSocket'
@@ -165,6 +192,16 @@ const loadError = ref(false)
 const loading = ref(false)
 const stages = ref<FlowStage[]>([])
 const lastRefresh = ref('')
+// 左列分组折叠：空分组默认折叠，减少视觉噪音；非空分组默认展开
+const collapsed = ref<Set<string>>(new Set())
+const isCollapsed = (key: string): boolean => collapsed.value.has(key)
+const toggleGroup = (key: string): void => {
+  const s = new Set(collapsed.value)
+  s.has(key) ? s.delete(key) : s.add(key)
+  collapsed.value = s
+}
+const collapseAll = (): void => { collapsed.value = new Set(stages.value.map(s => s.key)) }
+const expandAll = (): void => { collapsed.value = new Set() }
 const selected = ref<FlowChip | null>(null)
 const selectedStage = ref<FlowStage | null>(null)
 const detail = ref<any>(null)
@@ -181,6 +218,11 @@ const loadAll = async (): Promise<void> => {
     const vo = await reqDoctorPipeline()
     loadError.value = false
     stages.value = vo.stages || []
+    // 空分组默认折叠（不清掉用户手动展开的非空分组）
+    const next = new Set<string>()
+    for (const s of stages.value) if (!s.items.length) next.add(s.key)
+    for (const k of collapsed.value) if (stages.value.some(s => s.key === k)) next.add(k)
+    collapsed.value = next
     lastRefresh.value = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}:${pad(new Date().getSeconds())}`
     // 待办刷新后保持当前患者选中；若该患者已流转走则自动取消选中
     if (selected.value) {
@@ -217,8 +259,36 @@ const select = (c: FlowChip, st: FlowStage): void => {
   selected.value = c
   selectedStage.value = st
   detail.value = null
+  archive.value = null
   const rid = Number(currentQuery.value.recordId)
   if (rid) reqRecordOne(rid).then(vo => { detail.value = vo?.record || null }).catch(() => { detail.value = null })
+  // 拉取该宠物既往就诊档案（挂号后也能看到历史概况）
+  if (c.petId) loadArchive(c.petId)
+  else archive.value = null
+}
+
+// ── 就诊档案预览 ─────────────────────────────────────────────────────
+const archive = ref<any>(null)
+const archiveLoading = ref(false)
+const archiveOpen = ref(true)
+const recentVisits = computed(() => (archive.value?.visits || []).slice(0, 5))
+const loadArchive = (petId: number): void => {
+  archiveLoading.value = true
+  reqPetArchive(petId).then(res => { archive.value = res || null })
+    .catch(() => { archive.value = null })
+    .finally(() => { archiveLoading.value = false })
+}
+const shortDate = (s: string | null): string => {
+  if (!s) return '—'
+  return s.length >= 10 ? s.slice(0, 10) : s
+}
+// 完整档案在右侧抽屉打开（与 d-flow 同机制）
+const openArchive = (): void => {
+  if (selected.value?.petId) openAction('/backstage/z-petArchive?petId=' + selected.value.petId)
+}
+// 点击某次就诊，跳转到病例中心查看该病历详情
+const openRecord = (recordId: number): void => {
+  openAction('/doctorPage/d-record?recordId=' + recordId)
 }
 
 // 从个人中心「今日概览」点环节卡进来：自动选中该环节第一位患者，少点一次
@@ -262,8 +332,7 @@ const commonActions: Action[] = [
 ]
 const currentActions = computed<Action[]>(() => {
   const key = selectedStage.value?.key || ''
-  return [...(stageActions[key] || []), ...commonActions.slice(0, 2)]
-    .filter(a => canOpenAction(a.path, authLv.value))
+  return (stageActions[key] || []).filter(a => canOpenAction(a.path, authLv.value))
 })
 
 const funcGroups: {title: string; items: Action[]}[] = [
@@ -432,6 +501,29 @@ kbd { font-size: 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 4
 .tc-next { font-size: 12px; color: #409eff; margin-top: 5px; display: flex; align-items: center; gap: 3px; }
 .tc-flag { position: absolute; right: 9px; top: 9px; font-size: 10px; color: #fff; background: #f56c6c; border-radius: 8px; padding: 1px 6px; }
 .todo-empty { font-size: 12px; color: #b3bccb; padding: 2px 6px 6px; }
+.todo-collapse-ctrl { display: flex; align-items: center; gap: 6px; padding: 2px 4px 8px; font-size: 12px; }
+.todo-collapse-ctrl a { color: #6f9be0; cursor: pointer; }
+.todo-collapse-ctrl a:hover { color: #409eff; text-decoration: underline; }
+.todo-collapse-ctrl .cc-sep { color: #c8d2e2; }
+.todo-group-head { cursor: pointer; user-select: none; }
+.todo-group-head .chev { transition: transform .15s; font-size: 12px; color: #b3bccb; }
+.todo-group-head.open .chev { transform: rotate(90deg); color: #8a94a6; }
+.todo-collapsed { font-size: 12px; color: #aab3c2; padding: 4px 8px 8px; cursor: pointer; }
+.archive-preview { margin: 0 20px 10px; border: 1px solid #e4ecf7; border-radius: 10px; background: #fbfdff; overflow: hidden; }
+.ap-head { display: flex; align-items: center; gap: 7px; padding: 11px 14px; cursor: pointer; user-select: none; background: #f3f8ff; border-bottom: 1px solid #eaf1fb; }
+.ap-head .chev { transition: transform .15s; font-size: 12px; color: #8aa3c8; }
+.ap-head .chev { transform: rotate(90deg); }
+.ap-head:not(.open) .chev { transform: rotate(0deg); }
+.ap-tit { font-size: 13px; font-weight: 600; color: #3f4d63; }
+.ap-meta { font-size: 12px; color: #7d8899; }
+.ap-body { padding: 10px 14px 14px; }
+.ap-empty { font-size: 12px; color: #aab3c2; padding: 4px 0; }
+.ap-visit { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; cursor: pointer; }
+.ap-visit:hover { background: #eef6ff; }
+.ap-date { font-size: 12px; color: #6b778c; width: 92px; flex: none; font-variant-numeric: tabular-nums; }
+.ap-diag { flex: 1; font-size: 13px; color: #2f3d54; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-go { color: #c0c8d6; font-size: 13px; }
+.action-empty { font-size: 12px; color: #aab3c2; padding: 4px 2px 14px; }
 .patient-empty { margin: auto; text-align: center; padding: 60px 24px; color: #8a94a6; }
 .pe-ico { font-size: 48px; color: #c9d6ea; }
 .patient-empty h3 { color: #4a5670; font-size: 16px; margin: 14px 0 8px; }

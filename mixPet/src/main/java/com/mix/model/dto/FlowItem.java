@@ -14,12 +14,20 @@ public class FlowItem {
     public String nextLabel;   // 下一步动作文案
     public String actionPath;  // 下一步跳转路径
     public String clientName;
+    /** 宠物主键：前端选中患者后可据此拉取既往就诊档案预览 */
+    public Integer petId;
 
     public FlowItem() {}
 
     public FlowItem(String key, String petName, String sub, String flag, String cls,
                     String stageKey, String nextLabel, String actionPath, String clientName) {
+        this(key, petName, sub, flag, cls, stageKey, nextLabel, actionPath, clientName, null);
+    }
+
+    public FlowItem(String key, String petName, String sub, String flag, String cls,
+                    String stageKey, String nextLabel, String actionPath, String clientName, Integer petId) {
         this.key = key; this.petName = petName; this.sub = sub; this.flag = flag; this.cls = cls;
-        this.stageKey = stageKey; this.nextLabel = nextLabel; this.actionPath = actionPath; this.clientName = clientName;
+        this.stageKey = stageKey; this.nextLabel = nextLabel; this.actionPath = actionPath;
+        this.clientName = clientName; this.petId = petId;
     }
 }

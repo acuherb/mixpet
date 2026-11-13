@@ -145,6 +145,9 @@
           {{ treatStatus === 2 ? '已作废' : '已完结' }} · 只读
         </el-tag>
         <el-tag v-if="hasDraft" style="margin-left: 8px" type="success" effect="plain">本地草稿已暂存</el-tag>
+        <el-tag v-if="autosaveText" style="margin-left: 8px" type="info" effect="plain">
+          <span class="auto-save-dot" :class="{saving: savingPending}"></span>{{ autosaveText }}
+        </el-tag>
         <el-button v-if="hasDraft && !orderLocked" size="small" link type="danger" style="margin-left: 6px" @click="discardDraft">清空草稿</el-button>
       </template>
 
@@ -1578,6 +1581,8 @@ const DRAFT_PREFIX = 'mixpet_treat_draft_'
 const DRAFT_TTL = 24 * 60 * 60 * 1000
 const hasDraft = ref(false)
 const draftPaused = ref(false)
+const lastSavedAt = ref(0)
+const savingPending = ref(false)
 let draftTimer: number | undefined
 const draftKey = (aid: number): string => DRAFT_PREFIX + aid
 /** 只序列化医生录入内容（不含步骤/时间戳），用于判断是否真有未保存修改 */
@@ -1607,9 +1612,10 @@ const clearDraft = (): void => {
   window.clearTimeout(draftTimer)
   const aid = treatAppoint.value?.appointmentId
   if (aid) {
-    try { sessionStorage.removeItem(draftKey(aid)) } catch { /* 隐私模式下 storage 不可用，忽略 */ }
+    try { localStorage.removeItem(draftKey(aid)) } catch { /* 隐私模式下 storage 不可用，忽略 */ }
   }
   hasDraft.value = false
+  lastSavedAt.value = 0
 }
 /** 内容已落库：清掉草稿并把当前状态记为新基线 */
 const markClean = (): void => {
@@ -1617,15 +1623,18 @@ const markClean = (): void => {
   baseline.value = draftSnapshot()
 }
 const persistDraft = (): void => {
-  if (draftPaused.value || !treatView.value || orderLocked.value || !treatAppoint.value) return
-  if (draftSnapshot() === baseline.value) return
+  if (draftPaused.value || !treatView.value || orderLocked.value || !treatAppoint.value) { savingPending.value = false; return }
+  if (draftSnapshot() === baseline.value) { savingPending.value = false; return }
   try {
-    sessionStorage.setItem(draftKey(treatAppoint.value.appointmentId), JSON.stringify(draftPayload()))
+    localStorage.setItem(draftKey(treatAppoint.value.appointmentId), JSON.stringify(draftPayload()))
     hasDraft.value = true
+    lastSavedAt.value = Date.now()
   } catch { /* 容量/隐私模式：草稿不可用，仍由离开确认兜底 */ }
+  savingPending.value = false
 }
 // 深度监听全部录入项，400ms 节流，避免每敲一个字就写一次 storage
 watch([recordForm, prescriptions, packages, needSurgery, surgeryForm, labForm, imageForm], () => {
+  savingPending.value = true
   window.clearTimeout(draftTimer)
   draftTimer = window.setTimeout(persistDraft, 400)
 }, {deep: true})
@@ -1633,7 +1642,7 @@ const restoreDraft = (): void => {
   const aid = treatAppoint.value?.appointmentId
   if (!aid) { baseline.value = draftSnapshot(); draftPaused.value = false; return }
   let raw: string | null = null
-  try { raw = sessionStorage.getItem(draftKey(aid)) } catch { raw = null }
+  try { raw = localStorage.getItem(draftKey(aid)) } catch { raw = null }
   if (orderLocked.value) {
     clearDraft()
   } else if (raw) {
@@ -1656,6 +1665,7 @@ const restoreDraft = (): void => {
       imageForm.note = d.image?.note || ''
       activeStep.value = Math.min(3, Math.max(0, d.step ?? 0))
       hasDraft.value = true
+      lastSavedAt.value = d.savedAt
       ElMessage.success('已恢复上次未保存的接诊草稿')
     }
   }
@@ -1674,6 +1684,14 @@ const discardDraft = (): void => {
 /* ===== 接诊向导防误关：有草稿或相对基线有改动时离开前确认 ===== */
 const treatDirty = computed<boolean>(() => treatView.value && !orderLocked.value &&
     (hasDraft.value || draftSnapshot() !== baseline.value))
+/** 实时自动保存状态：让医生清楚"内容已安全暂存"，消除"怕丢"的焦虑 */
+const autosaveText = computed<string>(() => {
+  if (!treatView.value || orderLocked.value) return ''
+  if (savingPending.value) return '正在自动保存…'
+  if (treatDirty.value && !lastSavedAt.value) return '有未保存的修改'
+  if (lastSavedAt.value) return '已自动保存 ' + new Date(lastSavedAt.value).toLocaleTimeString('zh-CN', {hour: '2-digit', minute: '2-digit'})
+  return ''
+})
 const flushDraft = (): void => {
   window.clearTimeout(draftTimer)
   persistDraft()
@@ -1719,6 +1737,9 @@ onBeforeRouteLeave(async () => {
   &.active { background-color: #409eff; border-color: #409eff; color: #fff; }
 }
 .fee-sep { margin: 0 12px 0 24px; color: #909399; }
+.auto-save-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #67c23a; margin-right: 5px; vertical-align: middle; }
+.auto-save-dot.saving { background: #e6a23c; animation: asPulse 1s infinite; }
+@keyframes asPulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 .fee-tip { font-size: 12px; color: #E6A23C; line-height: 1.5; margin-top: 2px; }
 .sc-sub {
   font-size: 11px;

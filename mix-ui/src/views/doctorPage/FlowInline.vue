@@ -56,6 +56,7 @@ const loaders: Record<string, () => Promise<any>> = {
   '/doctorPage/z-remind': () => import('@/views/backstage/z-remind.vue'),
   '/doctorPage/z-refRange': () => import('@/views/backstage/z-refRange.vue'),
   '/doctorPage/z-diagnosis': () => import('@/views/backstage/z-diagnosis.vue'),
+  '/backstage/z-petArchive': () => import('@/views/backstage/z-petArchive.vue'),
 }
 
 const titles: Record<string, string> = {
@@ -66,7 +67,7 @@ const titles: Record<string, string> = {
   'y-appointmentList': '挂号列表', 'z-examReport': '报告单打印', 'z-requisition': '申请单打印',
   'z-labTest': '检验项字典', 'z-imageTest': '影像项字典',
   'z-template': '病历模板', 'z-consent': '知情同意书', 'z-remind': '复诊/疫苗提醒',
-  'z-refRange': '参考区间', 'z-diagnosis': '诊断字典',
+  'z-refRange': '参考区间', 'z-diagnosis': '诊断字典', 'z-petArchive': '就诊档案',
 }
 
 const target = computed<string>(() => String(route.query.__flowTarget || ''))

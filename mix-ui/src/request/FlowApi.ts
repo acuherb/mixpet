@@ -10,6 +10,7 @@ export interface FlowChip {
   nextLabel?: string
   actionPath?: string
   clientName?: string | null
+  petId?: number | null
 }
 export interface FlowStage {
   key: string
