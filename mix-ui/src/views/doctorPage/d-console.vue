@@ -286,9 +286,9 @@ const shortDate = (s: string | null): string => {
 const openArchive = (): void => {
   if (selected.value?.petId) openAction('/backstage/z-petArchive?petId=' + selected.value.petId)
 }
-// 点击某次就诊，跳转到病例中心查看该病历详情
+// 点击某次就诊：跳转到病历详情页（与就诊档案里「病历」按钮同一个 d-recordPrint），在抽屉内打开
 const openRecord = (recordId: number): void => {
-  openAction('/doctorPage/d-record?recordId=' + recordId)
+  openAction('/doctorPage/d-recordPrint?recordId=' + recordId)
 }
 
 // 从个人中心「今日概览」点环节卡进来：自动选中该环节第一位患者，少点一次
