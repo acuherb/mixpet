@@ -15,7 +15,7 @@
       <div class="q-form-title">开具检疫单</div>
       <el-form label-width="90px" size="default">
         <el-form-item label="文字记录" required>
-          <el-input v-model="cert.content" maxlength="500" placeholder="如：该宠物已按规定完成狂犬病免疫及体内外驱虫，临床检查健康，未见传染病症状。"
+          <el-input v-model="cert.content" maxlength="500" placeholder="如：疫苗：身体正常，要求年免；或 体外驱虫：福来恩0.5ml"
                     :rows="3" show-word-limit type="textarea"/>
         </el-form-item>
         <el-form-item label="检疫清单">
@@ -29,6 +29,7 @@
       <div class="q-head">
         <div class="q-hosp">{{ hosp.name || '动物诊疗机构' }}</div>
         <div class="q-title">检 疫 单</div>
+        <div class="q-subtitle">免疫 / 驱虫记录</div>
         <div class="q-meta">
           <span>检疫单号：{{ cert.certNo || '—' }}</span>
           <span>病例号：No.{{ cert.recordId }}</span>
@@ -221,6 +222,12 @@ const closeWin = (): void => window.close()
   letter-spacing: 8px;
   margin-top: 2px;
   color: #1E6FA8;
+}
+.q-subtitle {
+  font-size: 11px;
+  color: #6b7686;
+  letter-spacing: 2px;
+  margin-top: 1px;
 }
 .q-meta {
   display: flex;

@@ -44,6 +44,7 @@
         <el-button v-if="!scope.row.status" size="small" type="primary" plain @click="openDischarge(scope.row)">出院结算</el-button>
         <el-button v-else size="small" type="info" plain @click="showDetail(scope.row)">查看</el-button>
         <el-button size="small" plain round @click="openMonitor(scope.row)">监护</el-button>
+        <el-button size="small" plain round @click="printSheet(scope.row)">记录单</el-button>
         <el-button v-if="!scope.row.status" size="small" plain round type="warning" @click="openAdvice(scope.row)">医嘱</el-button>
         <el-button v-if="!scope.row.status" size="small" plain round type="success" @click="collectDeposit(scope.row)">收押金</el-button>
       </template>
@@ -470,6 +471,11 @@ const monitorTitle = ref('住院监护')
 const monitorRow = ref<HospitalDto | null>(null)
 const monitors = ref<HospitalMonitor[]>([])
 const monitorForm = ref<Partial<HospitalMonitor>>({})
+// 住院记录单打印（版式移植自老系统 ReportInhosLog，A4 竖版）
+const printSheet = (row: HospitalDto): void => {
+  window.open('/#/doctorPage/z-hospitalPrint?hospitalId=' + row.hospitalId + '&recordId=' + row.recordId, '_blank')
+}
+
 const openMonitor = (row: HospitalDto): void => {
   monitorRow.value = row
   monitorTitle.value = `住院监护 - ${row.petName}（${row.roomNo || '未分配床位'}）`

@@ -57,3 +57,7 @@ db-backup/runtime/
 
 # CodeBuddy 工作区数据（会话记忆/团队协作缓存，本地工具产物，勿入库）
 .codebuddy/
+
+# Python 缓存（ETL 脚本产物）
+__pycache__/
+*.pyc

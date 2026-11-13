@@ -27,10 +27,11 @@
           <el-tag :type="surgeryStatusType(scope.row.status)" size="small">{{ surgeryStatusText(scope.row.status) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="170">
+      <el-table-column fixed="right" label="操作" width="245">
         <template #default="scope">
           <el-button size="small" type="primary" @click="openRecord(scope.row)">记录</el-button>
           <el-button size="small" plain type="warning" @click="openConsent(scope.row)">同意书</el-button>
+          <el-button size="small" plain type="success" @click="printSheet(scope.row)">记录单</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -312,6 +313,11 @@ const defaultRisks = '本人已被告知：本次手术及麻醉可能存在麻�
 const consentForm = ref<{ surgeryId: number; risks: string; agree: boolean; signer: string; note: string }>({
   surgeryId: 0, risks: defaultRisks, agree: true, signer: '', note: ''
 })
+// 手术记录单打印（版式移植自老系统 ReportOper，A5 横向）
+const printSheet = (row: Surgery): void => {
+  window.open('/#/doctorPage/z-surgeryPrint?surgeryId=' + row.surgeryId, '_blank')
+}
+
 const openConsent = (row: Surgery): void => {
   consentRow.value = row
   consentForm.value = {surgeryId: row.surgeryId, risks: defaultRisks, agree: true, signer: '', note: ''}

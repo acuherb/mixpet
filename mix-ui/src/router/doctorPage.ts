@@ -108,6 +108,14 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "z-quarantine",
         component: () => import('@/views/doctorPage/z-quarantine.vue'),
     }, {
+        // 住院记录单：版式移植自 PetSystem ReportInhosLog（A4 竖）
+        path: "z-hospitalPrint",
+        component: () => import('@/views/doctorPage/z-hospitalPrint.vue'),
+    }, {
+        // 手术记录单：版式移植自 PetSystem ReportOper（A5 横）
+        path: "z-surgeryPrint",
+        component: () => import('@/views/doctorPage/z-surgeryPrint.vue'),
+    }, {
         // 检验/影像报告单打印
         path: "z-examReport",
         component: () => import('@/views/backstage/z-examReport.vue'),

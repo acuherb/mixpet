@@ -39,16 +39,23 @@ ENV = load_env()
 MSSQL_CONTAINER = os.environ.get("PET_MSSQL_CONTAINER", "mssql-pets")
 MSSQL_USER = "sa"
 MSSQL_PASSWORD = "Mixpet2026!Sql"
-MSSQL_DB = "petsinit"
+# petsinit=空模板/字典库；petsprod=生产库（202603220943.bak 还原，含客户/宠物/病历/流水）
+MSSQL_DB = os.environ.get("PET_MSSQL_DB", "petsprod")
 SEP = "\x01"  # 不可能出现于数据的分隔符
 
 def mssql_query(sql: str):
-    """执行 MSSQL 查询，返回 [dict]。列名取自结果集表头。"""
+    """执行 MSSQL 查询，返回 [dict]。列名取自结果集表头。
+
+    注意：sqlcmd 默认 -w 80 会把长列折行、nvarchar(max) 截断 —— 迁移病历/医嘱
+    这类长文本时必须 -w 32767 -y 0，否则解析出来的数据会被拦腰截断且不报错。
+    多结果集（含 SELECT '---xxx---' 分隔行）只解析第一个结果集。
+    """
     cmd = [
         "docker", "exec", MSSQL_CONTAINER,
         "/opt/mssql-tools18/bin/sqlcmd",
         "-S", "localhost", "-U", MSSQL_USER, "-P", MSSQL_PASSWORD,
         "-d", MSSQL_DB, "-W", "-C", "-s", SEP,
+        "-w", "32767",
         "-Q", "SET NOCOUNT ON;\n" + sql,
     ]
     out = subprocess.run(cmd, capture_output=True, text=True)
@@ -60,6 +67,8 @@ def mssql_query(sql: str):
     header = lines[0].split(SEP)
     rows = []
     for ln in lines[2:]:  # 跳过第2行 '----' 分隔线
+        if ln.startswith("---"):  # 多结果集分隔行，只解析第一个结果集
+            break
         cols = ln.split(SEP)
         rows.append({h: (cols[i].strip() if i < len(cols) else "") for i, h in enumerate(header)})
     return rows
@@ -114,6 +123,16 @@ class EtlReport:
             for m in self.warnings[:20]:
                 print(f"   ! {m}")
         print("=" * w)
+
+
+def sq(col: str, maxlen: int = 4000) -> str:
+    """包裹长文本列：NULL→''、去回车换行、截断。
+
+    必要性：sqlcmd 按行输出，字段值里若有 CR/LF 会把一行记录劈成多行，
+    解析时列全部错位（表现为"缺 ID/缺主键"大量误报，且不报错）。
+    """
+    return (f"REPLACE(REPLACE(ISNULL(CAST({col} AS NVARCHAR({maxlen})),''),"
+            f"CHAR(13),' '),CHAR(10),' ')")
 
 
 def parse_arg_mode(argv) -> bool:
