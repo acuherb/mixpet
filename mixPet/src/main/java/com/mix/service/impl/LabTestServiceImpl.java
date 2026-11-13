@@ -43,11 +43,15 @@ public class LabTestServiceImpl extends ServiceImpl<LabTestMapper, LabTest> impl
     public IPage<LabTest> selectByPage(String testName, String testGroup, Integer isPanel, int numPage, int pageSize) {
         boolean hasName = testName != null && !testName.isBlank();
         boolean hasGroup = testGroup != null && !testGroup.isBlank();
-        return this.lambdaQuery()
+        var query = this.lambdaQuery()
                 .like(hasName, LabTest::getTestName, testName)
-                .eq(hasGroup, LabTest::getTestGroup, testGroup)
-                .eq(isPanel != null, LabTest::getIsPanel, isPanel == 1)
-                .orderByAsc(LabTest::getTestGroup)
+                .eq(hasGroup, LabTest::getTestGroup, testGroup);
+        // isPanel 为 0=单项 / 1=套组 / null=全部；仅在非 null 时追加条件，
+        // 且把比较结果(isPanel==1)放进 eq 的值位，避免对 null 拆箱 NPE
+        if (isPanel != null) {
+            query = query.eq(LabTest::getIsPanel, isPanel == 1);
+        }
+        return query.orderByAsc(LabTest::getTestGroup)
                 .orderByDesc(LabTest::getCreateTime)
                 .page(new Page<>(numPage, pageSize));
     }
