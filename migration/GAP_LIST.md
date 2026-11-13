@@ -69,7 +69,16 @@
 
 注意：bill.real_money/discount_money 是 STORED GENERATED（=total×discount），ETL 写 discount 系数（两位小数），尾差 <0.5 已逐单核对无警告。
 
-step 2 剩余（非 ETL）：体检报告 7 种 / B超 X光 打印页（前端）；切库后 inventory 期初以 estocks 口径已在 drug.drug_stock 落地。
+step 2 剩余（非 ETL）：体检报告 7 种 / B超 X光 打印页 —— ✅ 2026-11-13 下午完成（见下）；切库后 inventory 期初以 estocks 口径已在 drug.drug_stock 落地。
+
+### ✅ 老版式打印页移植（step 2 收尾，2026-11-13，未提交 git）
+
+数据裁决：老库 B超单 224 / X光单 623 / 上传图片 2991 → 报告单是真刚需；体检 7 种仅皮肤 176（填充率~10%）、体检 24、其余 ≤3 → 做**空白表/带宠物档案打印**，不建结构化录入（P1-5 已豁免）。
+
+- `migration/tools/mrt2json.py`：解析 Stimulsoft .mrt（Net 平铺 / Flex Band 嵌套两种方言），递归累加 Band 坐标，输出厘米绝对坐标的轻量 JSON 到 `mix-ui/public/mrt/`（11 个模板，共 184KB）。可重复生成，后续移植剩余 110 个模板直接复用。
+- `z-mrtPrint.vue`：通用版式渲染器（绝对定位 + 动态 @page 尺寸），`{temp.X}` 运行时绑定、复选框/图片/线条/边框渲染；B超/X光从 `reqImageRequisition`+`reqImageByRecord` 注入症状病史/所见/提示/医师/图片，体检表从 `reqPetArchive` 注入主人/宠物信息，其余留白供手写。
+- 入口：影像结果列表「B超/X光单 / 含图版」、宠物就诊档案「打印体检表」；路由 `doctorPage/z-mrtPrint`（后台同名路径重定向）。
+- 版式：体检 7 种（常规/皮肤/牙齿/眼科/口腔/病理/健康检查表）、B超/X光 各 A5 横版 + A4 含图版。
 
 > 原表（2026-11-13 上午版，留档）：
 

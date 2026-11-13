@@ -32,10 +32,12 @@
         <el-tag v-else size="small" type="warning">待检查</el-tag>
       </template>
     </el-table-column>
-    <el-table-column label="操作" width="220" fixed="right">
+    <el-table-column label="操作" width="330" fixed="right">
       <template #default="scope">
         <el-button size="small" @click="printReq(scope.row)">申请单</el-button>
         <el-button v-if="scope.row.status" size="small" type="success" @click="printReport(scope.row)">报告单</el-button>
+        <el-button v-if="scope.row.status" size="small" plain @click="printLegacy(scope.row, false)">B超/X光单</el-button>
+        <el-button v-if="scope.row.status" size="small" plain @click="printLegacy(scope.row, true)">含图版</el-button>
         <el-button :type="scope.row.status ? 'info' : 'primary'" plain size="small" @click="showDialog(scope.row)">
           {{ scope.row.status ? '查看报告' : '录报告' }}
         </el-button>
@@ -180,6 +182,13 @@ const printReq = (row: ImageOrder): void => {
 // 打印影像报告单（检查项目+报告文本）
 const printReport = (row: ImageOrder): void => {
   router.push('/doctorPage/z-examReport?type=image&recordId=' + row.recordId + '&orderId=' + row.orderId)
+}
+// 老系统版式 B超/X光 报告单（TypeB/TypeX，A5 横；含图版 A4）
+const printLegacy = (row: ImageOrder, full: boolean): void => {
+  const name = row.itemName + ' ' + (row.groupName || '')
+  const isB = /B超|超声|彩超|腹部超声/i.test(name) && !/X光|DR|拍片|放射/i.test(name)
+  const tpl = (isB ? 'TypeB' : 'TypeX') + (full ? 'Full' : '')
+  router.push('/doctorPage/z-mrtPrint?tpl=' + tpl + '&recordId=' + row.recordId + '&orderId=' + row.orderId)
 }
 
 const modalView = ref(false)

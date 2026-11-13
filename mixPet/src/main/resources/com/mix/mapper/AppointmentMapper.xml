@@ -110,6 +110,11 @@
         AND a.pet_id = c.pet_id
         AND a.department_id = d.department_id
         AND a.doctor_id = #{doctorId}
+        <!-- 接诊工作台只服务当日工作：历史已处理单由「病例中心」分页查询，
+             ETL 迁入的 1.2 万条历史挂号不能一次性拉回前端渲染（会卡死浏览器）。
+             保留全部待处理，已处理只取近 90 天，并封顶 300 条兜底。 -->
+        AND (a.is_suc = 0 OR a.appointment_date >= DATE_SUB(NOW(), INTERVAL 90 DAY))
         order by a.is_suc, appointment_date desc
+        LIMIT 300
     </select>
 </mapper>

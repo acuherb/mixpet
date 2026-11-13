@@ -6,6 +6,7 @@
       <span class="pa-bar-tit">宠物就诊档案</span>
       <el-button v-if="a" :loading="loading" size="small" @click="reload">刷新</el-button>
       <el-button v-if="a" size="small" type="primary" @click="doPrint">打印档案</el-button>
+      <el-button v-if="a" size="small" plain @click="printCheckup">打印体检表</el-button>
       <span v-if="a" class="pa-bar-hint">
         共 {{ allEvents.length }} 条诊疗记录 · 最后更新 {{ nowText }}
       </span>
@@ -271,6 +272,10 @@ const rxOf = (recordId: number): any[] => a.value?.prescriptions?.[recordId] || 
 
 // ---- 打印 / 跳转 ----
 const doPrint = (): void => window.print()
+// 老系统 7 种体检表（空白/带宠物档案），版式由 .mrt 转换
+const printCheckup = (): void => {
+  router.push('/doctorPage/z-mrtPrint?tpl=CheckupTijian&petId=' + petId.value)
+}
 const openWin = (path: string): void => { window.open(path, '_blank') }
 // 病历打印页路由名是 d-recordPrint（z-surgeryPrint / z-hospitalPrint 同级，别混用）
 const printRecord = (row: any): void => openWin('/#/doctorPage/d-recordPrint?recordId=' + row.recordId)

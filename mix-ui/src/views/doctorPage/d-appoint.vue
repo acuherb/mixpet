@@ -345,9 +345,10 @@
                 <template #default="scope">
                   <!-- 键盘流：药品选中后自动聚焦数量，一路 Enter 到用法，末行回车自动加行 -->
                   <el-select :ref="(el: any) => setCellRef(scope.$index, 'drug', el)" v-model="scope.row.drugId"
-                             filterable placeholder="选择药品" size="small" style="width: 100%"
-                             @change="onDrugPicked(scope.$index, scope.row)">
-                    <el-option v-for="d in drugList" :key="d.drugId"
+                             filterable remote reserve-keyword :remote-method="filterDrug"
+                             placeholder="输入药品名检索" size="small" style="width: 100%"
+                             @focus="drugQuery = ''" @change="onDrugPicked(scope.$index, scope.row)">
+                    <el-option v-for="d in drugOptions" :key="d.drugId"
                                :disabled="d.drugStock === 0"
                                :label="`${d.drugName}（￥${d.drugPrice}/${d.drugUnit}，库存${d.drugStock}）`"
                                :value="d.drugId"/>
@@ -851,7 +852,11 @@ onMounted(() => {
 })
 const queryAppoint = () => {
   reqDoctorAppoint().then(res => {
-    appoint.value = res
+    // 兜底：后端已按「全部待处理 + 近 90 天已处理」封顶 300 条；
+    // 即使接口异常返回全量历史，也绝不把上万张卡片交给浏览器渲染
+    const list = res || []
+    appoint.value = list.length > 300 ? list.slice(0, 300) : list
+    if (list.length >= 300) ElMessage.info('接诊列表仅显示待处理与近 90 天记录，更早就诊请到病例中心查询')
     loadRecordStatus()
   })
 }
@@ -942,6 +947,27 @@ const surgerySaving = ref(false)
 
 // 字典
 const drugList = ref<Drug[]>([])
+/** 药品下拉：ETL 后主档 600+ 条且会增长，绝不在表格每行全量渲染 el-option。
+ *  远程检索只显示前 40 条命中；已选药品始终保留，避免回显成 id。 */
+const drugQuery = ref('')
+const filterDrug = (q: string): void => { drugQuery.value = q || '' }
+const drugOptions = computed<Drug[]>(() => {
+  const q = (drugQuery.value || '').trim().toLowerCase()
+  const all = drugList.value
+  const hit = q
+    ? all.filter(d => (d.drugName || '').toLowerCase().includes(q)
+        || (d.drugSpec || '').toLowerCase().includes(q)
+        || String(d.drugId) === q)
+    : all
+  const out = hit.slice(0, 40)
+  for (const p of prescriptions.value) {
+    const id = Number(p.drugId)
+    if (!id || out.some(d => d.drugId === id)) continue
+    const d = all.find(x => x.drugId === id)
+    if (d) out.unshift(d)
+  }
+  return out
+})
 const packageList = ref<ServicePackage[]>([])
 const templates = ref<RecordTemplate[]>([])
 const tplId = ref<number | null>(null)

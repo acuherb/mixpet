@@ -59,6 +59,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-rxArchive",
         redirect: "/doctorPage/z-rxArchive"
     }, {
+        // 老系统版式通用打印（体检 7 种 / B超X光报告单）
+        path: "z-mrtPrint",
+        redirect: "/doctorPage/z-mrtPrint"
+    }, {
         // 检验/影像报告单打印
         path: "z-examReport",
         redirect: "/doctorPage/z-examReport"

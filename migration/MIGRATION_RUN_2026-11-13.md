@@ -63,4 +63,4 @@ docker exec mssql-pets sqlcmd -Q "RESTORE DATABASE petsprod FROM DISK=... WITH M
 
 - epbmaster → drug（药品字典/价格/库存期末余量）
 - epetcaseinvoice → bill（切换时点只迁未收款）
-- 体检报告（ReportCheckup* 7 种）、B超/X光（ReportTypeB/X）打印页
+- ~~体检报告（ReportCheckup* 7 种）、B超/X光（ReportTypeB/X）打印页~~ ✅ 2026-11-13 已移植：mrt2json.py 转 11 个版式 JSON + z-mrtPrint.vue 通用渲染，详见 GAP_LIST「老版式打印页移植」段
