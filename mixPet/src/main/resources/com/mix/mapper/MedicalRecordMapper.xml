@@ -90,7 +90,10 @@
         AND r.revisit_date &lt;= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
         <!-- 已完成随访的不再提醒：提醒页可随「写随访」自然消掉，不会永久堆积 -->
         AND NOT EXISTS (SELECT 1 FROM follow_up f WHERE f.record_id = r.record_id AND f.status = 1)
+        <!-- 逾期过久的历史提醒不再堆积；看板一次最多 300 条 -->
+        AND r.revisit_date >= DATE_SUB(CURDATE(), INTERVAL 180 DAY)
         ORDER BY r.revisit_date ASC
+        LIMIT 300
     </select>
     <!--宠物近期用药：跨处方+病历，取最近10条-->
     <select id="selectRecentRxByPet" resultType="com.mix.model.vo.PetHistoryRx">

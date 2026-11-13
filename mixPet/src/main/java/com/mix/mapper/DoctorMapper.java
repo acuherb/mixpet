@@ -30,10 +30,10 @@ public interface DoctorMapper extends BaseMapper<Doctor> {
 
     DoctorDto selectOneById(@Param("doctorId") Integer doctorId);
 
-    @Select("SELECT doctor_id as roleId,doctor_name as roleName FROM doctor WHERE is_del=0")
+    @Select("SELECT doctor_id as roleId,doctor_name as roleName FROM doctor WHERE is_del=0 LIMIT 5000")
     List<NameDo> selectName();
 
-    @Select("SELECT doctor_id as roleId, doctor_name as roleName FROM doctor WHERE is_del = '0' AND department_id=#{departmentId}")
+    @Select("SELECT doctor_id as roleId, doctor_name as roleName FROM doctor WHERE is_del = '0' AND department_id=#{departmentId} LIMIT 5000")
     List<NameDo> selectNameByDepartment(Integer departmentId);
 
     List<Doctor> selectByDepartmentId(Integer departmentId);

@@ -79,9 +79,8 @@
         </el-select>
       </el-form-item>
       <el-form-item label="申请人" prop="clientId">
-        <el-select v-model="form.clientId" filterable placeholder="选择用户">
-          <el-option v-for="d in clientNameL" :key="d.roleId" :label="d.roleName" :value="d.roleId"/>
-        </el-select>
+        <el-select-v2 v-model="form.clientId" filterable :options="clientOpts"
+                      placeholder="输入姓名检索用户" style="width:100%"/>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -96,7 +95,7 @@
 </template>
 
 <script lang="ts" setup>
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {Check, Close, Delete, Edit, Refresh} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
 import {debounce} from "@/utils/DebounceUtil";
@@ -315,7 +314,8 @@ const undoAdopt = (adoptId: number): void => {
  └───────────────────────────────────┘
  */
 // 表单的数据
-const clientNameL = ref<NameDo[]>([]) // 下拉框用户名
+const clientNameL = ref<NameDo[]>([]) // 全量 ID→姓名映射
+const clientOpts = computed(() => clientNameL.value.map(c => ({label: c.roleName, value: c.roleId})))
 const petNameL = ref<NameDo[]>([])
 const form = ref<Adopt>(exampleAdopt()) // 空的默认值
 const myFormRef = ref<FormInstance>()

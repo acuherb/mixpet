@@ -43,6 +43,7 @@ import {
     ElRow,
     ElScrollbar,
     ElSelect,
+    ElSelectV2,
     ElStep,
     ElSteps,
     ElSubMenu,
@@ -164,6 +165,7 @@ export const pushElement = (app: Vpp) => {
         .component("el-input-number", ElInputNumber as Component)
         .component("el-upload", ElUpload as Component)
         .component("el-select", ElSelect as Component)
+        .component("el-select-v2", ElSelectV2 as Component)
         .component("el-option", ElOption as Component)
         .component("el-option-group", ElOptionGroup as Component)
         .component("el-date-picker", ElDatePicker as Component)

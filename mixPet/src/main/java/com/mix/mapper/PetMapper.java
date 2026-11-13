@@ -33,7 +33,8 @@ public interface PetMapper extends BaseMapper<Pet> {
 
     IPage<Pet> selectFour(IPage<Pet> page);
 
-    @Select("SELECT pet_id as roleId, pet_name as roleName FROM pet WHERE is_del=0")
+    // 字典全量仅用于 ID→姓名映射与虚拟下拉；封顶防止数据无界增长
+    @Select("SELECT pet_id as roleId, pet_name as roleName FROM pet WHERE is_del=0 ORDER BY pet_id DESC LIMIT 5000")
     List<NameDo> selectName();
 
     /**
@@ -45,7 +46,7 @@ public interface PetMapper extends BaseMapper<Pet> {
      */
     List<NameDo> selectByClient(Integer clientId, Integer petId);
 
-    @Select("SELECT pet_id as roleId, pet_name as roleName FROM pet WHERE is_del = '0' AND isNull(client_id)")
+    @Select("SELECT pet_id as roleId, pet_name as roleName FROM pet WHERE is_del = '0' AND isNull(client_id) ORDER BY pet_id DESC LIMIT 5000")
     List<NameDo> selectNoClient();
 
     /**

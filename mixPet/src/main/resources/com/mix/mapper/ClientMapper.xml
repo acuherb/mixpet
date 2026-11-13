@@ -30,6 +30,8 @@
             FROM client
             WHERE client_id = #{clientId}
         </if>
+        ORDER BY roleId DESC
+        LIMIT 5000
     </select>
     <!-- 用户修改自己的资料-->
     <update id="updateSelfById">

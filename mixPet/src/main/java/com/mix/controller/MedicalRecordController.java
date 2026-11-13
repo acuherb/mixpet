@@ -132,6 +132,7 @@ public class MedicalRecordController {
      * 病例全量档案（一个接口拿全）：员工可查任意；顾客只能看自己宠物的
      */
     @GetMapping("/detail/{recordId}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN, RoleConst.CLIENT})
     public RecordFullVo detail(@PathVariable Integer recordId) {
         RecordFullVo full = recordService.selectRecordFull(recordId);
         if (full == null) return null;
@@ -230,6 +231,7 @@ public class MedicalRecordController {
      * 兽医处方笺（国标）：顾客只能看自己宠物的
      */
     @GetMapping("/rx/{recordId}")
+    @Secured({RoleConst.DOCTOR, RoleConst.NURSE, RoleConst.MANAGER, RoleConst.ADMIN, RoleConst.CLIENT})
     public RxSheetVo selectRx(@PathVariable Integer recordId) {
         RecordDto dto = recordService.selectRecordOne(recordId);
         if (dto == null) return null;

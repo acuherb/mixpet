@@ -432,13 +432,14 @@ const immunes = ref<ImmuneRecord[]>([])
 // 是否临近接种（与后台 z-immune 同款口径：30 天内）
 const isDue = (row: ImmuneRecord): boolean =>
     !!row.nextTime && new Date(row.nextTime) <= new Date(new Date().getTime() + 30 * 86400000)
-// 保存病历：跳打印页彩色详情版导出 PDF（顾客仅能导自己的病历，后端 /record/detail 有归属校验）
+// 顾客端独立打印页：/doctorPage/* 路由守卫只允许医生，顾客打开会被踢到登录页
+// 后端 /record/detail 已做「顾客只能看自己宠物」的归属校验
 const saveRecordPdf = (): void => {
-  if (detail.value) window.open('/#/doctorPage/d-recordPrint?recordId=' + detail.value.record.recordId + '&style=color', '_blank')
+  if (detail.value) window.open('/#/reception/clientRecordPrint?recordId=' + detail.value.record.recordId, '_blank')
 }
-// 查看处方笺：只读查看（编号由医院打印时生成；GET /record/rx 有顾客归属校验）
+// 查看处方笺：同一顾客页并定位到处方区
 const viewRx = (): void => {
-  if (detail.value) window.open('/#/doctorPage/d-rx?recordId=' + detail.value.record.recordId, '_blank')
+  if (detail.value) window.open('/#/reception/clientRecordPrint?recordId=' + detail.value.record.recordId + '&focus=rx', '_blank')
 }
 const labs = ref<LabOrderDto[]>([])
 const images = ref<ImageOrder[]>([])

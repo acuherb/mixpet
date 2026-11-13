@@ -32,6 +32,10 @@ export const reception: RouteRecordRaw[] = [
         path: "fosterSee",
         component: () => import('@/views/reception/fosterSee.vue')
     }, {
+        // 顾客端就诊资料打印（病历+处方，独立页；后端 /record/detail 有归属校验）
+        path: "clientRecordPrint",
+        component: () => import('@/views/reception/clientRecordPrint.vue')
+    }, {
         // 个人中心
         path: "clientCenter",
         component: () => import('@/views/reception/clientCenter.vue'),

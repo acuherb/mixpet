@@ -1,6 +1,7 @@
 package com.mix.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.mix.mapper.*;
 import com.mix.model.dto.RecordDto;
 import com.mix.model.entity.*;
@@ -26,8 +27,10 @@ import java.util.stream.Collectors;
 @Service
 public class PetArchiveServiceImpl implements IPetArchiveService {
 
-    /** 单宠物最大就诊数实测 437，取 1000 兜底 */
-    private static final int MAX_VISITS = 1000;
+    /** 迁移后单宠物最大就诊数实测 437；一次最多回 200 条，避免 IN 列表与前端渲染爆炸 */
+    private static final int MAX_VISITS = 200;
+    /** 每类诊疗事件（处方/免疫/住院/手术/化验/影像）各自封顶，防止单类数千行拖垮档案 */
+    private static final int MAX_ITEMS = 500;
 
     private final PetMapper petMapper;
     private final ClientMapper clientMapper;
@@ -65,8 +68,9 @@ public class PetArchiveServiceImpl implements IPetArchiveService {
         a.setPet(pet);
         a.setClient(pet.getClientId() == null ? null : clientMapper.selectById(pet.getClientId()));
 
-        // 1) 全部病历
-        List<RecordDto> visits = recordService.selectPetRecords(petId, 1, MAX_VISITS).getRecords();
+        // 1) 最近 N 次病历（分页查询，total 用于统计真实就诊次数）
+        IPage<RecordDto> page = recordService.selectPetRecords(petId, 1, MAX_VISITS);
+        List<RecordDto> visits = page.getRecords();
         a.setVisits(visits);
 
         // 2) 处方：一次 in 查询取全部，按 recordId 分组
@@ -75,7 +79,8 @@ public class PetArchiveServiceImpl implements IPetArchiveService {
             List<Prescription> pris = prescriptionMapper.selectList(
                     new LambdaQueryWrapper<Prescription>()
                             .in(Prescription::getRecordId, recordIds)
-                            .orderByAsc(Prescription::getPrescriptionId));
+                            .orderByAsc(Prescription::getPrescriptionId)
+                            .last("LIMIT " + MAX_ITEMS));
             Map<Integer, List<Prescription>> map = pris.stream()
                     .collect(Collectors.groupingBy(Prescription::getRecordId));
             a.setPrescriptions(map);
@@ -86,23 +91,29 @@ public class PetArchiveServiceImpl implements IPetArchiveService {
         // 3) 免疫 / 住院 / 手术 / 化验 / 影像
         a.setImmune(immuneMapper.selectList(new LambdaQueryWrapper<ImmuneRecord>()
                 .eq(ImmuneRecord::getPetId, petId)
-                .orderByDesc(ImmuneRecord::getVaccinateTime)));
+                .orderByDesc(ImmuneRecord::getVaccinateTime)
+                .last("LIMIT " + MAX_ITEMS)));
         a.setHospital(hospitalMapper.selectList(new LambdaQueryWrapper<HospitalRecord>()
                 .eq(HospitalRecord::getPetId, petId)
-                .orderByDesc(HospitalRecord::getInTime)));
+                .orderByDesc(HospitalRecord::getInTime)
+                .last("LIMIT " + MAX_ITEMS)));
         a.setSurgery(surgeryMapper.selectList(new LambdaQueryWrapper<Surgery>()
                 .eq(Surgery::getPetId, petId)
-                .orderByDesc(Surgery::getCreateTime)));
+                .orderByDesc(Surgery::getCreateTime)
+                .last("LIMIT " + MAX_ITEMS)));
         a.setLab(labOrderMapper.selectList(new LambdaQueryWrapper<LabOrder>()
                 .eq(LabOrder::getPetId, petId)
-                .orderByDesc(LabOrder::getCreateTime)));
+                .orderByDesc(LabOrder::getCreateTime)
+                .last("LIMIT " + MAX_ITEMS)));
         a.setImage(imageOrderMapper.selectList(new LambdaQueryWrapper<ImageOrder>()
                 .eq(ImageOrder::getPetId, petId)
-                .orderByDesc(ImageOrder::getCreateTime)));
+                .orderByDesc(ImageOrder::getCreateTime)
+                .last("LIMIT " + MAX_ITEMS)));
 
         // 4) 汇总指标
         PetArchive.Stat stat = new PetArchive.Stat();
-        stat.setVisitCount(visits.size());
+        // 真实就诊总数用分页 total（visits 已被 MAX_VISITS 截断）
+        stat.setVisitCount((int) page.getTotal());
         LocalDateTime first = visits.stream().map(RecordDto::getCreateTime)
                 .filter(java.util.Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
         LocalDateTime last = visits.stream().map(RecordDto::getCreateTime)

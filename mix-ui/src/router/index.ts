@@ -103,6 +103,7 @@ router.beforeEach(async (to, from) => {
     // 顾客中心 / 聊天：必须是顾客本人
     if (path === "/reception/clientCenter"
         || path.startsWith("/reception/clientCenter/")
+        || path === "/reception/clientRecordPrint"
         || path.startsWith("/reception/chat")) {
         try {
             const role = await reqGetLogin()

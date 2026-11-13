@@ -169,10 +169,9 @@
             <span class="tip">如需更换主人，请用列表中的「过户」按钮</span>
           </div>
           <div v-else style="display:flex; gap:8px; width:100%;">
-            <el-select v-model="form.clientId" filterable placeholder="选择用户" style="flex:1;">
-              <el-option label="无（暂未认领）" :value="null"/>
-              <el-option v-for="c in clientNameL" :key="c.roleId" :label="c.roleName" :value="c.roleId"/>
-            </el-select>
+            <!-- 迁移后客户 3586 人：虚拟列表，避免一次渲染数千 el-option 卡死 -->
+            <el-select-v2 v-model="clientIdProxy" filterable :options="clientOptsWithNull"
+                          placeholder="输入姓名检索用户" style="flex:1;"/>
             <el-button type="primary" plain @click="openQuickClient">＋新建主人</el-button>
           </div>
         </el-form-item>
@@ -246,14 +245,8 @@
 
       <el-form label-position="top" class="tr-form">
         <el-form-item label="新主人">
-          <el-select v-model="transferForm.toClientId" filterable placeholder="搜索并选择新主人"
-                     size="large" style="width:100%">
-            <el-option
-                v-for="c in clientNameL.filter(x => x.roleId !== transferRow?.clientId)"
-                :key="c.roleId"
-                :label="c.roleName"
-                :value="c.roleId"/>
-          </el-select>
+          <el-select-v2 v-model="transferForm.toClientId" filterable :options="transferClientOpts"
+                        placeholder="输入姓名检索并选择新主人" size="large" style="width:100%"/>
         </el-form-item>
         <el-form-item label="过户时间">
           <el-date-picker
@@ -589,8 +582,21 @@ const showDialog = (row: Pet): void => {
  └───────────────────────────────────┘
  */
 // 表单的数据
-const clientNameL = ref<NameDo[]>([]) // 下拉框用户名
+const clientNameL = ref<NameDo[]>([]) // 全量 ID→姓名映射（表格回显用，不参与下拉渲染）
+// 虚拟下拉选项：仅传 label/value，3500+ 客户也不会卡（el-select-v2 内部虚拟滚动）
+const clientOptsWithNull = computed(() => [
+  {label: '无（暂未认领）', value: 0},
+  ...clientNameL.value.map(c => ({label: c.roleName, value: c.roleId}))
+])
+const transferClientOpts = computed(() => clientNameL.value
+  .filter(c => c.roleId !== transferRow.value?.clientId)
+  .map(c => ({label: c.roleName, value: c.roleId})))
 const form = ref<Pet>(examplePet()) // 空的默认值
+// el-select-v2 的 null 选项不可靠：用 0 作「无主」哨兵，读写时与 null 互转
+const clientIdProxy = computed<number>({
+  get: () => form.value.clientId ?? 0,
+  set: v => { form.value.clientId = v === 0 ? null : v }
+})
 const myFormRef = ref<FormInstance>()
 // 校验表单并提交
 const formSubmit = async (): Promise<void> => {

@@ -28,7 +28,8 @@ public interface ClientMapper extends BaseMapper<Client> {
                                    @Param("clientName") String clientName,
                                    @Param("auditStatus") Integer auditStatus);
 
-    @Select("SELECT client_id as roleId, client_name as roleName FROM client WHERE is_del=0")
+    // 客户字典：前端已改虚拟下拉，此处封顶只作无界数据兜底
+    @Select("SELECT client_id as roleId, client_name as roleName FROM client WHERE is_del=0 ORDER BY client_id DESC LIMIT 5000")
     List<NameDo> selectName();
 
     /**
