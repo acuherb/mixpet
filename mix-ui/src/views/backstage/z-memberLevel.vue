@@ -18,9 +18,10 @@
           <el-tag :type="s.row.active ? 'success' : 'info'" size="small">{{ s.row.active ? '启用' : '停用' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column fixed="right" label="操作" width="140">
+      <el-table-column fixed="right" label="操作" width="190">
         <template #default="s">
           <el-button :icon="Edit" circle title="编辑" type="warning" @click="showDialog(s.row)"/>
+          <el-button :icon="PriceTag" circle title="类别折扣" type="primary" @click="openDiscount(s.row)"/>
           <el-button :icon="Delete" circle title="删除" type="danger" @click="delOne(s.row.levelId)"/>
         </template>
       </el-table-column>
@@ -53,15 +54,34 @@
         <el-button type="primary" @click="submit">确认</el-button>
       </template>
     </el-dialog>
+
+    <!--类别折扣弹窗：等级折扣之外，按商品类别(drug_type)再设一档折扣，开方时折进净单价-->
+    <el-dialog v-model="discView" :title="discTitle" draggable width="500px" :close-on-click-modal="false">
+      <p class="tip" style="margin-top: 0">类别折扣与等级折扣<b>叠加</b>：开方时按药品类别折进净单价。例：类别 0.9 × 等级 0.95 = 85.5 折。未配置的类别不打折。</p>
+      <div v-for="(d, i) in discRows" :key="i" class="disc-row">
+        <el-select v-model="d.itemType" placeholder="商品类别" style="width: 150px">
+          <el-option v-for="t in drugTypes" :key="t.dictKey" :label="t.dictKey" :value="t.dictKey"/>
+        </el-select>
+        <el-input-number v-model="d.discount" :max="1" :min="0.1" :precision="2" :step="0.05"/>
+        <el-button :icon="Delete" circle type="danger" @click="discRows.splice(i, 1)"/>
+      </div>
+      <el-button size="small" @click="discRows.push({itemType: '', discount: 0.9, active: true})">添加类别</el-button>
+      <template #footer>
+        <el-button @click="discView = false">取消</el-button>
+        <el-button type="primary" @click="saveDiscounts">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {onMounted, reactive, ref} from 'vue'
-import {Delete, Edit} from '@element-plus/icons-vue'
+import {Delete, Edit, PriceTag} from '@element-plus/icons-vue'
 import BackOpCol from "@/components/row/BackOpCol.vue";
-import {MemberLevel} from "@/model/entiy/Member";
-import {reqDelMemberLevel, reqMemberLevels, reqSaveMemberLevel, reqUpdateMemberLevel} from "@/request/MemberApi";
+import {MemberLevel, MemberLevelDiscount} from "@/model/entiy/Member";
+import {reqDelMemberLevel, reqLevelDiscounts, reqMemberLevels, reqSaveLevelDiscounts, reqSaveMemberLevel, reqUpdateMemberLevel} from "@/request/MemberApi";
+import {reqDictByType} from "@/request/DictApi";
+import {SysDict} from "@/model/entiy/SysDict";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 
@@ -93,9 +113,31 @@ const delOne = (id: number): void => {
       .then(() => reqDelMemberLevel(id).then((res: Res) => { if (res.code === 1) { ElMessage.success('已删除'); load() } }))
       .catch(() => ElMessage.info('已取消'))
 }
+// ============ 类别折扣 ============
+const discView = ref(false)
+const discTitle = ref('类别折扣')
+const discLevel = ref<MemberLevel | null>(null)
+const discRows = ref<MemberLevelDiscount[]>([])
+const drugTypes = ref<SysDict[]>([])
+const openDiscount = (row: MemberLevel): void => {
+  discLevel.value = row
+  discTitle.value = `类别折扣 - ${row.levelName}`
+  discView.value = true
+  if (drugTypes.value.length === 0) reqDictByType('drug_type').then(r => { drugTypes.value = r || [] })
+  reqLevelDiscounts(row.levelId!).then(r => { discRows.value = r || [] })
+}
+const saveDiscounts = (): void => {
+  if (!discLevel.value?.levelId) return
+  const rows = discRows.value.filter(d => d.itemType)
+  reqSaveLevelDiscounts(discLevel.value.levelId, rows).then((res: Res) => {
+    if (res.code === 1) { ElMessage.success('已保存'); discView.value = false }
+    else ElMessage.error(res.msg || '保存失败')
+  })
+}
 onMounted(() => { load() })
 </script>
 
 <style lang="scss" scoped>
 .tip { margin: 12px 0 0; font-size: 12px; color: #909399; }
+.disc-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
 </style>

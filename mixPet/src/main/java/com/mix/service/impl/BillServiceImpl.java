@@ -16,6 +16,7 @@ import com.mix.model.entity.Doctor;
 import com.mix.model.entity.Drug;
 import com.mix.model.entity.Prescription;
 import com.mix.service.IBillService;
+import com.mix.service.IClientBalanceLogService;
 import com.mix.service.IClientService;
 import com.mix.service.IDrugService;
 import com.mix.service.IMemberService;
@@ -41,16 +42,18 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
     private final PrescriptionMapper prescriptionMapper;
     private final IDrugService drugService;
     private final IMemberService memberService;
+    private final IClientBalanceLogService balanceLogService;
 
     @Autowired
     public BillServiceImpl(IClientService clientService, DrugMapper drugMapper,
                            PrescriptionMapper prescriptionMapper, IDrugService drugService,
-                           IMemberService memberService) {
+                           IMemberService memberService, IClientBalanceLogService balanceLogService) {
         this.clientService = clientService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
         this.drugService = drugService;
         this.memberService = memberService;
+        this.balanceLogService = balanceLogService;
     }
 
     @Override
@@ -177,12 +180,36 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                     .setSql("client_balance = client_balance - " + due.toPlainString())
                     .update();
             if (!deducted) throw new BizException("客户余额不足，请改用现金收款或先充值");
+            BigDecimal balanceBefore = client.getClientBalance() == null ? BigDecimal.ZERO : client.getClientBalance();
+            balanceLogService.record(client.getClientId(), "PAY", due.negate(), balanceBefore, balanceBefore.subtract(due),
+                    "BILL", billId, currentOperator(), "账单收款扣款");
         }
         memberService.earnPoints(bill.getClientId(), due);
         long drugCount = prescriptionsOf(bill).size();
         return Result.success(drugCount > 0
                 ? "收款成功，请到「发药核对」确认并扣减库存"
                 : "收款成功");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result payByWeChat(Integer billId, String wxTransactionId) {
+        Bill bill = this.getById(billId);
+        if (bill == null) throw new BizException("账单不存在");
+        BigDecimal due = bill.getRealMoney() != null ? bill.getRealMoney() : bill.getTotalMoney();
+        // CAS 抢占：微信回调可能重复推送，幂等（已收款直接成功返回，不重复加积分）
+        boolean claimed = this.lambdaUpdate()
+                .eq(Bill::getBillId, billId)
+                .eq(Bill::getPayStatus, false)
+                .set(Bill::getPayStatus, true)
+                .set(Bill::getPayType, true) // 现金口径（不动客户余额）
+                .set(Bill::getPayBy, "微信支付")
+                .set(Bill::getPayTime, LocalDateTime.now())
+                .set(Bill::getWxTransactionId, wxTransactionId)
+                .update();
+        if (!claimed) return Result.success("该账单已收款（重复回调忽略）");
+        memberService.earnPoints(bill.getClientId(), due);
+        return Result.success("微信收款成功");
     }
 
     @Override
@@ -292,10 +319,15 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                 .update();
 
         if (wasBalance) {
+            Client refundClient = clientService.getById(bill.getClientId());
+            BigDecimal balanceBefore = refundClient == null || refundClient.getClientBalance() == null
+                    ? BigDecimal.ZERO : refundClient.getClientBalance();
             clientService.lambdaUpdate()
                     .eq(Client::getClientId, bill.getClientId())
                     .setSql("client_balance = client_balance + " + refundFee.toPlainString())
                     .update();
+            balanceLogService.record(bill.getClientId(), "REFUND", refundFee, balanceBefore, balanceBefore.add(refundFee),
+                    "BILL", billId, operator, "账单退款回充" + (fullRefund ? "（整单）" : "（部分）"));
         }
         memberService.deductPoints(bill.getClientId(), refundFee);
 

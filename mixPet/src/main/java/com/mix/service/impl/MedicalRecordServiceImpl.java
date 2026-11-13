@@ -10,6 +10,8 @@ import com.mix.common.Result;
 import com.mix.common.BizException;
 import com.mix.mapper.BillMapper;
 import com.mix.mapper.ClientMapper;
+import com.mix.model.entity.Client;
+import com.mix.wx.WeChatTemplateService;
 import com.mix.mapper.DoctorMapper;
 import com.mix.mapper.DrugMapper;
 import com.mix.mapper.FollowUpMapper;
@@ -81,6 +83,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
     private final ImmuneRecordMapper immuneRecordMapper;
     private final ClientMapper clientMapper;
     private final MedicalRecordRevisionMapper revisionMapper;
+    private final WeChatTemplateService wxNotify;
     private static final ObjectMapper SNAPSHOT_MAPPER = new ObjectMapper();
 
     @Autowired
@@ -94,7 +97,8 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                                     ImageOrderMapper imageOrderMapper, SurgeryMapper surgeryMapper,
                                     IMemberService memberService, FollowUpMapper followUpMapper,
                                     HospitalMapper hospitalMapper, ImmuneRecordMapper immuneRecordMapper,
-                                    ClientMapper clientMapper, MedicalRecordRevisionMapper revisionMapper) {
+                                    ClientMapper clientMapper, MedicalRecordRevisionMapper revisionMapper,
+                                    WeChatTemplateService wxNotify) {
         this.appointmentService = appointmentService;
         this.drugMapper = drugMapper;
         this.prescriptionMapper = prescriptionMapper;
@@ -116,6 +120,7 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         this.immuneRecordMapper = immuneRecordMapper;
         this.clientMapper = clientMapper;
         this.revisionMapper = revisionMapper;
+        this.wxNotify = wxNotify;
     }
 
     @Override
@@ -157,8 +162,11 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
                 p.setDrugName(drug.getDrugName());
                 p.setDrugSpec(drug.getDrugSpec());
                 p.setDrugUnit(drug.getDrugUnit());
-                p.setDrugPrice(drug.getDrugPrice());
-                feeDrug = feeDrug.add(drug.getDrugPrice().multiply(BigDecimal.valueOf(p.getQuantity())));
+                // 类别折扣：等级对 drug_type 的折扣率折进净单价（下游账单/退款/报表按净价工作）
+                BigDecimal netPrice = memberService.typeRate(record.getClientId(), drug.getDrugType())
+                        .multiply(drug.getDrugPrice()).setScale(2, RoundingMode.HALF_UP);
+                p.setDrugPrice(netPrice);
+                feeDrug = feeDrug.add(netPrice.multiply(BigDecimal.valueOf(p.getQuantity())));
                 prescriptions.add(p);
             }
         }
@@ -167,6 +175,14 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         record.setVersion(1);
         record.setReviewStatus(0);
         this.save(record);
+        // 微信旁路挂点：就诊提醒（医生已接诊；enabled=false/未绑 openid 自动跳过）
+        try {
+            Client hc = clientMapper.selectById(record.getClientId());
+            wxNotify.sendVisitNotice(record.getClientId(),
+                    hc == null ? null : hc.getClientName(), doctor.getDoctorName());
+        } catch (Exception e) {
+            // 微信旁路：吞异常，接诊主流程继续
+        }
         for (Prescription p : prescriptions) {
             p.setRecordId(record.getRecordId());
             prescriptionMapper.insert(p);
@@ -279,6 +295,15 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         bill.setPayStatus(false);
         bill.setPayType(false);
         billMapper.insert(bill);
+        // 微信旁路挂点：缴费提醒（生成待付账单；金额按折扣快照预折算，与生成列口径一致）
+        try {
+            BigDecimal due = bill.getTotalMoney().multiply(
+                    bill.getDiscount() == null ? BigDecimal.ONE : bill.getDiscount())
+                    .setScale(2, RoundingMode.HALF_UP);
+            wxNotify.sendPayRemind(record.getClientId(), bill.getBillId(), due);
+        } catch (Exception e) {
+            // 微信旁路：吞异常，计费主流程继续
+        }
         // 挂号单标记完成
         appointmentService.lambdaUpdate()
                 .eq(Appointment::getAppointmentId, appoint.getAppointmentId())
@@ -394,9 +419,12 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
             p.setDrugName(drug.getDrugName());
             p.setDrugSpec(drug.getDrugSpec());
             p.setDrugUnit(drug.getDrugUnit());
-            p.setDrugPrice(drug.getDrugPrice());
+            // 类别折扣：等级对 drug_type 的折扣率折进净单价（与初始开方同一口径）
+            BigDecimal netPrice = memberService.typeRate(record.getClientId(), drug.getDrugType())
+                    .multiply(drug.getDrugPrice()).setScale(2, RoundingMode.HALF_UP);
+            p.setDrugPrice(netPrice);
             prescriptionMapper.insert(p);
-            add = add.add(drug.getDrugPrice().multiply(BigDecimal.valueOf(p.getQuantity())));
+            add = add.add(netPrice.multiply(BigDecimal.valueOf(p.getQuantity())));
         }
         // 生成列 real_money/discount_money 会随 total_money 自动折算，无需手工维护
         billMapper.update(null, Wrappers.<Bill>lambdaUpdate()

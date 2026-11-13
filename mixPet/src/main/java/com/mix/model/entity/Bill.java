@@ -55,6 +55,12 @@ public class Bill implements Serializable {
     private Boolean payType;
     /** 收款操作人姓名（收银不限定角色，忙时医生可代收，记录谁收的便于对账） */
     private String payBy;
+
+    /** 微信商户单号（预下单落库，查单/退款用） */
+    private String wxOutTradeNo;
+
+    /** 微信支付交易号（回调成功落库，对账用） */
+    private String wxTransactionId;
     /** 发药状态：0未发药 1已发药（护士核对后置1） */
     private Boolean dispenseStatus;
     /** 发药核对人 */

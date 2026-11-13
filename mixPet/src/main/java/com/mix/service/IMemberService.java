@@ -5,6 +5,7 @@ import com.mix.common.Result;
 import com.mix.model.entity.ClientCountCard;
 import com.mix.model.entity.CountCardTemplate;
 import com.mix.model.entity.MemberLevel;
+import com.mix.model.entity.MemberLevelDiscount;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,6 +27,18 @@ public interface IMemberService extends IService<MemberLevel> {
 
     /** 某客户的会员折扣率（1=不打折；无等级配置或异常值返回1） */
     BigDecimal discountOf(Integer clientId);
+
+    /** 某等级对某商品类别(drug_type)的折扣率（1=无类别折扣；配置异常值防御为1） */
+    BigDecimal typeRate(Integer clientLevel, String drugType);
+
+    /** 某等级的类别折扣配置 */
+    List<MemberLevelDiscount> listDiscounts(Integer levelId);
+
+    /** 整体替换某等级的类别折扣配置 */
+    Result saveDiscounts(Integer levelId, List<MemberLevelDiscount> discounts);
+
+    /** 前台充值：现金收款存入余额（含等级返赠），写储值流水 */
+    Result recharge(Integer clientId, BigDecimal money);
 
     /** 购卡：扣余额生成次卡 */
     Result buyCard(Integer clientId, Integer templateId);

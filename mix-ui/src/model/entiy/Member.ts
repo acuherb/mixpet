@@ -43,3 +43,35 @@ export interface ClientCountCard {
     status: boolean | null;
     createTime?: string | null;
 }
+
+/**
+ * 会员等级类别折扣（按商品类别 drug_type，开方单价折算用，与等级折扣叠加）
+ */
+export interface MemberLevelDiscount {
+    id?: number;
+    levelId?: number;
+    itemType: string;
+    /** 类别折扣率 0-1，0.9=九折 */
+    discount: number;
+    active?: boolean | null;
+}
+
+/**
+ * 会员储值流水（余额每次变动一条，前/后余额成对落库）
+ */
+export interface ClientBalanceLog {
+    logId: number;
+    clientId: number;
+    /** RECHARGE充值 / PAY收款扣款 / REFUND退款回充 / BUY_CARD购卡 / POINTS_EXCHANGE积分兑换 / MIGRATION_OPEN迁移期初 */
+    changeType: string;
+    /** 变动金额（带符号） */
+    amount: number;
+    balanceBefore: number | null;
+    balanceAfter: number | null;
+    refType?: string | null;
+    refId?: number | null;
+    operator?: string | null;
+    note?: string | null;
+    createTime?: string | null;
+}
+

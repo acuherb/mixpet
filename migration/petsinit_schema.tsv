@@ -1,0 +1,1982 @@
+tbl	column_id	col	typ	len	prec	sca	nul	remark
+---	---------	---	---	---	----	---	---	------
+amember_dc_detail	1	ID	int	4	10	0	0	
+amember_dc_detail	2	MEMBER_ID_SHOW_DC	nvarchar	40	0	0	0	
+amember_dc_detail	3	COST_TYPE	nvarchar	20	0	0	0	
+amember_dc_detail	4	COST	decimal	9	18	4	0	
+amember_dc_detail	5	PAY_TYPE	nvarchar	100	0	0	1	
+amember_dc_detail	6	INVOICE_NUM	nvarchar	24	0	0	1	
+amember_dc_detail	7	MEMO	nvarchar	400	0	0	1	
+amember_dc_detail	8	MDF_DATE	datetime	8	23	3	0	
+amember_dc_detail	9	MDF_ID	nvarchar	12	0	0	0	
+amember_dc_detail	10	STATUS	nvarchar	20	0	0	1	
+ecmcaseclose	1	ID	int	4	10	0	0	
+ecmcaseclose	2	CLOSE_MEMO	nvarchar	100	0	0	1	
+ecmcaseclose	3	MEMO	ntext	16	0	0	1	
+ecmcaseclose	4	MDF_ID	nvarchar	8	0	0	1	
+ecmcaseclose	5	MDF_DATE	datetime	8	23	3	1	
+ecmcompany	1	COMPANY_ID	nvarchar	6	0	0	0	
+ecmcompany	2	COMPANY_NAME	nvarchar	100	0	0	1	
+ecmcompany	3	PHONE1	nvarchar	100	0	0	1	
+ecmcompany	4	PHONE2	nvarchar	100	0	0	1	
+ecmcompany	5	EMAIL	nvarchar	100	0	0	1	
+ecmcompany	6	WEBSITE	nvarchar	100	0	0	1	
+ecmcompany	7	ADDRESS	nvarchar	600	0	0	1	
+ecmcompany	8	FAX	nvarchar	100	0	0	1	
+ecmcompany	9	COMPANY_KEY	nvarchar	4	0	0	1	
+ecmcompany	10	VER	nvarchar	12	0	0	1	
+ecmcompany	11	SAFE_TYPE2	nvarchar	4	0	0	1	
+ecmcompany	12	COMPANY_WX_ID	nvarchar	20	0	0	1	
+ecmdepartment	1	DEPT_ID	nvarchar	8	0	0	0	
+ecmdepartment	2	FULL_NAME	nvarchar	400	0	0	1	
+ecmdepartment	3	MEMO	nvarchar	1000	0	0	1	
+ecmdepartment	4	MDF_ID	nvarchar	8	0	0	1	
+ecmdepartment	5	MDF_DATE	datetime	8	23	3	1	
+ecmemployee	1	EMPLOYEE_ID	nvarchar	8	0	0	0	
+ecmemployee	2	FULL_NAME	nvarchar	100	0	0	1	
+ecmemployee	3	FIRSTNAME	nvarchar	40	0	0	1	
+ecmemployee	4	MIDNAME	nvarchar	40	0	0	1	
+ecmemployee	5	LASTNAME	nvarchar	40	0	0	1	
+ecmemployee	6	DATE_HIRE	datetime	8	23	3	1	
+ecmemployee	7	GENDER	nvarchar	20	0	0	1	
+ecmemployee	8	DEPT_ID	nvarchar	8	0	0	1	
+ecmemployee	9	ACC_DEPT_ID	nvarchar	8	0	0	1	
+ecmemployee	10	DOB	datetime	8	23	3	1	
+ecmemployee	11	POB	nvarchar	100	0	0	1	
+ecmemployee	12	NATION	nvarchar	40	0	0	1	
+ecmemployee	13	NATIONALITY	nvarchar	40	0	0	1	
+ecmemployee	14	HEALTH	nvarchar	40	0	0	1	
+ecmemployee	15	HEIGHT	nvarchar	40	0	0	1	
+ecmemployee	16	WEIGHT	nvarchar	40	0	0	1	
+ecmemployee	17	BLOOD_TYPE	nvarchar	4	0	0	1	
+ecmemployee	18	HOROSCOPE	nvarchar	40	0	0	1	
+ecmemployee	19	NATIVE_PLACE	nvarchar	40	0	0	1	
+ecmemployee	20	RELIGION	nvarchar	40	0	0	1	
+ecmemployee	21	MARRIAGE	nvarchar	40	0	0	1	
+ecmemployee	22	REG_RESIDENCE	nvarchar	40	0	0	1	
+ecmemployee	23	PID_TYPE	nvarchar	20	0	0	1	
+ecmemployee	24	PID_NUMBER	nvarchar	100	0	0	1	
+ecmemployee	25	M_LANGUAGE	nvarchar	40	0	0	1	
+ecmemployee	26	EDUCATION	nvarchar	40	0	0	1	
+ecmemployee	27	MAJOR	nvarchar	40	0	0	1	
+ecmemployee	28	CERTIFICATION	nvarchar	40	0	0	1	
+ecmemployee	29	INTERESTS	nvarchar	100	0	0	1	
+ecmemployee	30	TYPE_EMPL	nvarchar	60	0	0	1	
+ecmemployee	31	EXEMPT	nvarchar	40	0	0	1	
+ecmemployee	32	JOB_TITLE	nvarchar	40	0	0	1	
+ecmemployee	33	JOB_TYPE	nvarchar	40	0	0	1	
+ecmemployee	34	SALARY_WAGE	nvarchar	40	0	0	1	
+ecmemployee	35	PAY_HOUR	decimal	9	12	4	1	
+ecmemployee	36	TEL_NUM	nvarchar	40	0	0	1	
+ecmemployee	37	EXT_NUM	nvarchar	20	0	0	1	
+ecmemployee	38	FAX_NUM	nvarchar	40	0	0	1	
+ecmemployee	39	EMAIL	nvarchar	100	0	0	1	
+ecmemployee	40	DATE_TERMIN	datetime	8	23	3	1	
+ecmemployee	41	TYPE_TERMIN	nvarchar	60	0	0	1	
+ecmemployee	42	COUNTRY	nvarchar	40	0	0	1	
+ecmemployee	43	PROVINCE_CITY	nvarchar	40	0	0	1	
+ecmemployee	44	DISTRICT	nvarchar	40	0	0	1	
+ecmemployee	45	ADDRESS_1	nvarchar	100	0	0	1	
+ecmemployee	46	ADDRESS_2	nvarchar	100	0	0	1	
+ecmemployee	47	ZIP_CODE	nvarchar	40	0	0	1	
+ecmemployee	48	TEL_HOME	nvarchar	40	0	0	1	
+ecmemployee	49	CELL_NUM	nvarchar	40	0	0	1	
+ecmemployee	50	PAGER_NUM	nvarchar	40	0	0	1	
+ecmemployee	51	CONTACT_ID	nvarchar	12	0	0	1	
+ecmemployee	52	ACC_COST	nvarchar	2	0	0	1	
+ecmemployee	53	STATUS	nvarchar	2	0	0	1	
+ecmemployee	54	MEMO	ntext	16	0	0	1	
+ecmemployee	55	EMPLOYEE_IMAGE	nvarchar	200	0	0	1	
+ecmemployee	56	EMPLOYEE_IMAGE1	nvarchar	200	0	0	1	
+ecmemployee	57	MDF_ID	nvarchar	8	0	0	1	
+ecmemployee	58	MDF_DATE	datetime	8	23	3	1	
+ecmemployee	59	BACKGROUNT_IMAGE	nvarchar	200	0	0	1	
+ecmemployee	60	IS_DOCT	nvarchar	20	0	0	1	
+ecmemployee	61	COMMISSION_LEVEL1	decimal	9	12	2	1	
+ecmemployee	62	COMMISSION_RATE1	decimal	9	12	2	1	
+ecmemployee	63	COMMISSION_LEVEL2	decimal	9	12	2	1	
+ecmemployee	64	COMMISSION_RATE2	decimal	9	12	2	1	
+ecmemployee	65	COMMISSION_LEVEL3	decimal	9	12	2	1	
+ecmemployee	66	COMMISSION_RATE3	decimal	9	12	2	1	
+ecmemployee	67	COMMISSION_LEVEL4	decimal	9	12	2	1	
+ecmemployee	68	COMMISSION_RATE4	decimal	9	12	2	1	
+ecmemployee	69	COMMISSION_LEVEL5	decimal	9	12	2	1	
+ecmemployee	70	COMMISSION_RATE5	decimal	9	12	2	1	
+ecmemployee	71	IS_EXPERT	nvarchar	2	0	0	1	
+ecmemployee	72	CNT_DAY	int	4	10	0	1	
+ecmemployee	74	IS_FREE	nvarchar	2	0	0	1	
+ecminitdiag	1	ID	int	4	10	0	0	
+ecminitdiag	2	INIT_DIAG	nvarchar	100	0	0	1	
+ecminitdiag	3	MEMO	ntext	16	0	0	1	
+ecminitdiag	4	MDF_ID	nvarchar	8	0	0	1	
+ecminitdiag	5	MDF_DATE	datetime	8	23	3	1	
+ecmlevel	1	ID	int	4	10	0	0	
+ecmlevel	2	M_LEVEL	nvarchar	20	0	0	1	
+ecmlevel	3	DESCRIPT	nvarchar	200	0	0	1	
+ecmlevel	4	COST_ALL	decimal	9	12	2	1	
+ecmlevel	5	MDF_ID	nvarchar	8	0	0	1	
+ecmlevel	6	MDF_DATE	datetime	8	23	3	1	
+ecmmemberdc	1	ID	int	4	10	0	0	
+ecmmemberdc	2	DESCRIPT	nvarchar	200	0	0	1	
+ecmmemberdc	3	COST	decimal	9	12	2	1	
+ecmmemberdc	4	DATE_BEGIN	datetime	8	23	3	1	
+ecmmemberdc	5	DATE_END	datetime	8	23	3	1	
+ecmmemberdc	6	DC_A	decimal	9	12	2	1	
+ecmmemberdc	7	DC_B	decimal	9	12	2	1	
+ecmmemberdc	8	DC_C	decimal	9	12	2	1	
+ecmmemberdc	9	DC_D	decimal	9	12	2	1	
+ecmmemberdc	10	MDF_ID	nvarchar	8	0	0	1	
+ecmmemberdc	11	MDF_DATE	datetime	8	23	3	1	
+ecmmemberdc	12	STATUS	nvarchar	2	0	0	1	
+ecmmemberdc2	1	ID	int	4	10	0	0	
+ecmmemberdc2	2	LINK_ID	int	4	10	0	1	
+ecmmemberdc2	3	PREFIX	nvarchar	6	0	0	1	
+ecmmemberdc2	4	DC_RATE	decimal	9	12	2	1	
+ecmmemberdc2	5	MDF_ID	nvarchar	8	0	0	1	
+ecmmemberdc2	6	MDF_DATE	datetime	8	23	3	1	
+ecmmemberes	1	ID	int	4	10	0	0	
+ecmmemberes	2	DESCRIPT	nvarchar	200	0	0	1	
+ecmmemberes	3	LIMIT_CNT	int	4	10	0	1	
+ecmmemberes	4	LIMIT_COST	decimal	9	12	2	1	
+ecmmemberes	5	DATE_BEGIN	datetime	8	23	3	1	
+ecmmemberes	6	DATE_END	datetime	8	23	3	1	
+ecmmemberes	7	CLASSIFY_RANGE	nvarchar	1000	0	0	1	
+ecmmemberes	8	MDF_ID	nvarchar	8	0	0	1	
+ecmmemberes	9	MDF_DATE	datetime	8	23	3	1	
+ecmmemberes	10	STATUS	nvarchar	2	0	0	1	
+ecmmemberes	11	COST	decimal	9	12	2	1	
+ecmmembersa	1	ID	int	4	10	0	0	
+ecmmembersa	2	DESCRIPT	nvarchar	200	0	0	1	
+ecmmembersa	3	COST	decimal	9	12	2	1	
+ecmmembersa	4	DATE_BEGIN	datetime	8	23	3	1	
+ecmmembersa	5	DATE_END	datetime	8	23	3	1	
+ecmmembersa	6	MDF_ID	nvarchar	8	0	0	1	
+ecmmembersa	7	MDF_DATE	datetime	8	23	3	1	
+ecmmembersa	8	STATUS	nvarchar	2	0	0	1	
+ecmmembersa2	1	ID	int	4	10	0	0	
+ecmmembersa2	2	LINK_ID	int	4	10	0	0	
+ecmmembersa2	4	LIMIT_CNT	int	4	10	0	1	
+ecmmembersa2	5	LIMIT_COST	decimal	9	12	2	1	
+ecmmembersa2	6	MDF_ID	nvarchar	8	0	0	1	
+ecmmembersa2	7	MDF_DATE	datetime	8	23	3	1	
+ecmmembersa2	8	CLASSIFY_RANGE	nvarchar	1000	0	0	1	
+ecmpackage	1	ID	int	4	10	0	0	
+ecmpackage	2	PACKAGE	nvarchar	100	0	0	1	
+ecmpackage	3	DESCRIPT	nvarchar	200	0	0	1	
+ecmpackage	4	MDF_ID	nvarchar	8	0	0	1	
+ecmpackage	5	MDF_DATE	datetime	8	23	3	1	
+ecmpartaddress	1	ID	int	4	10	0	0	
+ecmpartaddress	2	PART_ADDRESS	nvarchar	100	0	0	1	
+ecmpartaddress	3	MEMO	ntext	16	0	0	1	
+ecmpartaddress	4	MDF_ID	nvarchar	8	0	0	1	
+ecmpartaddress	5	MDF_DATE	datetime	8	23	3	1	
+ecmspec	1	ID	int	4	10	0	0	
+ecmspec	2	SPEC	nvarchar	100	0	0	1	
+ecmspec	3	DESCRIPT	nvarchar	200	0	0	1	
+ecmspec	4	MDF_ID	nvarchar	8	0	0	1	
+ecmspec	5	MDF_DATE	datetime	8	23	3	1	
+ecmstock	1	STOCK_ID	nvarchar	100	0	0	0	
+ecmstock	2	DESCRIPT	nvarchar	400	0	0	1	
+ecmstock	3	STOCK_TYPE	nvarchar	20	0	0	1	
+ecmstock	4	MDF_ID	nvarchar	8	0	0	1	
+ecmstock	5	MDF_DATE	datetime	8	23	3	1	
+ecmstocktype	1	STOCK_TYPE	nvarchar	20	0	0	0	
+ecmstocktype	2	TYPE_DESC	nvarchar	400	0	0	1	
+ecmstocktype	3	MDF_ID	nvarchar	8	0	0	1	
+ecmstocktype	4	MDF_DATE	datetime	8	23	3	1	
+ecmteam	1	ID	int	4	10	0	0	
+ecmteam	2	TEAM	nvarchar	20	0	0	1	
+ecmteam	3	DESCRIPT	nvarchar	200	0	0	1	
+ecmteam	4	MDF_ID	nvarchar	8	0	0	1	
+ecmteam	5	MDF_DATE	datetime	8	23	3	1	
+ecmteam	6	TEAM_TYPE	nvarchar	100	0	0	1	
+ecmteam	7	IS_PUB	nvarchar	2	0	0	1	
+ecmteam	8	OP_TYPE_RATE	decimal	9	12	2	1	
+ecmuom	1	ID	int	4	10	0	0	
+ecmuom	2	UOM	nvarchar	100	0	0	1	
+ecmuom	3	DESCRIPT	nvarchar	200	0	0	1	
+ecmuom	4	UOM_TYPE	nvarchar	20	0	0	1	
+ecmuom	5	MDF_ID	nvarchar	8	0	0	1	
+ecmuom	6	MDF_DATE	datetime	8	23	3	1	
+ecmvendor	1	VENDOR_ID	nvarchar	12	0	0	0	
+ecmvendor	2	FULL_NAME	nvarchar	100	0	0	1	
+ecmvendor	3	BANK_NAME	nvarchar	100	0	0	1	
+ecmvendor	4	BANK_ACCT	nvarchar	100	0	0	1	
+ecmvendor	5	OP_BY_ID	nvarchar	8	0	0	1	
+ecmvendor	6	MDF_ID	nvarchar	8	0	0	1	
+ecmvendor	7	MDF_DATE	datetime	8	23	3	1	
+ecmvendor	8	ADDRESS	text	16	0	0	1	
+ecmvendor	9	POST_NUM	nvarchar	40	0	0	1	
+ecmvendor	10	EMAIL	nvarchar	400	0	0	1	
+ecmvendor	11	WEBSITE	nvarchar	400	0	0	1	
+ecmvendor	12	TEL	nvarchar	400	0	0	1	
+ecmvendor	13	FAX	nvarchar	100	0	0	1	
+ecmvendor	14	CONTACT_MAN	nvarchar	200	0	0	1	
+ecmvendor	15	CONTACT_TEL	nvarchar	200	0	0	1	
+ecmvendor	16	MEMO	text	16	0	0	1	
+ediagnoseitems	1	ID	int	4	10	0	0	
+ediagnoseitems	2	NAME_EN	nvarchar	100	0	0	1	
+ediagnoseitems	3	MEMO	nvarchar	1000	0	0	1	
+ediagnoseitems	4	MDF_ID	nvarchar	8	0	0	1	
+ediagnoseitems	5	MDF_DATE	datetime	8	23	3	1	
+ediagnoseitems	6	NAME_CN	nvarchar	100	0	0	1	
+ehairingcard	1	ID	int	4	10	0	0	
+ehairingcard	2	MEMBER_ID	nvarchar	24	0	0	0	
+ehairingcard	3	PART_NUM	nvarchar	100	0	0	0	
+ehairingcard	4	IS_COST	nvarchar	4	0	0	1	
+ehairingcard	5	RES_TIMES	decimal	9	12	2	0	
+ehairingcard	6	CREATE_DATE	datetime	8	23	3	0	
+ehairingcard	7	MDF_DATE	datetime	8	23	3	0	
+ehairingcard	8	MDF_ID	nvarchar	100	0	0	0	
+ehairingcard	9	COST_PASSWORD	nvarchar	256	0	0	1	
+ehairingcard	10	MEMO	nvarchar	100	0	0	1	
+ehairingcarddetails	1	ID	int	4	10	0	0	
+ehairingcarddetails	2	LINK_ID	int	4	10	0	0	
+ehairingcarddetails	3	USED_TIMES	decimal	9	12	2	0	
+ehairingcarddetails	4	CREATE_DATE	datetime	8	23	3	0	
+ehairingcarddetails	5	MEMO	nvarchar	1000	0	0	1	
+ehairingcarddetails	6	MDF_DATE	datetime	8	23	3	0	
+ehairingcarddetails	7	MDF_ID	nvarchar	100	0	0	0	
+ehairworkflow	1	HAIR_WF_ID	nvarchar	40	0	0	0	
+ehairworkflow	2	DATE_WF	datetime	8	23	3	1	
+ehairworkflow	3	OP_BY_ID	nvarchar	8	0	0	1	
+ehairworkflow	4	HAIR_BY_ID	nvarchar	8	0	0	1	
+ehairworkflow	5	PET_ID	nvarchar	24	0	0	1	
+ehairworkflow	6	WF_TYPE	nvarchar	20	0	0	1	
+ehairworkflow	7	STEP_BEGIN	nvarchar	2	0	0	1	
+ehairworkflow	8	STEP_RECEIVED	nvarchar	2	0	0	1	
+ehairworkflow	9	STEP_DONE	nvarchar	2	0	0	1	
+ehairworkflow	10	STEP_TAKEN_AWAY	nvarchar	2	0	0	1	
+ehairworkflow	11	OTHER_NUM	nvarchar	40	0	0	1	
+ehairworkflow	12	OTHER_TOTAL	numeric	9	12	2	1	
+ehairworkflow	13	MEMO	nvarchar	400	0	0	1	
+ehairworkflow	14	STEP_DOING	nvarchar	2	0	0	1	
+eknowledge	1	ID	int	4	10	0	0	
+eknowledge	2	CTYPE	nvarchar	100	0	0	1	
+eknowledge	3	DESCRIPT	nvarchar	4000	0	0	1	
+eknowledge	4	PINYIN	nvarchar	100	0	0	1	
+eknowledge	5	MEMO	ntext	16	0	0	1	
+eknowledge	6	OP_BY_ID	nvarchar	8	0	0	1	
+eknowledge	7	DATE_OP	datetime	8	23	3	1	
+eknowledge	8	IS_PUB	nvarchar	2	0	0	1	
+elogmessage	1	ID	int	4	10	0	0	
+elogmessage	2	MESSAGE	nvarchar	6000	0	0	1	
+emember	1	MEMBER_ID	nvarchar	24	0	0	0	
+emember	2	MEMBER_ID_SHOW	nvarchar	100	0	0	1	客户自己按排的会员号
+emember	4	FULLNAME	nvarchar	100	0	0	1	
+emember	5	IDNO	nvarchar	100	0	0	1	
+emember	6	ADDRESS	nvarchar	1000	0	0	1	
+emember	7	TEL_HOME	nvarchar	100	0	0	1	
+emember	8	TEL_OFFICE	nvarchar	100	0	0	1	
+emember	9	MOBILE	nvarchar	100	0	0	1	紧急电话
+emember	10	RELATIONSHIP	nvarchar	100	0	0	1	若为委托人，与动物主人关系
+emember	11	ANOTHER	nvarchar	1000	0	0	1	
+emember	12	MDF_ID	nvarchar	100	0	0	1	
+emember	13	MDF_DATE	datetime	8	23	3	1	
+emember	14	REGDATE	datetime	8	23	3	1	
+emember	15	IS_A	nvarchar	2	0	0	1	医院会员
+emember	16	IS_B	nvarchar	2	0	0	1	销售会员
+emember	17	IS_C	nvarchar	2	0	0	1	美容会员
+emember	18	IS_A_VIP	nvarchar	2	0	0	1	
+emember	19	IS_B_VIP	nvarchar	2	0	0	1	
+emember	20	IS_C_VIP	nvarchar	2	0	0	1	
+emember	21	DISCOUNT_A	decimal	9	18	4	1	
+emember	22	DISCOUNT_B	decimal	9	18	4	1	
+emember	23	DISCOUNT_C	decimal	9	18	4	1	
+emember	25	MEMO	nvarchar	400	0	0	1	
+emember	26	TAKE_AWAY	nvarchar	2	0	0	1	
+emember	27	EMAIL	nvarchar	200	0	0	1	
+emember	28	IS_D	nvarchar	2	0	0	1	
+emember	29	IS_D_VIP	nvarchar	2	0	0	1	
+emember	30	DISCOUNT_D	decimal	9	18	4	1	
+emember	31	PASSWORD	nvarchar	200	0	0	1	
+emember	42	SEX	nvarchar	4	0	0	1	
+emember	43	MDC	nvarchar	2	0	0	1	
+emember	44	QQ	nvarchar	100	0	0	1	
+emember	45	WEIXIN	nvarchar	100	0	0	1	
+emember	46	PART_ADDRESS	nvarchar	100	0	0	1	
+emember	47	COST_ALL	decimal	9	12	2	1	
+emember	48	M_LEVEL	nvarchar	20	0	0	1	
+emember_dc	1	MEMBER_ID_DC	nvarchar	40	0	0	0	
+emember_dc	2	MEMBER_ID	nvarchar	24	0	0	1	
+emember_dc	3	DATE_BEGIN	datetime	8	23	3	1	
+emember_dc	4	DATE_END	datetime	8	23	3	1	
+emember_dc	5	DC_A	decimal	9	12	2	1	
+emember_dc	6	DC_B	decimal	9	12	2	1	
+emember_dc	7	DC_C	decimal	9	12	2	1	
+emember_dc	8	DC_D	decimal	9	12	2	1	
+emember_dc	9	CREATE_BY_ID	nvarchar	8	0	0	1	
+emember_dc	10	CREATE_DATE	datetime	8	23	3	1	
+emember_dc	11	MEMO	nvarchar	400	0	0	1	
+emember_dc_detail	1	ID	int	4	10	0	0	
+emember_dc_detail	2	MEMBER_ID_DC	nvarchar	40	0	0	0	
+emember_dc_detail	3	COST_TYPE	nvarchar	20	0	0	0	
+emember_dc_detail	4	COST	decimal	9	18	4	0	
+emember_dc_detail	5	PAY_TYPE	nvarchar	100	0	0	1	
+emember_dc_detail	6	INVOICE_NUM	nvarchar	24	0	0	1	
+emember_dc_detail	7	MEMO	nvarchar	400	0	0	1	
+emember_dc_detail	8	MDF_DATE	datetime	8	23	3	0	
+emember_dc_detail	9	MDF_ID	nvarchar	100	0	0	0	
+emember_dc2	1	ID	int	4	10	0	0	
+emember_dc2	2	MEMBER_ID_DC	nvarchar	40	0	0	1	
+emember_dc2	3	PREFIX	nvarchar	6	0	0	1	
+emember_dc2	4	DC_RATE	decimal	9	12	2	1	
+emember_es	1	MEMBER_ID_ES	nvarchar	40	0	0	0	
+emember_es	2	MEMBER_ID	nvarchar	24	0	0	1	
+emember_es	3	DATE_BEGIN	datetime	8	23	3	1	
+emember_es	4	DATE_END	datetime	8	23	3	1	
+emember_es	5	LIMIT_CNT	int	4	10	0	1	
+emember_es	6	LIMIT_COST	decimal	9	12	2	1	
+emember_es	7	CLASSIFY_RANGE	nvarchar	1000	0	0	1	
+emember_es	8	CREATE_BY_ID	nvarchar	8	0	0	1	
+emember_es	9	CREATE_DATE	datetime	8	23	3	1	
+emember_es	10	MEMO	nvarchar	400	0	0	1	
+emember_es_detail	1	ID	int	4	10	0	0	
+emember_es_detail	2	MEMBER_ID_ES	nvarchar	40	0	0	0	
+emember_es_detail	3	COST_TYPE	nvarchar	20	0	0	0	
+emember_es_detail	4	CNT	int	4	10	0	1	
+emember_es_detail	5	COST	decimal	9	18	4	0	
+emember_es_detail	6	PAY_TYPE	nvarchar	100	0	0	1	
+emember_es_detail	7	INVOICE_NUM	nvarchar	24	0	0	1	
+emember_es_detail	8	MEMO	nvarchar	400	0	0	1	
+emember_es_detail	9	MDF_DATE	datetime	8	23	3	0	
+emember_es_detail	10	MDF_ID	nvarchar	100	0	0	0	
+emember_gift	1	ID	int	4	10	0	0	
+emember_gift	2	MEMBER_ID	nvarchar	24	0	0	1	
+emember_gift	3	DESCRIPT	nvarchar	100	0	0	1	
+emember_gift	4	MEMO	nvarchar	1000	0	0	1	
+emember_gift	5	MDF_ID	nvarchar	8	0	0	1	
+emember_gift	6	MDF_DATE	datetime	8	23	3	1	
+emember_gift	7	USED	nvarchar	2	0	0	1	
+emember_gift	8	COST	decimal	9	12	2	1	
+emember_sa	1	MEMBER_ID_SA	nvarchar	40	0	0	0	
+emember_sa	2	MEMBER_ID	nvarchar	24	0	0	1	
+emember_sa	3	DATE_BEGIN	datetime	8	23	3	1	
+emember_sa	4	DATE_END	datetime	8	23	3	1	
+emember_sa	5	CREATE_BY_ID	nvarchar	8	0	0	1	
+emember_sa	6	CREATE_DATE	datetime	8	23	3	1	
+emember_sa	7	MEMO	nvarchar	400	0	0	1	
+emember_sa_detail	1	ID	int	4	10	0	0	
+emember_sa_detail	2	MEMBER_ID_SA	nvarchar	40	0	0	0	
+emember_sa_detail	3	CLASSIFY_RANGE	nvarchar	1000	0	0	1	
+emember_sa_detail	4	COST_TYPE	nvarchar	20	0	0	0	
+emember_sa_detail	5	CNT	int	4	10	0	1	
+emember_sa_detail	6	COST	decimal	9	18	4	0	
+emember_sa_detail	7	PAY_TYPE	nvarchar	100	0	0	1	
+emember_sa_detail	8	INVOICE_NUM	nvarchar	24	0	0	1	
+emember_sa_detail	9	MEMO	nvarchar	400	0	0	1	
+emember_sa_detail	10	MDF_DATE	datetime	8	23	3	0	
+emember_sa_detail	11	MDF_ID	nvarchar	100	0	0	0	
+emember_sa2	1	ID	int	4	10	0	0	
+emember_sa2	2	MEMBER_ID_SA	nvarchar	40	0	0	0	
+emember_sa2	4	LIMIT_CNT	int	4	10	0	1	
+emember_sa2	5	LIMIT_COST	decimal	9	12	2	1	
+emember_sa2	6	MDF_ID	nvarchar	8	0	0	1	
+emember_sa2	7	MDF_DATE	datetime	8	23	3	1	
+emember_sa2	9	CLASSIFY_RANGE	nvarchar	1000	0	0	1	
+ememberbank	1	ID	int	4	10	0	0	
+ememberbank	2	MEMBER_ID	nvarchar	100	0	0	0	
+ememberbank	3	COST	decimal	9	18	4	0	
+ememberbank	4	CREATE_DATE	datetime	8	23	3	0	
+ememberbank	5	MDF_DATE	datetime	8	23	3	0	
+ememberbank	6	MDF_ID	nvarchar	100	0	0	0	
+ememberbank	7	COST_TYPE	nvarchar	100	0	0	0	
+ememberbank	8	INVOICE_NUM	nvarchar	24	0	0	1	
+ememberbank	9	MEMO	nvarchar	400	0	0	1	
+ememberbank	10	PAY_TYPE	nvarchar	100	0	0	1	
+emembercallcenter	1	ID	int	4	10	0	0	
+emembercallcenter	2	MEMBER_ID	nvarchar	24	0	0	1	
+emembercallcenter	3	CALL_NUMBER	nvarchar	40	0	0	1	
+emembercallcenter	4	QUESTION	nvarchar	1000	0	0	1	
+emembercallcenter	5	ANSWER	nvarchar	1000	0	0	1	
+emembercallcenter	6	DATE_OP	datetime	8	23	3	1	
+emembercallcenter	7	OP_BY_ID	nvarchar	8	0	0	1	
+emembercallcenterlog	1	ID	int	4	10	0	0	
+emembercallcenterlog	2	TEL_NUM	nvarchar	100	0	0	1	
+emembercallcenterlog	3	DATE_IN	datetime	8	23	3	1	
+emessage	1	ID	int	4	10	0	0	
+emessage	2	TITLE	nvarchar	1000	0	0	1	
+emessage	3	DETAIL	nvarchar	2000	0	0	1	
+emessage	4	CREDATE	datetime	8	23	3	0	创建日期
+emessage	5	ALERTDATE	datetime	8	23	3	0	提醒日期
+emessage	6	STATUS	nvarchar	2	0	0	0	B,P,C
+emessage	7	TYPE_ID	int	4	10	0	1	
+emessage	8	PET_ID	nvarchar	100	0	0	1	
+emessage	9	DOCT_ID	nvarchar	8	0	0	1	
+emessage	10	FORMODULE	nvarchar	100	0	0	1	
+emessage	11	OP_DATE	datetime	8	23	3	0	
+emessage	12	OTHER_NUM	nvarchar	40	0	0	1	
+emessage	13	OTHER_NUM_ITEM	nvarchar	40	0	0	1	
+emessage	14	BACK_MEMO	nvarchar	100	0	0	1	
+emessagelog	1	ID	int	4	10	0	0	
+emessagelog	2	SEND_USERID	nvarchar	8	0	0	1	
+emessagelog	3	MESSAGE	nvarchar	1000	0	0	1	
+emessagelog	4	CTYPE	nvarchar	100	0	0	1	
+emessagelog	5	CREDATE	datetime	8	23	3	1	
+emessagelog	6	RECIEVE_USRID	nvarchar	8	0	0	1	
+emessagetype	1	ID	int	4	10	0	0	
+emessagetype	2	TYPE_NAME	nvarchar	100	0	0	0	
+epbdiagnosetype	1	ID	nvarchar	8	0	0	0	
+epbdiagnosetype	2	NAME	nvarchar	100	0	0	1	
+epbdiagnosetype	3	MEMO	nvarchar	200	0	0	1	
+epbdiagnosetype	4	MDF_ID	nvarchar	100	0	0	1	
+epbdiagnosetype	5	MDF_DATE	datetime	8	23	3	1	
+epbmaster	1	PART_NUM	nvarchar	40	0	0	0	
+epbmaster	2	DESCRIPT	nvarchar	200	0	0	1	
+epbmaster	3	APPLY	nvarchar	4000	0	0	1	
+epbmaster	4	PINYIN	nvarchar	200	0	0	1	
+epbmaster	5	COMPONENT	nvarchar	1000	0	0	1	成分
+epbmaster	6	SPEC	nvarchar	100	0	0	1	规格
+epbmaster	7	UOM	nvarchar	100	0	0	1	单位
+epbmaster	8	PACKAGE	nvarchar	100	0	0	1	包装
+epbmaster	9	APPLICATION	nvarchar	4000	0	0	1	用法
+epbmaster	10	ATTENTION	nvarchar	4000	0	0	1	
+epbmaster	11	QTY_MIN	decimal	9	12	2	1	
+epbmaster	12	QTY_MAX	decimal	9	12	2	1	
+epbmaster	13	QTY_ON_HAND	decimal	9	12	2	1	
+epbmaster	14	WARR_MN	decimal	9	12	2	1	
+epbmaster	15	STD_COST	decimal	9	12	2	1	
+epbmaster	16	MDF_ID	nvarchar	8	0	0	1	
+epbmaster	17	MDF_DATE	datetime	8	23	3	1	
+epbmaster	18	COST_PRICE	decimal	9	12	2	1	
+epbmaster	19	STATUS	nvarchar	2	0	0	1	
+epbmaster	20	BARCODE	nvarchar	200	0	0	1	
+epbmaster	21	DOG	nvarchar	200	0	0	1	正常狗参考值
+epbmaster	22	DOG_Y	nvarchar	200	0	0	1	小狗参考值
+epbmaster	23	CAT	nvarchar	200	0	0	1	正常猫参考值
+epbmaster	24	CAT_Y	nvarchar	200	0	0	1	小猫参考值
+epbmaster	25	CHANGE_PRICE	nvarchar	2	0	0	1	能否动态修改价格，如自选化验项目，Y为可以修
+改
+epbmaster	26	IS_STOCK	nvarchar	2	0	0	1	Y表示是算库存的零件号
+epbmaster	27	ISBN	nvarchar	100	0	0	1	
+epbmaster	28	IS_HAIRING_CARD	nvarchar	2	0	0	1	Y表示是美容计次卡
+epbmaster	29	CARD_TIMES	decimal	9	12	2	1	只有是美容计次卡时这个才有效，此种卡可以使
+用的次数
+epbmaster	30	IS_USE_DISCOUNT	nvarchar	2	0	0	1	
+epbmaster	31	TYPE2	nvarchar	2	0	0	1	
+epbmaster	32	OLD_NUM	nvarchar	40	0	0	1	
+epbmaster	33	COMMISSION_RATE	decimal	9	12	2	1	
+epbmaster	34	DATE_EXPIRATION	datetime	8	23	3	1	
+epbmaster	35	MANUFACTURER	nvarchar	400	0	0	1	
+epbmaster	38	CATTLE	nvarchar	200	0	0	1	
+epbmaster	39	HORSE	nvarchar	200	0	0	1	
+epbmaster	40	NOR_NAME	nvarchar	200	0	0	1	
+epbmaster	41	NOR_NAME_PINYIN	nvarchar	200	0	0	1	
+epbmaster	42	ALERT_MSG	nvarchar	200	0	0	1	
+epbmaster	43	PROP	nvarchar	1000	0	0	1	
+epbmaster	44	UNEFFECT	nvarchar	4000	0	0	1	
+epbmaster	45	TOBOO	nvarchar	4000	0	0	1	
+epbmaster	46	EACH_OTHER	nvarchar	4000	0	0	1	
+epbmaster	47	WEIGHT_CVAL_H	decimal	9	12	2	1	
+epbmaster	48	WEIGHT_CVAL_L	decimal	9	12	2	1	
+epbmaster	51	DOGCAT_MEMO	nvarchar	400	0	0	1	
+epbmaster	52	DOG2	nvarchar	200	0	0	1	
+epbmaster	53	DOG3	nvarchar	200	0	0	1	
+epbmaster	54	CAT2	nvarchar	200	0	0	1	
+epbmaster	55	CAT3	nvarchar	200	0	0	1	
+epbmaster	56	DOG_Y2	nvarchar	200	0	0	1	
+epbmaster	57	DOG_Y3	nvarchar	200	0	0	1	
+epbmaster	58	CAT_Y2	nvarchar	200	0	0	1	
+epbmaster	59	CAT_Y3	nvarchar	200	0	0	1	
+epbmaster	60	PRAR_ROAD	nvarchar	100	0	0	1	
+epbmaster	61	OP_TYPE	nvarchar	100	0	0	1	
+epbmaster	62	OP_TYPE_RATE	decimal	9	12	2	1	
+epbmaster	63	UOM2	nvarchar	100	0	0	1	
+epbmaster	64	UOM2RATE	decimal	9	12	2	1	
+epbmaster	65	GROUP_ID	nvarchar	100	0	0	1	
+epbmaster	66	ACTUAL	nvarchar	100	0	0	1	
+epbmaster	67	ALERT_DAYS	int	4	10	0	1	
+epbmaster	68	OP_DAYS	int	4	10	0	1	
+epbmaster	69	DOG4	nvarchar	200	0	0	1	
+epbmaster	70	CAT4	nvarchar	200	0	0	1	
+epbmaster	71	RABBIT	nvarchar	200	0	0	1	
+epbmaster	72	HAMSTER	nvarchar	200	0	0	1	
+epbmaster	73	TOTORO	nvarchar	200	0	0	1	
+epbmaster	74	RX_OTC	nvarchar	20	0	0	1	
+epbmaster	75	SPEC_CALC	decimal	9	12	2	1	
+epbmaster	76	SPEC_UOM	nvarchar	20	0	0	1	
+epbmaster	77	STD_COST_A	decimal	9	12	2	1	
+epbmaster	78	STD_COST_B	decimal	9	12	2	1	
+epbmaster	79	STD_COST_C	decimal	9	12	2	1	
+epbmaster	80	STD_COST_SEL	nvarchar	4	0	0	1	
+epbmaster_rela	1	ID	int	4	10	0	0	
+epbmaster_rela	2	LINK_ID	nvarchar	100	0	0	1	
+epbmaster_rela	3	PART_NUM	nvarchar	100	0	0	1	
+epbmaster_rela	7	QTY	int	4	10	0	1	
+epbmaster_weight	1	ID	int	4	10	0	0	
+epbmaster_weight	2	PART_NUM	nvarchar	40	0	0	1	
+epbmaster_weight	3	WEIGHT_FROM	decimal	9	12	2	1	
+epbmaster_weight	4	WEIGHT_TO	decimal	9	12	2	1	
+epbmaster_weight	5	ACTUAL	nvarchar	100	0	0	1	
+epbmaster_weight	6	SPECIES	nvarchar	40	0	0	1	
+epbmastercheckvalue	1	ID	int	4	10	0	0	
+epbmastercheckvalue	2	PART_NUM	nvarchar	100	0	0	1	
+epbmastercheckvalue	3	DESC	nvarchar	100	0	0	1	
+epbmasteritem	1	ID	int	4	10	0	0	
+epbmasteritem	2	LINK_ID	nvarchar	100	0	0	1	PBmaster中全项检查，6项检查这样的业
+务PART_NUM
+epbmasteritem	3	PART_NUM	nvarchar	100	0	0	1	PBMASTER中商品项目的PART_NUM
+epbmasteritem	4	SORT_ID	int	4	10	0	1	
+epbmasteritem	5	MUST_TO_SEL	nvarchar	2	0	0	1	
+epbprefix	1	PREFIX	nvarchar	6	0	0	0	
+epbprefix	2	DESCRIPT	nvarchar	200	0	0	1	
+epbprefix	3	RANGE	nvarchar	4	0	0	1	
+epbprefix	4	CLASSIFY	nvarchar	8	0	0	1	
+epbprefix	5	CLASSIFY2	nvarchar	100	0	0	1	
+epbprefix	6	MDF_ID	nvarchar	8	0	0	1	
+epbprefix	7	MDF_DATE	datetime	8	23	3	1	
+epbprefix	8	FIELD_CATALOG_STR	nvarchar	4000	0	0	1	
+epbprefix	9	MDC_A	decimal	9	12	2	1	
+epbprefix	10	MDC_B	decimal	9	12	2	1	
+epbprefix	11	MDC_C	decimal	9	12	2	1	
+epbprefix_classify	1	RANGE	nvarchar	20	0	0	1	
+epbprefix_classify	2	CLASSIFY	nvarchar	40	0	0	0	
+epbprefix_classify2	1	ID	int	4	10	0	0	
+epbprefix_classify2	2	RANGE	nvarchar	20	0	0	1	
+epbprefix_classify2	3	CLASSIFY	nvarchar	40	0	0	1	
+epbprefix_classify2	4	CLASSIFY2	nvarchar	40	0	0	1	
+epbprefix_range	1	RANGE	nvarchar	20	0	0	0	
+epet	1	PET_ID	nvarchar	24	0	0	0	
+epet	2	FULLNAME	nvarchar	100	0	0	1	
+epet	5	SEX	nvarchar	40	0	0	1	
+epet	6	AGE	decimal	9	12	2	1	
+epet	7	CUTDATE	nvarchar	100	0	0	1	
+epet	8	DESCRIPTION	nvarchar	1000	0	0	1	
+epet	9	WEIGHT	decimal	9	18	2	1	
+epet	10	BIRTHDAY	nvarchar	100	0	0	1	
+epet	11	EATDRINK	nvarchar	1000	0	0	1	
+epet	12	LIVINGSPACE	nvarchar	1000	0	0	1	
+epet	13	REASON	nvarchar	1000	0	0	1	
+epet	14	MDF_ID	nvarchar	100	0	0	1	
+epet	15	MDF_DATE	datetime	8	23	3	1	
+epet	16	REGDATE	datetime	8	23	3	1	
+epet	17	MEMBER_ID	nvarchar	24	0	0	1	
+epet	18	MEMO	nvarchar	400	0	0	1	
+epet	19	PET_ID_SHOW	nvarchar	100	0	0	1	
+epet	20	BREED	nvarchar	40	0	0	1	
+epet	21	SPECIES	nvarchar	40	0	0	1	
+epet	22	BIRTHDAY_TRUE	datetime	8	23	3	1	
+epetbreed	1	ID	int	4	10	0	0	
+epetbreed	2	NAME	nvarchar	100	0	0	1	
+epetbreed	3	MEMO	nvarchar	100	0	0	1	
+epetbreed	4	PINYIN	nvarchar	100	0	0	1	
+epetbreed	5	LINK	nvarchar	100	0	0	1	
+epetbreed	6	SORT_ID	int	4	10	0	1	
+epetcase	1	CASE_ID	nvarchar	24	0	0	0	就诊号
+epetcase	2	PET_ID	nvarchar	24	0	0	1	病例号
+epetcase	3	DATETIME	datetime	8	23	3	1	
+epetcase	4	SYMPTOM	nvarchar	4000	0	0	1	
+epetcase	5	DETAILS	nvarchar	4000	0	0	1	
+epetcase	6	NOTICE	nvarchar	4000	0	0	1	
+epetcase	7	TYPE_ID	nvarchar	100	0	0	1	挂号种类ID对应epbmaster中
+epetcase	8	STATUS	nvarchar	2	0	0	1	P-挂号->A进行->C完成
+epetcase	9	DOCT_ID	nvarchar	8	0	0	1	医生
+epetcase	10	MDF_ID	nvarchar	8	0	0	1	
+epetcase	11	MDF_DATE	datetime	8	23	3	1	
+epetcase	12	REG_CHARGE	nvarchar	2	0	0	1	是否收了挂号费 Y,N
+epetcase	13	ACC_STATUS	int	4	10	0	1	
+epetcase	14	DESCRIPTION	nvarchar	1000	0	0	1	
+epetcase	15	WEIGHT	decimal	9	18	2	1	
+epetcase	16	EATDRINK	nvarchar	1000	0	0	1	
+epetcase	17	LIVINGSPACE	nvarchar	1000	0	0	1	
+epetcase	18	REASON	nvarchar	1000	0	0	1	
+epetcase	19	KE	nvarchar	20	0	0	1	
+epetcase	20	FROM_DOCT_ID	nvarchar	8	0	0	1	
+epetcase	21	TEMP_ZS	nvarchar	4000	0	0	1	
+epetcase	22	TEMP_ZD	nvarchar	4000	0	0	1	
+epetcase	23	TEMP_YZ	nvarchar	4000	0	0	1	
+epetcase	24	MEMO	ntext	16	0	0	1	
+epetcase	25	PH	nvarchar	20	0	0	1	
+epetcase	26	PH_TYPE	nvarchar	20	0	0	1	
+epetcase	28	REG_COST	decimal	9	12	2	1	
+epetcase	29	PAY_TYPE	nvarchar	100	0	0	1	
+epetcase	30	INIT_DIAG	nvarchar	100	0	0	1	
+epetcase	31	CLOSE_MEMO	nvarchar	100	0	0	1	
+epetcase	32	MEMO_DOCT	nvarchar	4000	0	0	1	
+epetcase	33	DOCT_ADVICE	ntext	16	0	0	1	
+epetcasecare	1	CARE_ID	nvarchar	24	0	0	0	
+epetcasecare	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasecare	3	DESCRPTION	nvarchar	400	0	0	1	
+epetcasecare	4	MEMO	nvarchar	1000	0	0	1	
+epetcasecare	5	EMP_ID	nvarchar	8	0	0	1	
+epetcasecare	6	MDF_ID	nvarchar	100	0	0	1	
+epetcasecare	7	MDF_DATE	datetime	8	23	3	1	
+epetcasecare	8	STATUS	nvarchar	2	0	0	1	
+epetcasecare	9	MEMBER_ID	nvarchar	24	0	0	1	
+epetcasecare	10	PET_ID	nvarchar	24	0	0	1	
+epetcasecare	11	SUMCOST	decimal	9	12	2	1	
+epetcasecare	12	CREATE_DATE	datetime	8	23	3	1	
+epetcasecare	13	ACC_STATUS	int	4	10	0	1	
+epetcasecare	14	FINISHED_DATE	datetime	8	23	3	1	
+epetcasecareitem	1	ID	int	4	10	0	0	
+epetcasecareitem	2	CARE_ID	nvarchar	24	0	0	1	
+epetcasecareitem	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasecareitem	4	PART_NUM	nvarchar	30	0	0	1	
+epetcasecareitem	5	QTY	decimal	9	12	2	1	
+epetcasecareitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasecareitem	7	MDF_ID	nvarchar	8	0	0	1	
+epetcasecareitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasecareitem	9	GROUP_ID	nvarchar	100	0	0	1	
+epetcasecareitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasecareitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasecareitem	12	ORDER_COST	decimal	9	12	2	1	
+epetcasecareitem	13	INTRO_BY_ID	nvarchar	8	0	0	1	
+epetcasecareitem	14	DAYS_LINK_QTY	nvarchar	4	0	0	1	
+epetcasecareitem	15	SORT_ID	int	4	10	0	1	
+epetcasecheck	1	CHECK_ID	nvarchar	24	0	0	0	处方编号
+epetcasecheck	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasecheck	3	DESCRPTION	nvarchar	400	0	0	1	说明
+epetcasecheck	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcasecheck	5	DOCT_ID	nvarchar	8	0	0	1	创建的医师
+epetcasecheck	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasecheck	8	MDF_DATE	datetime	8	23	3	1	
+epetcasecheck	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasecheck	11	CHANGE_PRICE	nvarchar	4	0	0	1	Y,N,自选的Y,可以改价格,非自选的N
+epetcasecheck	12	SUMCOST	decimal	9	12	2	1	
+epetcasecheck	13	CREATE_DATE	datetime	8	23	3	1	
+epetcasecheck	14	LINKNUM	nvarchar	100	0	0	1	
+epetcasecheck	15	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcasecheckitem	1	ID	nvarchar	24	0	0	0	
+epetcasecheckitem	2	CHECK_ID	nvarchar	24	0	0	1	项目编号
+epetcasecheckitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasecheckitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasecheckitem	5	QTY	decimal	9	12	2	1	数量
+epetcasecheckitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasecheckitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasecheckitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasecheckitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasecheckitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasecheckitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasecheckitem	12	CREATE_ID	nvarchar	8	0	0	1	
+epetcasecheckitem	13	CREATE_DATE	datetime	8	23	3	1	
+epetcasecheckitem	16	FIRST_DIAGNOSE	nvarchar	600	0	0	1	初诊结果
+epetcasecheckitem	17	PARENTCHILD	nvarchar	24	0	0	1	
+epetcasecheckitem	18	PARENTCHILD_PID	nvarchar	24	0	0	1	
+epetcasecheckitem	19	OUT_PRICE	decimal	9	12	2	1	
+epetcasecheckitem	20	DOG	nvarchar	200	0	0	1	
+epetcasecheckitem	21	DOG_Y	nvarchar	200	0	0	1	
+epetcasecheckitem	22	CAT	nvarchar	200	0	0	1	
+epetcasecheckitem	23	CAT_Y	nvarchar	200	0	0	1	
+epetcasecheckitem	24	CATTLE	nvarchar	200	0	0	1	
+epetcasecheckitem	25	HORSE	nvarchar	200	0	0	1	
+epetcasecheckitem	26	DOGCAT_MEMO	nvarchar	400	0	0	1	
+epetcasecheckitem	27	DOG2	nvarchar	200	0	0	1	
+epetcasecheckitem	28	DOG3	nvarchar	200	0	0	1	
+epetcasecheckitem	29	CAT2	nvarchar	200	0	0	1	
+epetcasecheckitem	30	CAT3	nvarchar	200	0	0	1	
+epetcasecheckitem	31	DOG_Y2	nvarchar	200	0	0	1	
+epetcasecheckitem	32	DOG_Y3	nvarchar	200	0	0	1	
+epetcasecheckitem	33	CAT_Y2	nvarchar	200	0	0	1	
+epetcasecheckitem	34	CAT_Y3	nvarchar	200	0	0	1	
+epetcasecheckitem	35	DOG4	nvarchar	200	0	0	1	
+epetcasecheckitem	36	CAT4	nvarchar	200	0	0	1	
+epetcasecheckitem	37	RABBIT	nvarchar	200	0	0	1	
+epetcasecheckitem	38	HAMSTER	nvarchar	200	0	0	1	
+epetcasecheckitem	39	TOTORO	nvarchar	200	0	0	1	
+epetcasecheckitem	40	SORT_ID	int	4	10	0	1	
+epetcasecheckitemresult	1	ID	int	4	10	0	0	
+epetcasecheckitemresult	2	CHECK_ID	nvarchar	24	0	0	1	处方编号
+epetcasecheckitemresult	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasecheckitemresult	4	PART_ID	int	4	10	0	1	连接pbmasteritem中的ID
+epetcasecheckitemresult	5	ITEM_ID	nvarchar	100	0	0	1	连接epetcasecheckitem中的ID
+epetcasecheckitemresult	6	RESULT	nvarchar	1000	0	0	1	
+epetcasehair	1	HAIR_ID	nvarchar	24	0	0	0	处方编号
+epetcasehair	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasehair	3	DESCRPTION	nvarchar	400	0	0	1	处方说明
+epetcasehair	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcasehair	5	EMP_ID	nvarchar	8	0	0	1	创建者
+epetcasehair	6	MDF_ID	nvarchar	100	0	0	1	
+epetcasehair	7	MDF_DATE	datetime	8	23	3	1	
+epetcasehair	8	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasehair	9	MEMBER_ID	nvarchar	24	0	0	1	
+epetcasehair	10	PET_ID	nvarchar	24	0	0	1	
+epetcasehair	11	SUMCOST	decimal	9	12	2	1	
+epetcasehair	12	CREATE_DATE	datetime	8	23	3	1	
+epetcasehair	13	ACC_STATUS	int	4	10	0	1	
+epetcasehairitem	1	ID	int	4	10	0	0	
+epetcasehairitem	2	HAIR_ID	nvarchar	24	0	0	1	X项目编号
+epetcasehairitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasehairitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasehairitem	5	QTY	decimal	9	12	2	1	数量
+epetcasehairitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasehairitem	7	MDF_ID	nvarchar	8	0	0	1	
+epetcasehairitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasehairitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasehairitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasehairitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasehairitem	12	ORDER_COST	decimal	9	12	2	1	
+epetcasehairitem	13	INTRO_BY_ID	nvarchar	8	0	0	1	
+epetcasehairitem	14	SORT_ID	int	4	10	0	1	
+epetcaseinhos	1	INHOS_ID	nvarchar	24	0	0	0	
+epetcaseinhos	3	CASE_ID	nvarchar	24	0	0	1	
+epetcaseinhos	4	DESCRPTION	nvarchar	400	0	0	1	
+epetcaseinhos	5	MEMO	nvarchar	1000	0	0	1	
+epetcaseinhos	6	DOCT_ID	nvarchar	8	0	0	1	
+epetcaseinhos	7	MDF_ID	nvarchar	100	0	0	1	
+epetcaseinhos	8	MDF_DATE	datetime	8	23	3	1	
+epetcaseinhos	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcaseinhos	10	IN_REASON	nvarchar	1000	0	0	1	住院原因
+epetcaseinhos	11	PRE_DAYS	nvarchar	100	0	0	1	预计住院天数
+epetcaseinhos	12	DAYS	nvarchar	100	0	0	1	实际住院天数
+epetcaseinhos	13	VACCINATION_DATE	datetime	8	23	3	1	上次接种疫苗时间
+epetcaseinhos	14	VACCINATION_TYPE	nvarchar	100	0	0	1	接种疫苗种类
+epetcaseinhos	15	IN_NOTICE	nvarchar	100	0	0	1	住院医嘱
+epetcaseinhos	16	MEMO_C0214	nvarchar	400	0	0	1	眼睛其它
+epetcaseinhos	17	MEMO_C0406	nvarchar	400	0	0	1	鼻子和咽喉其它
+epetcaseinhos	18	MEMO_C0705	nvarchar	400	0	0	1	心脏其它
+epetcaseinhos	19	MEMO_C0806	nvarchar	400	0	0	1	胸部其它
+epetcaseinhos	20	MEMO_C0907	nvarchar	400	0	0	1	肺其它
+epetcaseinhos	21	MEMO_C1007	nvarchar	400	0	0	1	胃消化其它
+epetcaseinhos	22	MEMO_C1201	nvarchar	400	0	0	1	体重
+epetcaseinhos	23	MEMO_C1202	nvarchar	400	0	0	1	超重数
+epetcaseinhos	24	MEMO_C1203	nvarchar	400	0	0	1	超轻数
+epetcaseinhos	25	MEMO_C1204	nvarchar	400	0	0	1	体重其它
+epetcaseinhos	26	CHECK_STRING	nvarchar	1000	0	0	1	选择后拼接的字符串
+epetcaseinhos	27	CHECKITEM_STRING	nvarchar	1000	0	0	1	记录每天检测项目的项目数的字串
+epetcaseinhos	28	CHECKMEMO	nvarchar	1000	0	0	1	记录的说明如每天几点几回
+epetcaseinhos	29	CHECKDAYS	int	4	10	0	1	
+epetcaseinhos	30	CHECKTIMES	int	4	10	0	1	
+epetcaseinhos	31	SUMCOST	decimal	9	12	2	1	
+epetcaseinhos	32	CREATE_DATE	datetime	8	23	3	1	
+epetcaseinhos	33	LINKNUM	nvarchar	100	0	0	1	
+epetcaseinhos	34	FINISHED_DATE	datetime	8	23	3	1	
+epetcaseinhositem	1	ID	int	4	10	0	0	
+epetcaseinhositem	2	INHOS_ID	nvarchar	24	0	0	1	住院编号
+epetcaseinhositem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcaseinhositem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcaseinhositem	5	QTY	decimal	9	12	2	1	数量
+epetcaseinhositem	6	MEMO	nvarchar	100	0	0	1	
+epetcaseinhositem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcaseinhositem	8	MDF_DATE	datetime	8	23	3	1	
+epetcaseinhositem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcaseinhositem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcaseinhositem	11	INVOICE_ID	int	4	10	0	1	
+epetcaseinhositem	12	OUT_PRICE	decimal	9	12	2	1	
+epetcaseinhositem	13	DAYS_LINK_QTY	nvarchar	4	0	0	1	
+epetcaseinhositem	14	SORT_ID	int	4	10	0	1	
+epetcaseinhoslog	1	ID	int	4	10	0	0	
+epetcaseinhoslog	2	SORT_ID	int	4	10	0	1	
+epetcaseinhoslog	3	TW	nvarchar	1000	0	0	1	体温
+epetcaseinhoslog	4	HX	nvarchar	1000	0	0	1	呼吸
+epetcaseinhoslog	5	XL	nvarchar	1000	0	0	1	心率
+epetcaseinhoslog	6	JS	nvarchar	1000	0	0	1	进食
+epetcaseinhoslog	7	YS	nvarchar	1000	0	0	1	饮水
+epetcaseinhoslog	8	PN	nvarchar	1000	0	0	1	排尿
+epetcaseinhoslog	9	PB	nvarchar	1000	0	0	1	排便
+epetcaseinhoslog	10	OT	nvarchar	1000	0	0	1	呕吐
+epetcaseinhoslog	11	YD	nvarchar	1000	0	0	1	运动
+epetcaseinhoslog	12	ZL	nvarchar	1000	0	0	1	治疗
+epetcaseinhoslog	13	QT	nvarchar	1000	0	0	1	其它
+epetcaseinhoslog	14	MEMO	nvarchar	1000	0	0	1	备注
+epetcaseinhoslog	15	CREATE_ID	nvarchar	24	0	0	1	记录人
+epetcaseinhoslog	16	MDF_ID	nvarchar	24	0	0	1	
+epetcaseinhoslog	17	MDF_DATE	datetime	8	23	3	1	
+epetcaseinhoslog	18	DESCRIP	nvarchar	1000	0	0	1	说明
+epetcaseinhoslog	19	INHOS_ID	nvarchar	24	0	0	1	
+epetcaseinhoslog	20	CREATE_DATETIME	datetime	8	23	3	1	
+epetcaseinhoslog	21	TZ	nvarchar	1000	0	0	1	
+epetcaseinvoice	1	INVOICE_NUM	nvarchar	24	0	0	0	收费单号
+epetcaseinvoice	2	LINK_ID	nvarchar	24	0	0	1	就诊号
+epetcaseinvoice	3	MEMBER_ID	nvarchar	24	0	0	1	[会员卡号
+epetcaseinvoice	4	PET_ID	nvarchar	24	0	0	1	
+epetcaseinvoice	5	COST_EMP_ID	nvarchar	24	0	0	1	这钱算谁的
+epetcaseinvoice	6	CREATE_EMP_ID	nvarchar	8	0	0	1	创建时的雇员
+epetcaseinvoice	7	CREATE_DATE	datetime	8	23	3	1	
+epetcaseinvoice	8	MDF_ID	nvarchar	100	0	0	1	
+epetcaseinvoice	9	MDF_DATE	datetime	8	23	3	1	
+epetcaseinvoice	10	TYPEKEY	nvarchar	100	0	0	0	医疗、美容、销售
+epetcaseinvoice	11	STATUS	nvarchar	2	0	0	0	B开始C完成
+epetcaseinvoice	12	REV_COST	numeric	9	12	4	1	
+epetcaseinvoice	13	PAY_TYPE1	nvarchar	100	0	0	1	
+epetcaseinvoice	14	PAY_COST1	numeric	9	12	4	1	
+epetcaseinvoice	15	PAY_TYPE2	nvarchar	100	0	0	1	
+epetcaseinvoice	16	PAY_COST2	numeric	9	12	4	1	
+epetcaseinvoice	17	CHANGE_COST	numeric	9	12	4	1	
+epetcaseinvoice	18	COST_STATUS	nvarchar	100	0	0	1	
+epetcaseinvoice	19	INHOSACCSTATUS	int	4	10	0	1	
+epetcaseinvoice	20	MEMO	nvarchar	400	0	0	1	
+epetcaseinvoiceitem	1	ID	int	4	10	0	0	
+epetcaseinvoiceitem	2	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcaseinvoiceitem	3	LINK_TYPE	nvarchar	40	0	0	1	
+epetcaseinvoiceitem	4	LINK_ID	nvarchar	24	0	0	1	
+epetcaseinvoiceitem	5	LINK_DETAIL_ID	nvarchar	24	0	0	1	
+epetcaseinvoiceitem	6	PART_NUM	nvarchar	30	0	0	1	
+epetcaseinvoiceitem	7	QTY_CASE	decimal	9	12	2	1	
+epetcaseinvoiceitem	8	STD_COST	numeric	9	12	2	1	
+epetcaseinvoiceitem	9	ORDER_PRICE	numeric	9	12	2	1	
+epetcaseinvoiceitem	10	MDF_ID	nvarchar	100	0	0	1	
+epetcaseinvoiceitem	11	MDF_DATE	datetime	8	23	3	1	
+epetcaseinvoiceitem	12	QTY_ORDER	decimal	9	12	2	1	
+epetcaseinvoiceitem	13	REFUND_PRICE	numeric	9	12	2	1	
+epetcaseinvoiceitem	14	WASTE_PRICE	numeric	9	12	2	1	
+epetcaseinvoiceitem	15	MEMO	nvarchar	200	0	0	1	
+epetcaseinvoiceitem	16	STATUS	nvarchar	2	0	0	1	是否收费B,C
+epetcaseinvoiceitem	17	SPEC	nvarchar	40	0	0	1	
+epetcaseinvoiceitem	18	ACT_INFO	nvarchar	100	0	0	1	
+epetcaseinvoiceitem	19	GROUP_NAME	nvarchar	100	0	0	1	
+epetcasejiancha_eyes	1	EYES_CHECK_ID	nvarchar	24	0	0	0	
+epetcasejiancha_eyes	2	EYES_CHECK_NAME	nvarchar	100	0	0	0	
+epetcasejiancha_eyes	3	CASE_ID	nvarchar	24	0	0	0	
+epetcasejiancha_eyes	4	PET_ID	nvarchar	24	0	0	0	
+epetcasejiancha_eyes	5	CHECK_STR	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	6	JZT_L	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	7	JZT_R	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	8	LY_L	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	9	LY_R	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	10	YNY_L	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	11	YNY_R	nvarchar	1000	0	0	0	
+epetcasejiancha_eyes	12	CREATE_DATE	datetime	8	23	3	0	
+epetcasejiancha_eyes	13	DESCRIPTION	nvarchar	1000	0	0	1	
+epetcasejiancha_eyes	14	MDF_DATE	datetime	8	23	3	0	
+epetcasejiancha_eyes	15	MDF_ID	nvarchar	100	0	0	0	
+epetcasejiancha_pifu	1	PIFU_ID	nvarchar	100	0	0	0	
+epetcasejiancha_pifu	2	PIFU_NAME	nvarchar	1000	0	0	1	
+epetcasejiancha_pifu	3	CASE_ID	nvarchar	100	0	0	1	
+epetcasejiancha_pifu	4	PET_ID	nvarchar	100	0	0	1	
+epetcasejiancha_pifu	5	CHECK_STR	nvarchar	1000	0	0	1	
+epetcasejiancha_pifu	6	CREATE_DATE	datetime	8	23	3	1	
+epetcasejiancha_pifu	7	MDF_DATE	datetime	8	23	3	1	
+epetcasejiancha_pifu	8	MDF_ID	nvarchar	100	0	0	1	
+epetcasejiancha_pifu	9	DILI	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	10	HUANJING	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	11	JIYANG	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	12	OTHERPET	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	13	JINGSHEN	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	14	YINSHI	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	15	PAINIAO	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	16	PAIBIAN	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	17	XIZAO	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	18	SHENGZHI	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	19	JIBING	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	20	QITAJIBING	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	21	ZHUSHU	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	22	FARIQI	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	23	FABUWEI	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	24	JISHENG	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	25	BUWEI14	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	26	BUWEI13	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	27	BUWEI12	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	28	BUWEI11	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	29	BUWEI10	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	30	BUWEI9	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	31	BUWEI8	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	32	BUWEI7	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	33	BUWEI6	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	34	BUWEI5	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	35	BUWEI4	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	36	BUWEI3	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	37	BUWEI2	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	38	BUWEI1	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	39	QITACHENGYUAN	nvarchar	400	0	0	1	
+epetcasejiancha_pifu	40	ZHIQIANYONG	nvarchar	400	0	0	1	
+epetcasejiancha_tijian	1	TIJIAN_ID	nvarchar	100	0	0	0	
+epetcasejiancha_tijian	2	CASE_ID	nvarchar	100	0	0	0	
+epetcasejiancha_tijian	3	PET_ID	nvarchar	100	0	0	0	
+epetcasejiancha_tijian	4	CHECK_STR	nvarchar	2000	0	0	1	
+epetcasejiancha_tijian	5	TIJIAN_NAME	nvarchar	100	0	0	0	
+epetcasejiancha_tijian	6	CREATE_DATE	datetime	8	23	3	0	
+epetcasejiancha_tijian	7	MDF_DATE	datetime	8	23	3	0	
+epetcasejiancha_tijian	8	MDF_ID	nvarchar	100	0	0	0	
+epetcasejiancha_tijian	9	MEMO1	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	10	MEMO2	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	11	MEMO3	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	12	MEMO4	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	13	MEMO5	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	14	MEMO6	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	15	MEMO7	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	16	MEMO8	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	17	MEMO9	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	18	MEMO10	nvarchar	100	0	0	1	
+epetcasejiancha_tijian	19	DESCRIPTION	nvarchar	1000	0	0	1	
+epetcasejiancha_tijian	20	O_TW	nvarchar	200	0	0	1	
+epetcasejiancha_tijian	21	O_XL	nvarchar	200	0	0	1	
+epetcasejiancha_tijian	22	O_CRT	nvarchar	200	0	0	1	
+epetcasejiancha_tijian	23	O_TK	nvarchar	200	0	0	1	
+epetcasejiancha_tijian	24	O_HX	nvarchar	200	0	0	1	
+epetcasejiancha_yachi	1	YACHI_ID	nvarchar	100	0	0	0	
+epetcasejiancha_yachi	2	YACHI_NAME	nvarchar	100	0	0	0	
+epetcasejiancha_yachi	3	CASE_ID	nvarchar	100	0	0	0	
+epetcasejiancha_yachi	4	PET_ID	nvarchar	100	0	0	0	
+epetcasejiancha_yachi	5	CHECK_STR	nvarchar	100	0	0	1	
+epetcasejiancha_yachi	6	CREATE_DATE	datetime	8	23	3	0	
+epetcasejiancha_yachi	7	MDF_DATE	datetime	8	23	3	0	
+epetcasejiancha_yachi	8	MDF_ID	nvarchar	100	0	0	0	
+epetcasejiancha_yachi	9	NEXTTIME	nvarchar	100	0	0	1	
+epetcasejiancha_yachi	10	DESCRIPTION	nvarchar	1000	0	0	1	
+epetcasemicrobial	1	MICRO_ID	nvarchar	24	0	0	0	
+epetcasemicrobial	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasemicrobial	4	DESCRPTION	nvarchar	400	0	0	1	
+epetcasemicrobial	5	MEMO	nvarchar	1000	0	0	1	
+epetcasemicrobial	6	DOCT_ID	nvarchar	8	0	0	1	
+epetcasemicrobial	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasemicrobial	8	MDF_DATE	datetime	8	23	3	1	
+epetcasemicrobial	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasemicrobial	10	QYBW	nvarchar	4000	0	0	1	取样部位
+epetcasemicrobial	11	ZJPY	nvarchar	4000	0	0	1	真菌培养
+epetcasemicrobial	12	XJPY	nvarchar	200	0	0	1	细菌培养
+epetcasemicrobial	13	YM01	nvarchar	100	0	0	1	
+epetcasemicrobial	14	YM02	nvarchar	100	0	0	1	
+epetcasemicrobial	15	YM03	nvarchar	100	0	0	1	
+epetcasemicrobial	16	YM04	nvarchar	100	0	0	1	
+epetcasemicrobial	17	YM05	nvarchar	100	0	0	1	
+epetcasemicrobial	18	YM06	nvarchar	100	0	0	1	
+epetcasemicrobial	19	YM07	nvarchar	100	0	0	1	
+epetcasemicrobial	20	YM08	nvarchar	100	0	0	1	
+epetcasemicrobial	21	YM09	nvarchar	100	0	0	1	
+epetcasemicrobial	22	YM10	nvarchar	100	0	0	1	
+epetcasemicrobial	23	YM11	nvarchar	100	0	0	1	
+epetcasemicrobial	24	YM12	nvarchar	100	0	0	1	
+epetcasemicrobial	25	YM13	nvarchar	100	0	0	1	
+epetcasemicrobial	26	YM14	nvarchar	100	0	0	1	
+epetcasemicrobial	27	YM15	nvarchar	100	0	0	1	
+epetcasemicrobial	28	YM16	nvarchar	100	0	0	1	
+epetcasemicrobial	29	YM17	nvarchar	100	0	0	1	
+epetcasemicrobial	30	YM18	nvarchar	100	0	0	1	
+epetcasemicrobial	31	YM19	nvarchar	100	0	0	1	
+epetcasemicrobial	32	YM20	nvarchar	100	0	0	1	
+epetcasemicrobial	33	YM21	nvarchar	100	0	0	1	
+epetcasemicrobial	34	CREATE_DATE	datetime	8	23	3	1	
+epetcasemicrobial	35	CHANGE_PRICE	nvarchar	4	0	0	1	
+epetcasemicrobial	36	SUMCOST	decimal	9	12	2	1	
+epetcasemicrobial	37	YMMEMO	nvarchar	1000	0	0	1	
+epetcasemicrobial	38	YMMEMOA	nvarchar	1000	0	0	1	
+epetcasemicrobial	39	YMMEMOB	nvarchar	1000	0	0	1	
+epetcasemicrobial	40	YMMEMOC	nvarchar	1000	0	0	1	
+epetcasemicrobial	41	YM01A	nvarchar	100	0	0	1	
+epetcasemicrobial	42	YM02A	nvarchar	100	0	0	1	
+epetcasemicrobial	43	YM03A	nvarchar	100	0	0	1	
+epetcasemicrobial	44	YM04A	nvarchar	100	0	0	1	
+epetcasemicrobial	45	YM05A	nvarchar	100	0	0	1	
+epetcasemicrobial	46	YM06A	nvarchar	100	0	0	1	
+epetcasemicrobial	47	YM07A	nvarchar	100	0	0	1	
+epetcasemicrobial	48	YM08A	nvarchar	100	0	0	1	
+epetcasemicrobial	49	YM09A	nvarchar	100	0	0	1	
+epetcasemicrobial	50	YM10A	nvarchar	100	0	0	1	
+epetcasemicrobial	51	YM11A	nvarchar	100	0	0	1	
+epetcasemicrobial	52	YM12A	nvarchar	100	0	0	1	
+epetcasemicrobial	53	YM13A	nvarchar	100	0	0	1	
+epetcasemicrobial	54	YM14A	nvarchar	100	0	0	1	
+epetcasemicrobial	55	YM15A	nvarchar	100	0	0	1	
+epetcasemicrobial	56	YM16A	nvarchar	100	0	0	1	
+epetcasemicrobial	57	YM17A	nvarchar	100	0	0	1	
+epetcasemicrobial	58	YM18A	nvarchar	100	0	0	1	
+epetcasemicrobial	59	YM19A	nvarchar	100	0	0	1	
+epetcasemicrobial	60	YM20A	nvarchar	100	0	0	1	
+epetcasemicrobial	61	YM21A	nvarchar	100	0	0	1	
+epetcasemicrobial	62	YM01B	nvarchar	100	0	0	1	
+epetcasemicrobial	63	YM02B	nvarchar	100	0	0	1	
+epetcasemicrobial	64	YM03B	nvarchar	100	0	0	1	
+epetcasemicrobial	65	YM04B	nvarchar	100	0	0	1	
+epetcasemicrobial	66	YM05B	nvarchar	100	0	0	1	
+epetcasemicrobial	67	YM06B	nvarchar	100	0	0	1	
+epetcasemicrobial	68	YM07B	nvarchar	100	0	0	1	
+epetcasemicrobial	69	YM08B	nvarchar	100	0	0	1	
+epetcasemicrobial	70	YM09B	nvarchar	100	0	0	1	
+epetcasemicrobial	71	YM10B	nvarchar	100	0	0	1	
+epetcasemicrobial	72	YM11B	nvarchar	100	0	0	1	
+epetcasemicrobial	73	YM12B	nvarchar	100	0	0	1	
+epetcasemicrobial	74	YM13B	nvarchar	100	0	0	1	
+epetcasemicrobial	75	YM14B	nvarchar	100	0	0	1	
+epetcasemicrobial	76	YM15B	nvarchar	100	0	0	1	
+epetcasemicrobial	77	YM16B	nvarchar	100	0	0	1	
+epetcasemicrobial	78	YM17B	nvarchar	100	0	0	1	
+epetcasemicrobial	79	YM18B	nvarchar	100	0	0	1	
+epetcasemicrobial	80	YM19B	nvarchar	100	0	0	1	
+epetcasemicrobial	81	YM20B	nvarchar	100	0	0	1	
+epetcasemicrobial	82	YM21B	nvarchar	100	0	0	1	
+epetcasemicrobial	83	YM01C	nvarchar	100	0	0	1	
+epetcasemicrobial	84	YM02C	nvarchar	100	0	0	1	
+epetcasemicrobial	85	YM03C	nvarchar	100	0	0	1	
+epetcasemicrobial	86	YM04C	nvarchar	100	0	0	1	
+epetcasemicrobial	87	YM05C	nvarchar	100	0	0	1	
+epetcasemicrobial	88	YM06C	nvarchar	100	0	0	1	
+epetcasemicrobial	89	YM07C	nvarchar	100	0	0	1	
+epetcasemicrobial	90	YM08C	nvarchar	100	0	0	1	
+epetcasemicrobial	91	YM09C	nvarchar	100	0	0	1	
+epetcasemicrobial	92	YM10C	nvarchar	100	0	0	1	
+epetcasemicrobial	93	YM11C	nvarchar	100	0	0	1	
+epetcasemicrobial	94	YM12C	nvarchar	100	0	0	1	
+epetcasemicrobial	95	YM13C	nvarchar	100	0	0	1	
+epetcasemicrobial	96	YM14C	nvarchar	100	0	0	1	
+epetcasemicrobial	97	YM15C	nvarchar	100	0	0	1	
+epetcasemicrobial	98	YM16C	nvarchar	100	0	0	1	
+epetcasemicrobial	99	YM17C	nvarchar	100	0	0	1	
+epetcasemicrobial	100	YM18C	nvarchar	100	0	0	1	
+epetcasemicrobial	101	YM19C	nvarchar	100	0	0	1	
+epetcasemicrobial	102	YM20C	nvarchar	100	0	0	1	
+epetcasemicrobial	103	YM21C	nvarchar	100	0	0	1	
+epetcasemicrobial	104	LINKNUM	nvarchar	100	0	0	1	
+epetcasemicrobial	105	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcasemicrobialitem	1	ID	int	4	10	0	0	
+epetcasemicrobialitem	2	MICRO_ID	nvarchar	24	0	0	1	处方编号
+epetcasemicrobialitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasemicrobialitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasemicrobialitem	5	QTY	decimal	9	12	2	1	数量
+epetcasemicrobialitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasemicrobialitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasemicrobialitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasemicrobialitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasemicrobialitem	12	FIRST_DIAGNOSE	nvarchar	600	0	0	1	
+epetcasemicrobialitem	13	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasemicrobialitem	14	INVOICE_ID	int	4	10	0	1	
+epetcasemicrobialitem	15	OUT_PRICE	decimal	9	12	2	1	
+epetcasemicrobialitem	16	SORT_ID	int	4	10	0	1	
+epetcaseoper	1	OPER_ID	nvarchar	24	0	0	0	手术编号
+epetcaseoper	2	CASE_ID	nvarchar	24	0	0	1	
+epetcaseoper	3	MEMO	nvarchar	1000	0	0	1	备注
+epetcaseoper	4	DOCT_ID	nvarchar	8	0	0	1	创建者
+epetcaseoper	5	MDF_ID	nvarchar	100	0	0	1	
+epetcaseoper	6	MDF_DATE	datetime	8	23	3	1	
+epetcaseoper	7	STATUS	nvarchar	2	0	0	1	单子状态
+epetcaseoper	10	BEFORE_DO	nvarchar	1000	0	0	1	术前准备
+epetcaseoper	11	BEING_DO	nvarchar	1000	0	0	1	过程记录
+epetcaseoper	12	NEED_DO	nvarchar	1000	0	0	1	使用材料
+epetcaseoper	13	CLOSE_TYPE	nvarchar	100	0	0	1	缝合方式
+epetcaseoper	14	NOTICE	nvarchar	1000	0	0	1	医嘱
+epetcaseoper	15	ESTIMATE_TIME	nvarchar	100	0	0	1	预计手术时长
+epetcaseoper	16	REAL_TIME	nvarchar	100	0	0	1	实际手术时长
+epetcaseoper	17	SUMCOST	decimal	9	12	2	1	
+epetcaseoper	18	CREATE_DATE	datetime	8	23	3	1	
+epetcaseoper	19	DESCRPTION	nvarchar	400	0	0	1	
+epetcaseoper	20	LINKNUM	nvarchar	100	0	0	1	
+epetcaseoper	21	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcaseoperitem	1	ID	int	4	10	0	0	
+epetcaseoperitem	2	OPER_ID	nvarchar	24	0	0	1	手术编号
+epetcaseoperitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcaseoperitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcaseoperitem	5	QTY	decimal	9	12	2	1	数量
+epetcaseoperitem	6	MEMO	nvarchar	100	0	0	1	
+epetcaseoperitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcaseoperitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcaseoperitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcaseoperitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcaseoperitem	11	INVOICE_ID	int	4	10	0	1	
+epetcaseoperitem	12	OUT_PRICE	decimal	9	12	2	1	
+epetcaseoperitem	14	OP_BY_ID	nvarchar	8	0	0	1	
+epetcaseoperitem	15	OP_REC_ID	nvarchar	8	0	0	1	
+epetcaseoperitem	16	OP_DATE	datetime	8	23	3	1	
+epetcaseoperitem	17	OP_BY_ID2	nvarchar	8	0	0	1	
+epetcaseoperitem	18	OP_REC_ID2	nvarchar	8	0	0	1	
+epetcaseoperitem	19	OP_DATE2	datetime	8	23	3	1	
+epetcaseoperitem	20	SORT_ID	int	4	10	0	1	
+epetcaseopersleep	1	OPER_ID	nvarchar	24	0	0	0	
+epetcaseopersleep	2	AGE	nvarchar	100	0	0	1	年龄
+epetcaseopersleep	3	XG	nvarchar	1000	0	0	1	性格
+epetcaseopersleep	4	BS	nvarchar	1000	0	0	1	病历史
+epetcaseopersleep	5	MZS	nvarchar	1000	0	0	1	麻醉史
+epetcaseopersleep	6	OPER_DATE	datetime	8	23	3	1	手术日期
+epetcaseopersleep	7	OPER_TYPE	nvarchar	400	0	0	1	手术种类
+epetcaseopersleep	8	OPER_DOCT	nvarchar	40	0	0	1	手术医师
+epetcaseopersleep	9	MZ_DOCT	nvarchar	40	0	0	1	麻醉师
+epetcaseopersleep	10	ZL_DOCT	nvarchar	40	0	0	1	助理
+epetcaseopersleep	11	WEIGHT	nvarchar	100	0	0	1	体重
+epetcaseopersleep	12	TW	nvarchar	100	0	0	1	体温
+epetcaseopersleep	13	XL	nvarchar	100	0	0	1	心率
+epetcaseopersleep	14	HX	nvarchar	100	0	0	1	呼吸
+epetcaseopersleep	15	KS	nvarchar	100	0	0	1	口色
+epetcaseopersleep	16	OPER_CHECK	nvarchar	1000	0	0	1	实验室检查
+epetcaseopersleep	17	PG	nvarchar	100	0	0	1	麻醉评估
+epetcaseopersleep	18	MZYD	nvarchar	2	0	0	1	麻醉诱导
+epetcaseopersleep	19	PTMZ	nvarchar	2	0	0	1	普通麻醉
+epetcaseopersleep	20	QGCG	nvarchar	2	0	0	1	气管插管
+epetcaseopersleep	21	HXMZ	nvarchar	2	0	0	1	呼吸面罩
+epetcaseopersleep	22	CGXH	nvarchar	100	0	0	1	插管型号
+epetcaseopersleep	23	MZJ	nvarchar	100	0	0	1	麻醉机
+epetcaseopersleep	24	HXJSY	nvarchar	2	0	0	1	呼吸机是否使用
+epetcaseopersleep	25	HXHL	nvarchar	100	0	0	1	呼吸回路
+epetcaseopersleep	26	YDSJ	nvarchar	100	0	0	1	诱导时间
+epetcaseopersleep	27	MEMO	nvarchar	100	0	0	1	备注
+epetcaseopersleep	28	MZJSSJ	datetime	8	23	3	1	麻醉结束时间
+epetcaseopersleep	29	ZSJ	nvarchar	100	0	0	1	总时间
+epetcaseopersleep	30	BGSJ	datetime	8	23	3	1	拔管时间
+epetcaseopersleep	31	SXSJ	datetime	8	23	3	1	苏醒时间
+epetcaseopersleep	32	SXZT	nvarchar	2	0	0	1	苏醒状态
+epetcaseopersleep	33	BFZ	nvarchar	1000	0	0	1	并发症
+epetcaseopersleep	34	YH	nvarchar	1000	0	0	1	预后
+epetcaseopersleeppris	1	OPER_ID	nvarchar	24	0	0	0	
+epetcaseopersleeppris	2	FULLNAME	nvarchar	400	0	0	1	用药名称
+epetcaseopersleeppris	3	DOSE	nvarchar	100	0	0	1	剂量
+epetcaseopersleeppris	4	USE_TYPE	nvarchar	100	0	0	1	给药方式
+epetcaseopersleeppris	5	USE_DATETIME	datetime	8	23	3	1	
+epetcaseopersleeppris	6	MDF_ID	nvarchar	100	0	0	1	
+epetcaseopersleeppris	7	MDF_DATE	datetime	8	23	3	1	
+epetcaseopersleeppris	8	TYPE_KEY	nvarchar	100	0	0	1	术前，术后，麻醉
+epetcaseopersleeppris	9	ID	int	4	10	0	0	
+epetcaseopersleeprecord	1	OPER_ID	nvarchar	24	0	0	1	
+epetcaseopersleeprecord	2	CRE_DATETIME	datetime	8	23	3	1	
+epetcaseopersleeprecord	3	IV	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	4	TOTAL	nvarchar	100	0	0	1	已注总量
+epetcaseopersleeprecord	5	ISOFLURANCE	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	6	HR	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	7	RR	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	8	SPO	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	9	BP_SYS	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	10	BP_DLA	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	11	BP_MAP	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	12	TEMPL	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	13	ECG	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	14	ETCO	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	15	OFLOW	nvarchar	100	0	0	1	
+epetcaseopersleeprecord	16	OTHER	nvarchar	400	0	0	1	
+epetcaseopersleeprecord	17	MEMO	nvarchar	1000	0	0	1	
+epetcaseopersleeprecord	18	MDF_ID	nvarchar	8	0	0	1	
+epetcaseopersleeprecord	19	MDF_DATE	datetime	8	23	3	1	
+epetcaseopersleeprecord	20	ID	int	4	10	0	0	
+epetcaseother1a	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1a	2	A01	nvarchar	400	0	0	1	
+epetcaseother1a	3	A02	nvarchar	400	0	0	1	
+epetcaseother1a	4	A03	nvarchar	400	0	0	1	
+epetcaseother1a	5	B01	nvarchar	400	0	0	1	
+epetcaseother1a	6	B02	nvarchar	400	0	0	1	
+epetcaseother1a	7	B03	nvarchar	400	0	0	1	
+epetcaseother1a	8	B04	nvarchar	400	0	0	1	
+epetcaseother1a	9	B05	nvarchar	400	0	0	1	
+epetcaseother1a	10	B06	nvarchar	400	0	0	1	
+epetcaseother1a	11	B07	nvarchar	400	0	0	1	
+epetcaseother1a	12	B08	nvarchar	400	0	0	1	
+epetcaseother1a	13	B09	nvarchar	400	0	0	1	
+epetcaseother1a	14	B10	nvarchar	400	0	0	1	
+epetcaseother1a	15	B11	nvarchar	400	0	0	1	
+epetcaseother1a	16	B12	nvarchar	400	0	0	1	
+epetcaseother1a	17	B13	nvarchar	100	0	0	1	
+epetcaseother1a	18	D01	nvarchar	4000	0	0	1	
+epetcaseother1a	19	D02	nvarchar	4000	0	0	1	
+epetcaseother1a	20	D03	nvarchar	4000	0	0	1	
+epetcaseother1a	21	REND	nvarchar	4000	0	0	1	
+epetcaseother1a	22	C11	nvarchar	4000	0	0	1	
+epetcaseother1a	23	C01	nvarchar	4000	0	0	1	
+epetcaseother1a	24	CS1	bit	1	1	0	1	
+epetcaseother1a	25	CS2	bit	1	1	0	1	
+epetcaseother1a	26	CS3	bit	1	1	0	1	
+epetcaseother1a	27	CS4	bit	1	1	0	1	
+epetcaseother1a	28	CS5	bit	1	1	0	1	
+epetcaseother1a	29	CS6	bit	1	1	0	1	
+epetcaseother1a	30	CS7	bit	1	1	0	1	
+epetcaseother1a	31	CS8	bit	1	1	0	1	
+epetcaseother1a	32	ES1	bit	1	1	0	1	
+epetcaseother1a	33	ES2	bit	1	1	0	1	
+epetcaseother1a	34	C08	nvarchar	400	0	0	1	
+epetcaseother1a	35	D04	nvarchar	4000	0	0	1	
+epetcaseother1a	36	D05	nvarchar	4000	0	0	1	
+epetcaseother1a_en	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1a_en	2	A01	nvarchar	400	0	0	1	
+epetcaseother1a_en	3	A02	nvarchar	400	0	0	1	
+epetcaseother1a_en	4	A03	nvarchar	400	0	0	1	
+epetcaseother1a_en	5	B01	nvarchar	400	0	0	1	
+epetcaseother1a_en	6	B02	nvarchar	400	0	0	1	
+epetcaseother1a_en	7	B03	nvarchar	400	0	0	1	
+epetcaseother1a_en	8	B04	nvarchar	400	0	0	1	
+epetcaseother1a_en	9	B05	nvarchar	400	0	0	1	
+epetcaseother1a_en	10	B06	nvarchar	400	0	0	1	
+epetcaseother1a_en	11	B07	nvarchar	400	0	0	1	
+epetcaseother1a_en	12	B08	nvarchar	400	0	0	1	
+epetcaseother1a_en	13	B09	nvarchar	400	0	0	1	
+epetcaseother1a_en	14	B10	nvarchar	400	0	0	1	
+epetcaseother1a_en	15	B11	nvarchar	400	0	0	1	
+epetcaseother1a_en	16	B12	nvarchar	400	0	0	1	
+epetcaseother1a_en	17	B13	nvarchar	100	0	0	1	
+epetcaseother1a_en	18	D01	nvarchar	4000	0	0	1	
+epetcaseother1a_en	19	D02	nvarchar	4000	0	0	1	
+epetcaseother1a_en	20	D03	nvarchar	4000	0	0	1	
+epetcaseother1a_en	21	REND	nvarchar	4000	0	0	1	
+epetcaseother1a_en	22	C11	nvarchar	4000	0	0	1	
+epetcaseother1a_en	23	C01	nvarchar	4000	0	0	1	
+epetcaseother1a_en	24	CS1	bit	1	1	0	1	
+epetcaseother1a_en	25	CS2	bit	1	1	0	1	
+epetcaseother1a_en	26	CS3	bit	1	1	0	1	
+epetcaseother1a_en	27	CS4	bit	1	1	0	1	
+epetcaseother1a_en	28	CS5	bit	1	1	0	1	
+epetcaseother1a_en	29	CS6	bit	1	1	0	1	
+epetcaseother1a_en	30	CS7	bit	1	1	0	1	
+epetcaseother1a_en	31	CS8	bit	1	1	0	1	
+epetcaseother1a_en	32	ES1	bit	1	1	0	1	
+epetcaseother1a_en	33	ES2	bit	1	1	0	1	
+epetcaseother1a_en	34	C08	nvarchar	400	0	0	1	
+epetcaseother1a_en	35	D04	nvarchar	4000	0	0	1	
+epetcaseother1a_en	36	D05	nvarchar	4000	0	0	1	
+epetcaseother1b	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1b	2	A01	nvarchar	400	0	0	1	
+epetcaseother1b	3	A02	nvarchar	400	0	0	1	
+epetcaseother1b	4	A03	nvarchar	400	0	0	1	
+epetcaseother1b	5	A04	nvarchar	400	0	0	1	
+epetcaseother1b	6	AS1	bit	1	1	0	1	
+epetcaseother1b	7	AS2	bit	1	1	0	1	
+epetcaseother1b	8	AS3	bit	1	1	0	1	
+epetcaseother1b	9	AS4	bit	1	1	0	1	
+epetcaseother1b	10	AS5	bit	1	1	0	1	
+epetcaseother1b	11	AS6	bit	1	1	0	1	
+epetcaseother1b	12	B01	nvarchar	400	0	0	1	
+epetcaseother1b	13	B02	nvarchar	400	0	0	1	
+epetcaseother1b	14	B03	nvarchar	400	0	0	1	
+epetcaseother1b	15	B04	nvarchar	400	0	0	1	
+epetcaseother1b	16	B05	nvarchar	400	0	0	1	
+epetcaseother1b	17	C01	nvarchar	400	0	0	1	
+epetcaseother1b	18	C02	nvarchar	400	0	0	1	
+epetcaseother1b	19	C03	nvarchar	400	0	0	1	
+epetcaseother1b	20	C04	nvarchar	400	0	0	1	
+epetcaseother1b	21	C05	nvarchar	400	0	0	1	
+epetcaseother1b	22	C06	nvarchar	400	0	0	1	
+epetcaseother1b	23	C07	nvarchar	400	0	0	1	
+epetcaseother1b	24	D01	nvarchar	400	0	0	1	
+epetcaseother1b	25	D02	nvarchar	400	0	0	1	
+epetcaseother1b	26	D03	nvarchar	400	0	0	1	
+epetcaseother1b	27	D04	nvarchar	400	0	0	1	
+epetcaseother1b	28	D05	nvarchar	400	0	0	1	
+epetcaseother1b	29	D06	nvarchar	400	0	0	1	
+epetcaseother1b	30	D07	nvarchar	400	0	0	1	
+epetcaseother1b	31	E01	nvarchar	4000	0	0	1	
+epetcaseother1b	32	F01	nvarchar	4000	0	0	1	
+epetcaseother1b	33	REND	nvarchar	4000	0	0	1	
+epetcaseother1b_en	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1b_en	2	A01	nvarchar	400	0	0	1	
+epetcaseother1b_en	3	A02	nvarchar	400	0	0	1	
+epetcaseother1b_en	4	A03	nvarchar	400	0	0	1	
+epetcaseother1b_en	5	A04	nvarchar	400	0	0	1	
+epetcaseother1b_en	6	AS1	bit	1	1	0	1	
+epetcaseother1b_en	7	AS2	bit	1	1	0	1	
+epetcaseother1b_en	8	AS3	bit	1	1	0	1	
+epetcaseother1b_en	9	AS4	bit	1	1	0	1	
+epetcaseother1b_en	10	AS5	bit	1	1	0	1	
+epetcaseother1b_en	11	AS6	bit	1	1	0	1	
+epetcaseother1b_en	12	B01	nvarchar	400	0	0	1	
+epetcaseother1b_en	13	B02	nvarchar	400	0	0	1	
+epetcaseother1b_en	14	B03	nvarchar	400	0	0	1	
+epetcaseother1b_en	15	B04	nvarchar	400	0	0	1	
+epetcaseother1b_en	16	B05	nvarchar	400	0	0	1	
+epetcaseother1b_en	17	C01	nvarchar	400	0	0	1	
+epetcaseother1b_en	18	C02	nvarchar	400	0	0	1	
+epetcaseother1b_en	19	C03	nvarchar	400	0	0	1	
+epetcaseother1b_en	20	C04	nvarchar	400	0	0	1	
+epetcaseother1b_en	21	C05	nvarchar	400	0	0	1	
+epetcaseother1b_en	22	C06	nvarchar	400	0	0	1	
+epetcaseother1b_en	23	C07	nvarchar	400	0	0	1	
+epetcaseother1b_en	24	D01	nvarchar	400	0	0	1	
+epetcaseother1b_en	25	D02	nvarchar	400	0	0	1	
+epetcaseother1b_en	26	D03	nvarchar	400	0	0	1	
+epetcaseother1b_en	27	D04	nvarchar	400	0	0	1	
+epetcaseother1b_en	28	D05	nvarchar	400	0	0	1	
+epetcaseother1b_en	29	D06	nvarchar	400	0	0	1	
+epetcaseother1b_en	30	D07	nvarchar	400	0	0	1	
+epetcaseother1b_en	31	E01	nvarchar	4000	0	0	1	
+epetcaseother1b_en	32	F01	nvarchar	4000	0	0	1	
+epetcaseother1b_en	33	REND	nvarchar	4000	0	0	1	
+epetcaseother1c	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1c	2	A01	nvarchar	400	0	0	1	
+epetcaseother1c	3	A02	nvarchar	400	0	0	1	
+epetcaseother1c	4	A03	nvarchar	400	0	0	1	
+epetcaseother1c	5	A04	nvarchar	4000	0	0	1	
+epetcaseother1c	6	A05	nvarchar	4000	0	0	1	
+epetcaseother1c	7	B01	nvarchar	1000	0	0	1	
+epetcaseother1c	8	B02	nvarchar	1000	0	0	1	
+epetcaseother1c	9	B03	nvarchar	1000	0	0	1	
+epetcaseother1c	10	B04	nvarchar	1000	0	0	1	
+epetcaseother1c	11	B05	nvarchar	1000	0	0	1	
+epetcaseother1c	12	C01	nvarchar	1000	0	0	1	
+epetcaseother1c	13	C02	nvarchar	1000	0	0	1	
+epetcaseother1c	14	D01	nvarchar	1000	0	0	1	
+epetcaseother1c	15	D02	nvarchar	1000	0	0	1	
+epetcaseother1c	16	AS1	bit	1	1	0	1	
+epetcaseother1c	17	AS2	bit	1	1	0	1	
+epetcaseother1c	18	AS3	bit	1	1	0	1	
+epetcaseother1c	19	AS4	bit	1	1	0	1	
+epetcaseother1c	20	AS5	bit	1	1	0	1	
+epetcaseother1c	21	AS6	bit	1	1	0	1	
+epetcaseother1c	22	REND	nvarchar	4000	0	0	1	
+epetcaseother1c_en	1	CASE_ID	nvarchar	24	0	0	0	
+epetcaseother1c_en	2	A01	nvarchar	400	0	0	1	
+epetcaseother1c_en	3	A02	nvarchar	400	0	0	1	
+epetcaseother1c_en	4	A03	nvarchar	400	0	0	1	
+epetcaseother1c_en	5	A04	nvarchar	4000	0	0	1	
+epetcaseother1c_en	6	A05	nvarchar	4000	0	0	1	
+epetcaseother1c_en	7	B01	nvarchar	1000	0	0	1	
+epetcaseother1c_en	8	B02	nvarchar	1000	0	0	1	
+epetcaseother1c_en	9	B03	nvarchar	1000	0	0	1	
+epetcaseother1c_en	10	B04	nvarchar	1000	0	0	1	
+epetcaseother1c_en	11	B05	nvarchar	1000	0	0	1	
+epetcaseother1c_en	12	C01	nvarchar	1000	0	0	1	
+epetcaseother1c_en	13	C02	nvarchar	1000	0	0	1	
+epetcaseother1c_en	14	D01	nvarchar	1000	0	0	1	
+epetcaseother1c_en	15	D02	nvarchar	1000	0	0	1	
+epetcaseother1c_en	16	AS1	bit	1	1	0	1	
+epetcaseother1c_en	17	AS2	bit	1	1	0	1	
+epetcaseother1c_en	18	AS3	bit	1	1	0	1	
+epetcaseother1c_en	19	AS4	bit	1	1	0	1	
+epetcaseother1c_en	20	AS5	bit	1	1	0	1	
+epetcaseother1c_en	21	AS6	bit	1	1	0	1	
+epetcaseother1c_en	22	REND	nvarchar	4000	0	0	1	
+epetcasepathology	1	PATHO_ID	nvarchar	24	0	0	0	
+epetcasepathology	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasepathology	4	DESCRPTION	nvarchar	400	0	0	1	
+epetcasepathology	5	MEMO	nvarchar	1000	0	0	1	
+epetcasepathology	6	DOCT_ID	nvarchar	8	0	0	1	
+epetcasepathology	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasepathology	8	MDF_DATE	datetime	8	23	3	1	
+epetcasepathology	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasepathology	10	BBXT	nvarchar	4000	0	0	1	标本形态
+epetcasepathology	11	LCTZ	nvarchar	4000	0	0	1	临床特征
+epetcasepathology	12	LCZD	nvarchar	4000	0	0	1	临床诊断
+epetcasepathology	13	FZJC	nvarchar	4000	0	0	1	辅助检查
+epetcasepathology	14	CREATE_DATE	datetime	8	23	3	1	
+epetcasepathology	15	CHANGE_PRICE	nvarchar	4	0	0	1	
+epetcasepathology	16	SUMCOST	decimal	9	12	2	1	
+epetcasepathology	17	LINKNUM	nvarchar	100	0	0	1	
+epetcasepathology	18	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcasepathologyitem	1	ID	int	4	10	0	0	
+epetcasepathologyitem	2	PATHO_ID	nvarchar	24	0	0	1	处方编号
+epetcasepathologyitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasepathologyitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasepathologyitem	5	QTY	decimal	9	12	2	1	数量
+epetcasepathologyitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasepathologyitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasepathologyitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasepathologyitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasepathologyitem	12	FIRST_DIAGNOSE	nvarchar	600	0	0	1	
+epetcasepathologyitem	13	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasepathologyitem	14	INVOICE_ID	int	4	10	0	1	
+epetcasepathologyitem	15	OUT_PRICE	decimal	9	12	2	1	
+epetcasepathologyitem	16	SORT_ID	int	4	10	0	1	
+epetcaseph	1	ID	int	4	10	0	0	
+epetcaseph	2	PH	nvarchar	20	0	0	1	
+epetcaseph	3	PH_TYPE	nvarchar	20	0	0	1	
+epetcaseph	4	PH_DATESTR	nvarchar	20	0	0	1	
+epetcaseph	5	REG_DATETIME	datetime	8	23	3	1	
+epetcaseph	6	USED	nvarchar	2	0	0	1	
+epetcaseph	7	DOCT_ID	nvarchar	8	0	0	1	
+epetcaseprescription	1	PRIS_ID	nvarchar	24	0	0	0	处方编号
+epetcaseprescription	2	CASE_ID	nvarchar	24	0	0	1	
+epetcaseprescription	3	DESCRPTION	nvarchar	400	0	0	1	处方说明
+epetcaseprescription	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcaseprescription	5	DOCT_ID	nvarchar	8	0	0	1	创建的医师
+epetcaseprescription	6	MDF_ID	nvarchar	100	0	0	1	
+epetcaseprescription	7	MDF_DATE	datetime	8	23	3	1	
+epetcaseprescription	8	STATUS	nvarchar	2	0	0	1	单子状态
+epetcaseprescription	9	ZS	nvarchar	4000	0	0	1	
+epetcaseprescription	10	ZD	nvarchar	4000	0	0	1	
+epetcaseprescription	11	YZ	nvarchar	4000	0	0	1	
+epetcaseprescription	12	LINKTYPENAME	nvarchar	24	0	0	1	关联分类名称，如手术
+epetcaseprescription	13	LINKNUM	nvarchar	100	0	0	1	关联的编号，如手术编号
+epetcaseprescription	14	CREATE_DATE	datetime	8	23	3	1	
+epetcaseprescription	15	SUMCOST	decimal	9	12	2	1	
+epetcaseprescriptionitem	1	ID	int	4	10	0	0	
+epetcaseprescriptionitem	2	PRIS_ID	nvarchar	24	0	0	1	处方编号
+epetcaseprescriptionitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcaseprescriptionitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcaseprescriptionitem	5	QTY	decimal	9	12	2	1	数量
+epetcaseprescriptionitem	6	MEMO	nvarchar	100	0	0	1	
+epetcaseprescriptionitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcaseprescriptionitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcaseprescriptionitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcaseprescriptionitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcaseprescriptionitem	11	INVOICE_ID	int	4	10	0	1	
+epetcaseprescriptionitem	12	ACTUAL	nvarchar	100	0	0	1	实际用量
+epetcaseprescriptionitem	13	OP_TYPE	nvarchar	100	0	0	1	操作类型
+epetcaseprescriptionitem	14	ACT_QTY	decimal	9	12	2	1	
+epetcaseprescriptionitem	15	OUT_PRICE	decimal	9	12	2	1	
+epetcaseprescriptionitem	16	OP_BY_ID	nvarchar	8	0	0	1	
+epetcaseprescriptionitem	17	OP_DATE	datetime	8	23	3	1	
+epetcaseprescriptionitem	18	PRAR_ROAD	nvarchar	100	0	0	1	
+epetcaseprescriptionitem	19	DAYS	nvarchar	20	0	0	1	
+epetcaseprescriptionitem	20	OP_TYPE_RATE	decimal	9	12	2	1	
+epetcaseprescriptionitem	22	OP_REC_ID	nvarchar	8	0	0	1	
+epetcaseprescriptionitem	23	OP_BY_ID2	nvarchar	8	0	0	1	
+epetcaseprescriptionitem	24	OP_BY_ID3	nvarchar	8	0	0	1	
+epetcaseprescriptionitem	25	OP_VAL	int	4	10	0	1	
+epetcaseprescriptionitem	26	OP_VAL2	int	4	10	0	1	
+epetcaseprescriptionitem	27	OP_VAL3	int	4	10	0	1	
+epetcaseprescriptionitem	28	SORT_ID	int	4	10	0	1	
+epetcasequicktemp	1	ID	int	4	10	0	0	
+epetcasequicktemp	2	OP_BY_ID	nvarchar	8	0	0	1	
+epetcasequicktemp	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasequicktemp	4	BH	nvarchar	20	0	0	1	
+epetcasequicktemp	5	ITEM_TYPE	nvarchar	20	0	0	1	
+epetcasequicktemp	6	PART_NUM	nvarchar	30	0	0	1	
+epetcasequicktemp	7	QTY	decimal	9	12	2	1	
+epetcasequicktemp	8	OUT_PRICE	decimal	9	12	2	1	
+epetcasequicktemp	9	DAYS	nvarchar	20	0	0	1	
+epetcasequicktemp	10	ACTUAL	nvarchar	100	0	0	1	
+epetcasequicktemp	11	OP_TYPE	nvarchar	100	0	0	1	
+epetcasequicktemp	12	OP_TYPE_RATE	decimal	9	12	2	1	
+epetcasequicktemp	13	PRAR_ROAD	nvarchar	100	0	0	1	
+epetcasequicktemp	14	GROUP_ID	nvarchar	100	0	0	1	
+epetcasequicktemp	15	MEMO	nvarchar	100	0	0	1	
+epetcasequicktemp	16	SPEC_CALC	decimal	9	12	2	1	
+epetcasequicktemp	17	SPEC_UOM	nvarchar	20	0	0	1	
+epetcasereturnmember	1	ID	int	4	10	0	0	
+epetcasereturnmember	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasereturnmember	3	DATE_REQ	datetime	8	23	3	1	
+epetcasereturnmember	4	DATE_OP	datetime	8	23	3	1	
+epetcasereturnmember	5	TITLE	nvarchar	1000	0	0	1	
+epetcasereturnmember	6	MEMO	ntext	16	0	0	1	
+epetcasereturnmember	7	OP_BY_ID	nvarchar	8	0	0	1	
+epetcasesale	1	SALE_ID	nvarchar	24	0	0	0	处方编号
+epetcasesale	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasesale	3	DESCRPTION	nvarchar	400	0	0	1	处方说明
+epetcasesale	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcasesale	5	EMP_ID	nvarchar	8	0	0	1	创建者
+epetcasesale	6	MDF_ID	nvarchar	100	0	0	1	
+epetcasesale	7	MDF_DATE	datetime	8	23	3	1	
+epetcasesale	8	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasesale	9	MEMBER_ID	nvarchar	24	0	0	1	
+epetcasesale	10	PET_ID	nvarchar	24	0	0	1	
+epetcasesale	11	SUMCOST	decimal	9	12	2	1	
+epetcasesale	12	CREATE_DATE	datetime	8	23	3	1	
+epetcasesale	13	ACC_STATUS	int	4	10	0	1	
+epetcasesaleitem	1	ID	int	4	10	0	0	
+epetcasesaleitem	2	SALE_ID	nvarchar	24	0	0	1	X项目编号
+epetcasesaleitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasesaleitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasesaleitem	5	QTY	decimal	9	12	2	1	数量
+epetcasesaleitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasesaleitem	7	MDF_ID	nvarchar	8	0	0	1	
+epetcasesaleitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasesaleitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasesaleitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasesaleitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasesaleitem	12	ORDER_COST	decimal	9	12	2	1	
+epetcasesaleitem	13	INTRO_BY_ID	nvarchar	8	0	0	1	
+epetcasesaleitem	14	SORT_ID	int	4	10	0	1	
+epetcasetypeb	1	TYPEB_ID	nvarchar	24	0	0	0	B编号
+epetcasetypeb	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasetypeb	3	DESC_SYMPTOM	nvarchar	400	0	0	1	简要症状
+epetcasetypeb	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcasetypeb	5	DOCT_ID	nvarchar	8	0	0	1	创建的医师
+epetcasetypeb	6	FIRST_DIAGNOSE	nvarchar	1000	0	0	1	[初诊结果
+epetcasetypeb	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasetypeb	8	MDF_DATE	datetime	8	23	3	1	
+epetcasetypeb	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasetypeb	10	CHECK_PART	nvarchar	100	0	0	1	检查的部位
+epetcasetypeb	11	DESC_CHAO	nvarchar	1000	0	0	1	超声描述，6项对6位，YYYYYY
+epetcasetypeb	12	DESC_ABNORMAL	nvarchar	1000	0	0	1	异常描述
+epetcasetypeb	13	DESC_ALERT	nvarchar	1000	0	0	1	B超提示
+epetcasetypeb	14	SUMCOST	decimal	9	12	2	1	
+epetcasetypeb	15	CREATE_DATE	datetime	8	23	3	1	
+epetcasetypeb	16	DESC_CHAO_PRINT	nvarchar	1000	0	0	1	
+epetcasetypeb	17	DESCRPTION	nvarchar	400	0	0	1	
+epetcasetypeb	18	LINKNUM	nvarchar	100	0	0	1	
+epetcasetypeb	19	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcasetypebitem	1	ID	int	4	10	0	0	
+epetcasetypebitem	2	TYPEB_ID	nvarchar	24	0	0	1	X项目编号
+epetcasetypebitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasetypebitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasetypebitem	5	QTY	decimal	9	12	2	1	数量
+epetcasetypebitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasetypebitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasetypebitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasetypebitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasetypebitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasetypebitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasetypebitem	14	FIRST_DIAGNOSE	nvarchar	1000	0	0	1	
+epetcasetypebitem	15	OUT_PRICE	decimal	9	12	2	1	
+epetcasetypebitem	16	SORT_ID	int	4	10	0	1	
+epetcasetypebitemresult	1	ID	int	4	10	0	0	
+epetcasetypebitemresult	2	TYPEB_ID	nvarchar	24	0	0	1	处方编号
+epetcasetypebitemresult	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasetypebitemresult	4	PART_ID	int	4	10	0	1	连接pbmasteritem中的ID
+epetcasetypebitemresult	5	ITEM_ID	nvarchar	100	0	0	1	连接epetcasetypebitem中的ID
+epetcasetypebitemresult	6	RESULT	nvarchar	1000	0	0	1	
+epetcasetypex	1	TYPEX_ID	nvarchar	24	0	0	0	X
+epetcasetypex	2	CASE_ID	nvarchar	24	0	0	1	
+epetcasetypex	3	DESC_SYMPTOM	nvarchar	400	0	0	1	处方说明
+epetcasetypex	4	MEMO	nvarchar	1000	0	0	1	备注
+epetcasetypex	5	DOCT_ID	nvarchar	8	0	0	1	创建的医师
+epetcasetypex	6	FIRST_DIAGNOSE	nvarchar	1000	0	0	1	[初诊结果
+epetcasetypex	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasetypex	8	MDF_DATE	datetime	8	23	3	1	
+epetcasetypex	9	STATUS	nvarchar	2	0	0	1	单子状态
+epetcasetypex	10	CHECK_PART	nvarchar	100	0	0	1	B超大类ID
+epetcasetypex	11	CHECK_NEED	nvarchar	1000	0	0	1	其它要求
+epetcasetypex	12	METHOD	nvarchar	100	0	0	1	造影方法
+epetcasetypex	13	CHECK_RESULT	nvarchar	1000	0	0	1	
+epetcasetypex	14	X_NO	nvarchar	100	0	0	1	
+epetcasetypex	15	X_THICKNESS	nvarchar	100	0	0	1	
+epetcasetypex	16	X_FILTER	nvarchar	100	0	0	1	
+epetcasetypex	17	X_KV	nvarchar	100	0	0	1	
+epetcasetypex	18	X_MA	nvarchar	100	0	0	1	
+epetcasetypex	19	X_S	nvarchar	100	0	0	1	
+epetcasetypex	20	X_OTHER	nvarchar	1000	0	0	1	
+epetcasetypex	21	X_EMP	nvarchar	8	0	0	1	
+epetcasetypex	22	SUMCOST	decimal	9	12	2	1	
+epetcasetypex	23	CREATE_DATE	datetime	8	23	3	1	
+epetcasetypex	24	DESCRPTION	nvarchar	400	0	0	1	
+epetcasetypex	25	LINKNUM	nvarchar	100	0	0	1	
+epetcasetypex	26	LINKTYPENAME	nvarchar	24	0	0	1	
+epetcasetypex	27	CHECK_PART_POSI	nvarchar	100	0	0	1	
+epetcasetypexitem	1	ID	int	4	10	0	0	
+epetcasetypexitem	2	TYPEX_ID	nvarchar	24	0	0	1	X项目编号
+epetcasetypexitem	3	CASE_ID	nvarchar	24	0	0	1	就诊号
+epetcasetypexitem	4	PART_NUM	nvarchar	30	0	0	1	药品编号
+epetcasetypexitem	5	QTY	decimal	9	12	2	1	数量
+epetcasetypexitem	6	MEMO	nvarchar	100	0	0	1	
+epetcasetypexitem	7	MDF_ID	nvarchar	100	0	0	1	
+epetcasetypexitem	8	MDF_DATE	datetime	8	23	3	1	
+epetcasetypexitem	9	GROUP_ID	nvarchar	100	0	0	1	分组ID默认0
+epetcasetypexitem	10	INVOICE_NUM	nvarchar	24	0	0	1	
+epetcasetypexitem	11	INVOICE_ID	int	4	10	0	1	
+epetcasetypexitem	14	FIRST_DIAGNOSE	nvarchar	1000	0	0	1	
+epetcasetypexitem	15	CHECK_PART	nvarchar	100	0	0	1	
+epetcasetypexitem	16	CHECK_NEED	nvarchar	1000	0	0	1	
+epetcasetypexitem	17	METHOD	nvarchar	100	0	0	1	
+epetcasetypexitem	18	CHECK_RESULT	nvarchar	1000	0	0	1	
+epetcasetypexitem	19	X_NO	nvarchar	100	0	0	1	
+epetcasetypexitem	20	X_THICKNESS	nvarchar	100	0	0	1	
+epetcasetypexitem	21	X_FILTER	nvarchar	100	0	0	1	
+epetcasetypexitem	22	X_KV	nvarchar	100	0	0	1	
+epetcasetypexitem	23	X_MA	nvarchar	100	0	0	1	
+epetcasetypexitem	24	X_S	nvarchar	100	0	0	1	
+epetcasetypexitem	25	X_OTHER	nvarchar	1000	0	0	1	
+epetcasetypexitem	26	X_EMP	nvarchar	8	0	0	1	
+epetcasetypexitem	27	OUT_PRICE	decimal	9	12	2	1	
+epetcasetypexitem	28	SORT_ID	int	4	10	0	1	
+epetcasetypexitem	29	CHECK_PART_POSI	nvarchar	100	0	0	1	
+epetcasetypexitemresult	1	ID	int	4	10	0	0	
+epetcasetypexitemresult	2	TYPEX_ID	nvarchar	24	0	0	1	处方编号
+epetcasetypexitemresult	3	CASE_ID	nvarchar	24	0	0	1	
+epetcasetypexitemresult	4	PART_ID	int	4	10	0	1	连接pbmasteritem中的ID
+epetcasetypexitemresult	5	ITEM_ID	nvarchar	100	0	0	1	连接epetcasetypexitem中的ID
+epetcasetypexitemresult	6	RESULT	nvarchar	1000	0	0	1	
+epetfosterage	1	ID	int	4	10	0	0	
+epetfosterage	2	PET_ID	nvarchar	100	0	0	1	
+epetfosterage	3	DATE_BEGIN	datetime	8	23	3	1	
+epetfosterage	4	DATE_END	datetime	8	23	3	1	
+epetfosterage	5	OP_COST	float	8	53	0	1	
+epetfosterage	6	OP_BY_ID	nvarchar	20	0	0	1	
+epetfosterage	7	MEMO	ntext	16	0	0	1	
+epetfosterage	8	STATUS	nvarchar	100	0	0	1	
+epetfosterage	9	MESSAGE_ID	int	4	10	0	1	
+epetfosterage	10	MDF_DATE	datetime	8	23	3	1	
+epetfosterage	11	MDF_ID	nvarchar	100	0	0	1	
+epetjianyi	1	JY_ID	nvarchar	24	0	0	0	
+epetjianyi	2	JY_TYPE	nvarchar	20	0	0	1	
+epetjianyi	3	JY_DATE	datetime	8	23	3	1	
+epetjianyi	4	JY_DESCRIPT	nvarchar	1000	0	0	1	
+epetjianyi	5	JY_OP	nvarchar	8	0	0	1	
+epetjianyi	6	MDF_ID	nvarchar	8	0	0	1	
+epetjianyi	7	MDF_DATE	datetime	8	23	3	1	
+epetjianyi	8	FINISHED_DATE	datetime	8	23	3	1	
+epetjianyi	9	STATUS	nvarchar	2	0	0	1	
+epetjianyi	10	PET_ID	nvarchar	24	0	0	1	
+epetjianyi	11	LINK_PRIS_ID	nvarchar	24	0	0	1	
+epetjianyi	12	FINISHED_OP	nvarchar	8	0	0	1	
+epetjianyi	13	PRE_DAYS	int	4	10	0	1	
+epetjianyiitem	1	ID	int	4	10	0	0	
+epetjianyiitem	2	JY_ID	nvarchar	24	0	0	1	
+epetjianyiitem	3	PART_NUM	nvarchar	40	0	0	1	
+epetjianyiitem	4	QTY_ORDER	decimal	9	12	2	1	
+epetjianyiitem	5	STD_COST	decimal	9	12	2	1	
+epetjianyiitem	6	ORDER_PRICE	decimal	9	12	2	1	
+epetjianyiitem	7	ITEM_STATUS	nvarchar	2	0	0	1	
+epetjianyiitem	8	DISCOUNT	decimal	9	12	2	1	
+epetjianyiitem	9	MEMO	nvarchar	100	0	0	1	
+epetjianyiitem	10	ACTUAL	nvarchar	100	0	0	1	
+epetjianyimsgitem	1	ID	int	4	10	0	0	
+epetjianyimsgitem	2	JY_ID	nvarchar	24	0	0	1	
+epetjianyimsgitem	3	TITLE	nvarchar	1000	0	0	1	
+epetjianyimsgitem	4	DETAIL	nvarchar	2000	0	0	1	
+epetjianyimsgitem	5	ALERTDATE	datetime	8	23	3	1	
+epetjianyimsgitem	6	OP_DATE	datetime	8	23	3	1	
+epetjianyimsgitem	7	STATUS	nvarchar	2	0	0	1	
+epetjianyimsgitem	8	BACK_MEMO	nvarchar	1000	0	0	1	
+epetsex	1	ID	int	4	10	0	0	
+epetsex	2	NAME	nvarchar	100	0	0	1	
+epetsex	3	MEMO	nvarchar	400	0	0	1	
+epetsex	4	SORT_ID	int	4	10	0	1	
+epetspecies	1	ID	int	4	10	0	0	
+epetspecies	2	NAME	nvarchar	100	0	0	1	
+epetspecies	3	MEMO	nvarchar	100	0	0	1	
+epetspecies	4	SORT_ID	int	4	10	0	1	
+epetvaccination	1	ID	int	4	10	0	0	
+epetvaccination	2	PET_ID	nvarchar	24	0	0	1	
+epetvaccination	3	DATE_OP	datetime	8	23	3	1	
+epetvaccination	4	DATE_NEXT	datetime	8	23	3	1	
+epetvaccination	5	OP_COST	float	8	53	0	1	
+epetvaccination	6	OP_BY_ID	nvarchar	100	0	0	1	
+epetvaccination	7	MEMO	ntext	16	0	0	1	
+epetvaccination	8	STATUS	nvarchar	100	0	0	1	
+epetvaccination	9	MESSAGE_ID	int	4	10	0	1	
+epetvaccination	10	MDF_DATE	datetime	8	23	3	1	
+epetvaccination	11	MDF_ID	nvarchar	100	0	0	1	
+epetvaccination	12	TYPE_NAME	nvarchar	100	0	0	1	
+epetvaccination	13	TYPE_ID	int	4	10	0	0	
+epetvaccination_types	1	ID	int	4	10	0	0	
+epetvaccination_types	2	NAME	nvarchar	100	0	0	1	
+epetvaccination_types	3	DESCRIP	nvarchar	100	0	0	1	
+ereqcost	1	ID	int	4	10	0	0	
+ereqcost	2	DATE_REQ	datetime	8	23	3	1	
+ereqcost	3	MEMBER_ID	nvarchar	24	0	0	1	
+ereqcost	4	COST	numeric	9	12	2	1	
+ereqcost	5	STATUS	nvarchar	2	0	0	1	
+ereqcost	6	REQ_BY_ID	nvarchar	8	0	0	1	
+ereqcost	7	MEMO	nvarchar	1000	0	0	1	
+erptaccm	1	ID	int	4	10	0	0	
+erptaccm	2	ACC_DATE	datetime	8	23	3	1	
+erptaccm	3	ACC_MEMO	nvarchar	2000	0	0	1	
+erptaccm	4	MDF_ID	nvarchar	8	0	0	1	
+erptaccm	5	MDF_DATE	datetime	8	23	3	1	
+erptaccmdetail	1	ID	int	4	10	0	0	
+erptaccmdetail	2	LINK_ID	int	4	10	0	1	
+erptaccmdetail	3	PART_NUM	nvarchar	40	0	0	1	
+erptaccmdetail	4	STD_COST	decimal	9	12	2	1	
+erptaccmdetail	5	COST_PRICE	decimal	9	12	2	1	
+erptaccmdetail	6	QTY_ON_HAND	decimal	9	12	2	1	
+erptdayfinish	1	ID	int	4	10	0	0	
+erptdayfinish	2	DATE_REG	datetime	8	23	3	1	
+erptdayfinish	3	OP_BY_ID	nvarchar	8	0	0	1	
+erptdayfinish	4	MEMO	ntext	16	0	0	1	
+erptdayfinish	5	TOTAL_ALL	decimal	9	12	2	1	
+erptdayfinish	6	TOTAL_PAY	decimal	9	12	2	1	
+erptdayfinish	7	TOTAL_PAY_NO_CARD	decimal	9	12	2	1	
+erptdayfinish	8	TOTAL_PAY_YES_CARD	decimal	9	12	2	1	
+erptdayfinish	9	TOTAL_PAID	decimal	9	12	2	1	
+erptdayfinish	10	TOTAL_PAID_NO_CARD	decimal	9	12	2	1	
+erptdayfinish	11	TOTAL_PAID_YES_CARD	decimal	9	12	2	1	
+erptdayfinish	12	TOTAL_DEBT	decimal	9	12	2	1	
+erptdayfinish	13	TOTAL_XJ	decimal	9	12	2	1	
+erptdayfinish	14	TOTAL_ZP	decimal	9	12	2	1	
+erptdayfinish	15	TOTAL_ZZ	decimal	9	12	2	1	
+erptdayfinish	16	TOTAL_HP	decimal	9	12	2	1	
+erptdayfinish	17	TOTAL_XYK	decimal	9	12	2	1	
+erptdayfinish	18	TOTAL_WY	decimal	9	12	2	1	
+erptdayfinish	19	TOTAL_NX	decimal	9	12	2	1	
+erptdayfinish	20	TOTAL_YCK	decimal	9	12	2	1	
+erptdayfinish	21	TOTAL_ZKK	decimal	9	12	2	1	
+erptdayfinish	22	TOTAL_BXK	decimal	9	12	2	1	
+erptdayfinish	23	TOTAL_BZK	decimal	9	12	2	1	
+erptdayfinish	24	TOTAL_HYK	decimal	9	12	2	1	
+erptdayfinish	25	TOTAL_QT	decimal	9	12	2	1	
+erptdayfinish	26	TOTAL_DIAG	decimal	9	12	2	1	
+erptdayfinish	27	TOTAL_SALE	decimal	9	12	2	1	
+erptdayfinish	28	TOTAL_HAIR	decimal	9	12	2	1	
+erptdayfinish	29	TOTAL_CARE	decimal	9	12	2	1	
+erptdayfinish	30	TOTAL_QTY_STOCK_IN	decimal	9	12	2	1	
+erptdayfinish	31	TOTAL_STOCK_IN	decimal	9	12	2	1	
+erptdayfinish	32	TOTAL_QTY_STOCK_IN_DIAG	decimal	9	12	2	1	
+erptdayfinish	33	TOTAL_STOCK_IN_DIAG	decimal	9	12	2	1	
+erptdayfinish	34	TOTAL_QTY_STOCK_IN_SALE	decimal	9	12	2	1	
+erptdayfinish	35	TOTAL_STOCK_IN_SALE	decimal	9	12	2	1	
+erptdayfinish	36	TOTAL_QTY_STOCK_IN_HAIR	decimal	9	12	2	1	
+erptdayfinish	37	TOTAL_STOCK_IN_HAIR	decimal	9	12	2	1	
+erptdayfinish	38	TOTAL_QTY_STOCK_IN_CARE	decimal	9	12	2	1	
+erptdayfinish	39	TOTAL_STOCK_IN_CARE	decimal	9	12	2	1	
+erptdayfinish	40	TOTAL_QTY_STOCK_OUT	decimal	9	12	2	1	
+erptdayfinish	41	TOTAL_STOCK_OUT	decimal	9	12	2	1	
+erptdayfinish	42	TOTAL_QTY_STOCK_OUT_DIAG	decimal	9	12	2	1	
+erptdayfinish	43	TOTAL_STOCK_OUT_DIAG	decimal	9	12	2	1	
+erptdayfinish	44	TOTAL_QTY_STOCK_OUT_SALE	decimal	9	12	2	1	
+erptdayfinish	45	TOTAL_STOCK_OUT_SALE	decimal	9	12	2	1	
+erptdayfinish	46	TOTAL_QTY_STOCK_OUT_HAIR	decimal	9	12	2	1	
+erptdayfinish	47	TOTAL_STOCK_OUT_HAIR	decimal	9	12	2	1	
+erptdayfinish	48	TOTAL_QTY_STOCK_OUT_CARE	decimal	9	12	2	1	
+erptdayfinish	49	TOTAL_STOCK_OUT_CARE	decimal	9	12	2	1	
+erptdayfinish	50	TOTAL_DIAG_REG	decimal	9	12	2	1	
+erptdayfinish	51	TOTAL_DIAG_SERVICE	decimal	9	12	2	1	
+erptdayfinish	52	TOTAL_DIAG_CHECK	decimal	9	12	2	1	
+erptdayfinish	53	TOTAL_DIAG_PRES	decimal	9	12	2	1	
+erptdayfinish	54	TOTAL_DIAG_TYPEX	decimal	9	12	2	1	
+erptdayfinish	55	TOTAL_DIAG_TYPEB	decimal	9	12	2	1	
+erptdayfinish	56	TOTAL_DIAG_OPER	decimal	9	12	2	1	
+erptdayfinish	57	TOTAL_DIAG_INHOS	decimal	9	12	2	1	
+erptdayfinish	58	TOTAL_DIAG_PATHO	decimal	9	12	2	1	
+erptdayfinish	59	TOTAL_DIAG_MICRO	decimal	9	12	2	1	
+erptdayfinish	60	TOTAL_CARD_YCK_IN	decimal	9	12	2	1	
+erptdayfinish	61	TOTAL_CARD_YCK_OUT	decimal	9	12	2	1	
+erptdayfinish	62	TOTAL_CARD_ZKK_IN	decimal	9	12	2	1	
+erptdayfinish	63	TOTAL_CARD_ZKK_OUT	decimal	9	12	2	1	
+erptdayfinish	64	TOTAL_CARD_BZK_IN	decimal	9	12	2	1	
+erptdayfinish	65	TOTAL_CARD_BZK_OUT	decimal	9	12	2	1	
+erptdayfinish	66	TOTAL_CARD_BXK_IN	decimal	9	12	2	1	
+erptdayfinish	67	TOTAL_CARD_BXK_OUT	decimal	9	12	2	1	
+erptdayfinish	68	TOTAL_QTY_STOCK_IN_OA	decimal	9	12	2	1	
+erptdayfinish	69	TOTAL_STOCK_IN_OA	decimal	9	12	2	1	
+erptdayfinish	70	TOTAL_QTY_STOCK_OUT_OA	decimal	9	12	2	1	
+erptdayfinish	71	TOTAL_STOCK_OUT_OA	decimal	9	12	2	1	
+erptdayfinish	72	TOTAL_YCK_XJ	decimal	9	12	2	1	
+erptdayfinish	73	TOTAL_YCK_ZP	decimal	9	12	2	1	
+erptdayfinish	74	TOTAL_YCK_ZZ	decimal	9	12	2	1	
+erptdayfinish	75	TOTAL_YCK_HP	decimal	9	12	2	1	
+erptdayfinish	76	TOTAL_YCK_XYK	decimal	9	12	2	1	
+erptdayfinish	77	TOTAL_YCK_WY	decimal	9	12	2	1	
+erptdayfinish	78	TOTAL_YCK_NX	decimal	9	12	2	1	
+erptdayfinish	79	TOTAL_ZKK_XJ	decimal	9	12	2	1	
+erptdayfinish	80	TOTAL_ZKK_ZP	decimal	9	12	2	1	
+erptdayfinish	81	TOTAL_ZKK_ZZ	decimal	9	12	2	1	
+erptdayfinish	82	TOTAL_ZKK_HP	decimal	9	12	2	1	
+erptdayfinish	83	TOTAL_ZKK_XYK	decimal	9	12	2	1	
+erptdayfinish	84	TOTAL_ZKK_WY	decimal	9	12	2	1	
+erptdayfinish	85	TOTAL_ZKK_NX	decimal	9	12	2	1	
+erptdayfinish	86	TOTAL_BXK_XJ	decimal	9	12	2	1	
+erptdayfinish	87	TOTAL_BXK_ZP	decimal	9	12	2	1	
+erptdayfinish	88	TOTAL_BXK_ZZ	decimal	9	12	2	1	
+erptdayfinish	89	TOTAL_BXK_HP	decimal	9	12	2	1	
+erptdayfinish	90	TOTAL_BXK_XYK	decimal	9	12	2	1	
+erptdayfinish	91	TOTAL_BXK_WY	decimal	9	12	2	1	
+erptdayfinish	92	TOTAL_BXK_NX	decimal	9	12	2	1	
+erptdayfinish	93	TOTAL_BZK_XJ	decimal	9	12	2	1	
+erptdayfinish	94	TOTAL_BZK_ZP	decimal	9	12	2	1	
+erptdayfinish	95	TOTAL_BZK_ZZ	decimal	9	12	2	1	
+erptdayfinish	96	TOTAL_BZK_HP	decimal	9	12	2	1	
+erptdayfinish	97	TOTAL_BZK_XYK	decimal	9	12	2	1	
+erptdayfinish	98	TOTAL_BZK_WY	decimal	9	12	2	1	
+erptdayfinish	99	TOTAL_BZK_NX	decimal	9	12	2	1	
+erptdayfinish	100	TOTAL_XJ_ALL	decimal	9	12	2	1	
+erptdayfinish	101	TOTAL_ZP_ALL	decimal	9	12	2	1	
+erptdayfinish	102	TOTAL_ZZ_ALL	decimal	9	12	2	1	
+erptdayfinish	103	TOTAL_HP_ALL	decimal	9	12	2	1	
+erptdayfinish	104	TOTAL_XYK_ALL	decimal	9	12	2	1	
+erptdayfinish	105	TOTAL_WY_ALL	decimal	9	12	2	1	
+erptdayfinish	106	TOTAL_NX_ALL	decimal	9	12	2	1	
+erptdayfinish	107	TOTAL_PAYTYPE_ALL	decimal	9	12	2	1	
+erptdayfinish	108	DATE_REG2	datetime	8	23	3	1	
+erptdayfinish	109	CTYPE	nvarchar	4	0	0	1	
+erptdayfinish	110	TOTAL_ZKK_CENTER	decimal	9	12	2	1	
+erptdayfinish	111	TOTAL_BZK_CENTER	decimal	9	12	2	1	
+erptdayfinish	112	TOTAL_WX	decimal	9	12	2	1	
+erptdayfinish	113	TOTAL_ZFB	decimal	9	12	2	1	
+erptdayfinish	114	TOTAL_YCK_WX	decimal	9	12	2	1	
+erptdayfinish	115	TOTAL_YCK_ZFB	decimal	9	12	2	1	
+erptdayfinish	116	TOTAL_ZKK_WX	decimal	9	12	2	1	
+erptdayfinish	117	TOTAL_ZKK_ZFB	decimal	9	12	2	1	
+erptdayfinish	118	TOTAL_BZK_WX	decimal	9	12	2	1	
+erptdayfinish	119	TOTAL_BZK_ZFB	decimal	9	12	2	1	
+erptdayfinish	120	TOTAL_BXK_WX	decimal	9	12	2	1	
+erptdayfinish	121	TOTAL_BXK_ZFB	decimal	9	12	2	1	
+erptdayfinish	122	TOTAL_WX_ALL	decimal	9	12	2	1	
+erptdayfinish	123	TOTAL_ZFB_ALL	decimal	9	12	2	1	
+eselectgroup	1	ID	int	4	10	0	0	
+eselectgroup	2	FOR_OP	nvarchar	100	0	0	1	
+eselectgroup	3	SELECTGROUP_NAME	nvarchar	100	0	0	0	
+eselectgroup	4	SELECTGROUP_PINYIN	nvarchar	100	0	0	1	
+eselectgroup	5	SELECTGROUP_BY_ID	nvarchar	8	0	0	0	
+eselectgroup	6	MEMO	nvarchar	1000	0	0	1	
+eselectgroup	7	IS_PUB	nvarchar	2	0	0	1	
+eselectgroupitem	1	ID	int	4	10	0	0	
+eselectgroupitem	2	LINK_ID	int	4	10	0	0	
+eselectgroupitem	3	BH	nvarchar	100	0	0	1	
+eselectgroupitem	4	ITEM_NAME	nvarchar	100	0	0	1	
+eselectgroupitem	5	ITEM_TYPE	nvarchar	100	0	0	1	
+eselectgroupitem	6	PART_NUM	nvarchar	40	0	0	0	
+eselectgroupitem	7	QTY	decimal	9	12	2	0	
+eselectgroupitem	8	ACTUAL	nvarchar	100	0	0	1	
+eselectgroupitem	9	OP_TYPE	nvarchar	100	0	0	1	
+eselectgroupitem	10	GROUP_ID	nvarchar	100	0	0	1	
+eselectgroupitem	11	PRAR_ROAD	nvarchar	100	0	0	1	
+eselectgroupitem	12	DAYS	nvarchar	20	0	0	1	
+eselectgroupitem	13	MEMO	nvarchar	100	0	0	1	
+eselectgroupitem	14	OP_TYPE_RATE	decimal	9	12	2	1	
+eselectgroupmodel	1	ID	int	4	10	0	0	
+eselectgroupmodel	2	FOR_OP	nvarchar	100	0	0	1	
+eselectgroupmodel	3	BH	nvarchar	20	0	0	0	
+eselectgroupmodel	4	ITEM_NAME	nvarchar	100	0	0	1	
+eselectgroupmodel	5	ITEM_TYPE	nvarchar	100	0	0	1	
+esms	1	ID	int	4	10	0	0	
+esms	3	MEMBER_ID	nvarchar	100	0	0	1	
+esms	4	PHONE_NUM	nvarchar	100	0	0	0	
+esms	5	STATUS	nvarchar	100	0	0	1	
+esms	6	SEND_TIMES	int	4	10	0	0	
+esms	7	SEND_MESSAGE	nvarchar	1000	0	0	1	
+esms	8	LAST_SEND_TIME	datetime	8	23	3	1	
+esms	9	CREATE_TIME	datetime	8	23	3	1	
+esms	10	CREATE_USERID	nvarchar	100	0	0	1	
+esms	11	PETS	nvarchar	1000	0	0	1	
+esmslib	1	ID	int	4	10	0	0	
+esmslib	2	CLASSIFY	nvarchar	40	0	0	1	
+esmslib	3	MEMO	nvarchar	510	0	0	1	
+esmsmodule	1	SMS_MODULE_ID	nvarchar	20	0	0	0	
+esmsmodule	3	SMS_MODULE_DESC	nvarchar	400	0	0	1	
+esmstemp	1	ID	int	4	10	0	0	
+esmstemp	3	MEMBER_ID	nvarchar	100	0	0	0	
+esmstemp	4	MEMO	nvarchar	400	0	0	1	
+esmstemp	5	PETS	nvarchar	1000	0	0	1	
+esmsweixin	1	ID	int	4	10	0	0	
+esmsweixin	2	SEND_DATE	datetime	8	23	3	1	
+esmsweixin	3	SENDER	nvarchar	100	0	0	1	
+esmsweixin	4	MSG	nvarchar	4000	0	0	1	
+esmsweixin	5	SENDER_ID	nvarchar	40	0	0	1	
+esmsweixin	6	IS_MEMBER	nvarchar	2	0	0	1	
+esmsweixin	7	OWNER_ID	nvarchar	8	0	0	1	
+estockcheck	1	STOCK_CHECK_ID	nvarchar	40	0	0	0	
+estockcheck	2	DATE_CHECK	datetime	8	23	3	1	
+estockcheck	3	STOCK_ID	nvarchar	100	0	0	1	
+estockcheck	4	OP_BY_ID	nvarchar	8	0	0	1	
+estockcheck	5	CHECK_STATUS	nvarchar	20	0	0	1	
+estockcheck	6	STATUS	nvarchar	2	0	0	1	
+estockcheck	7	MEMO	ntext	16	0	0	1	
+estockcheck	8	END_STOCK_IN_ID	nvarchar	40	0	0	1	
+estockcheck	9	END_STOCK_OUT_ID	nvarchar	40	0	0	1	
+estockcheck	10	END_STOCK_MOVE_ID	nvarchar	40	0	0	1	
+estockcheck	11	APPR	nvarchar	2	0	0	1	
+estockcheckitem	1	ID	int	4	10	0	0	
+estockcheckitem	2	STOCK_CHECK_ID	nvarchar	40	0	0	1	
+estockcheckitem	3	PART_NUM	nvarchar	40	0	0	1	
+estockcheckitem	4	QTY_ON_HAND_B	decimal	9	12	2	1	
+estockcheckitem	5	QTY_ON_HAND_E	decimal	9	12	2	1	
+estockcheckitem	6	COST_PRICE_B	decimal	9	12	2	1	
+estockcheckitem	7	COST_PRICE_E	decimal	9	12	2	1	
+estockcheckitem	8	STATUS	varchar	1	0	0	1	
+estockin	1	STOCK_IN_ID	nvarchar	40	0	0	0	
+estockin	2	IN_TYPE	nvarchar	40	0	0	1	
+estockin	3	STOCK_ID	nvarchar	100	0	0	1	
+estockin	4	VENDOR_ID	nvarchar	12	0	0	1	
+estockin	5	PO_NUM	nvarchar	40	0	0	1	
+estockin	6	MEMBER_ID	nvarchar	40	0	0	1	
+estockin	7	RMA_NUM	nvarchar	40	0	0	1	
+estockin	8	DATE_IN	datetime	8	23	3	1	
+estockin	9	OP_BY_ID	nvarchar	8	0	0	1	
+estockin	10	STATUS	nvarchar	20	0	0	1	
+estockin	11	MEMO	ntext	16	0	0	1	
+estockin	12	FROM_COMPANY	nvarchar	4	0	0	1	
+estockin	13	APPR	nvarchar	2	0	0	1	
+estockin_paylist	1	ID	int	4	10	0	0	
+estockin_paylist	2	STOCK_IN_ID	nvarchar	40	0	0	1	
+estockin_paylist	3	PAY_COST	decimal	9	12	2	1	
+estockin_paylist	4	PAY_OP_ID	nvarchar	8	0	0	1	
+estockin_paylist	5	PAY_DATE	datetime	8	23	3	1	
+estockin_paylist	6	MEMO	nvarchar	1000	0	0	1	
+estockinitem	1	ID	int	4	10	0	0	
+estockinitem	2	STOCK_IN_ID	nvarchar	30	0	0	1	
+estockinitem	3	PART_NUM	nvarchar	40	0	0	1	
+estockinitem	4	QTY_IN	decimal	9	12	2	1	
+estockinitem	5	IN_PRICE	decimal	9	12	2	1	
+estockinitem	6	ITEM_MEMO	ntext	16	0	0	1	
+estockinitem	7	DATE_EXPIRATION	datetime	8	23	3	1	
+estockintype	1	ID	int	4	10	0	0	
+estockintype	2	IN_TYPE	nvarchar	40	0	0	1	
+estockintype	3	IS_SYS	nvarchar	2	0	0	1	
+estockmove	1	STOCK_MOVE_ID	nvarchar	40	0	0	0	
+estockmove	2	DATE_MOVE	datetime	8	23	3	1	
+estockmove	3	FROM_STOCK_ID	nvarchar	100	0	0	1	
+estockmove	4	TO_STOCK_ID	nvarchar	100	0	0	1	
+estockmove	5	OP_BY_ID	nvarchar	8	0	0	1	
+estockmove	6	STATUS	nvarchar	2	0	0	1	
+estockmove	7	MEMO	ntext	16	0	0	1	
+estockmove	8	OP_BY_ID2	nvarchar	8	0	0	1	
+estockmove	9	APPR	nvarchar	2	0	0	1	
+estockmove	10	OTHER_NUM	nvarchar	100	0	0	1	
+estockmoveitem	1	ID	int	4	10	0	0	
+estockmoveitem	2	STOCK_MOVE_ID	nvarchar	40	0	0	1	
+estockmoveitem	3	PART_NUM	nvarchar	40	0	0	1	
+estockmoveitem	4	QTY_MOVE	decimal	9	12	2	1	
+estockmoveitem	5	ITEM_MEMO	ntext	16	0	0	1	
+estockout	1	STOCK_OUT_ID	nvarchar	40	0	0	0	
+estockout	2	OUT_TYPE	nvarchar	100	0	0	1	
+estockout	3	OUT_TYPE2	nvarchar	100	0	0	1	
+estockout	4	STOCK_ID	nvarchar	100	0	0	1	
+estockout	5	MEMBER_ID	nvarchar	40	0	0	1	
+estockout	6	SO_NUM	nvarchar	40	0	0	1	
+estockout	7	VENDOR_ID	nvarchar	12	0	0	1	
+estockout	8	RMA_NUM	nvarchar	40	0	0	1	
+estockout	9	DATE_OUT	datetime	8	23	3	1	
+estockout	10	OP_BY_ID	nvarchar	8	0	0	1	
+estockout	11	STATUS	nvarchar	2	0	0	1	
+estockout	12	MEMO	ntext	16	0	0	1	
+estockout	13	OTHER_NUM	nvarchar	100	0	0	1	
+estockout	14	TO_COMPANY	nvarchar	4	0	0	1	
+estockout	15	APPR	nvarchar	2	0	0	1	
+estockoutitem	1	ID	int	4	10	0	0	
+estockoutitem	2	STOCK_OUT_ID	nvarchar	40	0	0	1	
+estockoutitem	3	PART_NUM	nvarchar	40	0	0	1	
+estockoutitem	4	QTY_OUT	decimal	9	12	2	1	
+estockoutitem	5	OUT_PRICE	decimal	9	12	2	1	
+estockoutitem	6	ITEM_MEMO	ntext	16	0	0	1	
+estockoutitem	7	COST_PRICE	decimal	9	12	2	1	
+estockouttype	1	ID	int	4	10	0	0	
+estockouttype	2	OUT_TYPE	nvarchar	40	0	0	1	
+estockouttype	3	IS_SYS	nvarchar	2	0	0	1	
+estocks	1	ID	int	4	10	0	0	
+estocks	2	STOCK_ID	nvarchar	100	0	0	1	
+estocks	3	PART_NUM	nvarchar	30	0	0	1	
+estocks	4	QTY_ON_HAND	decimal	9	12	2	1	
+estocks	5	QTY_MIN	decimal	9	12	2	1	
+estocks	6	QTY_MAX	decimal	9	12	2	1	
+estocks	7	MEMO	nvarchar	400	0	0	1	
+esysauthorize	1	ID	int	4	10	0	0	
+esysauthorize	2	MENU_NAME	nvarchar	100	0	0	1	左面菜单名称
+esysauthorize	3	FUNC_NAME	nvarchar	100	0	0	1	模块内功能名称
+esysauthorize	4	FUNC_KEY	nvarchar	100	0	0	0	标识 XXXX-000
+esysauthorize	5	MEMO	nvarchar	1000	0	0	1	
+esysauthorize	6	MDF_ID	nvarchar	24	0	0	1	
+esysauthorize	7	MDF_DATE	datetime	8	23	3	1	
+esyscash	1	ID	int	4	10	0	0	
+esyscash	2	FROM_OP_BY_ID	nvarchar	8	0	0	1	
+esyscash	3	OP_BY_ID	nvarchar	8	0	0	1	
+esyscash	4	DATE_OP	datetime	8	23	3	1	
+esyscash	5	OP_COST	decimal	9	12	2	1	
+esyscash	6	MEMO	nvarchar	1000	0	0	1	
+esyscopypic	1	PIC_ID	nvarchar	100	0	0	0	
+esyscopypic	2	PIC_URL	nvarchar	400	0	0	1	
+esysinto	1	ID	int	4	10	0	0	
+esysinto	2	IP_ADDR	nvarchar	100	0	0	1	
+esysinto	3	DATE_INTO	datetime	8	23	3	1	
+esysinto	4	DATE_INTO2	datetime	8	23	3	1	
+esysinto	5	STATUS	nvarchar	4	0	0	1	
+esysinto	6	USER_ID	nvarchar	20	0	0	1	
+esysmenu	1	ID	char	10	0	0	1	
+esyssetting	1	ID	int	4	10	0	0	
+esyssetting	2	INHOS_YCK_WARR	numeric	9	12	2	1	
+esystemlog	1	ID	int	4	10	0	0	
+esystemlog	2	TITLE	nvarchar	100	0	0	0	
+esystemlog	3	DESCRIPTION	ntext	16	0	0	0	
+esystemlog	4	OPER_ID	nvarchar	100	0	0	0	
+esystemlog	5	OPER_DATE	datetime	8	23	3	0	
+esysuser	1	ID	int	4	10	0	0	
+esysuser	2	USER_ID	nvarchar	20	0	0	0	
+esysuser	3	PASSWORD	nvarchar	200	0	0	1	
+esysuser	4	EMPLOYEE_ID	nvarchar	8	0	0	1	
+esysuser	5	ADMIN	nvarchar	2	0	0	1	
+esysuser	6	POST_ID	nvarchar	20	0	0	1	
+esysuser	7	FUNCSTR	nvarchar	4000	0	0	1	
+esysuser	8	STATUS	nvarchar	2	0	0	1	
+esysuser	9	MDF_ID	nvarchar	8	0	0	1	
+esysuser	10	MDF_DATE	datetime	8	23	3	1	
+esysuser	11	STOCKIDSTR	nvarchar	1000	0	0	1	
+euploadimages	1	ID	int	4	10	0	0	
+euploadimages	2	FILE_NAME	nvarchar	100	0	0	1	新生成的文件名
+euploadimages	3	NEW_FILE_NAME	nvarchar	100	0	0	0	新生成的文件名
+euploadimages	4	MEMO	nvarchar	1000	0	0	1	
+euploadimages	5	UPLOAD_DATE	datetime	8	23	3	1	上传时间
+euploadimages	6	ITEM_ID	nvarchar	40	0	0	1	病历号
+euploadimages	7	DIAGNOSE_NAME	nvarchar	100	0	0	1	项目ID
+euploadimages	8	MDF_ID	nvarchar	8	0	0	1	
+euploadimages	9	MDF_DATE	datetime	8	23	3	1	
+euploadimages	10	LINK_ID	int	4	10	0	1	关联表ID
+euploadimages	11	PARENT_ID	nvarchar	24	0	0	1	
+euploadimages	15	NEW_FILE_NAME_SMALL	nvarchar	100	0	0	1	
+euploadpubpath	1	ID	int	4	10	0	0	
+euploadpubpath	2	PATHNAME	nvarchar	100	0	0	0	
+intermanu	1	ID	int	4	10	0	0	
+intermanu	2	MANUFACTURER	nvarchar	200	0	0	1	
+intermanuitems	1	ID	int	4	10	0	0	
+intermanuitems	2	LINK_ID	int	4	10	0	1	
+intermanuitems	3	MACHINE	nvarchar	200	0	0	1	
+intermanuitems	4	PORT	nvarchar	20	0	0	1	
+intermanuitems	5	BAUD	nvarchar	20	0	0	1	
+intermanuitems	6	DATABITS	nvarchar	20	0	0	1	
+intermanuitems	7	PARITY	nvarchar	20	0	0	1	
+intermanuitems	8	STOPBITS	nvarchar	20	0	0	1	
+intermanuitems	9	SOURCE_TYPE	nvarchar	200	0	0	1	
+intermanuitems	10	DBLINK	nvarchar	200	0	0	1	
+intermanuitems	11	IS_USE	nvarchar	2	0	0	1	
+intermanuitems	12	MACHINE_PART_NUM	nvarchar	2000	0	0	1	
+intermanuitems	13	SAVE_PATH	nvarchar	8000	0	0	1	
+intermanuitems	14	MACHINE_MARK	nvarchar	100	0	0	1	
+intermanuitemsdetail	1	ID	int	4	10	0	0	
+intermanuitemsdetail	2	LINK_ID	int	4	10	0	1	
+intermanuitemsdetail	3	ZB	nvarchar	40	0	0	1	
+intermanuitemsdetail	4	PART_NUM	nvarchar	40	0	0	1	
+intermanuitemsdetail	5	ZB_VAL	decimal	9	12	2	1	
+intermanuitemsdetail	6	ZB_REF_B	decimal	9	12	2	1	
+intermanuitemsdetail	7	ZB_REF_E	decimal	9	12	2	1	
+intermanuitemsdetail	8	ZB_SPEC	nvarchar	100	0	0	1	
+mutibackorder	1	BACK_ID	nvarchar	100	0	0	0	
+mutibackorder	2	DATE_BACK	datetime	8	23	3	1	
+mutibackorder	3	MEMO	nvarchar	1000	0	0	1	
+mutibackorderdetail	1	ID	int	4	10	0	0	
+mutibackorderdetail	2	BACK_ID	nvarchar	100	0	0	1	
+mutibackorderdetail	3	PART_NUM	nvarchar	40	0	0	1	
+mutibackorderdetail	4	QTY_BACK	int	4	10	0	1	
+mutireqorder	1	REQ_ID	nvarchar	100	0	0	0	
+mutireqorder	2	DATE_REQ	datetime	8	23	3	1	
+mutireqorder	3	MEMO	nvarchar	1000	0	0	1	
+mutireqorderdetail	1	ID	int	4	10	0	0	
+mutireqorderdetail	2	REQ_ID	nvarchar	100	0	0	1	
+mutireqorderdetail	3	PART_NUM	nvarchar	40	0	0	1	
+mutireqorderdetail	4	QTY_ORDER	int	4	10	0	1	

@@ -136,6 +136,27 @@
       </el-table-column>
     </el-table>
     <el-empty v-if="!memberCards.length" :image-size="40" description="暂无次卡"/>
+
+    <el-divider content-position="left">储值流水（余额每次变动一条，可对账）</el-divider>
+    <el-table v-if="balanceLogs.length" :data="balanceLogs" border size="small" max-height="220">
+      <el-table-column label="时间" width="150">
+        <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 19) }}</template>
+      </el-table-column>
+      <el-table-column label="类型" width="90">
+        <template #default="s">
+          <el-tag :type="s.row.amount >= 0 ? 'success' : 'danger'" size="small">{{ typeLabel(s.row.changeType) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="变动" width="100">
+        <template #default="s">{{ s.row.amount >= 0 ? '+' : '' }}￥{{ s.row.amount }}</template>
+      </el-table-column>
+      <el-table-column label="变动后" width="100">
+        <template #default="s">￥{{ s.row.balanceAfter ?? '—' }}</template>
+      </el-table-column>
+      <el-table-column label="操作人" width="90" prop="operator" show-overflow-tooltip/>
+      <el-table-column label="备注" min-width="140" prop="note" show-overflow-tooltip/>
+    </el-table>
+    <el-empty v-else :image-size="40" description="暂无流水"/>
   </el-dialog>
   <!--修改、新增时的模态框-->
   <el-dialog v-model="modalView" :title="modalTit" draggable width="60%" :close-on-click-modal="false"
@@ -280,8 +301,8 @@ import {Page} from "@/model/DO/Page";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import {Res} from "@/request/Res";
 import {exportCsv} from "@/utils/ExportUtil";
-import {reqBuyCard, reqCardTemplates, reqClientCards, reqExchangePoints, reqUseCard} from "@/request/MemberApi";
-import {ClientCountCard, CountCardTemplate} from "@/model/entiy/Member";
+import {reqBalanceLog, reqBuyCard, reqCardTemplates, reqClientCards, reqExchangePoints, reqUseCard} from "@/request/MemberApi";
+import {ClientBalanceLog, ClientCountCard, CountCardTemplate} from "@/model/entiy/Member";
 import UpImg from "@/components/UpImg.vue";
 import MyAvatar from "@/components/show/MyAvatar.vue";
 
@@ -336,9 +357,17 @@ const memberClient = ref<Client | null>(null)
 const memberTitle = ref('会员中心')
 const memberCards = ref<ClientCountCard[]>([])
 const cardTemplates = ref<CountCardTemplate[]>([])
+const balanceLogs = ref<ClientBalanceLog[]>([])
 const exchangePts = ref(100)
 const buyTplId = ref<number | null>(null)
 const levelName = (lv?: number | null): string => ['普通', '银卡', '金卡', '钻石'][lv ?? 0] || '普通'
+const typeLabel = (t: string): string => ({
+  RECHARGE: '充值', PAY: '收款扣款', REFUND: '退款回充',
+  BUY_CARD: '购卡', POINTS_EXCHANGE: '积分兑换', MIGRATION_OPEN: '迁移期初'
+}[t] || t)
+const loadBalanceLogs = (clientId: number): void => {
+  reqBalanceLog(1, 50, clientId).then(r => { balanceLogs.value = r.records || [] })
+}
 const openMember = (row: Client): void => {
   memberClient.value = row
   memberTitle.value = `会员中心 - ${row.clientName}`
@@ -346,11 +375,15 @@ const openMember = (row: Client): void => {
   buyTplId.value = null
   memberView.value = true
   reqClientCards(row.clientId).then(r => { memberCards.value = r || [] })
+  loadBalanceLogs(row.clientId)
   if (cardTemplates.value.length === 0)
     reqCardTemplates().then(r => { cardTemplates.value = (r || []).filter(t => t.active) })
 }
 const refreshMember = (): void => {
-  if (memberClient.value) reqClientCards(memberClient.value.clientId).then(r => { memberCards.value = r || [] })
+  if (memberClient.value) {
+    reqClientCards(memberClient.value.clientId).then(r => { memberCards.value = r || [] })
+    loadBalanceLogs(memberClient.value.clientId)
+  }
   sendQuery()
 }
 const doExchange = (): void => {

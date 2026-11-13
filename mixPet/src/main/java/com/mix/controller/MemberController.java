@@ -4,6 +4,7 @@ import com.mix.common.Result;
 import com.mix.model.entity.ClientCountCard;
 import com.mix.model.entity.CountCardTemplate;
 import com.mix.model.entity.MemberLevel;
+import com.mix.model.entity.MemberLevelDiscount;
 import com.mix.security.model.RoleConst;
 import com.mix.service.IMemberService;
 import com.mix.util.StrUtil;
@@ -53,6 +54,20 @@ public class MemberController {
     @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public Result delLevel(@PathVariable Integer id) {
         return Result.choice("删除", memberService.removeById(id));
+    }
+
+    /** 某等级的类别折扣配置（按商品类别 drug_type，开方单价折算用） */
+    @GetMapping("/level/discounts/{levelId}")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    public List<MemberLevelDiscount> levelDiscounts(@PathVariable Integer levelId) {
+        return memberService.listDiscounts(levelId);
+    }
+
+    /** 整体替换某等级的类别折扣配置 */
+    @PutMapping("/level/discounts/{levelId}")
+    @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
+    public Result saveLevelDiscounts(@PathVariable Integer levelId, @RequestBody List<MemberLevelDiscount> discounts) {
+        return memberService.saveDiscounts(levelId, discounts);
     }
 
     // ===== 次卡模板 =====

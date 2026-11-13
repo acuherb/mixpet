@@ -30,6 +30,10 @@ SCRIPTS=(
   feature_20261107_p1_appointment_slot.sql
   feature_20261107_p3_clinical.sql
   feature_20261107_p4_clinical.sql
+  feature_20261113_balance_log.sql
+  feature_20261113_service_items.sql
+  feature_20261113_level_discount.sql
+  feature_20261113_wechat.sql
 )
 for s in "${SCRIPTS[@]}"; do
   f="$PROJ/db-backup/$s"

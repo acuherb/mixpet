@@ -5,13 +5,18 @@ import com.mix.common.Result;
 import com.mix.common.BizException;
 import com.mix.mapper.ClientCountCardMapper;
 import com.mix.mapper.CountCardTemplateMapper;
+import com.mix.mapper.MemberLevelDiscountMapper;
 import com.mix.mapper.MemberLevelMapper;
 import com.mix.model.entity.Client;
 import com.mix.model.entity.ClientCountCard;
 import com.mix.model.entity.CountCardTemplate;
+import com.mix.model.entity.Doctor;
+import com.mix.model.entity.MemberLevelDiscount;
 import com.mix.model.entity.MemberLevel;
+import com.mix.service.IClientBalanceLogService;
 import com.mix.service.IClientService;
 import com.mix.service.IMemberService;
+import com.mix.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,14 +30,27 @@ import java.util.List;
 public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLevel> implements IMemberService {
     private final CountCardTemplateMapper cardTemplateMapper;
     private final ClientCountCardMapper clientCardMapper;
+    private final MemberLevelDiscountMapper levelDiscountMapper;
     private final IClientService clientService;
+    private final IClientBalanceLogService balanceLogService;
 
     @Autowired
     public MemberServiceImpl(CountCardTemplateMapper cardTemplateMapper, ClientCountCardMapper clientCardMapper,
-                             IClientService clientService) {
+                             MemberLevelDiscountMapper levelDiscountMapper, IClientService clientService,
+                             IClientBalanceLogService balanceLogService) {
         this.cardTemplateMapper = cardTemplateMapper;
         this.clientCardMapper = clientCardMapper;
+        this.levelDiscountMapper = levelDiscountMapper;
         this.clientService = clientService;
+        this.balanceLogService = balanceLogService;
+    }
+
+    /** 当前登录操作人姓名（不信任前端传参；顾客自助操作时记顾客名） */
+    private String currentOperator() {
+        Object u = UserUtil.getUser();
+        if (u instanceof Doctor d) return d.getDoctorName();
+        if (u instanceof Client c) return c.getClientName();
+        return null;
     }
 
     @Override
@@ -79,6 +97,76 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
     }
 
     @Override
+    public BigDecimal typeRate(Integer clientLevel, String drugType) {
+        if (drugType == null || drugType.isBlank()) return BigDecimal.ONE;
+        MemberLevel lv = levelOf(clientLevel);
+        if (lv == null) return BigDecimal.ONE;
+        MemberLevelDiscount d = levelDiscountMapper.selectOne(
+                com.baomidou.mybatisplus.core.toolkit.Wrappers.<MemberLevelDiscount>lambdaQuery()
+                        .eq(MemberLevelDiscount::getLevelId, lv.getLevelId())
+                        .eq(MemberLevelDiscount::getItemType, drugType)
+                        .eq(MemberLevelDiscount::getActive, true)
+                        .last("limit 1"));
+        if (d == null || d.getDiscount() == null) return BigDecimal.ONE;
+        BigDecimal r = d.getDiscount();
+        // 防御：折扣率需在 (0,1] 区间，否则按无类别折扣
+        return (r.compareTo(BigDecimal.ZERO) <= 0 || r.compareTo(BigDecimal.ONE) > 0) ? BigDecimal.ONE : r;
+    }
+
+    @Override
+    public List<MemberLevelDiscount> listDiscounts(Integer levelId) {
+        return levelDiscountMapper.selectList(
+                com.baomidou.mybatisplus.core.toolkit.Wrappers.<MemberLevelDiscount>lambdaQuery()
+                        .eq(MemberLevelDiscount::getLevelId, levelId)
+                        .orderByAsc(MemberLevelDiscount::getItemType));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result saveDiscounts(Integer levelId, List<MemberLevelDiscount> discounts) {
+        if (levelId == null) throw new com.mix.common.BizException("缺少等级id");
+        if (this.getById(levelId) == null) throw new com.mix.common.BizException("会员等级不存在");
+        levelDiscountMapper.delete(com.baomidou.mybatisplus.core.toolkit.Wrappers
+                .<MemberLevelDiscount>lambdaQuery().eq(MemberLevelDiscount::getLevelId, levelId));
+        if (discounts != null) {
+            for (MemberLevelDiscount d : discounts) {
+                if (d.getItemType() == null || d.getItemType().isBlank()) continue;
+                BigDecimal r = d.getDiscount() == null ? BigDecimal.ONE : d.getDiscount();
+                // 防御：非法折扣率归一为不打折
+                if (r.compareTo(BigDecimal.ZERO) <= 0 || r.compareTo(BigDecimal.ONE) > 0) r = BigDecimal.ONE;
+                d.setId(null);
+                d.setLevelId(levelId);
+                d.setDiscount(r);
+                if (d.getActive() == null) d.setActive(true);
+                levelDiscountMapper.insert(d);
+            }
+        }
+        return Result.success("类别折扣已保存");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result recharge(Integer clientId, BigDecimal money) {
+        Client client = clientService.getById(clientId);
+        if (client == null) throw new BizException("客户不存在");
+        // 会员等级充值返赠
+        BigDecimal bonus = rechargeBonus(client.getClientLevel(), money);
+        BigDecimal total = money.add(bonus);
+        BigDecimal before = client.getClientBalance() == null ? BigDecimal.ZERO : client.getClientBalance();
+        boolean ok = clientService.lambdaUpdate()
+                .eq(Client::getClientId, clientId)
+                .setSql("client_balance = client_balance + " + total.toPlainString())
+                .update();
+        if (!ok) throw new BizException("充值失败，请重试");
+        balanceLogService.record(clientId, "RECHARGE", total, before, before.add(total),
+                null, null, currentOperator(),
+                bonus.compareTo(BigDecimal.ZERO) > 0 ? "现金充值，返赠 ￥" + bonus.toPlainString() : "现金充值");
+        if (bonus.compareTo(BigDecimal.ZERO) > 0)
+            return Result.success("充值成功，返赠 ￥" + bonus.toPlainString() + "，到账 ￥" + total.toPlainString());
+        return Result.success("充值成功");
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Result buyCard(Integer clientId, Integer templateId) {
         if (clientId == null || templateId == null) throw new BizException("缺少参数");
@@ -106,6 +194,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
             card.setExpireDate(LocalDate.now().plusDays(t.getValidityDays()));
         card.setStatus(true);
         clientCardMapper.insert(card);
+        balanceLogService.record(clientId, "BUY_CARD", price.negate(), balance, balance.subtract(price),
+                "COUNT_CARD", card.getCardId(), currentOperator(), "购买次卡「" + t.getName() + "」");
         return Result.success("购卡成功：「" + t.getName() + "」" + t.getTimes() + "次");
     }
 
@@ -148,6 +238,7 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
         int own = client.getClientPoints() == null ? 0 : client.getClientPoints();
         if (own < points) throw new BizException("积分不足（当前 " + own + " 分）");
         BigDecimal money = BigDecimal.valueOf(points).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+        BigDecimal before = client.getClientBalance() == null ? BigDecimal.ZERO : client.getClientBalance();
         // 条件扣减（client_points >= points 才更新，防并发兑换扣成负数；上面预检只为提前给友好提示）
         boolean ok = clientService.lambdaUpdate()
                 .eq(Client::getClientId, clientId)
@@ -156,6 +247,8 @@ public class MemberServiceImpl extends ServiceImpl<MemberLevelMapper, MemberLeve
                 .setSql("client_balance = client_balance + " + money.toPlainString())
                 .update();
         if (!ok) throw new BizException("积分不足（当前 " + own + " 分）");
+        balanceLogService.record(clientId, "POINTS_EXCHANGE", money, before, before.add(money),
+                null, null, currentOperator(), "积分兑换 " + points + " 分");
         return Result.success("兑换成功：" + points + " 分 → ￥" + money.toPlainString());
     }
 

@@ -19,6 +19,7 @@ import com.mix.model.vo.ImmuneVo;
 import com.mix.service.IImmuneRecordService;
 import com.mix.service.IDrugService;
 import com.mix.service.IMedicalRecordService;
+import com.mix.wx.WeChatTemplateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,14 +37,17 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
     private final DrugMapper drugMapper;
     private final BillMapper billMapper;
     private final IDrugService drugService;
+    private final WeChatTemplateService wxNotify;
 
     @Autowired
     public ImmuneRecordServiceImpl(IMedicalRecordService recordService, DrugMapper drugMapper,
-                                   BillMapper billMapper, IDrugService drugService) {
+                                   BillMapper billMapper, IDrugService drugService,
+                                   WeChatTemplateService wxNotify) {
         this.recordService = recordService;
         this.drugMapper = drugMapper;
         this.billMapper = billMapper;
         this.drugService = drugService;
+        this.wxNotify = wxNotify;
     }
 
     @Override
@@ -139,6 +143,14 @@ public class ImmuneRecordServiceImpl extends ServiceImpl<ImmuneRecordMapper, Imm
         record.setNextTime(next);
         record.setNote(vo.getNote());
         boolean ok = this.save(record);
+        // 微信旁路挂点：免疫到期提醒（下次接种时间已推算时发送；异常不影响登记）
+        if (ok && next != null) {
+            try {
+                wxNotify.sendImmuneRemind(clientId, drug.getDrugName(), next);
+            } catch (Exception e) {
+                // 微信旁路：吞异常
+            }
+        }
         if (ok) {
             return Result.success("接种登记成功，疫苗费 ￥" + fee.toPlainString()
                     + (vo.getRecordId() != null ? " 已计入病历 #" + vo.getRecordId() + " 账单" : ""));

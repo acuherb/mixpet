@@ -76,3 +76,29 @@ ai:
   enabled: false
   provider: none
   # apiKey 走环境变量 AI_API_KEY，不写入本文件、不提交
+---
+# 微信能力（P0-3 骨架，旁路设计：enabled=false 时支付/模板消息全链路关闭，业务零影响）
+# 接入清单：①商户平台拿 mch-id/mch-serial-no/api-v3-key + 商户私钥文件（apiclient_key.pem）
+#           ②公众号后台拿 app-id/app-secret，配置网页授权域名与回调地址
+#           ③申请 4 个模板消息拿 template-id（key 对应 WeChatTemplateService）
+#           ④把 enabled 置 true，notify-url/oauth-redirect-uri 填公网可达地址（须 https）
+mix:
+  wx:
+    enabled: false # 全局开关，false 时所有微信接口直接抛"未启用"/静默跳过
+    app-id: ${WX_APP_ID:wx-your-appid-placeholder}
+    app-secret: ${WX_APP_SECRET:your-secret-placeholder}
+    mch-id: ${WX_MCH_ID:'1900000000'}
+    mch-serial-no: ${WX_MCH_SERIAL_NO:your-serial-placeholder}
+    api-v3-key: ${WX_API_V3_KEY:your-api-v3-key-placeholder}
+    private-key-path: ${WX_PRIVATE_KEY_PATH:/opt/mixpet/cert/apiclient_key.pem}
+    notify-url: ${WX_NOTIFY_URL:https://your-domain.com/wx/pay/notify}
+    oauth-redirect-uri: ${WX_OAUTH_REDIRECT:https://your-domain.com/wx/auth/callback}
+    template-ids:
+      # ①挂号成功通知（挂点：AppointmentServiceImpl.reserve 新建）
+      register-success: ${WX_TPL_REGISTER:placeholder}
+      # ②就诊提醒（挂点：MedicalRecordServiceImpl 接诊建档）
+      visit-remind: ${WX_TPL_VISIT:placeholder}
+      # ③缴费提醒（挂点：MedicalRecordServiceImpl 生成待付账单）
+      pay-remind: ${WX_TPL_PAY:placeholder}
+      # ④免疫到期提醒（挂点：ImmuneRecordServiceImpl.saveImmune 下次接种）
+      immune-remind: ${WX_TPL_IMMUNE:placeholder}

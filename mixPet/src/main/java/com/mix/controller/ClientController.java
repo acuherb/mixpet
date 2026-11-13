@@ -1,11 +1,14 @@
 package com.mix.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.mix.annotation.AuditLog;
 import com.mix.common.Result;
 import com.mix.common.VerifyCodeStore;
 import com.mix.util.JwtUtil;
 import com.mix.model.entity.Client;
+import com.mix.model.entity.ClientBalanceLog;
 import com.mix.model.dto.NameDo;
 import com.mix.model.vo.EmailVo;
 import com.mix.model.vo.PasswordVo;
@@ -14,6 +17,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import com.mix.security.model.RoleConst;
 import com.mix.service.AvatarFileService;
+import com.mix.service.IClientBalanceLogService;
 import com.mix.service.IClientService;
 import com.mix.service.IMemberService;
 import com.mix.util.StrUtil;
@@ -42,16 +46,19 @@ public class ClientController {
     private static final BigDecimal RECHARGE_MAX = new BigDecimal("100000");
     private final IClientService clientService;
     private final IMemberService memberService;
+    private final IClientBalanceLogService balanceLogService;
     private final AvatarFileService avatarFileService;
     private final JwtUtil jwtUtil;
     private final VerifyCodeStore verifyCodeStore;
 
     @Autowired
     public ClientController(IClientService clientService, IMemberService memberService,
+                            IClientBalanceLogService balanceLogService,
                             AvatarFileService avatarFileService, JwtUtil jwtUtil,
                             VerifyCodeStore verifyCodeStore) {
         this.clientService = clientService;
         this.memberService = memberService;
+        this.balanceLogService = balanceLogService;
         this.avatarFileService = avatarFileService;
         this.jwtUtil = jwtUtil;
         this.verifyCodeStore = verifyCodeStore;
@@ -132,18 +139,18 @@ public class ClientController {
         if (clientId == null) return Result.error("缺少客户id");
         if (money == null || money.compareTo(BigDecimal.ZERO) <= 0) return Result.error("充值金额必须大于0");
         if (money.compareTo(RECHARGE_MAX) > 0) return Result.error("单次充值不可超过10万元");
-        Client client = clientService.getById(clientId);
-        if (client == null) return Result.error("客户不存在");
-        // 会员等级充值返赠
-        BigDecimal bonus = memberService.rechargeBonus(client.getClientLevel(), money);
-        BigDecimal total = money.add(bonus);
-        boolean ok = clientService.lambdaUpdate()
-                .eq(Client::getClientId, clientId)
-                .setSql("client_balance = client_balance + " + total.toPlainString())
-                .update();
-        if (ok && bonus.compareTo(BigDecimal.ZERO) > 0)
-            return Result.success("充值成功，返赠 ￥" + bonus.toPlainString() + "，到账 ￥" + total.toPlainString());
-        return Result.choice("充值", ok);
+        return memberService.recharge(clientId, money);
+    }
+
+    /**
+     * 会员储值流水分页（对账用：余额每次变动一条，前/后余额成对落库）
+     */
+    @GetMapping("/balanceLog")
+    @Secured({RoleConst.NURSE, RoleConst.DOCTOR, RoleConst.MANAGER})
+    public IPage<ClientBalanceLog> balanceLog(int numPage, int pageSize, Integer clientId) {
+        return balanceLogService.page(new Page<>(numPage, pageSize), Wrappers.<ClientBalanceLog>lambdaQuery()
+                .eq(clientId != null, ClientBalanceLog::getClientId, clientId)
+                .orderByDesc(ClientBalanceLog::getLogId));
     }
 
     @PutMapping

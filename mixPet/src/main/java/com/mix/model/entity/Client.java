@@ -85,6 +85,9 @@ public class Client implements Serializable {
     /** 用户照片名称 */
     private String clientPhoto;
 
+    /** 微信openid（公众号OAuth绑定，JSAPI支付与模板消息用） */
+    private String clientOpenid;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
@@ -161,6 +164,9 @@ public class Client implements Serializable {
 
     public String getClientPhoto() { return clientPhoto; }
     public void setClientPhoto(String clientPhoto) { this.clientPhoto = clientPhoto; }
+
+    public String getClientOpenid() { return clientOpenid; }
+    public void setClientOpenid(String clientOpenid) { this.clientOpenid = clientOpenid; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

@@ -54,3 +54,6 @@ report/
 
 # 数据备份运行时文件（管理后台生成的全库 .sql，含敏感数据，勿入库）
 db-backup/runtime/
+
+# CodeBuddy 工作区数据（会话记忆/团队协作缓存，本地工具产物，勿入库）
+.codebuddy/

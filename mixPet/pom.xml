@@ -88,6 +88,12 @@
             <version>0.11.5</version>
             <scope>runtime</scope>
         </dependency>
+        <!-- 微信支付 V3 官方 SDK（P0-3 骨架）：JSAPI 下单 / 回调验签解密；参数占位未启用时不初始化 -->
+        <dependency>
+            <groupId>com.github.wechatpay-apiv3</groupId>
+            <artifactId>wechatpay-java</artifactId>
+            <version>0.2.14</version>
+        </dependency>
         <!-- 参数校验：JSR-380 / Hibernate Validator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

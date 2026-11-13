@@ -9,8 +9,12 @@ import com.mix.mapper.DoctorMapper;
 import com.mix.model.dto.AppointmentDto;
 import com.mix.model.dto.AppointmentDto2;
 import com.mix.model.entity.Appointment;
+import com.mix.model.entity.Client;
+import com.mix.model.entity.Doctor;
 import com.mix.service.IAppointmentService;
+import com.mix.service.IClientService;
 import com.mix.service.IScheduleService;
+import com.mix.wx.WeChatTemplateService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,14 +27,19 @@ import java.util.List;
 public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appointment> implements IAppointmentService {
     private final DoctorMapper doctorMapper;
     private final IScheduleService scheduleService;
+    private final IClientService clientService;
+    private final WeChatTemplateService wxNotify;
 
     /** 每日硬上限（兜底），真实容量以 doctor_schedule.max_count 为准 */
     @Value("${appointment.max-per-day:20}")
     private int maxPerDay;
 
-    public AppointmentServiceImpl(DoctorMapper doctorMapper, IScheduleService scheduleService) {
+    public AppointmentServiceImpl(DoctorMapper doctorMapper, IScheduleService scheduleService,
+                                  IClientService clientService, WeChatTemplateService wxNotify) {
         this.doctorMapper = doctorMapper;
         this.scheduleService = scheduleService;
+        this.clientService = clientService;
+        this.wxNotify = wxNotify;
     }
 
     @Override
@@ -98,7 +107,21 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (periodCnt + 1 > slotLimit)
             throw new BizException("该医生该时段号源已满（最多 " + slotLimit + " 个），请改选其他时段");
 
-        return isNew ? this.save(appoint) : this.updateById(appoint);
+        boolean ok = isNew ? this.save(appoint) : this.updateById(appoint);
+        // 微信旁路挂点：挂号成功通知（enabled=false/未绑 openid 自动跳过，异常不影响挂号事务）
+        if (ok && isNew) {
+            try {
+                Doctor d = doctorMapper.selectById(appoint.getDoctorId());
+                Client c = clientService.getById(appoint.getClientId());
+                wxNotify.sendAppointmentSuccess(appoint.getClientId(),
+                        c == null ? null : c.getClientName(),
+                        d == null ? null : d.getDoctorName(),
+                        appoint.getAppointmentDate());
+            } catch (Exception e) {
+                // 微信旁路：吞异常，主流程继续
+            }
+        }
+        return ok;
     }
 
     @Override
