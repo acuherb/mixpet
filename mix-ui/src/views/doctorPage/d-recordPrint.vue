@@ -129,7 +129,6 @@ import {surgeryStatusText} from "@/model/entiy/Surgery";
 import {reqPetOne} from "@/request/PetApi";
 import {Pet} from "@/model/entiy/Pet";
 import {ElMessage} from "element-plus";
-import html2pdf from 'html2pdf.js';
 import {reqHospitalSetting} from "@/request/SettingApi";
 import {emptyHospital, HospitalSetting} from "@/model/entiy/HospitalSetting";
 
@@ -184,16 +183,17 @@ const doPrint = (): void => window.print()
 const pdfing = ref(false)
 const exportPdf = (): void => {
   const el = document.querySelector('.rp-sheet') as HTMLElement | null
-  if (!el || !full.value) return
+  const f = full.value
+  if (!el || !f) return
   pdfing.value = true
   const tplName = '现代报告'
-  html2pdf().set({
+  import('html2pdf.js').then(({default: html2pdf}) => html2pdf().set({
     margin: 8,
-    filename: `病历-No.${full.value.record.recordId}-${tplName}.pdf`,
+    filename: `病历-No.${f.record.recordId}-${tplName}.pdf`,
     image: {type: 'jpeg', quality: 0.95},
     html2canvas: {scale: 2},
     jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-  }).from(el).save().catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
+  }).from(el).save()).catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
 }
 </script>
 

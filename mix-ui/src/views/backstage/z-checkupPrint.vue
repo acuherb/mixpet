@@ -112,7 +112,6 @@
 import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
-import html2pdf from 'html2pdf.js'
 import {useBrand} from '@/utils/UseBrand'
 import {
   CheckupMeta, CheckupResults, CheckupSchema, emptySchema, parseMeta, parseResults, parseSchema
@@ -144,13 +143,13 @@ const exportPdf = (): void => {
   const el = document.querySelector('.rp-sheet') as HTMLElement | null
   if (!el) return
   pdfing.value = true
-  html2pdf().set({
+  import('html2pdf.js').then(({default: html2pdf}) => html2pdf().set({
     margin: 8,
     filename: `${schema.value.title || '体检表'}-No.${meta.value.checkupNo || '预览'}.pdf`,
     image: {type: 'jpeg', quality: 0.95},
     html2canvas: {scale: 2},
     jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-  }).from(el).save()
+  }).from(el).save())
       .catch(() => ElMessage.error('PDF 导出失败，请改用「打印 / 另存为 PDF」'))
       .finally(() => { pdfing.value = false })
 }

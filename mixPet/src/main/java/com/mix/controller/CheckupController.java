@@ -71,11 +71,8 @@ public class CheckupController {
     @DeleteMapping("/template/{id}")
     @Secured({RoleConst.MANAGER, RoleConst.ADMIN})
     public Result deleteTemplate(@PathVariable Integer id) {
-        CheckupTemplate t = new CheckupTemplate();
-        t.setTemplateId(id);
-        t.setIsDel(1L);
-        t.setActive(false);
-        return Result.choice("删除", checkupService.updateById(t));
+        // 走 MP 逻辑删除，别用 updateById 手设 isDel（会生成空 SET 的非法 SQL）
+        return Result.choice("删除", checkupService.removeById(id));
     }
 
     // ── 体检报告 ──────────────────────────────────────────

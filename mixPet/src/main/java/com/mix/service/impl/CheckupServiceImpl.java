@@ -131,10 +131,10 @@ public class CheckupServiceImpl extends ServiceImpl<CheckupTemplateMapper, Check
     @Override
     public boolean removeCheckup(Integer checkupId) {
         if (checkupId == null) return false;
-        CheckupRecord r = new CheckupRecord();
-        r.setCheckupId(checkupId);
-        r.setIsDel(1L);
-        return recordMapper.updateById(r) > 0;
+        // 项目开启了 MP 全局逻辑删除（is_del）。必须用 deleteById 让 MP 生成
+        // UPDATE ... SET is_del=1；若手动 updateById 设 isDel，逻辑删除字段不进 SET，
+        // 会生成「UPDATE checkup_record  WHERE ...」空 SET 的非法 SQL（曾报 BadSqlGrammarException）。
+        return recordMapper.deleteById(checkupId) > 0;
     }
 
     /** 顾客只能读自己名下宠物的报告；员工不限制 */
