@@ -40,6 +40,7 @@ SCRIPTS=(
   feature_20261113_quarantine.sql
   feature_20261113_legacy_keys.sql
   feature_20261114_checkup.sql
+  feature_20261114_foster.sql
 )
 for s in "${SCRIPTS[@]}"; do
   f="$PROJ/db-backup/$s"

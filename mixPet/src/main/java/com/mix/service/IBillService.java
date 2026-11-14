@@ -40,4 +40,12 @@ public interface IBillService extends IService<Bill> {
      */
     Integer addCharge(Integer clientId, Integer petId, Integer recordId,
                       BigDecimal amount, String feeColumn);
+
+    /**
+     * 寄养接回结算专用：金额记入独立的 fee_foster 分项，并把账单回指 foster_id 便于对账。
+     * 入参是押金冲抵后的净额；净额为 0 时调用方不应调用本方法。
+     *
+     * @return 账单 id
+     */
+    Integer addChargeForFoster(Integer clientId, Integer petId, BigDecimal amount, Integer fosterId);
 }

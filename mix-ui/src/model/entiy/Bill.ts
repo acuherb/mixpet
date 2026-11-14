@@ -13,6 +13,10 @@ export interface Bill {
     feeHospital: number | null;
     feeImage: number | null;
     feePackage: number | null;
+    /** 寄养费（接回结算并入的独立分项） */
+    feeFoster?: number | null;
+    /** 关联寄养单id */
+    fosterId?: number | null;
     feeSurgery: number | null;
     totalMoney: number | null;
     discount: number | null;

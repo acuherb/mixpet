@@ -14,9 +14,9 @@
               {{ pet.petVariety }}
             </div>
             <div><span>{{ pet.petInfo }}</span></div>
+            <div>状态：<span>{{ fosterStatusText(pet.status) }}</span></div>
             <div>备注：<span>{{ pet.fosterInfo }}</span></div>
-            <div>寄养人：<span>{{ pet.clientName }}</span></div>
-            <div>到期时间：<span>{{ pet.fosterTerm }}</span></div>
+            <div>预计接回：<span>{{ pet.fosterTerm }}</span></div>
           </div>
         </div>
       </div>
@@ -28,6 +28,7 @@
 /*=====前台的寄养卡片批量展示=====*/
 import {getAge} from "@/utils/TimeUtil";
 import {FosterCardDto} from "@/model/DO/FosterCardDto";
+import {fosterStatusText} from "@/model/entiy/Foster";
 import MyRow from "@/components/row/MyRow.vue";
 
 // 接收参数：宠物卡片

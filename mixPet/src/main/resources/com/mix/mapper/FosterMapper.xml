@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mix.mapper.FosterMapper">
-    <!--分页查询-->
+    <!-- 后台分页：补结算明细列，供列表显示天数/定价/冲抵/账单 -->
     <select id="selectFosterPage" resultType="com.mix.model.dto.FosterDto">
         select
-        foster_id, foster_code,f.pet_id, f.client_id, foster_term, foster_money, foster_info,
+        f.foster_id, f.foster_code, f.pet_id, f.client_id, f.foster_term, f.foster_money, f.foster_info,
         f.in_date, f.back_date, f.daily_fee, f.clean_fee, f.meal_fee, f.status,
-        p.pet_name,c.client_name
-        FROM foster f,pet p,client c
+        f.day_count, f.settle_money, f.deposit_used, f.refund_money, f.charge_money, f.adjust_note, f.bill_id,
+        p.pet_name, c.client_name
+        FROM foster f, pet p, client c
         WHERE f.is_del = 0
         AND f.pet_id = p.pet_id
         AND f.client_id = c.client_id
@@ -19,41 +20,82 @@
             <bind name="petKw" value="'%'+petName+'%'"/>
             and (p.pet_name like #{petKw} or p.pet_variety like #{petKw})
         </if>
+        ORDER BY f.foster_id DESC
     </select>
-    <!--查询被寄养宠物信息-->
+
+    <!-- 首页/前台「寄养宠物展示」：匿名可见的院内宣传墙。
+         只展示待入托/寄养中，且刻意不查询寄养人姓名等个人信息（脱敏） -->
     <select id="fosterPet" resultType="com.mix.model.dto.FosterPetDto">
-        SELECT foster_id,
-               foster_code,
-               f.pet_id,
-               f.client_id,
-               foster_term,
-               foster_money,
-               foster_info,
-               p.pet_name,
-               p.pet_variety,
-               p.pet_sex,
-               p.pet_birthday,
-               p.pet_status,
-               p.pet_info,
-               p.pet_photo,
-               c.client_name
-        FROM foster f,
-             pet p,
-             client c
+        SELECT f.foster_id, f.foster_code, f.pet_id, f.client_id, f.foster_term,
+               f.foster_info, f.in_date, f.status,
+               p.pet_name, p.pet_variety, p.pet_sex, p.pet_birthday,
+               p.pet_status, p.pet_info, p.pet_photo
+        FROM foster f, pet p
         WHERE f.is_del = 0
           AND f.pet_id = p.pet_id
-          AND f.client_id = c.client_id
-          AND foster_term >= now()
+          AND f.status IN (0, 1)
     </select>
-    <!-- 更新寄养表，且不更新订单号-->
+
+    <!-- 顾客「我的寄养」：强制按 client_id 过滤 -->
+    <select id="selfFoster" resultType="com.mix.model.dto.FosterDto">
+        select
+        f.foster_id, f.foster_code, f.pet_id, f.client_id, f.foster_term, f.foster_money, f.foster_info,
+        f.in_date, f.back_date, f.daily_fee, f.clean_fee, f.meal_fee, f.status,
+        f.day_count, f.settle_money, f.deposit_used, f.refund_money, f.charge_money, f.adjust_note, f.bill_id,
+        p.pet_name, c.client_name
+        FROM foster f, pet p, client c
+        WHERE f.is_del = 0
+          AND f.client_id = #{clientId}
+          AND f.pet_id = p.pet_id
+          AND f.client_id = c.client_id
+        ORDER BY f.foster_id DESC
+        LIMIT 100
+    </select>
+
+    <!-- 顾客单份详情：同时带 client_id 条件，越权返回 null -->
+    <select id="selfOne" resultType="com.mix.model.dto.FosterDto">
+        select
+        f.foster_id, f.foster_code, f.pet_id, f.client_id, f.foster_term, f.foster_money, f.foster_info,
+        f.in_date, f.back_date, f.daily_fee, f.clean_fee, f.meal_fee, f.status,
+        f.day_count, f.settle_money, f.deposit_used, f.refund_money, f.charge_money, f.adjust_note, f.bill_id,
+        p.pet_name, c.client_name
+        FROM foster f, pet p, client c
+        WHERE f.is_del = 0
+          AND f.foster_id = #{fosterId}
+          AND f.client_id = #{clientId}
+          AND f.pet_id = p.pet_id
+          AND f.client_id = c.client_id
+    </select>
+
+    <!-- 员工单份详情（打印结算单用），无条件可见 -->
+    <select id="staffOne" resultType="com.mix.model.dto.FosterDto">
+        select
+        f.foster_id, f.foster_code, f.pet_id, f.client_id, f.foster_term, f.foster_money, f.foster_info,
+        f.in_date, f.back_date, f.daily_fee, f.clean_fee, f.meal_fee, f.status,
+        f.day_count, f.settle_money, f.deposit_used, f.refund_money, f.charge_money, f.adjust_note, f.bill_id,
+        p.pet_name, c.client_name
+        FROM foster f, pet p, client c
+        WHERE f.is_del = 0
+          AND f.foster_id = #{fosterId}
+          AND f.pet_id = p.pet_id
+          AND f.client_id = c.client_id
+    </select>
+
+    <!-- 编辑寄养单：不更新订单号；补 in_date/status/三项单价，否则「开始寄养」状态写不进库。
+         结算专用列（day_count/settle_money/...）不允许从这里改，只能由接回结算写入。 -->
     <update id="updateFoster">
         UPDATE foster
-        SET pet_id=#{petId},
-            client_id=#{clientId},
-            foster_term=#{fosterTerm},
-            foster_money=#{fosterMoney},
-            foster_info=#{fosterInfo},
-            update_time=#{updateTime}
+        SET pet_id = #{petId},
+            client_id = #{clientId},
+            foster_term = #{fosterTerm},
+            foster_money = #{fosterMoney},
+            foster_info = #{fosterInfo},
+            <if test="inDate != null">in_date = #{inDate},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="dailyFee != null">daily_fee = #{dailyFee},</if>
+            <if test="cleanFee != null">clean_fee = #{cleanFee},</if>
+            <if test="mealFee != null">meal_fee = #{mealFee},</if>
+            update_time = NOW()
         WHERE foster_id = #{fosterId}
           AND is_del = 0
     </update>

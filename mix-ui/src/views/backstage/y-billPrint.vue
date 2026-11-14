@@ -140,6 +140,7 @@ const feeRows = computed(() => {
   add('影像检查费', r.feeImage)
   add('住院费', r.feeHospital, '1 天')
   add('套餐费', r.feePackage)
+  add('寄养费', r.feeFoster)
   add('手术费', r.feeSurgery)
   add('疫苗费', r.feeImmune)
   return list

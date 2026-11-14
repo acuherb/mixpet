@@ -23,6 +23,10 @@
         <span>账单明细</span>
       </label>
       <label>
+        <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientFoster">
+        <span>我的寄养</span>
+      </label>
+      <label>
         <input v-model="checkValue" name="radio" type="radio" value="/reception/clientCenter/clientNotice">
         <span>消息通知<i v-if="unreadCount > 0" class="nav-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</i></span>
       </label>

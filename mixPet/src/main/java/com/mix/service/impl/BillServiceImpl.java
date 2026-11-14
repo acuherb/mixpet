@@ -64,11 +64,22 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
     /** 费用分项列名白名单：禁止把前端字符串直接拼进 SQL */
     private static final java.util.Set<String> FEE_COLUMNS = java.util.Set.of(
             "fee_register", "fee_treat", "fee_drug", "fee_lab", "fee_hospital",
-            "fee_image", "fee_package", "fee_surgery", "fee_immune");
+            "fee_image", "fee_package", "fee_surgery", "fee_immune", "fee_foster");
 
     @Override
     public Integer addCharge(Integer clientId, Integer petId, Integer recordId,
                              BigDecimal amount, String feeColumn) {
+        return doAddCharge(clientId, petId, recordId, amount, feeColumn, null);
+    }
+
+    @Override
+    public Integer addChargeForFoster(Integer clientId, Integer petId,
+                                      BigDecimal amount, Integer fosterId) {
+        return doAddCharge(clientId, petId, null, amount, "fee_foster", fosterId);
+    }
+
+    private Integer doAddCharge(Integer clientId, Integer petId, Integer recordId,
+                                BigDecimal amount, String feeColumn, Integer fosterId) {
         if (clientId == null || petId == null) throw new BizException("缺少客户或宠物信息");
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0)
             throw new BizException("计费金额必须大于0");
@@ -91,6 +102,7 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
                     .eq(Bill::getPayStatus, false)
                     .setSql(feeColumn + " = COALESCE(" + feeColumn + ", 0) + " + amt)
                     .setSql("total_money = COALESCE(total_money, 0) + " + amt)
+                    .setSql(fosterId != null, "foster_id = COALESCE(foster_id, " + fosterId + ")")
                     .update();
             return unpaid.getBillId();
         }
@@ -108,6 +120,8 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
         bill.setFeePackage(BigDecimal.ZERO);
         bill.setFeeSurgery(BigDecimal.ZERO);
         bill.setFeeImmune(BigDecimal.ZERO);
+        bill.setFeeFoster(BigDecimal.ZERO);
+        bill.setFosterId(fosterId);
         bill.setTotalMoney(amount);
         bill.setDiscount(memberService.discountOf(clientId));
         bill.setPayStatus(false);
@@ -122,6 +136,7 @@ public class BillServiceImpl extends ServiceImpl<BillMapper, Bill> implements IB
             case "fee_package" -> bill.setFeePackage(amount);
             case "fee_surgery" -> bill.setFeeSurgery(amount);
             case "fee_immune" -> bill.setFeeImmune(amount);
+            case "fee_foster" -> bill.setFeeFoster(amount);
             default -> throw new BizException("非法费用分项");
         }
         this.save(bill);

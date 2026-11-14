@@ -124,6 +124,10 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "z-checkupPrint",
         component: () => import('@/views/backstage/z-checkupPrint.vue'),
     }, {
+        // 寄养结算单打印（员工端；顾客走 /reception/clientFosterPrint）
+        path: "z-fosterPrint",
+        component: () => import('@/views/backstage/z-fosterPrint.vue'),
+    }, {
         // 检验/影像报告单打印
         path: "z-examReport",
         component: () => import('@/views/backstage/z-examReport.vue'),

@@ -40,6 +40,10 @@ export const reception: RouteRecordRaw[] = [
         path: "clientCheckupPrint",
         component: () => import('@/views/backstage/z-checkupPrint.vue')
     }, {
+        // 顾客端寄养结算单（独立页；后端按 clientId 做归属校验）
+        path: "clientFosterPrint",
+        component: () => import('@/views/backstage/z-fosterPrint.vue')
+    }, {
         // 个人中心
         path: "clientCenter",
         component: () => import('@/views/reception/clientCenter.vue'),
@@ -64,6 +68,10 @@ export const reception: RouteRecordRaw[] = [
                 // 个人中心的站内通知（报告出具主动触达）
                 path: "clientNotice",
                 component: () => import('@/views/reception/clientNotice.vue')
+            }, {
+                // 个人中心的寄养状态/每日记录与照片/结算明细
+                path: "clientFoster",
+                component: () => import('@/views/reception/clientFoster.vue')
             },
         ],
     }, {

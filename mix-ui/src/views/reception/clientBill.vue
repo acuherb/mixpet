@@ -73,6 +73,7 @@ const feesOf = (b: Bill): { label: string; value: number }[] => [
   {label: '影像费', value: b.feeImage ?? 0},
   {label: '住院费', value: b.feeHospital ?? 0},
   {label: '套餐费', value: b.feePackage ?? 0},
+  {label: '寄养费', value: b.feeFoster ?? 0},
   {label: '手术费', value: b.feeSurgery ?? 0}
 ]
 onMounted(() => {

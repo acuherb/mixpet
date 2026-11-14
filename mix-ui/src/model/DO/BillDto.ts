@@ -27,6 +27,8 @@ export interface BillDto {
     payBy?: string | null;
     /** 疫苗费（免疫接种计入） */
     feeImmune?: number | null;
+    feeFoster?: number | null;
+    fosterId?: number | null;
     /** 发药状态 0未发 1已发 */
     dispenseStatus?: boolean;
     /** 发药核对人 */

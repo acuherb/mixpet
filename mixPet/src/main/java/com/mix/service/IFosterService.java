@@ -2,73 +2,56 @@ package com.mix.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.mix.common.Result;
 import com.mix.model.dto.FosterDto;
 import com.mix.model.dto.FosterPetDto;
-import com.mix.common.Result;
 import com.mix.model.entity.Foster;
+import com.mix.model.entity.FosterLog;
+import com.mix.model.entity.FosterPhoto;
+import com.mix.model.vo.FosterBackVo;
+import com.mix.model.vo.FosterLogVo;
 
-import java.time.LocalDate;
 import java.util.List;
 
 /**
- * <p>
- * 寄养表 服务类
- * </p>
- *
- * @author MixJade
- * @since 2023-01-12
+ * 寄养服务：登记 → 入托 → 每日照护记录/照片 → 接回结算 → 账单与通知。
  */
 public interface IFosterService extends IService<Foster> {
-    /**
-     * 单个逻辑删除
-     *
-     * @param fosterId 寄养单id
-     * @return 是否删除成功
-     */
+
     boolean deleteById(Integer fosterId);
 
-    /**
-     * 批量逻辑删除
-     *
-     * @param idGroup 一组id
-     * @return 是否批量删除成功
-     */
     boolean deleteByIds(List<Integer> idGroup);
 
-    /**
-     * 分页查询
-     *
-     * @param clientName 用户名
-     * @param petName    宠物名
-     * @param numPage    当前页码
-     * @param pageSize   当前一页的最大条数
-     * @return 数据的总长度，与分页查询结果
-     */
     IPage<FosterDto> selectByPage(String clientName, String petName, int numPage, int pageSize);
 
-    /**
-     * 用户前台：查询被寄养宠物信息
-     *
-     * @return 被寄养宠物的卡片信息
-     */
+    /** 前台匿名展示墙（脱敏，只含待入托/寄养中） */
     IPage<FosterPetDto> fosterPet(int pageSize);
 
-    /**
-     * 在新增寄养信息时，查询是否已有在寄养中的订单
-     *
-     * @param petId 待寄养宠物的ID
-     * @return 订单数量
-     */
     Integer haveFoster(Integer petId);
 
-    /**
-     * 更新寄养表，且不更新订单号
-     *
-     * @param foster 寄养信息
-     * @return 修改成功
-     */
     boolean updateFoster(Foster foster);
 
-    /** 接回结算：后端重算费用、状态抢占、并入统一账单 */
-    Result back(Integer fosterId, LocalDate backDate);
+    /** 待入托 → 寄养中，写入实际入托日并通知主人 */
+    Result start(Integer fosterId);
+
+    /** 接回结算：天数×单价定价（可人工改价留痕）、押金冲抵、净额入账、账单回指、通知 */
+    Result back(Integer fosterId, FosterBackVo vo);
+
+    /** 顾客「我的寄养」，强制按 client_id 过滤 */
+    List<FosterDto> selfList(Integer clientId);
+
+    FosterDto selfOne(Integer fosterId, Integer clientId);
+
+    /** 员工单份详情（打印结算单） */
+    FosterDto staffOne(Integer fosterId);
+
+    /** 每日照护记录/照片；clientId 非空时按寄养归属校验，越权返回空 */
+    List<FosterLog> logsOf(Integer fosterId, Integer clientId);
+
+    List<FosterPhoto> photosOf(Integer fosterId, Integer clientId);
+
+    Result addLog(FosterLogVo vo, String recorder);
+
+    /** 单张照片读取（下载前置归属校验） */
+    FosterPhoto photoForRead(Integer photoId, Integer clientId);
 }

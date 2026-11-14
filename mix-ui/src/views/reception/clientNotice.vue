@@ -14,9 +14,12 @@
         <span class="ns-time">{{ (n.createTime || '').replace('T', ' ').slice(0, 16) }}</span>
       </div>
       <p>{{ n.content }}</p>
-      <el-tag v-if="!n.isRead" size="small" type="danger" effect="plain">未读 · 点击查看报告</el-tag>
+      <el-tag v-if="!n.isRead" size="small" type="danger" effect="plain">未读 · 点击查看详情</el-tag>
       <el-button v-if="n.refType === 'lab_order' || n.refType === 'image_order'" link type="primary" size="small"
                  @click.stop="goPet">前往宠物档案查看
+      </el-button>
+      <el-button v-if="n.refType === 'foster'" link type="primary" size="small"
+                 @click.stop="goFoster">查看我的寄养
       </el-button>
     </div>
   </div>
@@ -53,6 +56,7 @@ const readAll = (): void => {
   }).catch(() => ElMessage.error('操作失败'))
 }
 const goPet = (): void => { router.push('/reception/clientCenter/clientPet') }
+const goFoster = (): void => { router.push('/reception/clientCenter/clientFoster') }
 onMounted(loadList)
 </script>
 

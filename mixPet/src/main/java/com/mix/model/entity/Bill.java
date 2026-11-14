@@ -43,6 +43,10 @@ public class Bill implements Serializable {
     private BigDecimal discount;
     /** 疫苗费（免疫接种计入） */
     private BigDecimal feeImmune;
+    /** 寄养费（接回结算并入，独立分项便于对账） */
+    private BigDecimal feeFoster;
+    /** 关联寄养单id（可追溯到 foster） */
+    private Integer fosterId;
     /** 优惠金额 = totalMoney × (1 - discount)（DB 生成列：禁止写入，防 updateById 时报 Generated column 错） */
     @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private BigDecimal discountMoney;

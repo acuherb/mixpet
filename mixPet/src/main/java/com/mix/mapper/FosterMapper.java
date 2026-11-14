@@ -6,7 +6,10 @@ import com.mix.model.dto.FosterDto;
 import com.mix.model.dto.FosterPetDto;
 import com.mix.model.entity.Foster;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+
+import java.util.List;
 
 /**
  * <p>
@@ -32,4 +35,13 @@ public interface FosterMapper extends BaseMapper<Foster> {
      * @return 修改成功
      */
     boolean updateFoster(Foster foster);
+
+    /** 顾客「我的寄养」列表，强制按 client_id 过滤 */
+    List<FosterDto> selfFoster(@Param("clientId") Integer clientId);
+
+    /** 顾客单份寄养详情，越权返回 null */
+    FosterDto selfOne(@Param("fosterId") Integer fosterId, @Param("clientId") Integer clientId);
+
+    /** 员工单份寄养详情（打印结算单） */
+    FosterDto staffOne(@Param("fosterId") Integer fosterId);
 }

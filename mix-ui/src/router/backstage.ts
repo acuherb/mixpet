@@ -71,6 +71,10 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-checkupPrint",
         redirect: "/doctorPage/z-checkupPrint"
     }, {
+        // 寄养结算单打印
+        path: "z-fosterPrint",
+        redirect: "/doctorPage/z-fosterPrint"
+    }, {
         // 检验/影像报告单打印
         path: "z-examReport",
         redirect: "/doctorPage/z-examReport"
