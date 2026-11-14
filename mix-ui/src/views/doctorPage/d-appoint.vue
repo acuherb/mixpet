@@ -596,6 +596,11 @@
             </el-table>
             <p v-if="savedImage.length === 0" style="color:#999">尚未开影像单</p>
           </el-tab-pane>
+          <!-- 体检表：按模板逐项勾选，结果关联本次就诊并可打印/导出 -->
+          <el-tab-pane name="checkup">
+            <template #label><span>体检表</span></template>
+            <CheckupPanel :pet-id="treatAppoint?.petId || 0" :record-id="treatRecordId || undefined"/>
+          </el-tab-pane>
         </el-tabs>
         </section>
         </div>
@@ -765,6 +770,7 @@ import {Appoint, exampleAppoint} from "@/model/entiy/Appoint";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
 import PetRegPicker from "@/components/record/PetRegPicker.vue";
 import AppointTicket from "@/components/card/AppointTicket.vue";
+import CheckupPanel from "@/components/checkup/CheckupPanel.vue";
 import {Delete, InfoFilled, Notebook, Plus, Printer} from "@element-plus/icons-vue";
 import {Drug} from "@/model/entiy/Drug";
 import {reqDrugList} from "@/request/DrugApi";

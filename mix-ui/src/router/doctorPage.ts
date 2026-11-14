@@ -116,9 +116,13 @@ export const doctorPage: RouteRecordRaw[] = [
         path: "z-surgeryPrint",
         component: () => import('@/views/doctorPage/z-surgeryPrint.vue'),
     }, {
-        // 老系统版式通用打印：体检报告 7 种 / B超X光报告单（.mrt 版式渲染）
+        // 老系统版式通用打印：体检报告 7 种 / B超X光报告单（.mrt 版式渲染，保留只读）
         path: "z-mrtPrint",
         component: () => import('@/views/backstage/z-mrtPrint.vue'),
+    }, {
+        // 结构化可编辑体检表：报告打印 / 模板空表预览（流式版式）
+        path: "z-checkupPrint",
+        component: () => import('@/views/backstage/z-checkupPrint.vue'),
     }, {
         // 检验/影像报告单打印
         path: "z-examReport",

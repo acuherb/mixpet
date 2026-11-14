@@ -63,7 +63,16 @@
           <span class="rs-lbl">最近就诊</span>
         </div>
       </div>
-      <el-empty v-if="records.length === 0" description="暂无就诊记录"/>
+      <!-- 体检报告：顾客可查看并下载 PDF（后端按 clientId 做归属校验） -->
+      <div v-if="checkups.length" class="ck-box">
+        <div class="ck-tit">体检报告（{{ checkups.length }}）</div>
+        <div v-for="c in checkups" :key="c.checkupId" class="ck-row" @click="openCheckup(c.checkupId)">
+          <span class="ck-name">{{ c.templateName }}</span>
+          <span class="ck-date">{{ (c.checkTime || '').replace('T', ' ').slice(0, 16) }}</span>
+          <el-button link size="small" type="primary">查看 / 下载 PDF</el-button>
+        </div>
+      </div>
+      <el-empty v-if="records.length === 0 && !checkups.length" description="暂无就诊记录"/>
       <div v-else class="record-list">
         <div v-for="r in records" :key="r.recordId" class="record-item" @click="openRecordDetail(r.recordId)">
           <div class="record-head">
@@ -371,6 +380,8 @@ import {onMounted, reactive, ref} from "vue";
 import {reqAddSelfPet, reqClientPet} from "@/request/PetApi";
 import {reqReturnPet} from "@/request/AdoptApi";
 import {ElMessage, ElMessageBox, FormInstance, FormRules} from "element-plus";
+import {CheckupRecord} from "@/model/VO/Checkup";
+import {reqCheckupByPet} from "@/request/CheckupApi";
 import UpImg from "@/components/UpImg.vue";
 import {Paperclip, Plus} from "@element-plus/icons-vue";
 import {RecordDto, RecordDetailVo} from "@/model/DO/RecordDto";
@@ -398,13 +409,22 @@ const petList = ref<Pet[]>([]);
 const recordsVisible = ref(false)
 const recordsPet = ref<Pet | null>(null)
 const records = ref<RecordDto[]>([])
+const checkups = ref<CheckupRecord[]>([])
 const openRecords = (pet: Pet): void => {
   recordsPet.value = pet
   records.value = []
+  checkups.value = []
   recordsVisible.value = true
   reqPetRecords(pet.petId).then(res => {
     records.value = res?.records || []
   })
+  // 后端按 clientId 做归属校验，只会返回本人宠物的报告
+  reqCheckupByPet(pet.petId).then(res => { checkups.value = res || [] })
+      .catch(() => { checkups.value = [] })
+}
+// 顾客端独立打印页：可查看并一键下载 PDF
+const openCheckup = (id: number): void => {
+  window.open('/#/reception/clientCheckupPrint?id=' + id, '_blank')
 }
 // 就诊统计：累计费用 / 最近就诊日期
 const recordTotalFee = (): string =>
@@ -590,6 +610,12 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.ck-box { margin: 12px 0; padding: 10px 12px; border: 1px solid #e8edf5; border-radius: 8px; background: #fafcff; }
+.ck-tit { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.ck-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px dashed #e8edf5; cursor: pointer; }
+.ck-row:hover { background: #eef6ff; }
+.ck-name { flex: 1; font-size: 13px; }
+.ck-date { color: #909399; font-size: 12px; }
 @import url("/css/pa-card.css");
 
 .pet-head {

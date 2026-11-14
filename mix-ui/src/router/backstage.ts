@@ -59,9 +59,17 @@ export const backstage: RouteRecordRaw[] = [
         path: "z-rxArchive",
         redirect: "/doctorPage/z-rxArchive"
     }, {
+        // 体检表模板（可编辑：分区/项目增删改排序 + 预览）
+        path: "z-checkupTemplate",
+        component: () => import('@/views/backstage/z-checkupTemplate.vue')
+    }, {
         // 老系统版式通用打印（体检 7 种 / B超X光报告单）
         path: "z-mrtPrint",
         redirect: "/doctorPage/z-mrtPrint"
+    }, {
+        // 结构化体检报告打印
+        path: "z-checkupPrint",
+        redirect: "/doctorPage/z-checkupPrint"
     }, {
         // 检验/影像报告单打印
         path: "z-examReport",

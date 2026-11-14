@@ -104,6 +104,7 @@ router.beforeEach(async (to, from) => {
     if (path === "/reception/clientCenter"
         || path.startsWith("/reception/clientCenter/")
         || path === "/reception/clientRecordPrint"
+        || path === "/reception/clientCheckupPrint"
         || path.startsWith("/reception/chat")) {
         try {
             const role = await reqGetLogin()

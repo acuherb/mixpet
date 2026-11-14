@@ -77,6 +77,7 @@
           <el-menu-item v-show="menuMatch('检验项字典')" index="/backstage/z-labTest">检验项字典</el-menu-item>
           <el-menu-item v-show="menuMatch('影像项字典')" index="/backstage/z-imageTest">影像项字典</el-menu-item>
           <el-menu-item v-show="menuMatch('病历模板')" index="/backstage/z-template">病历模板</el-menu-item>
+          <el-menu-item v-show="menuMatch('体检表模板')" index="/backstage/z-checkupTemplate">体检表模板</el-menu-item>
         </el-sub-menu>
 
         <!-- ═══ 组织与人员 ═══ -->
@@ -150,7 +151,7 @@ const groupLabels: Record<GroupKey, string[]> = {
   stat: ['经营驾驶舱', '经营看板', '财务报表'],
   query: [...queryStaffOnly, ...queryCommon, ...queryManagerOnly],
   biz: ['药品管理', '服务套餐', '医院资料', '供应商管理', '会员等级', '次卡模板'],
-  clinic: ['检验项字典', '影像项字典', '病历模板'],
+  clinic: ['检验项字典', '影像项字典', '病历模板', '体检表模板'],
   org: ['医生列表', '医生排班', '科室列表', '职务/职称'],
   sys: ['系统设置', '操作日志', '公告管理', '聊天数据清理', '数据备份'],
 }

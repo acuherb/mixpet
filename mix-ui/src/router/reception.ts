@@ -36,6 +36,10 @@ export const reception: RouteRecordRaw[] = [
         path: "clientRecordPrint",
         component: () => import('@/views/reception/clientRecordPrint.vue')
     }, {
+        // 顾客端体检报告查看/下载 PDF（独立页；后端按 clientId 做归属校验）
+        path: "clientCheckupPrint",
+        component: () => import('@/views/backstage/z-checkupPrint.vue')
+    }, {
         // 个人中心
         path: "clientCenter",
         component: () => import('@/views/reception/clientCenter.vue'),

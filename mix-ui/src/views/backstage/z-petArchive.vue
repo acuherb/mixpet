@@ -156,6 +156,17 @@
                 </div>
               </template>
 
+              <!-- 结构化体检报告（可打印/导出 PDF） -->
+              <template v-else-if="ev.kind === 'checkup'">
+                <div class="pa-ev-h">
+                  <span class="pa-ev-kind c">体检</span>
+                  <b class="pa-ev-tit">{{ ev.row.templateName }}</b>
+                  <span class="pa-ev-sub">{{ ev.row.createBy || '' }}</span>
+                  <el-button class="no-print" size="small" text type="primary" @click="printCheckupReport(ev.row.checkupId)">查看/打印</el-button>
+                </div>
+                <div v-if="ev.row.conclusion" class="pa-ev-line"><span>结论</span>{{ ev.row.conclusion }}</div>
+              </template>
+
               <!-- 影像 -->
               <template v-else>
                 <div class="pa-ev-h">
@@ -182,8 +193,10 @@ import {computed, onMounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {PetArchive} from '@/model/DO/PetArchive'
 import {reqPetArchive} from '@/request/PetApi'
+import {CheckupRecord} from '@/model/VO/Checkup'
+import {reqCheckupByPet} from '@/request/CheckupApi'
 
-type Kind = 'visit' | 'immune' | 'hospital' | 'surgery' | 'lab' | 'image'
+type Kind = 'visit' | 'immune' | 'hospital' | 'surgery' | 'lab' | 'image' | 'checkup'
 
 interface Ev {
   id: string
@@ -195,6 +208,7 @@ interface Ev {
 const route = useRoute()
 const router = useRouter()
 const a = ref<PetArchive | null>(null)
+const checkups = ref<CheckupRecord[]>([])
 const loading = ref(false)
 const loaded = ref(false)
 const filter = ref<'all' | Kind>('all')
@@ -209,6 +223,9 @@ const load = (): void => {
     a.value = res || null
     loaded.value = true
   }).catch(() => { loaded.value = true }).finally(() => { loading.value = false })
+  // 结构化体检报告：与老 mrt 空白体检表并行展示在时间线
+  reqCheckupByPet(petId.value).then(res => { checkups.value = res || [] })
+      .catch(() => { checkups.value = [] })
 }
 const reload = (): void => load()
 onMounted(load)
@@ -251,6 +268,9 @@ const allEvents = computed<Ev[]>(() => {
   a.value.image?.forEach(v => list.push({
     id: 'x' + v.orderId, kind: 'image', time: fmt((v as any).createTime), row: v
   }))
+  checkups.value.forEach(v => list.push({
+    id: 'c' + v.checkupId, kind: 'checkup', time: fmt(v.checkTime), row: v
+  }))
   return list.sort((p, q) => (q.time || '').localeCompare(p.time || ''))
 })
 
@@ -263,12 +283,13 @@ const chips = computed(() => [
   {kind: 'surgery' as const, label: '手术', n: countOf('surgery')},
   {kind: 'lab' as const, label: '化验', n: countOf('lab')},
   {kind: 'image' as const, label: '影像', n: countOf('image')},
+  {kind: 'checkup' as const, label: '体检', n: countOf('checkup')},
 ])
 const filtered = computed<Ev[]>(() =>
     filter.value === 'all' ? allEvents.value : allEvents.value.filter(e => e.kind === filter.value))
 
 const kindType = (k: Kind): string =>
-  ({visit: 'primary', immune: 'success', hospital: 'warning', surgery: 'danger', lab: 'info', image: 'info'} as Record<Kind, string>)[k]
+  ({visit: 'primary', immune: 'success', hospital: 'warning', surgery: 'danger', lab: 'info', image: 'info', checkup: 'success'} as Record<Kind, string>)[k]
 
 const rxOf = (recordId: number): any[] => a.value?.prescriptions?.[recordId] || []
 
@@ -281,6 +302,8 @@ const printCheckup = (): void => {
 const openWin = (path: string): void => { window.open(path, '_blank') }
 // 病历打印页路由名是 d-recordPrint（z-surgeryPrint / z-hospitalPrint 同级，别混用）
 const printRecord = (row: any): void => openWin('/#/doctorPage/d-recordPrint?recordId=' + row.recordId)
+// 结构化体检报告（新版流式版式）；老的 .mrt 空白体检表入口 printCheckup 保留只读
+const printCheckupReport = (id: number): void => openWin('/#/doctorPage/z-checkupPrint?id=' + id)
 const printSurgery = (row: any): void => openWin('/#/doctorPage/z-surgeryPrint?surgeryId=' + row.surgeryId)
 const printHospital = (row: any): void =>
     openWin('/#/doctorPage/z-hospitalPrint?hospitalId=' + row.hospitalId + '&recordId=' + row.recordId)
