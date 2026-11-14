@@ -5,7 +5,7 @@
     <el-select v-model="qp.testGroup" clearable placeholder="全部分组" size="large" style="width: 110px" @change="nowQuery">
       <el-option v-for="t in labGroupOpts" :key="t.dictId" :label="t.dictKey" :value="t.dictKey"/>
     </el-select>
-    <el-select v-model="qp.isPanel" placeholder="类型筛选" size="large" style="width: 110px" @change="nowQuery">
+    <el-select v-model="qp.isPanel" clearable placeholder="全部类型" size="large" style="width: 110px" @change="nowQuery">
       <el-option label="单项" :value="0"/>
       <el-option label="套组" :value="1"/>
     </el-select>
@@ -143,7 +143,7 @@ reqDictByType('lab_group').then(r => { labGroupOpts.value = r || [] })
 const qp = reactive({
   testName: '',
   testGroup: '',
-  isPanel: 0,
+  isPanel: null as number | null,
   numPage: 1,
   pageSize: 20
 })
@@ -154,7 +154,10 @@ const changePuB = (val: PageQuery): void => {
   sendQuery()
 }
 const sendQuery = (): void => {
-  reqLabTestPage(qp).then(res => {
+  // 「全部类型」时不带 isPanel 参数（后端 null = 不过滤），避免依赖 axios 对 null 的序列化行为
+  const {isPanel, ...rest} = qp
+  const params = isPanel == null ? rest : {...rest, isPanel}
+  reqLabTestPage(params).then(res => {
     list.value = res
   })
 }
