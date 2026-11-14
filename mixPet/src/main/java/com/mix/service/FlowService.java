@@ -80,17 +80,34 @@ public class FlowService {
 
         // 1) 待诊：当前医生今日已挂号、未接诊、未爽约
         FlowStage wait = new FlowStage("wait", "待诊", "今日已挂号·未接诊", "/doctorPage/d-appoint", "去接诊");
+        // 1b) 未来预约：明日起、尚未接诊的挂号。走独立查询而不是从 getDoctorLog 里筛，
+        //     既不挤占接诊队列的 300 条兜底额度，也让「明天 N 单」是准确数（SQL 按时间升序 LIMIT 200）。
+        //     只作提前排班提示：动作指向接诊工作台的「未来预约」页签，且刻意不带 appointmentId，
+        //     防止 d-appoint 的 ?appointmentId= 直达逻辑对未来号误弹「开始接诊」向导。
+        FlowStage future = new FlowStage("future", "未来预约", "明日起 · 按时间排序",
+                "/doctorPage/d-appoint?tab=future", "查看未来预约");
         Integer doctorId = currentDoctorId();
         if (doctorId != null) {
             for (AppointmentDto2 a : appointmentService.getDoctorLog(doctorId)) {
-                if (a.getAppointmentDate() != null && a.getAppointmentDate().toLocalDate().equals(today)
-                        && !Boolean.TRUE.equals(a.getIsSuc()) && !Boolean.TRUE.equals(a.getMiss())) {
-                    wait.add(new FlowItem("a" + a.getAppointmentId(), a.getPetName(),
-                            a.getClientName() + " · " + a.getAppointmentDate().format(DateTimeFormatter.ofPattern("HH:mm")),
-                            null, null, "wait", "接诊",
-                            withPatient("/doctorPage/d-appoint?appointmentId=" + a.getAppointmentId(),
-                                    a.getPetName(), a.getClientName(), null, null), a.getClientName(), a.getPetId()));
-                }
+                if (a.getAppointmentDate() == null) continue;
+                if (Boolean.TRUE.equals(a.getIsSuc()) || Boolean.TRUE.equals(a.getMiss())) continue;
+                if (!a.getAppointmentDate().toLocalDate().equals(today)) continue;
+                wait.add(new FlowItem("a" + a.getAppointmentId(), a.getPetName(),
+                        a.getClientName() + " · " + a.getAppointmentDate().format(DateTimeFormatter.ofPattern("HH:mm")),
+                        null, null, "wait", "接诊",
+                        withPatient("/doctorPage/d-appoint?appointmentId=" + a.getAppointmentId(),
+                                a.getPetName(), a.getClientName(), null, null), a.getClientName(), a.getPetId()));
+            }
+            LocalDate tomorrow = today.plusDays(1);
+            DateTimeFormatter dayTime = DateTimeFormatter.ofPattern("MM-dd HH:mm");
+            for (AppointmentDto2 a : appointmentService.getFutureAppoint(doctorId)) {
+                if (a.getAppointmentDate() == null) continue;
+                LocalDate d = a.getAppointmentDate().toLocalDate();
+                future.add(new FlowItem("a" + a.getAppointmentId(), a.getPetName(),
+                        a.getAppointmentDate().format(dayTime) + " · " + (a.getClientName() == null ? "" : a.getClientName()),
+                        d.equals(tomorrow) ? "明天" : null, null, "future", "查看预约",
+                        withPatient("/doctorPage/d-appoint?tab=future",
+                                a.getPetName(), a.getClientName(), null, null), a.getClientName(), a.getPetId()));
             }
         }
 
@@ -147,7 +164,7 @@ public class FlowService {
                             "followId", f.getFollowId()), f.getClientName(), f.getPetId()));
         }
 
-        stages.add(wait); stages.add(treat); stages.add(result); stages.add(pay); stages.add(follow);
+        stages.add(wait); stages.add(future); stages.add(treat); stages.add(result); stages.add(pay); stages.add(follow);
         return new DoctorFlowVo(stages, LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
     }
 

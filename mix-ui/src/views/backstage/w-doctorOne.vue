@@ -451,8 +451,9 @@ const stages = ref<FlowStage[]>([])
 const loading = ref(false)
 const loadError = ref(false)
 const lastRefresh = ref('')
+// 「今天还有 X 位待处理」不含未来预约，未来预约单独成卡，避免把明天的号算成今日工作量
 const totalPending = computed(() =>
-    stages.value.reduce((n, s) => n + (s.items?.length || 0), 0))
+    stages.value.reduce((n, s) => n + (s.key === 'future' ? 0 : (s.items?.length || 0)), 0))
 const greeting = computed(() => {
   const h = new Date().getHours()
   return h < 11 ? '早上好' : h < 14 ? '中午好' : h < 18 ? '下午好' : '晚上好'
@@ -538,7 +539,8 @@ onBeforeUnmount(() => {
 .ov-sub b { color: #E5495F; font-size: 15px; }
 .ov-actions { display: flex; align-items: center; gap: 10px; }
 .ov-time { font-size: 12px; color: #9AA3B5; font-variant-numeric: tabular-nums; }
-.ov-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+/* 环节从 5 个增加到 6 个（新增未来预约），用 auto-fit 自适应，窄屏自动换行 */
+.ov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 18px; }
 .ov-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
   padding: 14px 16px; border: 1px solid rgba(108,92,231,0.12); border-radius: 14px;
@@ -554,6 +556,7 @@ onBeforeUnmount(() => {
 .ov-dot.result { background: #F5A623; }
 .ov-dot.pay { background: #E5495F; }
 .ov-dot.follow { background: #17A36E; }
+.ov-dot.future { background: #20B2AA; }
 .ov-label { font-size: 13px; color: #6B7590; }
 .ov-num { font-size: 30px; line-height: 1.1; font-weight: 800; color: #1F2D5A; font-variant-numeric: tabular-nums; }
 .ov-go { font-size: 12px; color: #3A7BFF; }

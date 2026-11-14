@@ -8,6 +8,7 @@ import com.mix.model.entity.Appointment;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -36,4 +37,11 @@ public interface AppointmentMapper extends BaseMapper<Appointment> {
      * 医生：查询自己的订单
      */
     List<AppointmentDto2> getDoctorLog(@Param("doctorId") Integer doctorId);
+
+    /**
+     * 医生：查询 from（明日零点）起尚未接诊、未爽约的未来预约，按时间升序。
+     * 独立于 getDoctorLog，避免待处理/历史单占满 300 条兜底额度时未来预约被截断。
+     */
+    List<AppointmentDto2> getFutureAppoint(@Param("doctorId") Integer doctorId,
+                                           @Param("from") LocalDateTime from);
 }

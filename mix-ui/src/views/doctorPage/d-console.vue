@@ -33,11 +33,19 @@
           <span class="todo-total">{{ totalPending }} 位</span>
           <el-button size="small" :loading="loading" circle @click="loadAll" title="刷新"><el-icon><Refresh/></el-icon></el-button>
         </div>
+        <!-- 未来预约提示条：分组默认折叠，点一下展开并滚动过去；「明天 N 单」给医生提前排班的量感，
+             且不把未来号混进「今日待办 X 位」造成误读 -->
+        <a v-if="futureCount" class="future-chip" @click="jumpFuture" title="展开未来预约分组">
+          <span class="fc-dot"></span>
+          <template v-if="tomorrowCount"><b>明天 {{ tomorrowCount }} 单</b><span class="fc-sep">·</span></template>
+          <span>未来共 {{ futureCountText }} 单</span>
+          <span class="fc-go">{{ isCollapsed('future') ? '展开查看' : '查看' }} ›</span>
+        </a>
         <div class="todo-scroll">
           <div class="todo-collapse-ctrl">
             <a @click="collapseAll">全部收起</a><span class="cc-sep">·</span><a @click="expandAll">全部展开</a>
           </div>
-          <div v-for="st in stages" :key="st.key" class="todo-group">
+          <div v-for="st in stages" :key="st.key" :data-key="st.key" class="todo-group">
             <div class="todo-group-head" :class="{hot: st.items.length, open: !isCollapsed(st.key)}" @click="toggleGroup(st.key)">
               <el-icon class="chev"><ArrowRight/></el-icon>
               <span class="dot" :class="st.key"></span>{{ st.title }}
@@ -49,7 +57,7 @@
                 <div class="tc-line"><b>{{ c.petName || '—' }}</b><span>{{ c.clientName || '' }}</span></div>
                 <div class="tc-sub">{{ c.sub }}</div>
                 <div class="tc-next">{{ c.nextLabel || '去处理' }} <el-icon><Right/></el-icon></div>
-                <span v-if="c.flag" class="tc-flag">{{ c.flag }}</span>
+                <span v-if="c.flag" class="tc-flag" :class="{soft: c.flag === '明天'}">{{ c.flag }}</span>
               </button>
               <div v-if="!st.items.length" class="todo-empty">暂无</div>
             </div>
@@ -157,7 +165,7 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue'
+import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {
   ArrowRight, Bell, Calendar, ChatDotRound, Collection, DataLine, Document, DocumentChecked, EditPen, Files,
@@ -206,11 +214,26 @@ const selected = ref<FlowChip | null>(null)
 const selectedStage = ref<FlowStage | null>(null)
 const detail = ref<any>(null)
 
-const totalPending = computed(() => stages.value.reduce((n, s) => n + s.items.length, 0))
+// 「今日待办」不把未来预约算进来，否则标题与数字对不上
+const totalPending = computed(() => stages.value.reduce((n, s) => n + (s.key === 'future' ? 0 : s.items.length), 0))
+const futureStage = computed(() => stages.value.find(s => s.key === 'future'))
+const futureCount = computed(() => futureStage.value?.items.length || 0)
+const tomorrowCount = computed(() => futureStage.value?.items.filter(c => c.flag === '明天').length || 0)
+// 后端对远期预约封顶 200 条，触顶时如实显示「200+」，别让医生以为只有 200 单
+const futureCountText = computed(() => futureCount.value >= 200 ? '200+' : String(futureCount.value))
+// 点「明天 N 单」：展开未来预约分组并滚过去
+const jumpFuture = (): void => {
+  const s = new Set(collapsed.value)
+  s.delete('future')
+  collapsed.value = s
+  nextTick(() => document.querySelector('.todo-group[data-key="future"]')
+      ?.scrollIntoView({block: 'nearest', behavior: 'smooth'}))
+}
 const pad = (n: number) => n.toString().padStart(2, '0')
 const timeText = ref('--:--:--')
 const tick = () => { const t = new Date(); timeText.value = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}` }
 let clockTimer: ReturnType<typeof setInterval> | undefined
+let futureFoldInit = false
 
 const loadAll = async (): Promise<void> => {
   loading.value = true
@@ -222,6 +245,11 @@ const loadAll = async (): Promise<void> => {
     const next = new Set<string>()
     for (const s of stages.value) if (!s.items.length) next.add(s.key)
     for (const k of collapsed.value) if (stages.value.some(s => s.key === k)) next.add(k)
+    // 未来预约默认折叠，只在首次加载时设置；用户手动展开后由上面的 collapsed 保留状态
+    if (!futureFoldInit) {
+      futureFoldInit = true
+      if (futureCount.value) next.add('future')
+    }
     collapsed.value = next
     lastRefresh.value = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}:${pad(new Date().getSeconds())}`
     // 待办刷新后保持当前患者选中；若该患者已流转走则自动取消选中
@@ -299,6 +327,8 @@ const applyStageQuery = (): void => {
   if (!key) return
   stageQueryApplied = true
   const st = stages.value.find(s => s.key === key)
+  // 未来预约分组默认折叠，从「今日概览」点进来要顺手展开，否则选中了患者却看不见
+  if (isCollapsed(key)) toggleGroup(key)
   if (st?.items.length) select(st.items[0], st)
 }
 
@@ -306,6 +336,11 @@ const applyStageQuery = (): void => {
 const stageActions: Record<string, Action[]> = {
   wait: [
     {label: '开始接诊', path: '/doctorPage/d-appoint', icon: EditPen},
+  ],
+  // 未来预约不引导接诊：只打开接诊工作台的「未来预约」页签（currentQuery 会带上 tab=future），
+  // 那里可看时间/改期，且刻意不带 appointmentId，避免误弹「开始接诊」向导
+  future: [
+    {label: '查看未来预约', path: '/doctorPage/d-appoint', icon: Calendar},
   ],
   treat: [
     {label: '继续接诊 / 写病历', path: '/doctorPage/d-appoint', icon: EditPen},
@@ -497,7 +532,7 @@ kbd { font-size: 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 4
 .todo-group-head b { margin-left: auto; background: #eef2f8; border-radius: 9px; padding: 1px 8px; font-size: 11px; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #c8d2e2; }
 .dot.wait { background: #409eff; } .dot.treat { background: #e6a23c; } .dot.result { background: #909399; }
-.dot.pay { background: #67c23a; } .dot.follow { background: #b37feb; }
+.dot.pay { background: #67c23a; } .dot.follow { background: #b37feb; } .dot.future { background: #20b2aa; }
 .todo-card { width: 100%; text-align: left; border: 1px solid #e8edf5; border-radius: 8px; background: #fff; padding: 9px 11px; margin-bottom: 7px; cursor: pointer; position: relative; transition: .15s; }
 .todo-card:hover { border-color: #9ec5ff; box-shadow: 0 2px 8px rgba(64,158,255,.12); }
 .todo-card.active { border-color: #409eff; background: #f2f8ff; box-shadow: 0 0 0 2px rgba(64,158,255,.15); }
@@ -507,6 +542,14 @@ kbd { font-size: 10px; border: 1px solid rgba(255,255,255,.35); border-radius: 4
 .tc-sub { font-size: 12px; color: #6b778c; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tc-next { font-size: 12px; color: #409eff; margin-top: 5px; display: flex; align-items: center; gap: 3px; }
 .tc-flag { position: absolute; right: 9px; top: 9px; font-size: 10px; color: #fff; background: #f56c6c; border-radius: 8px; padding: 1px 6px; }
+.tc-flag.soft { background: #20b2aa; }
+/* 未来预约提示条：与「今日待办」同栏但独立成行，浅青色区别于待办分组 */
+.future-chip { display: flex; align-items: center; gap: 6px; margin: 0 12px 10px; padding: 7px 10px; border: 1px solid #bfe9e4; border-radius: 8px; background: #f0fbfa; color: #137f79; font-size: 12px; cursor: pointer; user-select: none; }
+.future-chip:hover { background: #e2f6f3; border-color: #20b2aa; }
+.future-chip b { color: #0f766e; }
+.future-chip .fc-dot { width: 7px; height: 7px; border-radius: 50%; background: #20b2aa; flex: none; }
+.future-chip .fc-sep { color: #9ccfc9; }
+.future-chip .fc-go { margin-left: auto; color: #159b93; white-space: nowrap; }
 .todo-empty { font-size: 12px; color: #b3bccb; padding: 2px 6px 6px; }
 .todo-collapse-ctrl { display: flex; align-items: center; gap: 6px; padding: 2px 4px 8px; font-size: 12px; }
 .todo-collapse-ctrl a { color: #6f9be0; cursor: pointer; }

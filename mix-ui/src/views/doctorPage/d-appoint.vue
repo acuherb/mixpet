@@ -5,12 +5,16 @@
       <button
           class="appoint-tab"
           :class="{active: appointTab === 'pending'}"
-          @click="appointTab = 'pending'">待处理 ({{ pendingAppoint.length }})</button>
+          @click="appointTab = 'pending'">待处理 ({{ todayPending.length }})</button>
+      <button
+          class="appoint-tab"
+          :class="{active: appointTab === 'future', 'has-future': futureAppoint.length > 0}"
+          @click="appointTab = 'future'">未来预约 ({{ futureAppoint.length }})<i v-if="futureAppoint.length" class="tab-dot"/></button>
       <button
           class="appoint-tab"
           :class="{active: appointTab === 'done'}"
           @click="appointTab = 'done'">已处理 ({{ doneAppoint.length }})</button>
-      <!-- 日期筛选：留空=全部 -->
+      <!-- 日期筛选：留空=全部；未来预约页签下可再筛到某一天 -->
       <el-date-picker
           v-model="appointDateFilter"
           clearable
@@ -23,7 +27,7 @@
       <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
     </div>
     <!-- 挂号列表：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
-    <el-table :data="appointTab === 'pending' ? filteredPending : filteredDone"
+    <el-table :data="shownAppoint"
               max-height="calc(100vh - 260px)"
               row-key="appointmentId"
               size="small"
@@ -64,12 +68,18 @@
       <el-table-column fixed="right" label="操作" width="210">
         <template #default="s">
           <template v-if="!s.row.miss">
-            <el-button v-if="!s.row.isSuc" size="small" type="primary" link @click="openTreat(s.row)">接诊</el-button>
-            <el-button v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning" link @click="openTreat(s.row)">继续开单</el-button>
-            <el-button v-else size="small" type="info" link @click="openTreat(s.row)">查看</el-button>
-            <!-- 改期：患者打电话来换时间，不用切后台（管理员级直接改，跳过余号校验） -->
-            <el-button v-if="!s.row.isSuc" size="small" type="success" link @click="openReschedule(s.row)">改期</el-button>
-            <el-button v-if="!s.row.isSuc && isOverdue(s.row)" size="small" type="danger" link @click="markMiss(s.row)">标记爽约</el-button>
+            <!-- 未来预约只可改期：不提供「接诊」，避免对还没到诊的号提前开诊 -->
+            <template v-if="appointTab === 'future'">
+              <el-button size="small" type="success" link @click="openReschedule(s.row)">改期</el-button>
+            </template>
+            <template v-else>
+              <el-button v-if="!s.row.isSuc" size="small" type="primary" link @click="openTreat(s.row)">接诊</el-button>
+              <el-button v-else-if="recordStatusMap[s.row.appointmentId] === 0" size="small" type="warning" link @click="openTreat(s.row)">继续开单</el-button>
+              <el-button v-else size="small" type="info" link @click="openTreat(s.row)">查看</el-button>
+              <!-- 改期：患者打电话来换时间，不用切后台（管理员级直接改，跳过余号校验） -->
+              <el-button v-if="!s.row.isSuc" size="small" type="success" link @click="openReschedule(s.row)">改期</el-button>
+              <el-button v-if="!s.row.isSuc && isOverdue(s.row)" size="small" type="danger" link @click="markMiss(s.row)">标记爽约</el-button>
+            </template>
           </template>
           <span v-else style="color:#909399;font-size:12px">已爽约 · 不可操作</span>
         </template>
@@ -799,10 +809,21 @@ reqDictByType('surgery_type').then(r => { surgeryTypeOpts.value = r || [] })
 reqDictByType('anesthesia_type').then(r => { anesthesiaTypeOpts.value = r || [] })
 
 const appoint = ref<AppointDto2[]>([])
-// 待处理/已处理 分类选项卡（爽约单归入已处理：记录保留可查，不再占待办位）
-const appointTab = ref<'pending' | 'done'>('pending')
+// 三个页签：待处理=今日及逾期，未来预约=明日起，已处理=完结/爽约（爽约单保留可查，不占待办位）
+const appointTab = ref<'pending' | 'future' | 'done'>('pending')
 const pendingAppoint = computed(() => appoint.value.filter(a => !a.isSuc && !a.miss))
 const doneAppoint = computed(() => appoint.value.filter(a => !!a.isSuc || !!a.miss))
+// 本地日期 YYYY-MM-DD（不用 toISOString，避免 UTC 偏移把明天的号算成今天）
+const todayStr = (() => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+})()
+const dayOf = (a: AppointDto2): string => (a.appointmentDate || '').slice(0, 10)
+const isFuture = (a: AppointDto2): boolean => !!dayOf(a) && dayOf(a) > todayStr
+const todayPending = computed(() => pendingAppoint.value.filter(a => !isFuture(a)))
+// 未来预约按时间升序：明天排最前，医生先看最近要来的号
+const futureAppoint = computed(() => pendingAppoint.value.filter(isFuture)
+    .sort((a, b) => (a.appointmentDate || '').localeCompare(b.appointmentDate || '')))
 // 就诊时间已过（可标记爽约）
 const isOverdue = (a: AppointDto2): boolean =>
     !!a.appointmentDate && new Date(a.appointmentDate).getTime() < Date.now()
@@ -830,21 +851,24 @@ const submitReschedule = (): void => {
     } else ElMessage.error(res.msg || '改期失败')
   }).catch(() => { rsSaving.value = false })
 }
-/** 日期筛选（留空=全部）：按就诊日期过滤两个列表 */
+/** 日期筛选（留空=全部）：三个页签共用，可把未来预约再筛到某一天 */
 const appointDateFilter = ref<string>('')
-const filteredPending = computed(() =>
-    appointDateFilter.value
-        ? pendingAppoint.value.filter(a => (a.appointmentDate || '').slice(0, 10) === appointDateFilter.value)
-        : pendingAppoint.value)
-const filteredDone = computed(() =>
-    appointDateFilter.value
-        ? doneAppoint.value.filter(a => (a.appointmentDate || '').slice(0, 10) === appointDateFilter.value)
-        : doneAppoint.value)
+const byDate = (list: AppointDto2[]): AppointDto2[] => appointDateFilter.value
+    ? list.filter(a => dayOf(a) === appointDateFilter.value)
+    : list
+const filteredPending = computed(() => byDate(todayPending.value))
+const filteredFuture = computed(() => byDate(futureAppoint.value))
+const filteredDone = computed(() => byDate(doneAppoint.value))
+const shownAppoint = computed(() => appointTab.value === 'future' ? filteredFuture.value
+    : appointTab.value === 'done' ? filteredDone.value : filteredPending.value)
 onMounted(() => {
   queryAppoint()
+  // 从医生工作台「未来预约」分组/全景流水线进来：直接落在未来预约页签
+  if (route.query.tab === 'future') appointTab.value = 'future'
   // 从医生工作台「去接诊」直达：自动打开指定挂号单的接诊向导
   const aid = Number(route.query.appointmentId)
   if (aid) {
+    appointTab.value = 'pending'
     const tryOpen = (times: number): void => {
       const target = appoint.value.find(a => a.appointmentId === aid)
       if (target) openTreat(target)
@@ -1735,6 +1759,10 @@ onBeforeRouteLeave(async () => {
   transition: all .2s;
   &:hover { border-color: #409eff; color: #409eff; }
   &.active { background-color: #409eff; border-color: #409eff; color: #fff; }
+  /* 有未来预约时给页签一个柔和提示，未选中也能一眼看到「明天有号」 */
+  &.has-future:not(.active) { border-color: #20b2aa; color: #159b93; background-color: #f0fbfa; }
+  .tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #20b2aa; margin-left: 6px; vertical-align: middle; }
+  &.active .tab-dot { background: #fff; }
 }
 .fee-sep { margin: 0 12px 0 24px; color: #909399; }
 .auto-save-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #67c23a; margin-right: 5px; vertical-align: middle; }

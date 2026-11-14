@@ -143,4 +143,10 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     public List<AppointmentDto2> getDoctorLog(Integer doctorId) {
         return baseMapper.getDoctorLog(doctorId);
     }
+
+    @Override
+    public List<AppointmentDto2> getFutureAppoint(Integer doctorId) {
+        // 明日零点由 JVM 计算（与 FlowService 的 LocalDate.now() 同口径），不依赖数据库时区
+        return baseMapper.getFutureAppoint(doctorId, LocalDate.now().plusDays(1).atStartOfDay());
+    }
 }

@@ -66,6 +66,12 @@ public interface IAppointmentService extends IService<Appointment> {
     List<AppointmentDto2> getDoctorLog(Integer doctorId);
 
     /**
+     * 医生工作台「未来预约」：明日起尚未接诊的挂号，按时间升序、封顶 200 条。
+     * 独立查询，避免被接诊队列的 300 条兜底额度截断。
+     */
+    List<AppointmentDto2> getFutureAppoint(Integer doctorId);
+
+    /**
      * 挂号/改期唯一写入口：事务内行锁 + 出诊校验 + 整日/时段双容量校验 + 写入。
      * 所有新增与改期路径都必须走这里，避免旁路造成号源超卖。
      */

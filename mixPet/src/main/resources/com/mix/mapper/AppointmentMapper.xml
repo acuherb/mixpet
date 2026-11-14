@@ -122,4 +122,35 @@
         order by a.is_suc, a.miss, appointment_date desc
         LIMIT 300
     </select>
+    <!--医生工作台「未来预约」：单独查询，不与 300 条接诊队列共用额度。
+        只取明日零点起、未接诊、未爽约、未删除的号；按时间升序（最近的排最前），
+        idx_doctor_date(doctor_id, appointment_date) 可命中。封顶 200 条防止远期批量预约拖垮首屏。-->
+    <select id="getFutureAppoint" resultType="com.mix.model.dto.AppointmentDto2">
+        SELECT
+        <include refid="appoint">
+            <property name="alias" value="a"/>
+        </include>
+        b.client_name,
+        c.pet_name,
+        c.pet_photo,
+        c.pet_variety,
+        c.pet_status,
+        c.pet_sex,
+        c.pet_birthday,
+        d.department_name
+        FROM appointment a,
+        client b,
+        pet c,
+        department d
+        WHERE a.is_del = 0
+        AND a.is_suc = 0
+        AND a.miss = 0
+        AND a.appointment_date >= #{from}
+        AND a.doctor_id = #{doctorId}
+        AND a.client_id = b.client_id
+        AND a.pet_id = c.pet_id
+        AND a.department_id = d.department_id
+        order by a.appointment_date asc
+        LIMIT 200
+    </select>
 </mapper>

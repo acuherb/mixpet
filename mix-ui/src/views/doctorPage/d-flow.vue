@@ -91,17 +91,18 @@ const commands = [
 // 管理账号只做管理：命令面板同样不提供临床作业入口
 const visibleCommands = computed(() => commands.filter(c => canOpenAction(c.path || '', authLv.value)))
 
-let snap = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
+let snap = {wait: 0, future: 0, treat: 0, result: 0, pay: 0, follow: 0}
 const loadAll = async (): Promise<void> => {
   try {
     const vo = await reqDoctorPipeline()
     loadError.value = false
     stages.value = vo.stages || []
-    const now = {wait: 0, treat: 0, result: 0, pay: 0, follow: 0}
+    const now = {wait: 0, future: 0, treat: 0, result: 0, pay: 0, follow: 0}
     for (const s of stages.value) if (s.key in now) (now as any)[s.key] = s.count
     if (snap.result && now.result < snap.result) pushEvent(`${snap.result - now.result} 项医技结果已回报，可复核/结算`, 'ok')
     if (snap.pay && now.pay < snap.pay) pushEvent(`${snap.pay - now.pay} 笔账单已收款，流转至随访`, 'ok')
     if (snap.wait && now.wait > snap.wait) pushEvent(`新增 ${now.wait - snap.wait} 个今日挂号待接诊`, 'warn')
+    if (now.future > snap.future && snap.future) pushEvent(`新增 ${now.future - snap.future} 个未来预约，可提前排班`, 'info')
     snap = now
     lastRefresh.value = `${p(new Date().getHours())}:${p(new Date().getMinutes())}:${p(new Date().getSeconds())}`
   } catch (e) {
