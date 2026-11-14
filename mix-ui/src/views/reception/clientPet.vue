@@ -434,8 +434,11 @@ const isDue = (row: ImmuneRecord): boolean =>
     !!row.nextTime && new Date(row.nextTime) <= new Date(new Date().getTime() + 30 * 86400000)
 // 顾客端独立打印页：/doctorPage/* 路由守卫只允许医生，顾客打开会被踢到登录页
 // 后端 /record/detail 已做「顾客只能看自己宠物」的归属校验
+// autopdf=1：打开即自动导出与医生端同款的彩色详情版 PDF，点一次就能把病历存下来
 const saveRecordPdf = (): void => {
-  if (detail.value) window.open('/#/reception/clientRecordPrint?recordId=' + detail.value.record.recordId, '_blank')
+  if (!detail.value) return
+  const url = '/#/reception/clientRecordPrint?recordId=' + detail.value.record.recordId + '&autopdf=1'
+  if (!window.open(url, '_blank')) ElMessage.warning('下载窗口被拦截，请允许弹出窗口后重试')
 }
 // 查看处方笺：同一顾客页并定位到处方区
 const viewRx = (): void => {
