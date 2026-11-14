@@ -16,6 +16,8 @@ public record RecordTodoVo(
         /** 待随访数 */
         long followPending,
         /** 待审核的自助注册顾客数（audit_status=0） */
-        long clientPending
+        long clientPending,
+        /** 卡壳就诊：接诊中(status=0)且创建超过 7 天仍未完结的病历数 */
+        long stuck
 ) {
 }

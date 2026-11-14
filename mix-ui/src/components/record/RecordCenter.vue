@@ -45,6 +45,14 @@
       </el-form-item>
     </el-form>
 
+    <!-- 看板「卡壳就诊」下钻：明确当前筛选口径，避免用户以为列表被莫名过滤 -->
+    <el-alert v-if="stuckMode" class="stuck-tip" type="warning" :closable="false" show-icon
+              title="卡壳就诊：接诊中且创建超过 7 天仍未完结">
+      <template #default>
+        <el-button size="small" link type="primary" @click="clearStuck">清除筛选，查看全部病历</el-button>
+      </template>
+    </el-alert>
+
     <!-- 病历列表 -->
     <el-table v-loading="loading" :data="list.records" stripe @row-click="openDetail">
       <el-table-column label="病历号" prop="recordId" width="80"/>
@@ -103,10 +111,11 @@ import {reqGetLoginD} from "@/request/DoctorApi";
 import {Page} from "@/model/DO/Page";
 import {RecordDto} from "@/model/DO/RecordDto";
 import {getDisplayTime} from "@/utils/TimeUtil";
-import {useRouter} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 import RecordDetailFull from "@/components/record/RecordDetailFull.vue";
 
 const router = useRouter()
+const route = useRoute()
 
 /** 跳到该宠物的完整就诊档案（同院医生看病史的主要入口） */
 const openArchive = (row: RecordDto): void => {
@@ -140,8 +149,15 @@ const listError = ref(false)
 const detailView = ref(false)
 const detailId = ref(0)
 
+// 管理端看板「卡壳就诊」下钻状态（?stuck=1）
+const stuckMode = ref(false)
+/** 7 天前的本地时刻，格式与后端 r.create_time 比较一致（yyyy-MM-dd HH:mm:ss） */
+const sevenDaysAgo = (): string => {
+  const d = new Date(Date.now() - 7 * 86400000)
+  const p = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
 const load = (): void => {
-  loading.value = true
   loading.value = true
   listError.value = false
   reqRecordPage(q).then(res => {
@@ -155,11 +171,23 @@ const reset = (): void => {
   q.recordId = null; q.petName = ''; q.clientName = ''; q.doctorName = ''
   q.diagnosis = ''; q.status = null; q.startTime = ''; q.endTime = ''
   dateRange.value = null
+  stuckMode.value = false
   search()
 }
 const onDateChange = (val: [string, string] | null): void => {
   q.startTime = val ? val[0] : ''
   q.endTime = val ? val[1] : ''
+  stuckMode.value = false
+}
+/** 清除下钻条件：同步抹掉路由参数，避免刷新又回到筛选态 */
+const clearStuck = (): void => {
+  stuckMode.value = false
+  q.status = null; q.startTime = ''; q.endTime = ''
+  dateRange.value = null
+  const query = {...route.query}
+  delete query.stuck
+  router.replace({query})
+  search()
 }
 // 当前登录医生（「我的未完结」用；非医生账号为空则不显示该按钮）
 const myName = ref('')
@@ -170,6 +198,7 @@ const myPending = (): void => {
   q.status = 0
   q.startTime = ''; q.endTime = ''
   dateRange.value = null
+  stuckMode.value = false
   search()
 }
 const openDetail = (row: RecordDto): void => {
@@ -184,12 +213,19 @@ onMounted(() => {
     q.doctorName = myName.value
     q.status = 0
   }
+  // 与后端 RecordTodoVo.stuck 同口径：接诊中(status=0) + create_time <= now-7d + 未删除
+  if (route.query.stuck === '1') {
+    q.status = 0
+    q.endTime = sevenDaysAgo()
+    stuckMode.value = true
+  }
   load()
 })
 </script>
 
 <style lang="scss" scoped>
 .record-center {
+  .stuck-tip { margin-bottom: 12px; }
   .rc-pager {
     display: flex;
     justify-content: flex-end;

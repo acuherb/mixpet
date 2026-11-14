@@ -70,6 +70,20 @@
 
     <!--待办 + 库存预警-->
     <div class="todo-grid">
+      <!-- 卡壳就诊（Day7 待办）：超 7 天仍未完结，管理端最该先催办的一类；点击直达病例中心筛选结果 -->
+      <div class="todo-card danger-card stuck-card" @click="go('/backstage/z-recordList?stuck=1')">
+        <div class="t-head">
+          <div class="t-ico bg-red"><el-icon><WarningFilled/></el-icon></div>
+          <div>
+            <p class="t-label">卡壳就诊（≥7 天未完结）</p>
+            <p class="t-value">{{ todo.stuck }}</p>
+          </div>
+        </div>
+        <div class="stuck-detail">
+          待化验 {{ todo.labPending }} · 待影像 {{ todo.imagePending }} · 待手术 {{ todo.surgeryPending }} · 待随访 {{ todo.followPending }}
+        </div>
+        <el-link :underline="false" type="danger" @click.stop="go('/backstage/z-recordList?stuck=1')">去跟进 ›</el-link>
+      </div>
       <div class="todo-card">
         <div class="t-head">
           <div class="t-ico bg-blue"><el-icon><DataLine/></el-icon></div>
@@ -209,14 +223,14 @@ const rankPct = (v: number): number =>
     Math.min(100, Math.round((v / Math.max(1, ...stat.value.doctorTop.map(d => d.count))) * 100))
 
 // 诊疗待办（卡壳就诊：接诊中/待出结果/待手术/待随访）
-const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0, clientPending: 0})
+const todo = ref<RecordTodo>({treating: 0, labPending: 0, imagePending: 0, surgeryPending: 0, followPending: 0, clientPending: 0, stuck: 0})
 
 const loadError = ref(false)
 const loadAll = (): void => {
   loadError.value = false
   reqStatOverview().then(res => { stat.value = res || stat.value })
       .catch(() => { loadError.value = true })
-  reqRecordTodo().then(res => { if (res) todo.value = res })
+  reqRecordTodo().then(res => { if (res) todo.value = {...todo.value, ...res} })
       .catch(() => { loadError.value = true })
 }
 onMounted(loadAll)
@@ -295,6 +309,8 @@ onMounted(loadAll)
 .todo-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.09); }
 .warn-card { border-left: 4px solid #e6a23c; }
 .danger-card { border-left: 4px solid #f56c6c; }
+.stuck-card { cursor: pointer; }
+.stuck-detail { margin: 8px 0 6px; font-size: 11.5px; color: #8a94a6; line-height: 1.6; }
 .t-head { display: flex; align-items: center; gap: 12px; }
 .t-ico {
   width: 42px;

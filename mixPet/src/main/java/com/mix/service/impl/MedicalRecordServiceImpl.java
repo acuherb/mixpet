@@ -847,6 +847,14 @@ public class MedicalRecordServiceImpl extends ServiceImpl<MedicalRecordMapper, M
         // 待审核的自助注册顾客（audit_status=0，注册后等管理员放行）
         long clientPending = clientMapper.selectCount(Wrappers.<Client>lambdaQuery()
                 .eq(Client::getAuditStatus, 0));
-        return new RecordTodoVo(treating, lab, image, surgery, follow, clientPending);
+        // 卡壳就诊（Day7 待办）：接诊中且创建超过 7 天仍未完结。
+        // 口径与病例中心下钻 /record/page 对齐：排除已删除、create_time <= now-7d，
+        // 保证看板数字与点进去看到的列表条数一致。
+        long stuck = this.lambdaQuery()
+                .eq(MedicalRecord::getIsDel, 0)
+                .eq(MedicalRecord::getStatus, 0)
+                .le(MedicalRecord::getCreateTime, LocalDateTime.now().minusDays(7))
+                .count();
+        return new RecordTodoVo(treating, lab, image, surgery, follow, clientPending, stuck);
     }
 }

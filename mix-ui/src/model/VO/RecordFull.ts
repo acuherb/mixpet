@@ -119,4 +119,6 @@ export interface RecordTodo {
     followPending: number;
     /** 待审核的自助注册顾客数 */
     clientPending: number;
+    /** 卡壳就诊：接诊中且创建超过 7 天仍未完结的病历数 */
+    stuck: number;
 }
