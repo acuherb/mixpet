@@ -100,8 +100,13 @@ echo "后端 PID: $BK_PID  日志: $BK_LOG"
 echo ""
 echo "等待服务起来..."
 BK_OK=no
-for i in $(seq 1 90); do
+# mvn clean + 编译 + Spring 启动合计可能超过 90 秒（曾因超时误报「后端未就绪」，
+# 实际服务已正常）。放宽到 150 秒，并加端口探测兜底：日志尚未刷出但 Tomcat 已监听也算就绪。
+for i in $(seq 1 150); do
   if grep -q "Started MixPetApplication" "$BK_LOG" 2>/dev/null; then BK_OK=yes; echo "✅ 后端就绪 ($i 秒)"; break; fi
+  if curl -s -o /dev/null --max-time 1 http://localhost:8085/; then
+    BK_OK=yes; echo "✅ 后端就绪（端口已通，$i 秒）"; break
+  fi
   # 进程不在了说明启动失败（如被 OOM 杀），提前退出不用傻等
   kill -0 "$BK_PID" 2>/dev/null || { echo "❌ 后端进程已退出（可能 OOM 或启动报错），请看日志"; break; }
   sleep 1
