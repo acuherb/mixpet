@@ -201,6 +201,7 @@ public class LabOrderServiceImpl extends ServiceImpl<LabOrderMapper, LabOrder> i
         if (vo == null || vo.getOrderId() == null) throw new BizException("缺少化验单信息");
         LabOrder order = this.getById(vo.getOrderId());
         if (order == null) throw new BizException("化验单不存在");
+        if (Boolean.TRUE.equals(order.getIsCancel())) throw new BizException("该化验单已作废，不可录入结果");
         boolean revising = Boolean.TRUE.equals(order.getStatus());
         if (revising) {
             if (vo.getReviseReason() == null || vo.getReviseReason().isBlank())

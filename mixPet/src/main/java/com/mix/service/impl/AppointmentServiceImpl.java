@@ -106,6 +106,13 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
             throw new BizException("该医生当日号源已满（每日最多 " + maxPerDay + " 个），请改选其他日期或医生");
         if (periodCnt + 1 > slotLimit)
             throw new BizException("该医生该时段号源已满（最多 " + slotLimit + " 个），请改选其他时段");
+        // 同一宠物在同一医生的同一时段重复挂号（sameDay 已排除自身，且在医生行锁内，无并发误判）
+        boolean petDup = sameDay.stream()
+                .filter(a -> appoint.getPetId().equals(a.getPetId()))
+                .anyMatch(a -> a.getAppointmentDate() != null
+                        && (a.getAppointmentDate().getHour() < 12 ? 1 : 2) == period);
+        if (petDup)
+            throw new BizException("该宠物在该医生此时段已有预约，请勿重复挂号");
 
         boolean ok = isNew ? this.save(appoint) : this.updateById(appoint);
         // 微信旁路挂点：挂号成功通知（enabled=false/未绑 openid 自动跳过，异常不影响挂号事务）

@@ -1,88 +1,47 @@
-/* ============ 设计 Token（全站统一变量，渐进替换散落十六进制） ============ */
 :root {
-  --brand: #1E6FA8;        /* 品牌主色（蓝） */
-  --brand-dark: #175c8c;   /* 品牌深色 */
-  --brand-2: #2BB6A8;      /* 品牌辅色（青绿） */
-  --bg: #e9e9f5;           /* 页面背景 */
-  --card-bg: #ffffff;      /* 卡片背景 */
-  --text: #1F2D3D;         /* 主文字 */
-  --text-2: #606266;       /* 次文字 */
-  --text-3: #909399;       /* 弱文字 */
-  --border: #ebeef5;       /* 边框 */
-  --radius: 12px;          /* 卡片圆角 */
-  --radius-sm: 8px;        /* 小圆角 */
-  --shadow: 0 2px 12px rgba(31, 45, 61, 0.08); /* 卡片阴影 */
+  --brand: #1E6FA8;
+  --brand-dark: #175c8c;
+  --brand-2: #2BB6A8;
+  --bg: #e9e9f5;
+  --card-bg: #ffffff;
+  --text: #1F2D3D;
+  --text-2: #606266;
+  --text-3: #909399;
+  --border: #ebeef5;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(31,45,61,.08);
   --danger: #F56C6C;
   --warning: #E6A23C;
   --success: #67C23A;
 }
 
-/* 全局：防止水平溢出导致左右晃动 */
-html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    overflow-x: hidden;
+:root {
+  --el-color-primary: #1E6FA8;
+  --el-color-primary-light-3: #5a96c4;
+  --el-color-primary-light-5: #87b3d6;
+  --el-color-primary-light-7: #b3d0e7;
+  --el-color-primary-light-8: #c9deef;
+  --el-color-primary-light-9: #e3eef6;
+  --el-color-primary-dark-2: #175c8c;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-color: #ebeef5;
+  --el-border-color-light: #ebeef5;
 }
 
-#app {
-    overflow-x: hidden;
-    width: 100%;
-}
+html, body { margin:0; padding:0; width:100%; overflow-x:hidden; }
+#app { overflow-x:hidden; width:100%; }
+body { background-color: var(--bg); }
+a { text-decoration:none; color:inherit; }
+*, *::before, *::after { box-sizing: border-box; }
 
-/* 设置背景色（随品牌色联动：--bg 由 utils/hospital 注入，未配置时取 :root 默认） */
-body {
-    background-color: var(--bg);
-}
-
-/* 设置链接样式 */
-a {
-    text-decoration: none;
-    color: inherit;
-}
-
-/* 所有元素用 border-box 计算尺寸，避免 padding 撑破容器 */
-*, *::before, *::after {
-    box-sizing: border-box;
-}
-
-/* ============ 窄屏适配（手机/平板，重点：后台表格页与按钮不溢出） ============ */
 @media (max-width: 768px) {
-  /* 后台/工作台内容区间距收敛 */
-  .el-card {
-    margin-left: 12px !important;
-    margin-right: 12px !important;
-  }
-
-  /* 弹窗撑满可用宽度 */
-  .el-dialog {
-    width: 94% !important;
-  }
-
-  /* 表格操作按钮留间距、允许换行，防止挤压溢出 */
-  .el-table .el-button + .el-button {
-    margin-left: 6px;
-  }
-
-  /* 分页居中可换行 */
-  .el-pagination {
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  /* 医生工作台页头：徽章换行不挤压 */
-  .dash-head {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .ph-right {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  /* 页脚栏改单列 */
-  .foot-cols {
-    grid-template-columns: 1fr !important;
-  }
+  .el-card { margin-left:12px !important; margin-right:12px !important; }
+  .el-dialog { width:94% !important; }
+  .el-table .el-button + .el-button { margin-left:6px; }
+  .el-pagination { justify-content:center; flex-wrap:wrap; }
+  .dash-head { flex-wrap:wrap; gap:8px; }
+  .ph-right { flex-wrap:wrap; justify-content:flex-end; }
+  .foot-cols { grid-template-columns:1fr !important; }
 }

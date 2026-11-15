@@ -31,7 +31,7 @@
           :collapse-transition="false"
           :default-active="searching ? '' : $route.path"
           :default-openeds="openGroups"
-          active-text-color="#ffd04b"
+          active-text-color="#1E6FA8"
           background-color="#545c64"
           router
           text-color="#dce3ec"
@@ -302,7 +302,7 @@ onUnmounted(() => {
         text-decoration: none;
         border-radius: 4px;
 
-        &:hover { color: #ffd04b; background-color: rgba(255, 255, 255, 0.08); }
+        &:hover { color: #1E6FA8; background-color: rgba(255, 255, 255, 0.08); }
       }
     }
 

@@ -123,6 +123,7 @@ public class ImageOrderServiceImpl extends ServiceImpl<ImageOrderMapper, ImageOr
         if (vo == null || vo.getOrderId() == null) throw new BizException("缺少申请单id");
         ImageOrder order = this.getById(vo.getOrderId());
         if (order == null) throw new BizException("申请单不存在");
+        if (Boolean.TRUE.equals(order.getIsCancel())) throw new BizException("该申请单已作废，不可出报告");
         if (Boolean.TRUE.equals(order.getStatus())) throw new BizException("该单已出报告");
         // 兼容：前端仍传拼接好的 result；模板/结构化字段另存，打印页可分区展示
         String report = vo.getResult();
