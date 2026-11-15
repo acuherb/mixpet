@@ -26,6 +26,7 @@ fi
 DB_NAME="${DB_NAME:-pet_mix}"
 
 SCRIPTS=(
+  feature_20261024_audit_log.sql
   feature_20261107_p0_payment_audit.sql
   feature_20261107_p1_appointment_slot.sql
   feature_20261107_p3_clinical.sql
@@ -39,6 +40,8 @@ SCRIPTS=(
   feature_20261113_prescription_days.sql
   feature_20261113_quarantine.sql
   feature_20261113_legacy_keys.sql
+  feature_20261113_bill_legacy.sql
+  feature_20261113_drug_legacy.sql
   feature_20261114_checkup.sql
   feature_20261114_foster.sql
 )

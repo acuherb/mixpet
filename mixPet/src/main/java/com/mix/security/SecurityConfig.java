@@ -28,7 +28,7 @@ public class SecurityConfig {
         // 放行的后端接口
         // 注意：/doctor/page 返回医生全字段(含电话/邮箱/账号)，已从放行移除，需登录且限管理角色访问
         String[] rearEnd = {"/login/**", "/power/**", "/doctor/view", "/pet/four",
-                "/foster/pet", "/notice/four", "/common/download", "/common/downChat", "/setting/hospital",
+                "/foster/pet", "/notice/four", "/common/download", "/setting/hospital",
                 // 微信服务器回调：无法携带会话，靠 SDK 验签 + state HMAC 防伪造（P0-3 骨架）
                 "/wx/pay/notify", "/wx/auth/callback"};
         PowerHandler powerHandler = new PowerHandler();

@@ -160,8 +160,9 @@ const exportPdf = (): void => {
     filename: `就诊资料-No.${f.record.recordId}.pdf`,
     image: {type: 'jpeg', quality: 0.95},
     html2canvas: {scale: 2},
-    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-  }).from(el).save())
+    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
+    pagebreak: {mode: ['css', 'legacy'], avoid: '.rc-card, tr'}
+  } as any).from(el).save())
       .catch(() => ElMessage.error('PDF 导出失败，请改用「打印 / 另存为 PDF」'))
       .finally(() => { pdfing.value = false })
 }

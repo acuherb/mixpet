@@ -160,8 +160,9 @@ const exportPdf = async (): Promise<void> => {
       filename: `处方笺-${sheet.printNo || sheet.rxNo || sheet.recordId}.pdf`,
       image: {type: 'jpeg', quality: 0.95},
       html2canvas: {scale: 2},
-      jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-    }).from(el).save()
+      jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
+      pagebreak: {mode: ['css', 'legacy'], avoid: 'tr'}
+    } as any).from(el).save()
   } catch {
     ElMessage.error('PDF 导出失败')
   } finally {

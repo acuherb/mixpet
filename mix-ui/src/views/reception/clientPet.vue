@@ -271,7 +271,7 @@
                 {{ su.surgeryName }}（{{ su.surgeryType || '—' }}）· 麻醉：{{ su.anesthesiaType || '—' }} · 费用 ￥{{ su.fee }}
                 <el-tag :type="surgeryStatusType(su.status)" size="small" effect="light">{{ surgeryStatusText(su.status) }}</el-tag>
               </div>
-              <div class="case-para" v-if="su.postopNote"><label>术后</label><p>{{ su.postopNote }}</p></div>
+              <!-- 术前/术中/术后记录属院内病历内容，顾客端不展示 -->
             </template>
           </div>
 

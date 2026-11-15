@@ -192,8 +192,9 @@ const exportPdf = (): void => {
     filename: `病历-No.${f.record.recordId}-${tplName}.pdf`,
     image: {type: 'jpeg', quality: 0.95},
     html2canvas: {scale: 2},
-    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'}
-  }).from(el).save()).catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
+    jsPDF: {unit: 'mm', format: 'a4', orientation: 'portrait'},
+    pagebreak: {mode: ['css', 'legacy'], avoid: '.rc-card, tr'}
+  } as any).from(el).save()).catch(() => ElMessage.error('PDF 导出失败')).finally(() => { pdfing.value = false })
 }
 </script>
 

@@ -1,5 +1,7 @@
 package com.mix.controller;
 
+import com.mix.model.entity.Client;
+import com.mix.util.UserUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,17 +46,20 @@ public class ImgController {
 
     private final com.mix.mapper.LabOrderMapper labOrderMapper;
     private final com.mix.mapper.ImageOrderMapper imageOrderMapper;
+    private final com.mix.mapper.MsgMapper msgMapper;
 
     public ImgController(@Value("${pet-mix.images-path}") String basePath,
                          @Value("${pet-mix.chatImg-path}") String chatPath,
                          @Value("${pet-mix.report-path}") String reportPath,
                          com.mix.mapper.LabOrderMapper labOrderMapper,
-                         com.mix.mapper.ImageOrderMapper imageOrderMapper) {
+                         com.mix.mapper.ImageOrderMapper imageOrderMapper,
+                         com.mix.mapper.MsgMapper msgMapper) {
         this.basePath = basePath;
         this.chatPath = chatPath;
         this.reportPath = reportPath;
         this.labOrderMapper = labOrderMapper;
         this.imageOrderMapper = imageOrderMapper;
+        this.msgMapper = msgMapper;
         // 确保聊天目录下的 image 与 file 子目录存在
         new File(chatImageDir()).mkdirs();
         new File(chatFileDir()).mkdirs();
@@ -150,6 +155,14 @@ public class ImgController {
      */
     @GetMapping("/download")
     public void download(String name, HttpServletResponse response) {
+        // 该接口为首页公开页取头像而匿名放行，必须限制只读图片：
+        // 否则知道目录下任意文件名（报告/备份等）即可匿名取走。
+        String lower = name == null ? "" : name.toLowerCase();
+        int dot = lower.lastIndexOf(".");
+        if (dot < 0 || !ALLOWED_IMG_SUFFIX.contains(lower.substring(dot))) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         sendFile(name, response, basePath, false);
     }
 
@@ -160,6 +173,20 @@ public class ImgController {
      */
     @GetMapping("/downChat")
     public void downChat(String type, String name, Boolean inline, HttpServletResponse response) {
+        // 该接口已从 SecurityConfig 的 permitAll 白名单移除（必须登录）。
+        // 顾客再加一层归属校验：文件名必须出现在本人参与的聊天消息里（msg.msg_content 存的就是上传后的文件名），
+        // 防止登录顾客凭 UUID 读取他人会话附件。员工侧维持原有权限，不影响后台聊天数据管理。
+        if (UserUtil.getUser() instanceof Client client) {
+            Long n = msgMapper.selectCount(com.baomidou.mybatisplus.core.toolkit.Wrappers
+                    .<com.mix.model.entity.Msg>lambdaQuery()
+                    .eq(com.mix.model.entity.Msg::getClientId, client.getClientId())
+                    .eq(com.mix.model.entity.Msg::getMsgContent, name)
+                    .eq(com.mix.model.entity.Msg::getIsDel, 0));
+            if (n == null || n == 0) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+        }
         String dir = "file".equals(type) ? chatFileDir() : chatImageDir();
         // 预览（inline=true）时内联显示，便于浏览器直接预览；
         // 否则保持原逻辑：聊天图片内联显示、聊天文件强制下载
