@@ -7,6 +7,13 @@ export interface FinanceReport {
     totalRevenue: number;
     /** 优惠合计（会员折扣让利） */
     discountMoney: number;
+    /** 收款方式构成（折后实收、已扣退款） */
+    payBalance: number;
+    payCash: number;
+    payWechat: number;
+    payBalanceCount: number;
+    payCashCount: number;
+    payWechatCount: number;
     orderCount: number;
     avgOrder: number;
     refundCount: number;

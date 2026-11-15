@@ -100,6 +100,7 @@ public class StatisticsServiceImpl implements IStatisticsService {
                 .ge(Drug::getExpireDate, today)
                 .le(Drug::getExpireDate, today.plusDays(90))));
         vo.setRevenueTrend(statisticsMapper.revenueTrend(LocalDateTime.of(today.minusDays(6), LocalTime.MIN)));
+        vo.setRecordTrend(statisticsMapper.recordTrend(LocalDateTime.of(today.minusDays(6), LocalTime.MIN)));
         vo.setDoctorTop(statisticsMapper.doctorTop(5));
         return vo;
     }

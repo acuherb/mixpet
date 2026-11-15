@@ -2,7 +2,7 @@
   <div class="pa">
     <!-- 工具栏（不打印） -->
     <div class="no-print pa-bar">
-      <el-button @click="router.back()">返回</el-button>
+      <BackBtn @click="router.back()"/>
       <span class="pa-bar-tit">宠物就诊档案</span>
       <el-button v-if="a" :loading="loading" size="small" @click="reload">刷新</el-button>
       <el-button v-if="a" size="small" type="primary" @click="doPrint">打印档案</el-button>

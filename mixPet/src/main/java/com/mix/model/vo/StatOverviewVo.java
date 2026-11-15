@@ -1,5 +1,6 @@
 package com.mix.model.vo;
 
+import com.mix.model.dto.CountTrend;
 import com.mix.model.dto.NameCount;
 import com.mix.model.dto.RevenueTrend;
 import lombok.Data;
@@ -40,6 +41,8 @@ public class StatOverviewVo {
     private Long expiringDrug;
     /** 近7日营收趋势 */
     private List<RevenueTrend> revenueTrend;
+    /** 近7日接诊量趋势 */
+    private List<CountTrend> recordTrend;
     /** 医生接诊数 top */
     private List<NameCount> doctorTop;
 }

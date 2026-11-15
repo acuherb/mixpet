@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHead>聊天数据清理</PageHead>
+    <PageHead :show-back="false">聊天数据清理</PageHead>
     <el-card shadow="never" class="clean-card">
       <template #header>
         <b>历史聊天数据</b>

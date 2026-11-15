@@ -2,7 +2,7 @@
   <div class="rp-page" :style="{'--brand': brand}">
     <!-- 工具栏（不打印、不进 PDF） -->
     <div class="no-print rp-toolbar">
-      <el-button @click="goBack">{{ isClient ? '关闭' : '返回' }}</el-button>
+      <BackBtn @click="goBack">{{ isClient ? '关闭' : '返回' }}</BackBtn>
       <span class="rp-badge">{{ schema.title || '体检表' }}</span>
       <el-button :disabled="!schema.sections.length" type="primary" @click="doPrint">打印 / 另存为 PDF</el-button>
       <el-button :disabled="!schema.sections.length" :loading="pdfing" @click="exportPdf">下载 PDF 文件</el-button>

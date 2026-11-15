@@ -1,5 +1,6 @@
 package com.mix.mapper;
 
+import com.mix.model.dto.CountTrend;
 import com.mix.model.dto.NameCount;
 import com.mix.model.dto.RevenueTrend;
 import org.apache.ibatis.annotations.Mapper;
@@ -19,6 +20,9 @@ public interface StatisticsMapper {
 
     /** 近N日实收趋势 */
     List<RevenueTrend> revenueTrend(@Param("start") LocalDateTime start);
+
+    /** 近N日接诊数趋势（按新建病历） */
+    List<CountTrend> recordTrend(@Param("start") LocalDateTime start);
 
     /** 医生接诊数 top */
     List<NameCount> doctorTop(@Param("limit") int limit);

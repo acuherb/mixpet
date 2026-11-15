@@ -1,7 +1,7 @@
 <template>
   <div class="mp-page">
     <div class="no-print mp-bar">
-      <el-button @click="goBack">返回</el-button>
+      <BackBtn @click="goBack">返回</BackBtn>
       <el-select v-model="tpl" style="width: 210px" @change="onTplChange">
         <el-option-group label="体检报告（7 种）">
           <el-option v-for="o in CHECKUP_TPLS" :key="o.v" :label="o.l" :value="o.v"/>

@@ -9,6 +9,10 @@ export interface NameCount {
     name: string;
     count: number;
 }
+export interface CountTrend {
+    date: string;
+    count: number;
+}
 export interface StatOverview {
     todayRevenue: number;
     monthRevenue: number;
@@ -30,5 +34,7 @@ export interface StatOverview {
     /** 近效期药品数(90天内) */
     expiringDrug: number;
     revenueTrend: RevenueTrend[];
+    /** 近7日接诊量趋势 */
+    recordTrend: CountTrend[];
     doctorTop: NameCount[];
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="ct-wrap">
-    <PageHead>体检表模板</PageHead>
+    <PageHead :show-back="false">体检表模板</PageHead>
     <div class="ct-body">
       <!-- 左：模板列表 -->
       <aside class="ct-list">

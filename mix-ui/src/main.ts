@@ -7,8 +7,11 @@ import App from './App.vue'
 import router from './router'
 // ElementPlus
 import {pushElement} from "@/push-element";
+import BackBtn from "@/components/row/BackBtn.vue";
 
 const app: Vpp = createApp(App)
 app.use(router)
 pushElement(app)
+// 全局业务组件：统一返回按钮（避免各模块手写返回导致样式各异）
+app.component('BackBtn', BackBtn)
 app.mount('#app')

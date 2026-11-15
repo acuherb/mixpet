@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHead>数据备份</PageHead>
+    <PageHead :show-back="false">数据备份</PageHead>
 
     <!-- 说明与安全警示 -->
     <el-alert :closable="false" show-icon style="margin-bottom: 12px" type="info"

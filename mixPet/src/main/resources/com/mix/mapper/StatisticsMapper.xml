@@ -18,6 +18,15 @@
         ORDER BY date ASC
     </select>
 
+    <!--近N日接诊量趋势：新建病历数，与"今日接诊"同口径-->
+    <select id="recordTrend" resultType="com.mix.model.dto.CountTrend">
+        SELECT DATE(create_time) AS date, COUNT(*) AS count
+        FROM medical_record
+        WHERE is_del = 0 AND create_time &gt;= #{start}
+        GROUP BY DATE(create_time)
+        ORDER BY date ASC
+    </select>
+
     <!--医生接诊数 top（按病历归属）-->
     <select id="doctorTop" resultType="com.mix.model.dto.NameCount">
         SELECT d.doctor_name AS name, COUNT(m.record_id) AS count

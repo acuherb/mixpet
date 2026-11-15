@@ -8,7 +8,7 @@
                :signers="signerFields"
                print-time>
     <template #toolbar>
-      <el-button @click="router.back()">返回</el-button>
+      <BackBtn @click="router.back()"/>
       <el-button type="primary" @click="doPrint">打印报告单</el-button>
       <span v-if="!hasResult" class="rm-muted">尚未出结果，打印仅为空白样张</span>
     </template>

@@ -1,7 +1,7 @@
 <template>
   <div class="rx-page a4">
     <div class="no-print rx-toolbar">
-      <el-button @click="router.back()">返回</el-button>
+      <BackBtn @click="router.back()"/>
       <el-button type="primary" :disabled="!c" @click="doPrint">打印同意书</el-button>
     </div>
 

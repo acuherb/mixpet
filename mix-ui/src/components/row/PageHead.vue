@@ -1,44 +1,30 @@
 <template>
-  <!--  封装的公共导航栏-->
+  <!-- 公共页头：统一返回按钮 + 标题 -->
   <header class="page-header">
-    <div v-if="showBack" class="back" @click="$router.back()">
-      <img alt="返回" src="/icon/back.svg">
-      <span>返回</span>
-    </div>
-    <span>
-      <slot></slot>
-    </span>
+    <BackBtn v-if="showBack" @click="$router.back()"/>
+    <span class="ph-title"><slot></slot></span>
   </header>
 </template>
 
 <script lang="ts" setup>
 withDefaults(defineProps<{ showBack?: boolean }>(), { showBack: true })
 </script>
+
 <style lang="scss" scoped>
 .page-header {
-  margin-bottom: 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px;
-  height: 32px;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
   -webkit-user-select: none;
   user-select: none;
-  cursor: pointer;
 
-  .back {
-    color: #5b88ea;
-    display: flex;
-    align-items: center;
-    height: 32px;
-    width: 72px;
-    border-right: #606266 dotted 4px;
-  }
-
-  & > span {
-    font-size: large;
-    font-weight: bold;
-    color: #606266;
+  .ph-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #303133;
   }
 }
 </style>

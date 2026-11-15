@@ -18,6 +18,14 @@ public class FinanceReport {
     private BigDecimal totalRevenue;
     /** 优惠合计（会员折扣让利） */
     private BigDecimal discountMoney;
+    /** 收款方式构成（折后实收、已扣退款）：余额/现金/微信 */
+    private BigDecimal payBalance;
+    private BigDecimal payCash;
+    private BigDecimal payWechat;
+    /** 收款方式对应单数 */
+    private Integer payBalanceCount;
+    private Integer payCashCount;
+    private Integer payWechatCount;
     /** 订单数（已收款未退款） */
     private Integer orderCount;
     /** 客单价 */

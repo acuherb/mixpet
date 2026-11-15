@@ -100,6 +100,32 @@
       </el-card>
     </div>
 
+    <!--收款方式构成-->
+    <el-card shadow="never">
+      <template #header>
+        <div class="c-header">
+          <el-icon class="c-ico bg-teal"><Wallet/></el-icon>
+          <b>收款方式构成</b>
+          <span class="c-sub">折后实收 · 已扣退款 · 合计 ￥{{ money(payTotal()) }}</span>
+        </div>
+      </template>
+      <div class="pay-grid">
+        <div v-for="p in payMethods" :key="p.key" class="pay-item">
+          <div class="p-head">
+            <span class="p-dot" :style="{background: p.color}"></span>
+            <span class="p-name">{{ p.label }}</span>
+          </div>
+          <div class="p-amt">￥{{ money(p.amount) }}</div>
+          <div class="p-foot">
+            <span>{{ p.count }} 单</span>
+            <span>{{ payPct(p.amount) }}%</span>
+          </div>
+          <div class="p-track"><div class="p-fill" :style="{width: payPct(p.amount) + '%', background: p.color}"></div></div>
+        </div>
+      </div>
+      <p class="tip">按实际收款渠道统计：微信支付需先在系统配置中启用商户号，未启用时为 0；余额扣款与线下现金均计入对应项。</p>
+    </el-card>
+
     <!--收入趋势-->
     <el-card shadow="never">
       <template #header>
@@ -134,7 +160,7 @@
         <template #header>
           <div class="c-header">
             <el-icon class="c-ico bg-orange"><User/></el-icon>
-            <b>按医生</b>
+            <b>按医生（创收额）</b>
           </div>
         </template>
         <el-table :data="r.byDoctor" border size="small">
@@ -160,7 +186,9 @@ import {FinanceReport} from "@/model/entiy/FinanceReport";
 import {reqFinanceReport} from "@/request/StatisticsApi";
 
 const empty = (): FinanceReport => ({
-  startDate: null, endDate: null, totalRevenue: 0, discountMoney: 0, orderCount: 0, avgOrder: 0,
+  startDate: null, endDate: null, totalRevenue: 0, discountMoney: 0,
+  payBalance: 0, payCash: 0, payWechat: 0, payBalanceCount: 0, payCashCount: 0, payWechatCount: 0,
+  orderCount: 0, avgOrder: 0,
   refundCount: 0, refundAmount: 0, feeRegister: 0, feeTreat: 0, feeDrug: 0, feeLab: 0,
   feeImage: 0, feePackage: 0, feeSurgery: 0, feeHospital: 0, drugCost: 0, drugProfit: 0,
   trend: [], byDepartment: [], byDoctor: []
@@ -227,10 +255,25 @@ const buildCompose = (): void => {
 const maxCompose = (): number => Math.max(1, ...compose.value.map(c => c.amount))
 const pct = (v: number): number => Math.round((v / maxCompose()) * 100)
 
+// 收款方式构成：金额占比以三者合计为分母（=折后实收合计）
+const payMethods = ref<{ key: string; label: string; amount: number; count: number; color: string }[]>([])
+const buildPayMethods = (): void => {
+  payMethods.value = [
+    {key: 'balance', label: '余额收款', amount: r.value.payBalance, count: r.value.payBalanceCount, color: 'linear-gradient(90deg,#81c784,#43a047)'},
+    {key: 'cash', label: '现金收款', amount: r.value.payCash, count: r.value.payCashCount, color: 'linear-gradient(90deg,#64b5f6,#1976d2)'},
+    {key: 'wechat', label: '微信支付', amount: r.value.payWechat, count: r.value.payWechatCount, color: 'linear-gradient(90deg,#4db6ac,#00897b)'},
+  ]
+}
+const payTotal = (): number => r.value.payBalance + r.value.payCash + r.value.payWechat
+const payPct = (v: number): number => {
+  const t = payTotal()
+  return t > 0 ? Math.round((v / t) * 100) : 0
+}
+
 onMounted(() => {
   load()
 })
-watch(r, buildCompose, {deep: true})
+watch(r, () => { buildCompose(); buildPayMethods() }, {deep: true})
 </script>
 
 <style scoped>
@@ -273,4 +316,14 @@ watch(r, buildCompose, {deep: true})
 .c-track { flex: 1; height: 16px; background: #f2f3f5; border-radius: 4px; overflow: hidden; }
 .c-fill { height: 100%; background: linear-gradient(90deg, #409eff, #67c23a); }
 .c-amt { width: 90px; text-align: right; font-size: 13px; color: #303133; flex-shrink: 0; }
+.c-sub { margin-left: auto; font-size: 12px; font-weight: 400; color: #909399; }
+.pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.pay-item { background: #fafbfc; border: 1px solid #ebeef5; border-radius: 10px; padding: 14px 16px; }
+.p-head { display: flex; align-items: center; gap: 7px; }
+.p-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.p-name { font-size: 13px; color: #606266; }
+.p-amt { margin: 8px 0 6px; font-size: 22px; font-weight: 700; color: #303133; }
+.p-foot { display: flex; justify-content: space-between; font-size: 12px; color: #909399; margin-bottom: 6px; }
+.p-track { height: 7px; background: #eceff1; border-radius: 4px; overflow: hidden; }
+.p-fill { height: 100%; border-radius: 4px; transition: width .3s; }
 </style>

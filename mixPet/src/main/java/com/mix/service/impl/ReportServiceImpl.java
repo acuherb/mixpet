@@ -77,6 +77,8 @@ public class ReportServiceImpl implements IReportService {
 
         BigDecimal total = BigDecimal.ZERO;
         BigDecimal discountTotal = BigDecimal.ZERO;
+        BigDecimal payBalance = BigDecimal.ZERO, payCash = BigDecimal.ZERO, payWechat = BigDecimal.ZERO;
+        int payBalanceCount = 0, payCashCount = 0, payWechatCount = 0;
         BigDecimal fReg = BigDecimal.ZERO, fTreat = BigDecimal.ZERO, fDrug = BigDecimal.ZERO, fLab = BigDecimal.ZERO;
         BigDecimal fImg = BigDecimal.ZERO, fPkg = BigDecimal.ZERO, fSur = BigDecimal.ZERO, fHos = BigDecimal.ZERO;
         Map<LocalDate, BigDecimal> trend = new TreeMap<>();
@@ -86,6 +88,14 @@ public class ReportServiceImpl implements IReportService {
                     .subtract(nz(b.getRefundMoney())).max(BigDecimal.ZERO);
             total = total.add(real);
             discountTotal = discountTotal.add(nz(b.getDiscountMoney()));
+            // 收款方式：有微信交易号=微信，其余按 payType 分余额/现金（与收银台口径一致）
+            if (b.getWxTransactionId() != null && !b.getWxTransactionId().isBlank()) {
+                payWechat = payWechat.add(real); payWechatCount++;
+            } else if (b.getPayType() == null || !b.getPayType()) {
+                payBalance = payBalance.add(real); payBalanceCount++;
+            } else {
+                payCash = payCash.add(real); payCashCount++;
+            }
             fReg = fReg.add(nz(b.getFeeRegister()));
             fTreat = fTreat.add(nz(b.getFeeTreat()));
             fDrug = fDrug.add(nz(b.getFeeDrug()));
@@ -100,6 +110,12 @@ public class ReportServiceImpl implements IReportService {
         }
         r.setTotalRevenue(total);
         r.setDiscountMoney(discountTotal);
+        r.setPayBalance(payBalance);
+        r.setPayCash(payCash);
+        r.setPayWechat(payWechat);
+        r.setPayBalanceCount(payBalanceCount);
+        r.setPayCashCount(payCashCount);
+        r.setPayWechatCount(payWechatCount);
         r.setOrderCount(paid.size());
         r.setAvgOrder(paid.isEmpty() ? BigDecimal.ZERO
                 : total.divide(BigDecimal.valueOf(paid.size()), 2, RoundingMode.HALF_UP));

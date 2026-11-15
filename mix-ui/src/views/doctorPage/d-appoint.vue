@@ -24,7 +24,7 @@
           style="width: 170px; margin-left: 12px"
           type="date"
           value-format="YYYY-MM-DD"/>
-      <el-button type="primary" style="float: right" @click="addRoleB">添加挂号</el-button>
+      <el-button type="primary" style="margin-left: auto" @click="addRoleB">添加挂号</el-button>
     </div>
     <!-- 挂号列表：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
     <el-table :data="shownAppoint"
@@ -1751,7 +1751,7 @@ onBeforeRouteLeave(async () => {
 </script>
 
 <style lang="scss" scoped>
-.appoint-tabbar { margin: 0 80px 12px; }
+.appoint-tabbar { display: flex; align-items: center; flex-wrap: wrap; margin: 0 80px 12px; }
 .appoint-tab {
   margin-right: 10px;
   padding: 8px 22px;

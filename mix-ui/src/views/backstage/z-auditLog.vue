@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHead>操作日志</PageHead>
+    <PageHead :show-back="false">操作日志</PageHead>
     <el-alert :closable="false" show-icon style="margin-bottom: 12px" type="info"
               title="高危写操作留痕：收款/退款/发药/顾客审核/药品入库/数据备份还原/处方作废等；操作人一律取登录态，不可伪造。"/>
     <BackOpCol role="操作日志" @query="nowQuery">

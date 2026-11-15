@@ -124,9 +124,6 @@
         </div>
         <el-link :underline="false" type="danger" @click="go('/backstage/z-recordList')">去跟进 ›</el-link>
       </div>
-    </div>
-
-    <div class="todo-grid two">
       <!-- 待审核顾客：自助注册待放行，点击直达客户管理自动筛选 -->
       <div class="todo-card warn-card" @click="go('/backstage/y-clientList?audit=0')">
         <div class="t-head">
@@ -166,17 +163,17 @@
         <template #header>
           <div class="c-header">
             <el-icon class="c-ico bg-green"><TrendCharts/></el-icon>
-            <b>近7日实收趋势</b>
+            <b>近7日接诊量趋势</b>
           </div>
         </template>
-        <MiniBar :items="stat.revenueTrend.map(d => ({name: d.date.slice(5), value: d.amount, label: '￥' + money(d.amount)}))"
-                 empty-text="近7日暂无已收费账单"/>
+        <MiniBar :items="stat.recordTrend.map(d => ({name: d.date.slice(5), value: d.count, label: d.count + ' 次'}))"
+                 empty-text="近7日暂无接诊记录"/>
       </el-card>
       <el-card shadow="never" class="chart-card">
         <template #header>
           <div class="c-header">
             <el-icon class="c-ico bg-orange"><Trophy/></el-icon>
-            <b>医生接诊数 Top</b>
+            <b>医生接诊量 Top（累计）</b>
           </div>
         </template>
         <div v-if="stat.doctorTop.length" class="doctor-rank">
@@ -213,7 +210,7 @@ const stat = ref<StatOverview>({
   todayRevenue: 0, monthRevenue: 0, pendingBills: 0, inHospital: 0,
   pendingLab: 0, pendingImage: 0, dueVaccine: 0,
   todayAppoint: 0, todayRecord: 0, clientTotal: 0, pendingDispense: 0, lowStock: 0, expiringDrug: 0,
-  revenueTrend: [], doctorTop: []
+  revenueTrend: [], recordTrend: [], doctorTop: []
 })
 
 const money = (n: number | null | undefined): string =>
@@ -295,17 +292,21 @@ onMounted(loadAll)
 .s-unit { font-size: 13px; font-weight: 400; color: #909399; }
 .todo-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
   gap: 16px;
 }
-.todo-grid.two { grid-template-columns: repeat(2, 1fr); }
 .todo-card {
   background: #fff;
   border-radius: 12px;
   padding: 16px 20px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   transition: transform 0.18s, box-shadow 0.18s;
+  display: flex;
+  flex-direction: column;
+  min-height: 128px;
 }
+.todo-card :deep(.el-link) { margin-top: auto; align-self: flex-start; }
 .todo-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.09); }
 .warn-card { border-left: 4px solid #e6a23c; }
 .danger-card { border-left: 4px solid #f56c6c; }
@@ -389,6 +390,7 @@ onMounted(loadAll)
 
 @media (max-width: 900px) {
   .dash-wrap { padding: 8px; }
+  .stat-grid, .todo-grid { grid-template-columns: repeat(2, 1fr); }
   :deep(.el-col) { flex: 0 0 50% !important; max-width: 50% !important; }
   :deep(.el-table) { min-width: 700px; }
 }

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHead>医院资料</PageHead>
+    <PageHead :show-back="false">医院资料</PageHead>
     <el-card shadow="never" style="margin: 0 80px 40px">
       <el-alert :closable="false" show-icon type="info" style="margin-bottom: 16px"
                 title="此处填写的信息将一键生效于：前台首页页脚、浏览器标题、病历打印抬头、收费小票与 A4 发票"/>
