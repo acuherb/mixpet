@@ -1,6 +1,6 @@
 <template>
   <div>
-    <PageHead>查看挂号</PageHead>
+    <PageHead :show-back="false">查看挂号</PageHead>
     <div class="appoint-tabbar">
       <button
           class="appoint-tab"
@@ -24,7 +24,7 @@
           style="width: 170px; margin-left: 12px"
           type="date"
           value-format="YYYY-MM-DD"/>
-      <ShakeBtn style="float: right" @click="addRoleB">添加挂号</ShakeBtn>
+      <el-button type="primary" style="float: right" @click="addRoleB">添加挂号</el-button>
     </div>
     <!-- 挂号列表：一屏看全貌（挂号多时不受限），字段比后台表格更贴医生视角 -->
     <el-table :data="shownAppoint"
@@ -761,7 +761,6 @@
 <script lang="ts" setup>
 import PageHead from "@/components/row/PageHead.vue";
 import {AppointDto2} from "@/model/DO/AppointDto2";
-import ShakeBtn from "@/components/button/ShakeBtn.vue";
 import {reqDoctorAddAppoint, reqDoctorAppoint} from "@/request/DoctorApi";
 import {reqUpdateAppoint} from "@/request/AppointApi";
 import {computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch} from "vue";
@@ -1763,8 +1762,8 @@ onBeforeRouteLeave(async () => {
   font-size: 14px;
   cursor: pointer;
   transition: all .2s;
-  &:hover { border-color: #409eff; color: #409eff; }
-  &.active { background-color: #409eff; border-color: #409eff; color: #fff; }
+  &:hover { border-color: var(--brand); color: var(--brand); }
+  &.active { background-color: var(--brand); border-color: var(--brand); color: #fff; }
   /* 有未来预约时给页签一个柔和提示，未选中也能一眼看到「明天有号」 */
   &.has-future:not(.active) { border-color: #20b2aa; color: #159b93; background-color: #f0fbfa; }
   .tab-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #20b2aa; margin-left: 6px; vertical-align: middle; }

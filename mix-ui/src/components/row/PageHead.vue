@@ -1,7 +1,7 @@
 <template>
   <!--  封装的公共导航栏-->
   <header class="page-header">
-    <div class="back" @click="$router.back()">
+    <div v-if="showBack" class="back" @click="$router.back()">
       <img alt="返回" src="/icon/back.svg">
       <span>返回</span>
     </div>
@@ -12,6 +12,7 @@
 </template>
 
 <script lang="ts" setup>
+withDefaults(defineProps<{ showBack?: boolean }>(), { showBack: true })
 </script>
 <style lang="scss" scoped>
 .page-header {
