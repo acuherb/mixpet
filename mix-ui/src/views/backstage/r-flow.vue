@@ -55,7 +55,7 @@ const loadAll = async (): Promise<void> => {
   }
 }
 const onNavigate = (path: string): void => { if (path) router.push(path) }
-const onLogout = (): void => { reqLogout().then(res => { clearPwdCheckFlag(); if (res.code === 1) router.push('/login') }).catch(() => ElMessage.info('已取消')) }
+const onLogout = (): void => { reqLogout().then(res => { clearPwdCheckFlag(); if (res.code === 204) router.push('/login') }).catch(() => ElMessage.info('已取消')) }
 
 let timer: ReturnType<typeof setInterval> | undefined
 let unsub: (() => void) | null = null

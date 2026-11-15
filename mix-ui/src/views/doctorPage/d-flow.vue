@@ -161,7 +161,7 @@ watch(() => route.path, (p: string): void => {
 
 const doLogout = () => {
   ElMessageBox.confirm('确定退出登录吗？', '退出登录', {confirmButtonText: '确定退出', cancelButtonText: '取消', type: 'warning'})
-    .then(() => { reqLogout().then(res => { clearPwdCheckFlag(); if (res.code === 1) router.push('/login') }) })
+    .then(() => { reqLogout().then(res => { clearPwdCheckFlag(); if (res.code === 204) router.push('/login') }) })
     .catch(() => ElMessage.info('已取消'))
 }
 
