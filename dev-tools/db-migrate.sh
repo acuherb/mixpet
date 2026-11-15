@@ -44,6 +44,7 @@ SCRIPTS=(
   feature_20261113_drug_legacy.sql
   feature_20261114_checkup.sql
   feature_20261114_foster.sql
+  feature_20261115_checkup_reseed.sql
 )
 for s in "${SCRIPTS[@]}"; do
   f="$PROJ/db-backup/$s"

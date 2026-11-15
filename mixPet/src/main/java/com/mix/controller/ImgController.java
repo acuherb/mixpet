@@ -4,6 +4,9 @@ import com.mix.model.entity.Client;
 import com.mix.util.UserUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaTypeFactory;
@@ -47,19 +50,30 @@ public class ImgController {
     private final com.mix.mapper.LabOrderMapper labOrderMapper;
     private final com.mix.mapper.ImageOrderMapper imageOrderMapper;
     private final com.mix.mapper.MsgMapper msgMapper;
+    private final JdbcTemplate jdbc;
+
+    /** 头像文件名是否被公开记录引用（pet / doctor / client / 院徽 logo） */
+    private static final String AVATAR_REF_SQL = """
+            SELECT (SELECT COUNT(*) FROM pet WHERE pet_photo = ?)
+                 + (SELECT COUNT(*) FROM doctor WHERE doctor_photo = ?)
+                 + (SELECT COUNT(*) FROM client WHERE client_photo = ?)
+                 + (SELECT COUNT(*) FROM hospital_setting WHERE logo = ?)
+            """;
 
     public ImgController(@Value("${pet-mix.images-path}") String basePath,
                          @Value("${pet-mix.chatImg-path}") String chatPath,
                          @Value("${pet-mix.report-path}") String reportPath,
                          com.mix.mapper.LabOrderMapper labOrderMapper,
                          com.mix.mapper.ImageOrderMapper imageOrderMapper,
-                         com.mix.mapper.MsgMapper msgMapper) {
+                         com.mix.mapper.MsgMapper msgMapper,
+                         JdbcTemplate jdbc) {
         this.basePath = basePath;
         this.chatPath = chatPath;
         this.reportPath = reportPath;
         this.labOrderMapper = labOrderMapper;
         this.imageOrderMapper = imageOrderMapper;
         this.msgMapper = msgMapper;
+        this.jdbc = jdbc;
         // 确保聊天目录下的 image 与 file 子目录存在
         new File(chatImageDir()).mkdirs();
         new File(chatFileDir()).mkdirs();
@@ -162,6 +176,17 @@ public class ImgController {
         if (dot < 0 || !ALLOWED_IMG_SUFFIX.contains(lower.substring(dot))) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
+        }
+        // 匿名请求（首页宠物墙/医生介绍/院徽）只能取被公开记录引用的头像：
+        // 目录里的孤儿文件、已从记录移除的历史照片，即便知道文件名也读不到。
+        // 登录态放行：UpImg.vue 上传后先预览再保存，此刻文件名尚未入库，不能挡。
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+            Integer ref = jdbc.queryForObject(AVATAR_REF_SQL, Integer.class, name, name, name, name);
+            if (ref == null || ref == 0) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
         }
         sendFile(name, response, basePath, false);
     }
