@@ -20,7 +20,7 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="账单号" prop="billId" width="90"/>
+      <el-table-column label="账单号" prop="billId" width="90" fixed="left"/>
       <el-table-column label="就诊号" prop="recordId" width="90"/>
       <el-table-column label="账单金额" width="120">
         <template #default="s">￥{{ (s.row.totalMoney ?? 0).toFixed(2) }}</template>

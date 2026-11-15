@@ -63,7 +63,7 @@ onMounted(loadList)
 <style lang="scss" scoped>
 .notice-self { padding: 4px 0; }
 .ns-head {
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px;
+  display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;
   h2 { margin: 0 0 6px; font-size: 20px; color: #253858; }
   p { margin: 0; font-size: 13px; color: #8a96a8; }
 }

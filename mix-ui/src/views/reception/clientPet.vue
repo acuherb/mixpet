@@ -144,7 +144,7 @@
           <div class="case-sec" v-if="revisits.length">
             <div class="case-sec-tit">复 诊 记 录</div>
             <el-table :data="revisits" border size="small" class="case-table">
-              <el-table-column label="就诊时间" min-width="150">
+              <el-table-column label="就诊时间" min-width="150" fixed="left">
                 <template #default="s">{{ (s.row.createTime || '').replace('T', ' ').slice(0, 16) }}</template>
               </el-table-column>
               <el-table-column label="诊断" min-width="160" prop="diagnosis" show-overflow-tooltip/>
@@ -160,7 +160,7 @@
           <div class="case-sec">
             <div class="case-sec-tit">处 方 用 药</div>
             <el-table :data="detail.prescriptions" border size="small" class="case-table">
-              <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip/>
+              <el-table-column label="药品" min-width="110" prop="drugName" show-overflow-tooltip fixed="left"/>
               <el-table-column label="数量" width="70">
                 <template #default="scope">{{ scope.row.quantity }}{{ scope.row.drugUnit }}</template>
               </el-table-column>
@@ -173,7 +173,7 @@
           <div class="case-sec" v-if="detail.packages && detail.packages.length">
             <div class="case-sec-tit">套 餐 服 务</div>
             <el-table :data="detail.packages" border size="small" class="case-table">
-              <el-table-column label="套餐" min-width="140" prop="packageName" show-overflow-tooltip/>
+              <el-table-column label="套餐" min-width="140" prop="packageName" show-overflow-tooltip fixed="left"/>
               <el-table-column label="价格(元)" width="90" prop="price"/>
             </el-table>
           </div>
@@ -188,7 +188,7 @@
                 <el-tag v-else size="small" type="warning" effect="light">待检验</el-tag>
               </div>
               <el-table :data="lab.items || []" border size="small" class="case-table" :row-class-name="labRowClass">
-                <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip/>
+                <el-table-column label="检验项" min-width="120" prop="itemName" show-overflow-tooltip fixed="left"/>
                 <el-table-column label="结果" width="110">
                   <template #default="s">
                     <span :class="{ 'abnormal-text': s.row.isAbnormal }">{{ s.row.resultValue || '—' }}</span>
@@ -234,7 +234,7 @@
           <div class="case-sec" v-if="immunes.length">
             <div class="case-sec-tit">免 疫 接 种 档 案</div>
             <el-table :data="immunes" border size="small" class="case-table">
-              <el-table-column label="疫苗" min-width="120" prop="drugName" show-overflow-tooltip/>
+              <el-table-column label="疫苗" min-width="120" prop="drugName" show-overflow-tooltip fixed="left"/>
               <el-table-column label="针次" prop="doseCnt" width="60"/>
               <el-table-column label="接种时间" min-width="150">
                 <template #default="s">{{ (s.row.vaccinateTime || '').replace('T', ' ').slice(0, 16) }}</template>
